@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSA Key Generation Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            color: #333;
+        }
+        input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #cc0000;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .result h2 {
+            color: #333;
+        }
+        .result pre {
+            background: #e0e0e0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RSA Key Generation Demo</h1>
+        <label for="p">Enter a large prime number (p):</label>
+        <input type="number" id="p">
+        <br>
+        <label for="q">Enter another large prime number (q):</label>
+        <input type="number" id="q">
+        <br>
+        <button onclick="generateKeys()">Generate Keys</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        function gcd(a, b) {
+            while (b !== 0) {
+                [a, b] = [b, a % b];
+            }
+            return a;
+        }
+
+        function modInverse(e, phi) {
+            let [m0, x0, x1] = [phi, 0, 1];
+            if (phi === 1) return 0;
+            while (e > 1) {
+                let q = Math.floor(e / phi);
+                [phi, e] = [e % phi, phi];
+                [x0, x1] = [x1 - q * x0, x0];
+            }
+            if (x1 < 0) x1 += m0;
+            return x1;
+        }
+
+        function generateKeys() {
+            let p = parseInt(document.getElementById('p').value);
+            let q = parseInt(document.getElementById('q').value);
+
+            if (isNaN(p) || isNaN(q)) {
+                alert('Please enter valid numbers for p and q.');
+                return;
+            }
+
+            let n = p * q;
+            let phi = (p - 1) * (q - 1);
+
+            let e = 3;
+            while (gcd(e, phi) !== 1) {
+                e += 2;
+            }
+
+            let d = modInverse(e, phi);
+
+            let publicKey = (BigInt(e) * BigInt(n)).toString();
+            let privateKey = (BigInt(d) * BigInt(n)).toString();
+
+            let result = `
+                <h2>RSA Key Generation Results</h2>
+                <pre>
+<p>p: <span style="color: red;">${p}</span></p>
+<p>q: <span style="color: red;">${q}</span></p>
+<p>n: <span style="color: black;">${n}</span></p>
+<p>φ(n): <span style="color: black;">${phi}</span></p>
+<p>Public Key Calculation (e, n): <span style="color: grey;">(${e}, ${n})</span></p>
+<p>Private Key Calculation (d, n): <span style="color: grey;">(${d}, ${n})</span></p>
+<p>Public Key: <span style="color: black;">${publicKey}</span></p>
+<p>Private Key: <span style="color: black;">${privateKey}</span></p>
+                </pre>
+            `;
+            document.getElementById('result').innerHTML = result;
+        }
+    </script>
+</body>
+</html>
