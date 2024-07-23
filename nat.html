@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAT Translation Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+        input[type="number"] {
+            width: 50px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>NAT Translation Simulator</h1>
+    <div>
+        <button onclick="generateOutboundTraffic()">Submit Outbound</button>
+        <label for="outboundCount">Count:</label>
+        <input type="number" id="outboundCount" value="1" min="1">
+    </div>
+    <div>
+        <button onclick="generateInboundTraffic()">Submit Inbound</button>
+        <label for="inboundCount">Count:</label>
+        <input type="number" id="inboundCount" value="1" min="1">
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Private IP:Port</th>
+                <th>Public IP:Port</th>
+            </tr>
+        </thead>
+        <tbody id="natTableBody">
+        </tbody>
+    </table>
+
+    <script>
+        const privateIps = Array.from({length: 16}, (_, i) => `192.168.1.${16 + i}`);
+        const publicIp = '53.10.10.20';
+        const natTable = new Map();
+
+        function getRandomPort() {
+            return Math.floor(Math.random() * (65535 - 1024 + 1)) + 1024;
+        }
+
+        function generateOutboundTraffic() {
+            const count = parseInt(document.getElementById('outboundCount').value, 10);
+            for (let i = 0; i < count; i++) {
+                const privateIp = privateIps[Math.floor(Math.random() * privateIps.length)];
+                const privatePort = getRandomPort();
+                const publicPort = getRandomPort();
+
+                const privateAddress = `${privateIp}:${privatePort}`;
+                const publicAddress = `${publicIp}:${publicPort}`;
+
+                natTable.set(privateAddress, publicAddress);
+            }
+            updateTable();
+        }
+
+        function generateInboundTraffic() {
+            const count = parseInt(document.getElementById('inboundCount').value, 10);
+            if (natTable.size === 0) {
+                alert("No outbound traffic to generate inbound traffic from.");
+                return;
+            }
+
+            for (let i = 0; i < count; i++) {
+                const entries = Array.from(natTable.entries());
+                const [privateAddress, publicAddress] = entries[Math.floor(Math.random() * entries.length)];
+
+                const row = document.createElement('tr');
+                const privateCell = document.createElement('td');
+                const publicCell = document.createElement('td');
+
+                publicCell.textContent = publicAddress;
+                privateCell.textContent = privateAddress;
+
+                row.appendChild(publicCell);
+                row.appendChild(privateCell);
+                document.getElementById('natTableBody').appendChild(row);
+            }
+        }
+
+        function updateTable() {
+            const tableBody = document.getElementById('natTableBody');
+            tableBody.innerHTML = '';
+
+            for (const [privateAddress, publicAddress] of natTable) {
+                const row = document.createElement('tr');
+                const privateCell = document.createElement('td');
+                const publicCell = document.createElement('td');
+
+                privateCell.textContent = privateAddress;
+                publicCell.textContent = publicAddress;
+
+                row.appendChild(privateCell);
+                row.appendChild(publicCell);
+                tableBody.appendChild(row);
+            }
+        }
+    </script>
+</body>
+</html>
