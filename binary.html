@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Binary Blast: Mastering 5-bit Binary Numbers</title>
+
+    <style>
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            text-align: center;
+
+            margin: 20px;
+
+        }
+
+        .game-container {
+
+            max-width: 600px;
+
+            margin: auto;
+
+        }
+
+        .question, .feedback, .score, .correct-answers, .final-score {
+
+            margin: 20px 0;
+
+        }
+
+        .medal {
+
+            font-size: 24px;
+
+            color: gold;
+
+        }
+
+        .incorrect {
+
+            color: red;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="game-container">
+
+        <h1>Binary Blast: Mastering 5-bit Binary Numbers</h1>
+
+        <div id="tutorial" class="tutorial">
+
+            <p>Welcome! This tutorial will introduce you to the basics of binary numbers...</p>
+
+            <button onclick="startGame()">Start Game</button>
+
+        </div>
+
+        <div id="game" class="game" style="display: none;">
+
+            <div id="level-indicator" class="level-indicator"></div>
+
+            <div id="question" class="question"></div>
+
+            <input type="text" id="answer" />
+
+            <button onclick="submitAnswer()">Submit</button>
+
+            <div id="feedback" class="feedback"></div>
+
+            <div id="score" class="score"></div>
+
+            <div id="correct-answers" class="correct-answers"></div>
+
+            <div id="final-score" class="final-score" style="display: none;"></div>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        let level = 1;
+
+        let score = 0;
+
+        let currentQuestion = null;
+
+        let questionsAnswered = 0;
+
+        const levels = {
+
+            1: { type: 'binary-to-decimal', instructions: "LEVEL ONE – BINARY TO DECIMAL CONVERSION", points: [1, 2, 3, 4, 5] },
+
+            2: { type: 'decimal-to-binary', instructions: "LEVEL TWO – DECIMAL TO BINARY CONVERSION", points: [4, 5, 6, 7] },
+
+            3: { type: 'binary-to-hexadecimal', instructions: "LEVEL THREE – BINARY TO HEXADECIMAL CONVERSION", points: [2, 3, 4, 5, 6, 7] },
+
+            4: { type: 'hexadecimal-to-binary', instructions: "LEVEL FOUR – HEXADECIMAL TO BINARY CONVERSION", points: [2, 3, 4, 5, 6, 7] }
+
+        };
+
+        function generateQuestions(type) {
+
+            const questions = [];
+
+            for (let i = 0; i < 5; i++) {
+
+                switch(type) {
+
+                    case 'binary-to-decimal':
+
+                        questions.push({ question: generateBinary(), answer: '' });
+
+                        break;
+
+                    case 'decimal-to-binary':
+
+                        questions.push({ question: generateDecimal(), answer: '' });
+
+                        break;
+
+                    case 'binary-to-hexadecimal':
+
+                        questions.push({ question: generateBinary(), answer: '' });
+
+                        break;
+
+                    case 'hexadecimal-to-binary':
+
+                        questions.push({ question: generateHexadecimal(), answer: '' });
+
+                        break;
+
+                }
+
+            }
+
+            return questions;
+
+        }
+
+        function generateBinary() {
+
+            return Math.floor(Math.random() * 32).toString(2).padStart(5, '0');
+
+        }
+
+        function generateDecimal() {
+
+            return Math.floor(Math.random() * 32);
+
+        }
+
+        function generateHexadecimal() {
+
+            return Math.floor(Math.random() * 32).toString(16).toUpperCase();
+
+        }
+
+        function startGame() {
+
+            document.getElementById("tutorial").style.display = "none";
+
+            document.getElementById("game").style.display = "block";
+
+            showQuestion();
+
+        }
+
+        function showQuestion() {
+
+            const question = getNextQuestion();
+
+            if (question) {
+
+                currentQuestion = question;
+
+                document.getElementById("question").innerText = question.question;
+
+                document.getElementById("answer").value = "";
+
+                document.getElementById("feedback").innerText = "";
+
+                document.getElementById("level-indicator").innerText = levels[level].instructions;
+
+                playSound('bell');
+
+            } else {
+
+                endGame();
+
+            }
+
+        }
+
+        function getNextQuestion() {
+
+            if (!levels[level].questions) {
+
+                levels[level].questions = generateQuestions(levels[level].type);
+
+            }
+
+            return levels[level].questions.pop();
+
+        }
+
+        function submitAnswer() {
+
+            const answer = document.getElementById("answer").value.trim();
+
+            const correctAnswer = getCorrectAnswer(currentQuestion.question);
+
+            const pointsEarned = getPointsForAnswer(level, currentQuestion.question);
+
+            if (answer.toUpperCase() === correctAnswer.toUpperCase()) {
+
+                score += pointsEarned;
+
+                document.getElementById("feedback").innerText = `Correct! The correct answer is ${correctAnswer}. You earned ${pointsEarned} points.`;
+
+                document.getElementById("correct-answers").innerHTML += `<div>${currentQuestion.question} = ${correctAnswer} (You: ${answer})</div>`;
+
+            } else {
+
+                document.getElementById("feedback").innerHTML = `<span class="incorrect">Incorrect. The correct answer was ${correctAnswer}.</span>`;
+
+                document.getElementById("correct-answers").innerHTML += `<div class="incorrect">${currentQuestion.question} = ${correctAnswer} (You: ${answer})</div>`;
+
+            }
+
+            questionsAnswered++;
+
+            if (questionsAnswered >= 5) {
+
+                levelUp();
+
+            } else {
+
+                showQuestion();
+
+            }
+
+            document.getElementById("score").innerText = "Score: " + score;
+
+        }
+
+        function getCorrectAnswer(question) {
+
+            switch(levels[level].type) {
+
+                case 'binary-to-decimal':
+
+                    return parseInt(question, 2).toString();
+
+                case 'decimal-to-binary':
+
+                    return parseInt(question).toString(2).padStart(5, '0');
+
+                case 'binary-to-hexadecimal':
+
+                    return parseInt(question, 2).toString(16).toUpperCase();
+
+                case 'hexadecimal-to-binary':
+
+                    return parseInt(question, 16).toString(2).padStart(5, '0');
+
+            }
+
+        }
+
+        function getPointsForAnswer(level, question) {
+
+            const points = levels[level].points;
+
+            const value = parseInt(question, level === 1 ? 2 : (level === 2 ? 10 : 16));
+
+            if (value >= 17) return points[points.length - 1];
+
+            if (value >= 9) return points[points.length - 2];
+
+            if (value >= 5) return points[points.length - 3];
+
+            if (value >= 3) return points[points.length - 4];
+
+            return points[0];
+
+        }
+
+        function levelUp() {
+
+            if (level < 4) {
+
+                level++;
+
+                changeBackground();
+
+                questionsAnswered = 0;
+
+                setTimeout(showQuestion, 4000);
+
+            } else {
+
+                displayFinalScore();
+
+            }
+
+        }
+
+        function changeBackground() {
+
+            document.body.style.backgroundColor = "red";
+
+            setTimeout(() => document.body.style.backgroundColor = "yellow", 1000);
+
+            setTimeout(() => document.body.style.backgroundColor = "green", 2000);
+
+            setTimeout(() => document.body.style.backgroundColor = "white", 4000);
+
+        }
+
+        function displayFinalScore() {
+
+            document.getElementById("game").style.display = "none";
+
+            const finalScoreText = `Congratulations, your final score was ${score}. You earned a ${getMedal(score)} medal.`;
+
+            document.getElementById("final-score").innerText = finalScoreText;
+
+            document.getElementById("final-score").style.display = "block";
+
+        }
+
+        function getMedal(score) {
+
+            if (score >= 100) {
+
+                return "Gold";
+
+            } else if (score >= 50) {
+
+                return "Silver";
+
+            } else {
+
+                return "Bronze";
+
+            }
+
+        }
+
+        function playSound(type) {
+
+            let audio;
+
+            if (type === 'bell') {
+
+                audio = new Audio('bell.mp3'); // Add a path to a bell sound
+
+            } else if (type === 'trumpet') {
+
+                audio = new Audio('trumpet.mp3'); // Add a path to a trumpet sound
+
+            }
+
+            audio.play();
+
+        }
+
+    </script>
+
+</body>
+
+</html>
