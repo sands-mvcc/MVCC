@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cybersecurity Board Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: black;
+            color: white;
+        }
+        #gameBoard {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin: 20px auto;
+            border: 5px solid white;
+            border-radius: 50%;
+            background: radial-gradient(circle, grey, white);
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid white;
+            border-radius: 50%;
+            background-color: red;
+            transition: background-color 0.3s;
+        }
+        .cell:hover {
+            background-color: grey;
+        }
+        .player {
+            background-color: black;
+            color: white;
+            border-radius: 50%;
+            padding: 15px;
+            font-weight: bold;
+            transition: transform 0.3s;
+        }
+        #questionContainer {
+            margin: 20px;
+        }
+        button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: grey;
+        }
+        #feedback {
+            margin: 20px;
+            font-size: 1.5em;
+            visibility: hidden;
+        }
+        .flash-red {
+            animation: flashRed 1s ease-in-out 3;
+        }
+        @keyframes flashRed {
+            0%, 100% { background-color: red; }
+            50% { background-color: black; }
+        }
+        #score {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            font-weight: bold;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cybersecurity Board Game</h1>
+    <div id="gameBoard">
+        <div id="score">Score: 0</div>
+    </div>
+    <div id="questionContainer">
+        <p id="questionText"></p>
+        <button onclick="answerQuestion('true')">True</button>
+        <button onclick="answerQuestion('false')">False</button>
+    </div>
+    <div id="feedback">INCORRECT</div>
+    <script>
+        const totalCells = 12;
+        const gameBoard = document.getElementById('gameBoard');
+        const questionText = document.getElementById('questionText');
+        const feedback = document.getElementById('feedback');
+        const scoreElement = document.getElementById('score');
+        let playerPosition = 0;
+        let score = 0;
+
+        const questions = [
+            { question: 'Phishing: Phishing attacks involve tricking users into revealing personal information by pretending to be a trustworthy entity.', answer: 'true' },
+            { question: 'Phishing: Phishing attacks are only conducted through emails.', answer: 'false' },
+            { question: 'Malware: Malware includes viruses, worms, and trojans.', answer: 'true' },
+            { question: 'Malware: Malware can only infect a computer through email attachments.', answer: 'false' },
+            { question: 'Ransomware: Ransomware encrypts a user\'s files and demands a ransom to restore access.', answer: 'true' },
+            { question: 'Ransomware: Paying the ransom guarantees the return of encrypted data.', answer: 'false' },
+            { question: 'DDoS: A DDoS attack overwhelms a network or website with traffic to make it inaccessible.', answer: 'true' },
+            { question: 'DDoS: DDoS attacks only affect websites and cannot impact networks.', answer: 'false' },
+            { question: 'Man-in-the-Middle (MitM): In a MitM attack, the attacker secretly intercepts and relays messages between two parties.', answer: 'true' },
+            { question: 'Man-in-the-Middle (MitM): MitM attacks are only possible on unencrypted networks.', answer: 'false' },
+            { question: 'SQL Injection: SQL injection attacks involve inserting malicious SQL code into a query to manipulate a database.', answer: 'true' },
+            { question: 'SQL Injection: Using prepared statements can help prevent SQL injection attacks.', answer: 'true' },
+            { question: 'Cross-Site Scripting (XSS): XSS attacks involve injecting malicious scripts into trusted websites.', answer: 'true' },
+            { question: 'Cross-Site Scripting (XSS): XSS attacks cannot steal cookies from users.', answer: 'false' },
+            { question: 'Credential Stuffing: Credential stuffing uses stolen account credentials to gain unauthorized access.', answer: 'true' },
+            { question: 'Credential Stuffing: Credential stuffing attacks rely on the assumption that users reuse passwords across multiple sites.', answer: 'true' },
+            { question: 'Brute Force Attack: A brute force attack tries all possible password combinations until the correct one is found.', answer: 'true' },
+            { question: 'Brute Force Attack: Brute force attacks are ineffective against strong, complex passwords.', answer: 'true' },
+            { question: 'Zero-Day Exploit: Zero-day exploits target previously unknown vulnerabilities.', answer: 'true' },
+            { question: 'Zero-Day Exploit: Zero-day exploits are usually addressed immediately by vendors.', answer: 'false' },
+            { question: 'Insider Threat: Insider threats originate from within an organization.', answer: 'true' },
+            { question: 'Insider Threat: Insider threats are always intentional and malicious.', answer: 'false' },
+            { question: 'Social Engineering: Social engineering manipulates people into giving up confidential information.', answer: 'true' },
+            { question: 'Social Engineering: Social engineering attacks do not require technical skills to execute.', answer: 'true' },
+            { question: 'Drive-By Download: Drive-by downloads occur when malicious code is unintentionally downloaded by visiting a compromised website.', answer: 'true' },
+            { question: 'Drive-By Download: Drive-by downloads require user interaction to initiate.', answer: 'false' },
+            { question: 'Advanced Persistent Threat (APT): APTs are prolonged and targeted attacks where intruders remain undetected for an extended period.', answer: 'true' },
+            { question: 'Advanced Persistent Threat (APT): APTs usually involve sophisticated techniques and are often state-sponsored.', answer: 'true' },
+            { question: 'IoT Attacks: IoT attacks exploit vulnerabilities in Internet of Things devices.', answer: 'true' },
+            { question: 'IoT Attacks: IoT devices are immune to cyber attacks due to their simple design.', answer: 'false' },
+            { question: 'DNS Spoofing: DNS spoofing redirects traffic from a legitimate website to a malicious one.', answer: 'true' },
+            { question: 'DNS Spoofing: DNS spoofing can be prevented by using DNSSEC (Domain Name System Security Extensions).', answer: 'true' },
+        ];
+
+        function createBoard() {
+            gameBoard.innerHTML = '<div id="score">Score: ' + score + '</div>';
+            const radius = 180; // Radius of the circle
+            const centerX = 200;
+            const centerY = 200;
+            for (let i = 0; i < totalCells; i++) {
+                const angle = (2 * Math.PI / totalCells) * i;
+                const x = centerX + radius * Math.cos(angle) - 30; // Adjusting for cell width
+                const y = centerY + radius * Math.sin(angle) - 30; // Adjusting for cell height
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.style.left = `${x}px`;
+                cell.style.top = `${y}px`;
+                cell.dataset.index = i;
+                if (i === playerPosition) {
+                    const player = document.createElement('div');
+                    player.classList.add('player');
+                    player.innerText = 'P';
+                    cell.appendChild(player);
+                }
+                gameBoard.appendChild(cell);
+            }
+        }
+
+        function askQuestion() {
+            const randomIndex = Math.floor(Math.random() * questions.length);
+            questionText.innerText = questions[randomIndex].question;
+            questionText.dataset.answer = questions[randomIndex].answer;
+        }
+
+        function answerQuestion(answer) {
+            const correctAnswer = questionText.dataset.answer;
+            const currentCell = document.querySelector(`[data-index="${playerPosition}"]`);
+            if (answer === correctAnswer) {
+                playerPosition += 1;
+                score += 10; // Increase score for correct answer
+                feedback.style.visibility = 'hidden';
+                if (playerPosition >= totalCells) {
+                    alert('Congratulations! You have won the game!');
+                    playerPosition = 0;
+                    score = 0; // Reset score after winning
+                }
+            } else {
+                currentCell.classList.add('flash-red');
+                feedback.style.visibility = 'visible';
+                score -= 5; // Decrease score for incorrect answer
+                setTimeout(() => {
+                    currentCell.classList.remove('flash-red');
+                    feedback.style.visibility = 'hidden';
+                }, 3000);
+            }
+            createBoard();
+            askQuestion();
+        }
+
+        createBoard();
+        askQuestion();
+    </script>
+</body>
+</html>
