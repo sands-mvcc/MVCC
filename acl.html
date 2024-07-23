@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ACL Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .form-group input[type="checkbox"] {
+            width: auto;
+        }
+        .form-group button {
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Access Control List (ACL) Generator</h1>
+<form id="acl-form">
+    <div class="form-group">
+        <label for="acl-type">ACL Type:</label>
+        <select id="acl-type" name="aclType">
+            <option value="ipv4">IPv4</option>
+            <option value="ipv6">IPv6</option>
+            <option value="mac">MAC</option>
+            <option value="vlan">VLAN</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="acl-name">ACL Name:</label>
+        <input type="text" id="acl-name" name="aclName" placeholder="Enter ACL Name">
+    </div>
+    <div class="form-group">
+        <label for="source">Source:</label>
+        <input type="text" id="source" name="source" placeholder="Enter Source Address">
+    </div>
+    <div class="form-group">
+        <label for="source-mask">Source Wildcard Mask:</label>
+        <input type="text" id="source-mask" name="sourceMask" placeholder="Enter Source Wildcard Mask (e.g., 0.0.0.255)">
+    </div>
+    <div class="form-group">
+        <label for="destination">Destination:</label>
+        <input type="text" id="destination" name="destination" placeholder="Enter Destination Address">
+    </div>
+    <div class="form-group">
+        <label for="destination-mask">Destination Wildcard Mask:</label>
+        <input type="text" id="destination-mask" name="destinationMask" placeholder="Enter Destination Wildcard Mask (e.g., 0.0.0.255)">
+    </div>
+    <div class="form-group">
+        <label for="protocol">Protocol:</label>
+        <input type="text" id="protocol" name="protocol" placeholder="Enter Protocol">
+    </div>
+    <div class="form-group">
+        <label for="action">Action:</label>
+        <input type="checkbox" id="permit" name="action" value="permit"> Permit
+        <input type="checkbox" id="deny" name="action" value="deny"> Deny
+    </div>
+    <button type="button" onclick="generateACL()">Generate ACL</button>
+</form>
+
+<div id="output" class="output"></div>
+
+<script>
+    function generateACL() {
+        var aclType = document.getElementById('acl-type').value;
+        var aclName = document.getElementById('acl-name').value;
+        var source = document.getElementById('source').value;
+        var sourceMask = document.getElementById('source-mask').value;
+        var destination = document.getElementById('destination').value;
+        var destinationMask = document.getElementById('destination-mask').value;
+        var protocol = document.getElementById('protocol').value;
+        var action = document.getElementById('permit').checked ? 'permit' : 'deny';
+
+        var aclCommand = '';
+
+        if (aclType === 'ipv4' || aclType === 'ipv6') {
+            aclCommand += aclType + ' access-list ' + aclName + '\n';
+            aclCommand += action + ' ' + protocol + ' ' + source + ' ' + sourceMask + ' ' + destination + ' ' + destinationMask;
+        } else if (aclType === 'mac') {
+            aclCommand += 'mac access-list ' + aclName + '\n';
+            aclCommand += action + ' ' + source + ' ' + destination + ' ' + protocol;
+        } else if (aclType === 'vlan') {
+            aclCommand += 'vlan access-map ' + aclName + '\n';
+            aclCommand += 'match ' + protocol + ' address ' + source + ' ' + destination + '\n';
+            aclCommand += 'action ' + action;
+        }
+
+        document.getElementById('output').innerText = aclCommand;
+    }
+</script>
+
+</body>
+</html>
