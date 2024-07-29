@@ -8,23 +8,66 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1 {
+            color: #d9534f;
+        }
+        button {
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #c9302c;
+        }
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            margin-left: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            background-color: white;
         }
         table, th, td {
-            border: 1px solid black;
+            border: 1px solid #ddd;
         }
         th, td {
-            padding: 8px;
+            padding: 12px;
             text-align: center;
         }
-        input[type="number"] {
-            width: 50px;
-            margin-left: 10px;
+        th {
+            background-color: #f8f8f8;
         }
+        tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+        tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+        .color1 { background-color: #ffcccc; }
+        .color2 { background-color: #ccffcc; }
+        .color3 { background-color: #ccccff; }
+        .color4 { background-color: #ffffcc; }
+        .color5 { background-color: #ffccff; }
+        .color6 { background-color: #ccffff; }
+        .color7 { background-color: #ff9966; }
+        .color8 { background-color: #66ff99; }
+        .color9 { background-color: #6699ff; }
+        .color10 { background-color: #ff66ff; }
     </style>
 </head>
 <body>
@@ -54,9 +97,19 @@
         const privateIps = Array.from({length: 16}, (_, i) => `192.168.1.${16 + i}`);
         const publicIp = '53.10.10.20';
         const natTable = new Map();
+        const portColors = new Map();
+        const colorClasses = ['color1', 'color2', 'color3', 'color4', 'color5', 'color6', 'color7', 'color8', 'color9', 'color10'];
 
         function getRandomPort() {
             return Math.floor(Math.random() * (65535 - 1024 + 1)) + 1024;
+        }
+
+        function getColorClass(port) {
+            if (!portColors.has(port)) {
+                const colorClass = colorClasses[portColors.size % colorClasses.length];
+                portColors.set(port, colorClass);
+            }
+            return portColors.get(port);
         }
 
         function generateOutboundTraffic() {
@@ -85,17 +138,35 @@
                 const entries = Array.from(natTable.entries());
                 const [privateAddress, publicAddress] = entries[Math.floor(Math.random() * entries.length)];
 
-                const row = document.createElement('tr');
-                const privateCell = document.createElement('td');
-                const publicCell = document.createElement('td');
+                const privatePort = privateAddress.split(':')[1];
+                const publicPort = publicAddress.split(':')[1];
+                const colorClass = getColorClass(publicPort);
 
-                publicCell.textContent = publicAddress;
-                privateCell.textContent = privateAddress;
+                const rowOutbound = document.createElement('tr');
+                const rowInbound = document.createElement('tr');
+                const privateCellOutbound = document.createElement('td');
+                const publicCellOutbound = document.createElement('td');
+                const privateCellInbound = document.createElement('td');
+                const publicCellInbound = document.createElement('td');
 
-                row.appendChild(publicCell);
-                row.appendChild(privateCell);
-                document.getElementById('natTableBody').appendChild(row);
+                privateCellOutbound.innerHTML = highlightText(privateAddress, privatePort, colorClass);
+                publicCellOutbound.innerHTML = highlightText(publicAddress, publicPort, colorClass);
+                privateCellInbound.innerHTML = highlightText(privateAddress, privatePort, colorClass);
+                publicCellInbound.innerHTML = highlightText(publicAddress, publicPort, colorClass);
+
+                rowOutbound.appendChild(privateCellOutbound);
+                rowOutbound.appendChild(publicCellOutbound);
+                rowInbound.appendChild(publicCellInbound);
+                rowInbound.appendChild(privateCellInbound);
+
+                document.getElementById('natTableBody').appendChild(rowOutbound);
+                document.getElementById('natTableBody').appendChild(rowInbound);
             }
+        }
+
+        function highlightText(address, port, colorClass) {
+            const [ip, portNumber] = address.split(':');
+            return `${ip}:<span class="${colorClass}">${portNumber}</span>`;
         }
 
         function updateTable() {
@@ -103,12 +174,16 @@
             tableBody.innerHTML = '';
 
             for (const [privateAddress, publicAddress] of natTable) {
+                const privatePort = privateAddress.split(':')[1];
+                const publicPort = publicAddress.split(':')[1];
+                const colorClass = getColorClass(publicPort);
+
                 const row = document.createElement('tr');
                 const privateCell = document.createElement('td');
                 const publicCell = document.createElement('td');
 
-                privateCell.textContent = privateAddress;
-                publicCell.textContent = publicAddress;
+                privateCell.innerHTML = highlightText(privateAddress, privatePort, colorClass);
+                publicCell.innerHTML = highlightText(publicAddress, publicPort, colorClass);
 
                 row.appendChild(privateCell);
                 row.appendChild(publicCell);
