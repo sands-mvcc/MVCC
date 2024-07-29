@@ -1,387 +1,237 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Binary Blast: Mastering 5-bit Binary Numbers</title>
-
+    <title>Number Systems Quiz</title>
     <style>
-
         body {
-
             font-family: Arial, sans-serif;
-
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .container {
             text-align: center;
-
-            margin: 20px;
-
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
         }
-
-        .game-container {
-
-            max-width: 600px;
-
-            margin: auto;
-
+        h1 {
+            color: #333;
         }
-
-        .question, .feedback, .score, .correct-answers, .final-score {
-
-            margin: 20px 0;
-
+        label, select, input, button, p {
+            margin: 10px 0;
+            font-size: 16px;
         }
-
-        .medal {
-
-            font-size: 24px;
-
-            color: gold;
-
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #333;
+            color: white;
+            cursor: pointer;
         }
-
-        .incorrect {
-
-            color: red;
-
+        button:hover {
+            background-color: #555;
         }
-
+        .hidden {
+            display: none;
+        }
+        #timer, #score, #feedback {
+            color: #e60000;
+        }
+        .result-text {
+            color: #333;
+        }
     </style>
-
 </head>
-
 <body>
-
-    <div class="game-container">
-
-        <h1>Binary Blast: Mastering 5-bit Binary Numbers</h1>
-
-        <div id="tutorial" class="tutorial">
-
-            <p>Welcome! This tutorial will introduce you to the basics of binary numbers...</p>
-
-            <button onclick="startGame()">Start Game</button>
-
+    <div class="container">
+        <h1>Number Systems Quiz</h1>
+        <div id="setup">
+            <label for="number-system">Select Number System:</label>
+            <select id="number-system">
+                <option value="binary">Binary</option>
+                <option value="decimal">Decimal</option>
+                <option value="hexadecimal">Hexadecimal</option>
+            </select>
+            <br>
+            <label for="operation">Select Operation:</label>
+            <select id="operation">
+                <option value="addition">Addition</option>
+                <option value="subtraction">Subtraction</option>
+                <option value="multiplication">Multiplication</option>
+                <option value="division">Division</option>
+                <option value="conversion">Conversion</option>
+            </select>
+            <br>
+            <button onclick="startQuiz()">Start Quiz</button>
         </div>
 
-        <div id="game" class="game" style="display: none;">
-
-            <div id="level-indicator" class="level-indicator"></div>
-
-            <div id="question" class="question"></div>
-
-            <input type="text" id="answer" />
-
-            <button onclick="submitAnswer()">Submit</button>
-
-            <div id="feedback" class="feedback"></div>
-
-            <div id="score" class="score"></div>
-
-            <div id="correct-answers" class="correct-answers"></div>
-
-            <div id="final-score" class="final-score" style="display: none;"></div>
-
+        <div id="quiz" class="hidden">
+            <h2 id="question"></h2>
+            <input type="text" id="answer" placeholder="Enter your answer">
+            <br>
+            <button onclick="submitAnswer()">Submit Answer</button>
+            <br>
+            <p id="timer">Time: <span id="time">0</span> seconds</p>
+            <p id="feedback"></p>
+            <p>Score: <span id="score">0</span></p>
         </div>
 
+        <div id="results" class="hidden">
+            <h2 class="result-text">Your final score is: <span id="final-score"></span></h2>
+            <button onclick="restartQuiz()">Take Another Quiz</button>
+            <button onclick="endQuiz()">End</button>
+        </div>
     </div>
 
     <script>
-
-        let level = 1;
-
+        let questions = [];
+        let currentQuestion = 0;
         let score = 0;
+        let timer;
+        let startTime;
 
-        let currentQuestion = null;
+        function startQuiz() {
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('quiz').classList.remove('hidden');
+            nextQuestion();
+            startTime = Date.now();
+            timer = setInterval(updateTimer, 1000);
+        }
 
-        let questionsAnswered = 0;
-
-        const levels = {
-
-            1: { type: 'binary-to-decimal', instructions: "LEVEL ONE – BINARY TO DECIMAL CONVERSION", points: [1, 2, 3, 4, 5] },
-
-            2: { type: 'decimal-to-binary', instructions: "LEVEL TWO – DECIMAL TO BINARY CONVERSION", points: [4, 5, 6, 7] },
-
-            3: { type: 'binary-to-hexadecimal', instructions: "LEVEL THREE – BINARY TO HEXADECIMAL CONVERSION", points: [2, 3, 4, 5, 6, 7] },
-
-            4: { type: 'hexadecimal-to-binary', instructions: "LEVEL FOUR – HEXADECIMAL TO BINARY CONVERSION", points: [2, 3, 4, 5, 6, 7] }
-
-        };
-
-        function generateQuestions(type) {
-
-            const questions = [];
-
-            for (let i = 0; i < 5; i++) {
-
-                switch(type) {
-
-                    case 'binary-to-decimal':
-
-                        questions.push({ question: generateBinary(), answer: '' });
-
-                        break;
-
-                    case 'decimal-to-binary':
-
-                        questions.push({ question: generateDecimal(), answer: '' });
-
-                        break;
-
-                    case 'binary-to-hexadecimal':
-
-                        questions.push({ question: generateBinary(), answer: '' });
-
-                        break;
-
-                    case 'hexadecimal-to-binary':
-
-                        questions.push({ question: generateHexadecimal(), answer: '' });
-
-                        break;
-
-                }
-
+        function generateQuestion(system, operation) {
+            let num1, num2, question, answer;
+            switch (system) {
+                case 'binary':
+                    num1 = (Math.random() * 16) | 0;
+                    num2 = (Math.random() * 16) | 0;
+                    if (operation !== 'conversion') {
+                        question = `${num1.toString(2)} ${operationSymbol(operation)} ${num2.toString(2)}`;
+                        answer = calculateAnswer(num1, num2, operation).toString(2);
+                    } else {
+                        question = `Convert ${num1.toString(2)} to Decimal`;
+                        answer = num1.toString(10);
+                    }
+                    break;
+                case 'decimal':
+                    num1 = (Math.random() * 100) | 0;
+                    num2 = (Math.random() * 100) | 0;
+                    if (operation !== 'conversion') {
+                        question = `${num1} ${operationSymbol(operation)} ${num2}`;
+                        answer = calculateAnswer(num1, num2, operation).toString(10);
+                    } else {
+                        question = `Convert ${num1.toString(10)} to Binary`;
+                        answer = num1.toString(2);
+                    }
+                    break;
+                case 'hexadecimal':
+                    num1 = (Math.random() * 256) | 0;
+                    num2 = (Math.random() * 256) | 0;
+                    if (operation !== 'conversion') {
+                        question = `${num1.toString(16)} ${operationSymbol(operation)} ${num2.toString(16)}`;
+                        answer = calculateAnswer(num1, num2, operation).toString(16);
+                    } else {
+                        question = `Convert ${num1.toString(16)} to Decimal`;
+                        answer = num1.toString(10);
+                    }
+                    break;
             }
-
-            return questions;
-
+            return { question, answer };
         }
 
-        function generateBinary() {
-
-            return Math.floor(Math.random() * 32).toString(2).padStart(5, '0');
-
-        }
-
-        function generateDecimal() {
-
-            return Math.floor(Math.random() * 32);
-
-        }
-
-        function generateHexadecimal() {
-
-            return Math.floor(Math.random() * 32).toString(16).toUpperCase();
-
-        }
-
-        function startGame() {
-
-            document.getElementById("tutorial").style.display = "none";
-
-            document.getElementById("game").style.display = "block";
-
-            showQuestion();
-
-        }
-
-        function showQuestion() {
-
-            const question = getNextQuestion();
-
-            if (question) {
-
-                currentQuestion = question;
-
-                document.getElementById("question").innerText = question.question;
-
-                document.getElementById("answer").value = "";
-
-                document.getElementById("feedback").innerText = "";
-
-                document.getElementById("level-indicator").innerText = levels[level].instructions;
-
-                playSound('bell');
-
-            } else {
-
-                endGame();
-
+        function operationSymbol(operation) {
+            switch (operation) {
+                case 'addition': return '+';
+                case 'subtraction': return '-';
+                case 'multiplication': return '*';
+                case 'division': return '/';
+                case 'conversion': return '';
             }
-
         }
 
-        function getNextQuestion() {
-
-            if (!levels[level].questions) {
-
-                levels[level].questions = generateQuestions(levels[level].type);
-
+        function calculateAnswer(num1, num2, operation) {
+            switch (operation) {
+                case 'addition': return num1 + num2;
+                case 'subtraction': return num1 - num2;
+                case 'multiplication': return num1 * num2;
+                case 'division': return Math.floor(num1 / num2);
             }
+        }
 
-            return levels[level].questions.pop();
-
+        function displayQuestion(question) {
+            document.getElementById('question').innerText = question.question;
+            document.getElementById('answer').value = '';
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('answer').focus();
         }
 
         function submitAnswer() {
+            const answer = document.getElementById('answer').value.trim();
+            const current = questions[currentQuestion];
+            const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
 
-            const answer = document.getElementById("answer").value.trim();
-
-            const correctAnswer = getCorrectAnswer(currentQuestion.question);
-
-            const pointsEarned = getPointsForAnswer(level, currentQuestion.question);
-
-            if (answer.toUpperCase() === correctAnswer.toUpperCase()) {
-
-                score += pointsEarned;
-
-                document.getElementById("feedback").innerText = `Correct! The correct answer is ${correctAnswer}. You earned ${pointsEarned} points.`;
-
-                document.getElementById("correct-answers").innerHTML += `<div>${currentQuestion.question} = ${correctAnswer} (You: ${answer})</div>`;
-
+            if (timeElapsed > 20) {
+                document.getElementById('feedback').innerText = `Time's up! The correct answer was ${current.answer}.`;
+            } else if (answer === current.answer) {
+                const points = Math.max(10 - timeElapsed, 1);
+                score += points;
+                document.getElementById('feedback').innerText = `Correct! You earned ${points} points.`;
             } else {
-
-                document.getElementById("feedback").innerHTML = `<span class="incorrect">Incorrect. The correct answer was ${correctAnswer}.</span>`;
-
-                document.getElementById("correct-answers").innerHTML += `<div class="incorrect">${currentQuestion.question} = ${correctAnswer} (You: ${answer})</div>`;
-
+                document.getElementById('feedback').innerText = `Incorrect. The correct answer was ${current.answer}.`;
             }
 
-            questionsAnswered++;
-
-            if (questionsAnswered >= 5) {
-
-                levelUp();
-
+            document.getElementById('score').innerText = score;
+            currentQuestion++;
+            if (currentQuestion < 10) {
+                nextQuestion();
             } else {
-
-                showQuestion();
-
+                endQuiz();
             }
-
-            document.getElementById("score").innerText = "Score: " + score;
-
         }
 
-        function getCorrectAnswer(question) {
+        function nextQuestion() {
+            const numberSystem = document.getElementById('number-system').value;
+            const operation = document.getElementById('operation').value;
+            const question = generateQuestion(numberSystem, operation);
+            questions[currentQuestion] = question;  // Store the question for current index
+            displayQuestion(question);
+            startTime = Date.now();
+        }
 
-            switch(levels[level].type) {
+        function updateTimer() {
+            const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('time').innerText = timeElapsed;
 
-                case 'binary-to-decimal':
-
-                    return parseInt(question, 2).toString();
-
-                case 'decimal-to-binary':
-
-                    return parseInt(question).toString(2).padStart(5, '0');
-
-                case 'binary-to-hexadecimal':
-
-                    return parseInt(question, 2).toString(16).toUpperCase();
-
-                case 'hexadecimal-to-binary':
-
-                    return parseInt(question, 16).toString(2).padStart(5, '0');
-
+            if (timeElapsed > 20) {
+                submitAnswer();
             }
-
         }
 
-        function getPointsForAnswer(level, question) {
-
-            const points = levels[level].points;
-
-            const value = parseInt(question, level === 1 ? 2 : (level === 2 ? 10 : 16));
-
-            if (value >= 17) return points[points.length - 1];
-
-            if (value >= 9) return points[points.length - 2];
-
-            if (value >= 5) return points[points.length - 3];
-
-            if (value >= 3) return points[points.length - 4];
-
-            return points[0];
-
+        function endQuiz() {
+            clearInterval(timer);
+            document.getElementById('quiz').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
         }
 
-        function levelUp() {
-
-            if (level < 4) {
-
-                level++;
-
-                changeBackground();
-
-                questionsAnswered = 0;
-
-                setTimeout(showQuestion, 4000);
-
-            } else {
-
-                displayFinalScore();
-
-            }
-
+        function restartQuiz() {
+            questions = [];
+            currentQuestion = 0;
+            score = 0;
+            document.getElementById('setup').classList.remove('hidden');
+            document.getElementById('quiz').classList.add('hidden');
+            document.getElementById('results').classList.add('hidden');
         }
-
-        function changeBackground() {
-
-            document.body.style.backgroundColor = "red";
-
-            setTimeout(() => document.body.style.backgroundColor = "yellow", 1000);
-
-            setTimeout(() => document.body.style.backgroundColor = "green", 2000);
-
-            setTimeout(() => document.body.style.backgroundColor = "white", 4000);
-
-        }
-
-        function displayFinalScore() {
-
-            document.getElementById("game").style.display = "none";
-
-            const finalScoreText = `Congratulations, your final score was ${score}. You earned a ${getMedal(score)} medal.`;
-
-            document.getElementById("final-score").innerText = finalScoreText;
-
-            document.getElementById("final-score").style.display = "block";
-
-        }
-
-        function getMedal(score) {
-
-            if (score >= 100) {
-
-                return "Gold";
-
-            } else if (score >= 50) {
-
-                return "Silver";
-
-            } else {
-
-                return "Bronze";
-
-            }
-
-        }
-
-        function playSound(type) {
-
-            let audio;
-
-            if (type === 'bell') {
-
-                audio = new Audio('bell.mp3'); // Add a path to a bell sound
-
-            } else if (type === 'trumpet') {
-
-                audio = new Audio('trumpet.mp3'); // Add a path to a trumpet sound
-
-            }
-
-            audio.play();
-
-        }
-
     </script>
-
 </body>
-
 </html>
