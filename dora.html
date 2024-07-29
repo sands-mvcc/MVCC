@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>DHCP Process Demonstration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            background-color: #222;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        h1 {
+            color: #f00;
+        }
+
+        .process {
+            margin: 20px 0;
+        }
+
+        .step-button, .reset-button {
+            background-color: #f00;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .step-button:hover, .reset-button:hover {
+            background-color: #b00;
+        }
+
+        .dropdown {
+            margin-bottom: 20px;
+        }
+
+        .description {
+            margin-top: 20px;
+        }
+
+        .description p {
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        .network-diagram {
+            position: relative;
+            width: 700px; /* Adjusted to fit all workstations horizontally */
+            height: 400px;
+            margin-top: 40px;
+        }
+
+        .device, .dhcp-server {
+            position: absolute;
+            border: 2px solid #fff;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .dhcp-server {
+            width: 3in;
+            height: 1.5in;
+            background-color: #888;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .workstation {
+            width: 2in;
+            height: 1.5in;
+            background-color: #f00;
+            color: #FFF;
+            transition: background-color 0.3s;
+            position: absolute;
+            top: 250px;
+        }
+
+        .workstation-1 {
+            left: 50px;
+        }
+
+        .workstation-2 {
+            left: 250px;
+        }
+
+        .workstation-3 {
+            left: 450px;
+        }
+
+        .message {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #000;
+            padding: 5px;
+            border-radius: 5px;
+            text-align: center;
+            width: auto;
+            color: #000;
+        }
+
+        .message-top {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .message-left {
+            left: -220px;
+            top: 0;
+            transform: translateY(50%);
+        }
+
+        .ip-address {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            color: #000;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .available-addresses {
+            position: absolute;
+            top: 14px;
+            right: -220px;
+            background-color: #444;
+            border: 1px solid #fff;
+            padding: 10px;
+            border-radius: 5px;
+            color: #fff;
+        }
+
+        .available-addresses table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .available-addresses th, .available-addresses td {
+            border: 1px solid #fff;
+            padding: 5px;
+            text-align: left;
+        }
+
+        .strikethrough {
+            text-decoration: line-through;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DHCP Process Demonstration</h1>
+        <div class="dropdown">
+            <label for="workstation-select">Select Workstation:</label>
+            <select id="workstation-select">
+                <option value="workstation-1">Workstation 1</option>
+                <option value="workstation-2">Workstation 2</option>
+                <option value="workstation-3">Workstation 3</option>
+            </select>
+        </div>
+        <div class="process">
+            <button class="step-button" onclick="showStep('discover')">Discover</button>
+            <button class="step-button" onclick="showStep('offer')">Offer</button>
+            <button class="step-button" onclick="showStep('request')">Request</button>
+            <button class="step-button" onclick="showStep('acknowledge')">Acknowledge</button>
+            <button class="reset-button" onclick="resetSimulation()">Reset</button>
+        </div>
+        <div class="description" id="description">
+            <p>Click on the buttons above to see each step of the DHCP process.</p>
+        </div>
+    </div>
+
+    <div class="network-diagram">
+        <div class="dhcp-server">DHCP Server</div>
+        <div class="available-addresses">
+            <h3>Available Addresses</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>IP Address</th>
+                    </tr>
+                </thead>
+                <tbody id="address-list">
+                    <tr id="ip-16"><td>192.168.1.16</td></tr>
+                    <tr id="ip-17"><td>192.168.1.17</td></tr>
+                    <tr id="ip-18"><td>192.168.1.18</td></tr>
+                    <tr id="ip-19"><td>192.168.1.19</td></tr>
+                    <tr id="ip-20"><td>192.168.1.20</td></tr>
+                    <tr id="ip-21"><td>192.168.1.21</td></tr>
+                    <tr id="ip-22"><td>192.168.1.22</td></tr>
+                    <tr id="ip-23"><td>192.168.1.23</td></tr>
+                    <tr id="ip-24"><td>192.168.1.24</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="device workstation workstation-1">
+            Workstation 1
+            <div class="ip-address" id="ip-address-1" style="display: none;"></div>
+        </div>
+        <div class="device workstation workstation-2">
+            Workstation 2
+            <div class="ip-address" id="ip-address-2" style="display: none;"></div>
+        </div>
+        <div class="device workstation workstation-3">
+            Workstation 3
+            <div class="ip-address" id="ip-address-3" style="display: none;"></div>
+        </div>
+        <div class="message" id="message" style="display: none;"></div>
+    </div>
+
+    <script>
+        let currentWorkstation = 'workstation-1';
+        let ipAddressIndex = 0;
+        const ipAddresses = ['192.168.1.16', '192.168.1.17', '192.168.1.18', '192.168.1.19', '192.168.1.20', '192.168.1.21', '192.168.1.22', '192.168.1.23', '192.168.1.24'];
+        const assignedAddresses = {};
+
+        document.getElementById('workstation-select').addEventListener('change', function() {
+            currentWorkstation = this.value;
+        });
+
+        function showStep(step) {
+            const description = document.getElementById('description');
+            const messageBox = document.getElementById('message');
+            const ipAddress1 = document.getElementById('ip-address-1');
+            const ipAddress2 = document.getElementById('ip-address-2');
+            const ipAddress3 = document.getElementById('ip-address-3');
+            const workstation1 = document.querySelector('.workstation-1');
+            const workstation2 = document.querySelector('.workstation-2');
+            const workstation3 = document.querySelector('.workstation-3');
+
+            let selectedWorkstation;
+            let ipAddressBox;
+
+            switch(currentWorkstation) {
+                case 'workstation-1':
+                    selectedWorkstation = workstation1;
+                    ipAddressBox = ipAddress1;
+                    break;
+                case 'workstation-2':
+                    selectedWorkstation = workstation2;
+                    ipAddressBox = ipAddress2;
+                    break;
+                case 'workstation-3':
+                    selectedWorkstation = workstation3;
+                    ipAddressBox = ipAddress3;
+                    break;
+            }
+
+            if (step === 'discover') {
+                selectedWorkstation.style.backgroundColor = '#FF0000';
+                messageBox.style.display = 'block';
+                messageBox.style.top = (selectedWorkstation.offsetTop - 40) + 'px';
+                messageBox.style.left = (selectedWorkstation.offsetLeft) + 'px';
+                messageBox.textContent = 'I need an IP address';
+            } else if (step === 'offer') {
+                messageBox.style.display = 'none';
+                messageBox.style.display = 'block';
+                messageBox.style.top = '70px';
+                messageBox.style.left = '150px';
+                messageBox.textContent = `OK here is an IP address ${ipAddresses[ipAddressIndex]}`;
+            } else if (step === 'request') {
+                messageBox.style.display = 'none';
+                ipAddressBox.style.display = 'block';
+                ipAddressBox.textContent = ipAddresses[ipAddressIndex];
+                assignedAddresses[currentWorkstation] = ipAddresses[ipAddressIndex];
+            } else if (step === 'acknowledge') {
+                messageBox.style.display = 'block';
+                messageBox.style.top = (selectedWorkstation.offsetTop - 40) + 'px';
+                messageBox.style.left = (selectedWorkstation.offsetLeft) + 'px';
+                messageBox.textContent = 'Got - Thanks!';
+                document.getElementById(`ip-${ipAddresses[ipAddressIndex].split('.')[3]}`).classList.add('strikethrough');
+                ipAddressIndex = findNextAvailableIndex();
+            }
+        }
+
+        function resetSimulation() {
+            // Reset assigned addresses but keep track of used addresses
+            for (let key in assignedAddresses) {
+                delete assignedAddresses[key];
+            }
+
+            // Reset workstation colors and IP address displays
+            const workstations = document.querySelectorAll('.workstation');
+            workstations.forEach(ws => ws.style.backgroundColor = '#f00');
+            const ipAddressBoxes = document.querySelectorAll('.ip-address');
+            ipAddressBoxes.forEach(box => {
+                box.style.display = 'none';
+                box.textContent = '';
+            });
+
+            // Keep strikethrough on used addresses
+            const addressList = document.querySelectorAll('.available-addresses td');
+            addressList.forEach(address => {
+                if (!address.classList.contains('strikethrough')) {
+                    address.classList.remove('strikethrough');
+                }
+            });
+
+            // Hide message box
+            const messageBox = document.getElementById('message');
+            messageBox.style.display = 'none';
+
+            // Reset description
+            const description = document.getElementById('description');
+            description.innerHTML = `<p>Click on the buttons above to see each step of the DHCP process.</p>`;
+        }
+
+        function findNextAvailableIndex() {
+            for (let i = 0; i < ipAddresses.length; i++) {
+                if (!document.getElementById(`ip-${ipAddresses[i].split('.')[3]}`).classList.contains('strikethrough')) {
+                    return i;
+                }
+            }
+            return 0; // If all addresses are used, reset to the beginning
+        }
+    </script>
+</body>
+</html>
