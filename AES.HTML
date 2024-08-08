@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AES Encryption Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #ff0000;
+        }
+
+        div.container {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+
+        label, input, select, button, textarea {
+            display: block;
+            margin: 10px 0;
+            width: 100%;
+        }
+
+        label {
+            color: #333;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #ff0000;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #cc0000;
+        }
+
+        textarea {
+            font-family: monospace;
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AES Encryption Tool</h1>
+    <div class="container">
+        <label for="cleartext">Cleartext:</label>
+        <input type="text" id="cleartext" placeholder="Enter cleartext" />
+
+        <label for="key">Symmetrical Key:</label>
+        <input type="text" id="key" placeholder="Enter symmetrical key" />
+
+        <label for="mode">Mode:</label>
+        <select id="mode">
+            <option value="ECB">ECB</option>
+            <option value="CBC">CBC</option>
+        </select>
+
+        <button onclick="encrypt()">Encrypt</button>
+        <button onclick="decrypt()">Decrypt</button>
+
+        <label for="ciphertext">Ciphertext:</label>
+        <textarea id="ciphertext" readonly></textarea>
+
+        <label for="decryptedtext">Decrypted Text:</label>
+        <textarea id="decryptedtext" readonly></textarea>
+    </div>
+
+    <script>
+        function encrypt() {
+            const cleartext = document.getElementById('cleartext').value;
+            const key = document.getElementById('key').value;
+            const mode = document.getElementById('mode').value;
+
+            let encrypted = '';
+            if (mode === 'ECB') {
+                encrypted = CryptoJS.AES.encrypt(cleartext, CryptoJS.enc.Utf8.parse(key), {
+                    mode: CryptoJS.mode.ECB,
+                    padding: CryptoJS.pad.Pkcs7
+                }).toString();
+            } else if (mode === 'CBC') {
+                const iv = CryptoJS.lib.WordArray.random(16);
+                encrypted = CryptoJS.AES.encrypt(cleartext, CryptoJS.enc.Utf8.parse(key), {
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7,
+                    iv: iv
+                }).toString();
+                // Include the IV with the ciphertext for decryption
+                encrypted = iv.toString() + encrypted;
+            }
+
+            document.getElementById('ciphertext').value = encrypted;
+        }
+
+        function decrypt() {
+            const ciphertext = document.getElementById('ciphertext').value;
+            const key = document.getElementById('key').value;
+            const mode = document.getElementById('mode').value;
+
+            let decrypted = '';
+            if (mode === 'ECB') {
+                const bytes = CryptoJS.AES.decrypt(ciphertext, CryptoJS.enc.Utf8.parse(key), {
+                    mode: CryptoJS.mode.ECB,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+                decrypted = bytes.toString(CryptoJS.enc.Utf8);
+            } else if (mode === 'CBC') {
+                const iv = CryptoJS.enc.Hex.parse(ciphertext.substr(0, 32));
+                const encrypted = ciphertext.substr(32);
+                const bytes = CryptoJS.AES.decrypt(encrypted, CryptoJS.enc.Utf8.parse(key), {
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7,
+                    iv: iv
+                });
+                decrypted = bytes.toString(CryptoJS.enc.Utf8);
+            }
+
+            document.getElementById('decryptedtext').value = decrypted;
+        }
+    </script>
+</body>
+</html>
