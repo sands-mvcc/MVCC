@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thermostat Control Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .control-panel {
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 350px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            color: #f44336;
+        }
+
+        .control-panel label {
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .control-panel select, 
+        .control-panel input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #444;
+            color: white;
+            font-size: 16px;
+        }
+
+        .control-panel button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+        }
+
+        .control-panel button:hover {
+            background-color: #d32f2f;
+        }
+
+        .status-indicator {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .status-on {
+            color: #4caf50;
+        }
+
+        .status-off {
+            color: #f44336;
+        }
+
+        .temperature-display {
+            margin-top: 20px;
+            font-size: 36px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .fan-motor-indicator {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        /* Square Shape to Represent Heating/Cooling System */
+        .system-status {
+            width: 100px;
+            height: 100px;
+            margin-top: 20px;
+            background-color: white;
+            border: 2px solid #333;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .heating-active {
+            background-color: red;
+        }
+
+        .cooling-active {
+            background-color: blue;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Example of Closed Loop Control</h1>
+
+    <div class="control-panel">
+        <h2>Thermostat Control</h2>
+
+        <label for="modeSelect">Mode:</label>
+        <select id="modeSelect">
+            <option value="cooling">Cooling</option>
+            <option value="heating">Heating</option>
+        </select>
+        <br><br>
+
+        <label for="currentTemp">Current Temperature (°F):</label>
+        <input type="number" id="currentTemp" min="0" max="100" readonly>
+        <br><br>
+
+        <label for="desiredTemp">Desired Temperature (°F):</label>
+        <input type="number" id="desiredTemp" min="0" max="100" value="70">
+        <br><br>
+
+        <button id="startStopButton" onclick="toggleThermostat()">Power On</button>
+
+        <div id="temperatureDisplay" class="temperature-display">--°F</div>
+        <div id="fanMotorIndicator" class="fan-motor-indicator">Fan Motor: Off</div>
+    </div>
+
+    <div id="systemStatus" class="system-status"></div>
+
+    <script>
+        let isRunning = false;
+        let temperature = Math.floor(Math.random() * 31) + 50; // Random temp between 50-80°F
+        let interval;
+        const coolingSpeed = 5000; // 5 seconds for cooling
+        const heatingSpeed = 3000; // 3 seconds for heating
+
+        document.getElementById('currentTemp').value = temperature;
+        document.getElementById('temperatureDisplay').textContent = `${temperature}°F`;
+
+        function toggleThermostat() {
+            const mode = document.getElementById('modeSelect').value;
+            const desiredTemp = parseInt(document.getElementById('desiredTemp').value);
+            const startStopButton = document.getElementById('startStopButton');
+            const fanMotorIndicator = document.getElementById('fanMotorIndicator');
+            const systemStatus = document.getElementById('systemStatus');
+
+            if (!isRunning) {
+                isRunning = true;
+                startStopButton.textContent = 'Power Off';
+                fanMotorIndicator.textContent = 'Fan Motor: On';
+                fanMotorIndicator.className = 'fan-motor-indicator status-on';
+
+                if (mode === 'cooling') {
+                    systemStatus.className = 'system-status cooling-active';
+                    interval = setInterval(() => {
+                        if (temperature > desiredTemp) {
+                            temperature--;
+                            updateTemperatureDisplay();
+                        } else {
+                            stopThermostat();
+                        }
+                    }, coolingSpeed);
+                } else if (mode === 'heating') {
+                    systemStatus.className = 'system-status heating-active';
+                    interval = setInterval(() => {
+                        if (temperature < desiredTemp) {
+                            temperature++;
+                            updateTemperatureDisplay();
+                        } else {
+                            stopThermostat();
+                        }
+                    }, heatingSpeed);
+                }
+            } else {
+                stopThermostat();
+            }
+        }
+
+        function stopThermostat() {
+            isRunning = false;
+            clearInterval(interval);
+            document.getElementById('startStopButton').textContent = 'Power On';
+            document.getElementById('fanMotorIndicator').textContent = 'Fan Motor: Off';
+            document.getElementById('fanMotorIndicator').className = 'fan-motor-indicator status-off';
+            document.getElementById('systemStatus').className = 'system-status'; // Reset to white
+        }
+
+        function updateTemperatureDisplay() {
+            document.getElementById('currentTemp').value = temperature;
+            document.getElementById('temperatureDisplay').textContent = `${temperature}°F`;
+        }
+    </script>
+</body>
+</html>
