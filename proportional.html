@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proportional Control - Paint Booth Oven Room</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .control-panel {
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 350px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            color: #f44336;
+        }
+
+        .control-panel label {
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .control-panel input[type="number"], 
+        .control-panel input[type="range"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #444;
+            color: white;
+            font-size: 16px;
+        }
+
+        .control-panel button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+        }
+
+        .control-panel button:hover {
+            background-color: #d32f2f;
+        }
+
+        .status-indicator {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .temperature-display {
+            margin-top: 20px;
+            font-size: 36px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .oven-room {
+            width: 150px;
+            height: 150px;
+            margin-top: 20px;
+            background-color: white;
+            border: 2px solid #333;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: #333;
+            transition: background-color 0.3s;
+        }
+
+        .rate-indicator {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Proportional Control - Paint Booth Oven Room</h1>
+
+    <div class="control-panel">
+        <h2>Oven Temperature Control</h2>
+
+        <label for="currentTemp">Current Temperature (°F):</label>
+        <input type="number" id="currentTemp" value="70" readonly>
+        <br><br>
+
+        <label for="desiredTemp">Desired Temperature (°F):</label>
+        <input type="number" id="desiredTemp" value="100">
+        <br><br>
+
+        <label for="proportionalGain">Proportional Gain (Kp):</label>
+        <input type="range" id="proportionalGain" min="0" max="10" step="0.1" value="2">
+        <br><br>
+
+        <button onclick="startProportionalControl()">Start Control</button>
+        <button onclick="resetTemperature()">Reset Temperature</button>
+
+        <div id="temperatureDisplay" class="temperature-display">70°F</div>
+    </div>
+
+    <div id="ovenRoom" class="oven-room">Oven</div>
+    <div id="rateIndicator" class="rate-indicator">Rate of Change: 0</div>
+
+    <script>
+        let temperature = 70;
+        let interval;
+        const ovenRoom = document.getElementById('ovenRoom');
+        const temperatureDisplay = document.getElementById('temperatureDisplay');
+        const rateIndicator = document.getElementById('rateIndicator');
+
+        function startProportionalControl() {
+            const desiredTemp = parseFloat(document.getElementById('desiredTemp').value);
+            const proportionalGain = parseFloat(document.getElementById('proportionalGain').value);
+            
+            if (interval) {
+                clearInterval(interval);
+            }
+
+            interval = setInterval(() => {
+                const error = desiredTemp - temperature;
+                const controlOutput = proportionalGain * error;
+
+                temperature += controlOutput / 100; // Adjust temperature change rate
+                updateTemperatureDisplay(controlOutput);
+
+                // Simulate the effect of heating or cooling in the oven room
+                if (controlOutput > 0) {
+                    ovenRoom.style.backgroundColor = 'red';
+                } else if (controlOutput < 0) {
+                    ovenRoom.style.backgroundColor = 'blue';
+                } else {
+                    ovenRoom.style.backgroundColor = 'white';
+                }
+
+                if (Math.abs(error) < 0.1) {
+                    clearInterval(interval); // Stop the control loop when close to the desired temperature
+                }
+            }, 1000); // Update every second
+        }
+
+        function resetTemperature() {
+            temperature = Math.floor(Math.random() * 21) + 60; // Random temp between 60-80°F
+            updateTemperatureDisplay(0);
+        }
+
+        function updateTemperatureDisplay(rate) {
+            document.getElementById('currentTemp').value = temperature.toFixed(1);
+            temperatureDisplay.textContent = `${temperature.toFixed(1)}°F`;
+            rateIndicator.textContent = `Rate of Change: ${rate.toFixed(2)}`;
+        }
+    </script>
+</body>
+</html>
