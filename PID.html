@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PID Control Simulator - Aircraft Flaps with Angle Limitation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .control-panel {
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 350px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            color: #f44336;
+        }
+
+        .control-panel label {
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .control-panel input[type="number"], 
+        .control-panel input[type="range"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #444;
+            color: white;
+            font-size: 16px;
+        }
+
+        .control-panel button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+        }
+
+        .control-panel button:hover {
+            background-color: #d32f2f;
+        }
+
+        .pressure-display {
+            margin-top: 20px;
+            font-size: 36px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .wing-container {
+            position: relative;
+            width: 300px;
+            height: 150px;
+            margin-top: 20px;
+        }
+
+        .wing {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border-bottom: 6px solid gray;
+            border-radius: 0 0 100% 100%;
+        }
+
+        .flap {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 60%;
+            height: 6px;
+            background-color: #f44336;
+            transform-origin: left center;
+            transform: rotate(0deg);
+        }
+
+        .angle-display {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* Layout adjustments to fit the graph */
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #rateChangeChart {
+            width: 400px;
+            height: 300px;
+        }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>PID Control - Aircraft Flaps with Angle Limitation</h1>
+
+    <div class="control-panel">
+        <h2>PID Control Panel</h2>
+
+        <label for="currentPressure">Current Pressure (PSI):</label>
+        <input type="number" id="currentPressure" value="500" readonly>
+        <br><br>
+
+        <label for="desiredPressure">Desired Pressure (PSI):</label>
+        <input type="number" id="desiredPressure" value="1000">
+        <br><br>
+
+        <label for="proportionalGain">Proportional Gain (Kp):</label>
+        <input type="range" id="proportionalGain" min="0" max="10" step="0.1" value="2">
+        <br><br>
+
+        <label for="integralGain">Integral Gain (Ki):</label>
+        <input type="range" id="integralGain" min="0" max="1" step="0.01" value="0.1">
+        <br><br>
+
+        <label for="derivativeGain">Derivative Gain (Kd):</label>
+        <input type="range" id="derivativeGain" min="0" max="1" step="0.01" value="0.1">
+        <br><br>
+
+        <button onclick="startPIDControl()">Start PID Control</button>
+        <button onclick="resetPressure()">Reset Pressure</button>
+
+        <div id="pressureDisplay" class="pressure-display">500 PSI</div>
+    </div>
+
+    <div class="container">
+        <div>
+            <div class="wing-container">
+                <div class="wing"></div>
+                <div id="flap" class="flap"></div>
+            </div>
+            <div id="angleDisplay" class="angle-display">Flap Angle: 0°</div>
+            <div id="rateIndicator" class="angle-display">Rate of Change: 0</div>
+        </div>
+        <canvas id="rateChangeChart"></canvas>
+    </div>
+
+    <script>
+        let pressure = 500;
+        let interval;
+        let integral = 0;
+        let previousError = 0;
+        const flap = document.getElementById('flap');
+        const pressureDisplay = document.getElementById('pressureDisplay');
+        const rateIndicator = document.getElementById('rateIndicator');
+        const angleDisplay = document.getElementById('angleDisplay');
+
+        const ctx = document.getElementById('rateChangeChart').getContext('2d');
+        const rateChangeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Rate of Change',
+                    data: [],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (seconds)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Rate of Change'
+                        }
+                    }
+                }
+            }
+        });
+
+        let time = 0;
+
+        function startPIDControl() {
+            const desiredPressure = parseFloat(document.getElementById('desiredPressure').value);
+            const proportionalGain = parseFloat(document.getElementById('proportionalGain').value);
+            const integralGain = parseFloat(document.getElementById('integralGain').value);
+            const derivativeGain = parseFloat(document.getElementById('derivativeGain').value);
+            
+            if (interval) {
+                clearInterval(interval);
+            }
+
+            time = 0;
+            integral = 0;
+            previousError = 0;
+            rateChangeChart.data.labels = [];
+            rateChangeChart.data.datasets[0].data = [];
+            rateChangeChart.update();
+
+            interval = setInterval(() => {
+                const error = desiredPressure - pressure;
+                integral += error;  // Sum up the error over time
+                const derivative = error - previousError;  // Calculate the rate of change of the error
+                previousError = error;
+
+                const controlOutput = proportionalGain * error + integralGain * integral + derivativeGain * derivative;
+
+                pressure += controlOutput / 100;  // Adjust pressure change rate
+                updatePressureDisplay(controlOutput);
+
+                // Update the flap angular position with a limit of 40 degrees
+                let flapAngle = controlOutput * 0.1;  // Scaling factor for visual representation
+                flapAngle = Math.max(Math.min(flapAngle, 40), 0); // Constrain to 0-40 degrees
+                flap.style.transform = `rotate(${flapAngle}deg)`;
+                angleDisplay.textContent = `Flap Angle: ${flapAngle.toFixed(2)}°`;
+
+                // Update the graph
+                rateChangeChart.data.labels.push(time);
+                rateChangeChart.data.datasets[0].data.push(controlOutput.toFixed(2));
+                rateChangeChart.update();
+
+                time += 1;
+
+                if (Math.abs(error) < 0.1) {
+                    clearInterval(interval); // Stop the control loop when close to the desired pressure
+                }
+            }, 1000); // Update every second
+        }
+
+        function resetPressure() {
+            pressure = Math.floor(Math.random() * 301) + 500; // Random pressure between 500-800 PSI
+            updatePressureDisplay(0);
+        }
+
+        function updatePressureDisplay(rate) {
+            document.getElementById('currentPressure').value = pressure.toFixed(1);
+            pressureDisplay.textContent = `${pressure.toFixed(1)} PSI`;
+            rateIndicator.textContent = `Rate of Change: ${rate.toFixed(2)}`;
+        }
+    </script>
+</body>
+</html>
