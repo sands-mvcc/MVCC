@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proportional Control - Paint Booth Oven Controller</title>
+    <title>Proportional Control - Paint Booth Oven Room</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -104,7 +104,21 @@
             color: #333;
         }
 
+        /* Layout adjustments to fit the graph */
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #rateChangeChart {
+            width: 400px;
+            height: 300px;
+        }
+
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>Proportional Control - Paint Booth Oven Room</h1>
@@ -130,8 +144,13 @@
         <div id="temperatureDisplay" class="temperature-display">70°F</div>
     </div>
 
-    <div id="ovenRoom" class="oven-room">Oven</div>
-    <div id="rateIndicator" class="rate-indicator">Rate of Change: 0</div>
+    <div class="container">
+        <div>
+            <div id="ovenRoom" class="oven-room">Oven</div>
+            <div id="rateIndicator" class="rate-indicator">Rate of Change: 0</div>
+        </div>
+        <canvas id="rateChangeChart"></canvas>
+    </div>
 
     <script>
         let temperature = 70;
@@ -140,6 +159,39 @@
         const temperatureDisplay = document.getElementById('temperatureDisplay');
         const rateIndicator = document.getElementById('rateIndicator');
 
+        const ctx = document.getElementById('rateChangeChart').getContext('2d');
+        const rateChangeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Rate of Change',
+                    data: [],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false,
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (seconds)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Rate of Change'
+                        }
+                    }
+                }
+            }
+        });
+
+        let time = 0;
+
         function startProportionalControl() {
             const desiredTemp = parseFloat(document.getElementById('desiredTemp').value);
             const proportionalGain = parseFloat(document.getElementById('proportionalGain').value);
@@ -147,6 +199,11 @@
             if (interval) {
                 clearInterval(interval);
             }
+
+            time = 0;
+            rateChangeChart.data.labels = [];
+            rateChangeChart.data.datasets[0].data = [];
+            rateChangeChart.update();
 
             interval = setInterval(() => {
                 const error = desiredTemp - temperature;
@@ -163,6 +220,13 @@
                 } else {
                     ovenRoom.style.backgroundColor = 'white';
                 }
+
+                // Update the graph
+                rateChangeChart.data.labels.push(time);
+                rateChangeChart.data.datasets[0].data.push(controlOutput.toFixed(2));
+                rateChangeChart.update();
+
+                time += 1;
 
                 if (Math.abs(error) < 0.1) {
                     clearInterval(interval); // Stop the control loop when close to the desired temperature
