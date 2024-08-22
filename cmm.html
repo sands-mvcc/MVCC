@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIST SP 800-171 Applicability Study</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+        }
+        .title {
+            text-align: center;
+            color: #c00;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+        .buttons-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 10px;
+        }
+        .level-button {
+            background-color: #000;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .level-button.active {
+            background-color: blue;
+        }
+        .level-button:hover {
+            background-color: #333;
+        }
+        .domain-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 40px; /* Push content below the level buttons */
+        }
+        .domain-section {
+            flex: 1;
+            margin: 5px;
+        }
+        .domain-button {
+            width: 100%;
+            background-color: #000;
+            color: #fff;
+            padding: 10px;
+            margin-bottom: 5px;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .domain-button:hover {
+            background-color: #333;
+        }
+        .capabilities, .practices {
+            display: none;
+            margin-top: 5px;
+        }
+        .capability-button, .practice-button {
+            background-color: #666;
+            color: #fff;
+            padding: 8px;
+            margin-top: 5px;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            border-radius: 5px;
+            width: 100%; /* Align with domain button */
+            position: relative;
+            font-size: 12px;
+        }
+        .capability-button:hover, .practice-button:hover {
+            background-color: #555;
+        }
+        .practice-button.active {
+            background-color: red;
+            color: #fff;
+            border: 1px solid #000; /* Black outline */
+        }
+        .practice-button {
+            background-color: #fff;
+            color: #000;
+            border: 1px solid #000; /* Black outline */
+        }
+        .practice-button:hover {
+            background-color: #f0f0f0;
+        }
+        .checkboxes {
+            display: none;
+            margin-top: 5px;
+            margin-left: 20px;
+            font-size: 12px;
+        }
+        .checkboxes label {
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="title">NIST SP 800-171 Applicability Study</div>
+    
+    <!-- Level Buttons -->
+    <div class="buttons-container">
+        <button class="level-button" onclick="highlightPractices(1)">Level 1</button>
+        <button class="level-button" onclick="highlightPractices(2)">Level 2</button>
+        <button class="level-button" onclick="highlightPractices(3)">Level 3</button>
+    </div>
+    
+    <div class="domain-container" id="domains-container"></div>
+
+</div>
+
+<script>
+    const nistData = {
+        "domains": [
+            {
+                "name": "Access Control (AC)",
+                "capabilities": [
+                    {
+                        "id": "AC01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "AC.1.001",
+                                "description": "Limit system access to authorized users.",
+                                "level": 1
+                            },
+                            {
+                                "id": "AC.1.002",
+                                "description": "Limit system access to the types of transactions and functions that authorized users are permitted to execute.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "AC02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "AC.2.005",
+                                "description": "Control the flow of CUI in accordance with approved authorizations.",
+                                "level": 2
+                            }
+                        ]
+                    },
+                    {
+                        "id": "AC03",
+                        "level": 3,
+                        "practices": [
+                            {
+                                "id": "AC.3.017",
+                                "description": "Use session lock with pattern-hiding displays to prevent access/viewing of data after a period of inactivity.",
+                                "level": 3
+                            },
+                            {
+                                "id": "AC.3.018",
+                                "description": "Require multifactor authentication to establish nonlocal maintenance sessions via external networks.",
+                                "level": 3
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Awareness and Training (AT)",
+                "capabilities": [
+                    {
+                        "id": "AT01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "AT.1.001",
+                                "description": "Ensure that managers, system administrators, and users are made aware of the security risks associated with their activities.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "AT02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "AT.2.001",
+                                "description": "Provide incident response training to personnel.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Audit and Accountability (AU)",
+                "capabilities": [
+                    {
+                        "id": "AU01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "AU.1.001",
+                                "description": "Create audit records that contain sufficient detail.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "AU02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "AU.2.005",
+                                "description": "Protect audit information and audit tools from unauthorized access, modification, and deletion.",
+                                "level": 2
+                            }
+                        ]
+                    },
+                    {
+                        "id": "AU03",
+                        "level": 3,
+                        "practices": [
+                            {
+                                "id": "AU.3.001",
+                                "description": "Generate audit events for monitoring and control.",
+                                "level": 3
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Configuration Management (CM)",
+                "capabilities": [
+                    {
+                        "id": "CM01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "CM.1.001",
+                                "description": "Establish and maintain baseline configurations.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "CM02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "CM.2.061",
+                                "description": "Develop, document, and maintain a current baseline configuration of the information system.",
+                                "level": 2
+                            }
+                        ]
+                    },
+                    {
+                        "id": "CM03",
+                        "level": 3,
+                        "practices": [
+                            {
+                                "id": "CM.3.067",
+                                "description": "Restrict, disable, or prevent the use of nonessential programs, functions, ports, protocols, and services.",
+                                "level": 3
+                            },
+                            {
+                                "id": "CM.3.068",
+                                "description": "Apply a security configuration baseline to IT systems.",
+                                "level": 3
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Identification and Authentication (IA)",
+                "capabilities": [
+                    {
+                        "id": "IA01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "IA.1.001",
+                                "description": "Identify and authenticate users, processes acting on behalf of users, or devices.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "IA02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "IA.2.002",
+                                "description": "Use multifactor authentication for network access to privileged and non-privileged accounts.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Incident Response (IR)",
+                "capabilities": [
+                    {
+                        "id": "IR01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "IR.1.001",
+                                "description": "Establish an operational incident-handling capability for organizational information systems.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "IR02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "IR.2.001",
+                                "description": "Track, document, and report incidents to appropriate organizational officials.",
+                                "level": 2
+                            }
+                        ]
+                    },
+                    {
+                        "id": "IR03",
+                        "level": 3,
+                        "practices": [
+                            {
+                                "id": "IR.3.001",
+                                "description": "Perform root cause analysis on incidents and take corrective actions.",
+                                "level": 3
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Maintenance (MA)",
+                "capabilities": [
+                    {
+                        "id": "MA01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "MA.1.001",
+                                "description": "Perform periodic and timely maintenance on organizational information systems.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "MA02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "MA.2.001",
+                                "description": "Control maintenance activities, tools, and personnel with access to the information system.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Media Protection (MP)",
+                "capabilities": [
+                    {
+                        "id": "MP01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "MP.1.001",
+                                "description": "Protect information system media containing CUI by physically controlling and securely storing the media.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "MP02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "MP.2.001",
+                                "description": "Protect information system media during transport outside of controlled areas.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Personnel Security (PS)",
+                "capabilities": [
+                    {
+                        "id": "PS01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "PS.1.001",
+                                "description": "Screen individuals prior to authorizing access to the information system containing CUI.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "PS02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "PS.2.001",
+                                "description": "Terminate information system access when personnel are terminated or transferred.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Physical Protection (PE)",
+                "capabilities": [
+                    {
+                        "id": "PE01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "PE.1.001",
+                                "description": "Limit physical access to organizational systems, equipment, and the respective operating environments to authorized individuals.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "PE02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "PE.2.001",
+                                "description": "Escort visitors and monitor visitor activity.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Risk Assessment (RA)",
+                "capabilities": [
+                    {
+                        "id": "RA01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "RA.1.001",
+                                "description": "Identify and evaluate risk to organizational operations, assets, and individuals.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "RA02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "RA.2.001",
+                                "description": "Scan for vulnerabilities in the information system and hosted applications periodically.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Security Assessment (CA)",
+                "capabilities": [
+                    {
+                        "id": "CA01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "CA.1.001",
+                                "description": "Develop, document, and periodically update security plans, policies, and procedures.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "CA02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "CA.2.001",
+                                "description": "Assess and monitor the implementation of security controls in organizational information systems.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "System and Communications Protection (SC)",
+                "capabilities": [
+                    {
+                        "id": "SC01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "SC.1.001",
+                                "description": "Monitor, control, and protect organizational communications at system boundaries.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "SC02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "SC.2.001",
+                                "description": "Implement cryptographic mechanisms to protect the confidentiality of CUI during transmission.",
+                                "level": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "System and Information Integrity (SI)",
+                "capabilities": [
+                    {
+                        "id": "SI01",
+                        "level": 1,
+                        "practices": [
+                            {
+                                "id": "SI.1.001",
+                                "description": "Identify, report, and correct information system flaws.",
+                                "level": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "SI02",
+                        "level": 2,
+                        "practices": [
+                            {
+                                "id": "SI.2.001",
+                                "description": "Implement protections against malicious code at appropriate locations.",
+                                "level": 2
+                            }
+                        ]
+                    },
+                    {
+                        "id": "SI03",
+                        "level": 3,
+                        "practices": [
+                            {
+                                "id": "SI.3.001",
+                                "description": "Perform periodic scans of the information system and real-time scans of files from external sources.",
+                                "level": 3
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    };
+
+    // Function to generate the HTML content from the JSON data
+    function generateContent() {
+        const container = document.getElementById('domains-container');
+
+        nistData.domains.forEach(domain => {
+            // Create a domain section container
+            const domainSection = document.createElement('div');
+            domainSection.className = 'domain-section';
+            container.appendChild(domainSection);
+
+            // Create domain button
+            const domainButton = document.createElement('button');
+            domainButton.className = 'domain-button';
+            domainButton.textContent = domain.name;
+            domainButton.onclick = function() {
+                toggleCapabilities(domainSection);
+            };
+            domainSection.appendChild(domainButton);
+
+            // Create capabilities container within the domain section
+            const capabilitiesContainer = document.createElement('div');
+            capabilitiesContainer.className = 'capabilities';
+            domainSection.appendChild(capabilitiesContainer);
+
+            domain.capabilities.forEach(capability => {
+                // Create capability button with ID only
+                const capabilityButton = document.createElement('button');
+                capabilityButton.className = 'capability-button';
+                capabilityButton.textContent = capability.id;
+                capabilityButton.onclick = function() {
+                    togglePractices(capabilityButton);
+                };
+                capabilitiesContainer.appendChild(capabilityButton);
+
+                // Create practices container within the capability container
+                const practicesContainer = document.createElement('div');
+                practicesContainer.className = 'practices';
+                capabilitiesContainer.appendChild(practicesContainer);
+
+                capability.practices.forEach(practice => {
+                    // Create practice button with ID only
+                    const practiceButton = document.createElement('button');
+                    practiceButton.className = 'practice-button';
+                    practiceButton.textContent = practice.id;
+                    practiceButton.dataset.level = practice.level;
+                    practiceButton.onclick = function() {
+                        toggleCheckboxes(practiceButton);
+                    };
+                    practicesContainer.appendChild(practiceButton);
+
+                    // Create checkboxes within the practices container
+                    const checkboxes = document.createElement('div');
+                    checkboxes.className = 'checkboxes';
+                    checkboxes.innerHTML = `
+                        <label><input type="checkbox" name="${practice.id}-applicable"> Applicable</label>
+                        <label><input type="checkbox" name="${practice.id}-notapplicable"> Not Applicable</label>
+                    `;
+                    practicesContainer.appendChild(checkboxes);
+                });
+            });
+        });
+    }
+
+    // Function to toggle capabilities visibility within a domain section
+    function toggleCapabilities(domainSection) {
+        const capabilities = domainSection.querySelector('.capabilities');
+        capabilities.style.display = (capabilities.style.display === 'none' || capabilities.style.display === '') ? 'block' : 'none';
+    }
+
+    // Function to toggle practices visibility within a capability container
+    function togglePractices(capabilityButton) {
+        const practices = capabilityButton.nextElementSibling;
+        practices.style.display = (practices.style.display === 'none' || practices.style.display === '') ? 'block' : 'none';
+    }
+
+    // Function to toggle checkboxes visibility within a practice container
+    function toggleCheckboxes(practiceButton) {
+        const checkboxes = practiceButton.nextElementSibling;
+        checkboxes.style.display = (checkboxes.style.display === 'none' || checkboxes.style.display === '') ? 'block' : 'none';
+    }
+
+    // Function to highlight practices based on selected level
+    function highlightPractices(level) {
+        // Remove active class from all level buttons
+        const levelButtons = document.querySelectorAll('.level-button');
+        levelButtons.forEach(button => {
+            button.classList.remove('active');
+        });
+
+        // Add active class to the clicked level button
+        levelButtons[level - 1].classList.add('active');
+
+        // Highlight practice buttons based on the selected level
+        const practiceButtons = document.querySelectorAll('.practice-button');
+        practiceButtons.forEach(button => {
+            if (button.dataset.level <= level) {
+                button.classList.add('active');
+            } else {
+                button.classList.remove('active');
+            }
+        });
+    }
+
+    // Generate the content on page load
+    window.onload = generateContent;
+</script>
+
+</body>
+</html>
