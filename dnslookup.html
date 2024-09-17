@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #d32f2f;
+            margin-top: 20px;
+            font-size: 32px;
+            letter-spacing: 1px;
+        }
+
+        /* Centered container for the page content */
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        select, input, button {
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        select:focus, input:focus, button:focus {
+            border-color: #d32f2f;
+        }
+
+        input[type="text"] {
+            width: 100%;
+        }
+
+        button {
+            background-color: #d32f2f;
+            color: white;
+            cursor: pointer;
+            border: none;
+            padding: 12px 20px;
+        }
+
+        button:hover {
+            background-color: #b71c1c;
+        }
+
+        #log {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #333;
+            color: white;
+            height: 200px;
+            overflow-y: auto;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Styling the DNS table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+            text-align: center;
+            padding: 12px;
+        }
+
+        th {
+            background-color: #333;
+            color: white;
+        }
+
+        td {
+            background-color: #f0f0f0;
+        }
+
+        /* Styling for temporary cache rows */
+        .temporary-cache {
+            background-color: yellow;
+            color: black;
+            font-weight: bold;
+        }
+        
+        /* Make the container responsive */
+        @media (max-width: 600px) {
+            .control-panel {
+                flex-direction: column;
+            }
+            
+            select, input, button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>DNS Simulation - Internal DNS Server (192.168.1.100)</h1>
+
+    <!-- Centered container for the page content -->
+    <div class="container">
+
+        <!-- DNS Resolution Table for Local Domains -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Domain Name</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody id="dnsTableBody">
+                <tr>
+                    <td>WWW.LAN121.COM</td>
+                    <td>192.168.1.101</td>
+                </tr>
+                <tr>
+                    <td>FILES.LAN121.COM</td>
+                    <td>192.168.1.102</td>
+                </tr>
+                <tr>
+                    <td>EMAIL.LAN121.COM</td>
+                    <td>192.168.1.103</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>Select a station (user) and a URL to simulate a DNS request.</p>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <!-- Dropdown for selecting a station (user) -->
+            <select id="userSelect">
+                <option value="User 1">User 1</option>
+                <option value="User 2">User 2</option>
+                <option value="User 3">User 3</option>
+                <option value="User 4">User 4</option>
+                <option value="User 5">User 5</option>
+            </select>
+
+            <!-- Dropdown for selecting a predefined domain -->
+            <select id="urlSelect">
+                <option value="WWW.LAN121.COM">WWW.LAN121.COM</option>
+                <option value="FILES.LAN121.COM">FILES.LAN121.COM</option>
+                <option value="EMAIL.LAN121.COM">EMAIL.LAN121.COM</option>
+                <option value="GOOGLE.COM">GOOGLE.COM</option>
+                <option value="YOUTUBE.COM">YOUTUBE.COM</option>
+            </select>
+
+            <!-- Input field for custom URL -->
+            <input type="text" id="customUrl" placeholder="Or enter a custom URL (e.g., example.com)" />
+
+            <!-- Button to send DNS request -->
+            <button onclick="sendDNSRequest()">Send DNS Request</button>
+        </div>
+
+        <!-- Output log -->
+        <div id="log"></div>
+
+    </div>
+
+    <script>
+        // DNS cache representing the internal DNS server (192.168.1.100)
+        const dnsCache = {
+            'WWW.LAN121.COM': '192.168.1.101',
+            'FILES.LAN121.COM': '192.168.1.102',
+            'EMAIL.LAN121.COM': '192.168.1.103',
+        };
+
+        // Simulating a DNS request
+        function sendDNSRequest() {
+            const user = document.getElementById('userSelect').value;
+            const domainSelect = document.getElementById('urlSelect').value;
+            const customDomainInput = document.getElementById('customUrl').value.trim();
+            const logDiv = document.getElementById('log');
+
+            let domain = customDomainInput || domainSelect; // Use custom URL if provided, else selected one
+
+            logDiv.innerHTML += `<p><strong>${user} is requesting: ${domain}</strong></p>`;
+
+            // Check if domain is in local DNS cache
+            if (dnsCache[domain]) {
+                logDiv.innerHTML += `<p>Response from Internal DNS: ${domain} resolves to ${dnsCache[domain]}</p>`;
+            } else {
+                // Simulate forwarding to root DNS server and caching the result
+                queryRootDNSServer(domain);
+            }
+        }
+
+        // Simulate a root DNS server request and caching the response
+        function queryRootDNSServer(domain) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += `<p>Forwarding request to root DNS server (199.7.83.42)...</p>`;
+
+            // Simulating root DNS response
+            setTimeout(() => {
+                const externalIP = getRandomIP();
+                dnsCache[domain] = externalIP; // Cache the response
+                logDiv.innerHTML += `<p>Root DNS Server (199.7.83.42): ${domain} resolves to ${externalIP}</p>`;
+                logDiv.innerHTML += `<p>Cached ${domain} with IP ${externalIP} in local DNS server.</p>`;
+                updateDNSTable(domain, externalIP, true); // Mark as temporary cached record
+            }, 1000); // Simulate network delay
+        }
+
+        // Generate a random IP address for external domains
+        function getRandomIP() {
+            return `172.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+        }
+
+        // Function to update the DNS table with newly cached entries
+        function updateDNSTable(domain, ip, isTemporary) {
+            const dnsTableBody = document.getElementById('dnsTableBody');
+            const newRow = document.createElement('tr');
+
+            newRow.innerHTML = `<td>${domain}</td><td>${ip}</td>`;
+
+            // Add yellow background if the record is a temporary cache
+            if (isTemporary) {
+                newRow.classList.add('temporary-cache');
+            }
+
+            dnsTableBody.appendChild(newRow);
+        }
+    </script>
+
+</body>
+</html>
