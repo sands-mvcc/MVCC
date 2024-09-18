@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proportional Control Simulator</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: white;
+            color: black;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 60%;
+            margin: auto;
+            background-color: #f8f8f8;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #process {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+
+        .output {
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+
+        input[type="range"] {
+            width: 80%;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+
+        .scale-container {
+            position: relative;
+            width: 80%;
+            margin: 0 auto;
+            height: 300px;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        #graph {
+            margin-top: 20px;
+            width: 90%;
+            height: 300px;
+            border: 2px solid black;
+            background-color: #eaeaea;
+        }
+
+        .scale {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 300px;
+            width: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            font-size: 0.8em;
+            color: #333;
+        }
+
+        .scale div {
+            position: relative;
+            padding-right: 10px;
+        }
+
+        .scale div:after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            width: 8px;
+            height: 1px;
+            background-color: #333;
+        }
+
+        #footer {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Proportional Control Simulator</h1>
+        <p>Adjust the Setpoint to observe how the manipulated variable (MV) reacts in a proportional control system.</p>
+
+        <label for="setpoint">Setpoint (SP):</label>
+        <input type="range" id="setpoint" min="0" max="100" value="50" step="1">
+        <span id="sp-value">50</span>
+
+        <div id="process">
+            <p>Process Variable (PV): <span id="pv-value">50</span></p>
+            <p>Manipulated Variable (MV): <span id="mv-value">0</span></p>
+        </div>
+
+        <label for="gain">Proportional Gain (Kp):</label>
+        <input type="range" id="gain" min="0" max="5" value="1" step="0.1">
+        <span id="gain-value">1</span>
+
+        <div class="scale-container">
+            <div class="scale">
+                <div>100</div>
+                <div>80</div>
+                <div>60</div>
+                <div>40</div>
+                <div>20</div>
+                <div>0</div>
+            </div>
+            <canvas id="graph"></canvas>
+        </div>
+        
+        <div id="footer">
+            <p>&copy; 2024 Proportional Control Simulator. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        // HTML Elements
+        const setpointInput = document.getElementById('setpoint');
+        const spValueDisplay = document.getElementById('sp-value');
+        const pvValueDisplay = document.getElementById('pv-value');
+        const mvValueDisplay = document.getElementById('mv-value');
+        const gainInput = document.getElementById('gain');
+        const gainValueDisplay = document.getElementById('gain-value');
+        const canvas = document.getElementById('graph');
+        const ctx = canvas.getContext('2d');
+
+        // Initial values
+        let setpoint = 50;
+        let pv = 50;
+        let mv = 0;
+        let gain = 1;
+
+        // Set canvas dimensions based on the container size
+        canvas.width = document.querySelector('.scale-container').offsetWidth * 0.9;  // Adjust for 90% width
+        canvas.height = 300;
+
+        // Update setpoint display and PV calculation
+        setpointInput.addEventListener('input', () => {
+            setpoint = parseFloat(setpointInput.value);
+            spValueDisplay.textContent = setpoint;
+            calculateControl();
+        });
+
+        // Update gain display and PV calculation
+        gainInput.addEventListener('input', () => {
+            gain = parseFloat(gainInput.value);
+            gainValueDisplay.textContent = gain;
+            calculateControl();
+        });
+
+        // Calculate Proportional Control (P-Control) and update Process Variable
+        function calculateControl() {
+            const error = setpoint - pv;
+            mv = gain * error; // Proportional control equation: MV = Kp * Error
+
+            // Simulate process response to MV
+            pv += mv * 0.05; // This factor simulates the effect of MV on PV
+            pv = Math.max(0, Math.min(100, pv)); // Clamp PV between 0 and 100
+
+            // Update display
+            pvValueDisplay.textContent = pv.toFixed(1);
+            mvValueDisplay.textContent = mv.toFixed(1);
+
+            // Update graph
+            drawGraph();
+        }
+
+        // Graph settings
+        function drawGraph() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw setpoint line
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - (setpoint / 100) * canvas.height);
+            ctx.lineTo(canvas.width, canvas.height - (setpoint / 100) * canvas.height);
+            ctx.stroke();
+
+            // Draw process variable line
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - (pv / 100) * canvas.height);
+            ctx.lineTo(canvas.width, canvas.height - (pv / 100) * canvas.height);
+            ctx.stroke();
+
+            // Draw manipulated variable (MV) as bar
+            ctx.fillStyle = 'gray';
+            ctx.fillRect(canvas.width / 2 - 10, canvas.height - (mv / 100) * canvas.height, 20, (mv / 100) * canvas.height);
+        }
+
+        // Set interval to update the control system regularly
+        setInterval(calculateControl, 100);
+    </script>
+</body>
+</html>
