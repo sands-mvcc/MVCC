@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uniform Motion</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #333; /* Dark Gray */
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            flex-grow: 1;
+            background-color: #111; /* Dark background to distinguish canvas */
+        }
+        .controls {
+            text-align: center;
+            background-color: #000; /* Black */
+            padding: 20px;
+            border-radius: 0px;
+            box-shadow: 0px -4px 15px rgba(0, 0, 0, 0.5);
+            border-top: 2px solid #FF0000; /* Red border */
+            width: 100%;
+        }
+        h1 {
+            margin: 0;
+            font-size: 26px;
+            color: #FF0000; /* Red */
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+        label {
+            display: block;
+            margin: 10px 0;
+            color: #FFFFFF; /* White */
+            font-size: 16px;
+        }
+        input[type="range"] {
+            width: 250px;
+            -webkit-appearance: none;
+            height: 6px;
+            background: #999; /* Gray */
+            outline: none;
+            border-radius: 10px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #FF0000; /* Red */
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            background-color: #FF0000; /* Red */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #CC0000; /* Darker Red */
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas for ball animation -->
+    <canvas id="simulationCanvas"></canvas>
+
+    <!-- Controls outside the canvas area -->
+    <div class="controls">
+        <h1>UNIFORM MOTION</h1>
+        <label for="speedX">Speed in X direction: <span id="speedXValue">4</span></label>
+        <input type="range" id="speedX" min="1" max="10" value="4">
+        <label for="speedY">Speed in Y direction: <span id="speedYValue">2</span></label>
+        <input type="range" id="speedY" min="0" max="10" value="2">
+        <br>
+        <button id="startBtn">Start</button>
+        <button id="stopBtn">Stop</button>
+    </div>
+
+    <script>
+        // Set up canvas
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight - document.querySelector('.controls').offsetHeight; // Ensure controls are outside ball area
+        }
+
+        resizeCanvas();  // Set initial canvas size
+        window.addEventListener('resize', resizeCanvas);  // Adjust canvas size on window resize
+
+        // Define object properties
+        let object = {
+            x: 50,
+            y: canvas.height / 2,
+            radius: 8,  // 5 times smaller than before (original 40 / 5 = 8)
+            color: '#FF0000',  // Red ball color
+            dx: 4, // Default velocity in x-direction
+            dy: 2, // Default velocity in y-direction
+        };
+
+        let animationId;
+        let isAnimating = false;
+
+        // Animation function
+        function animate() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the object (a circle in this case)
+            ctx.beginPath();
+            ctx.arc(object.x, object.y, object.radius, 0, Math.PI * 2, false);
+            ctx.fillStyle = object.color;
+            ctx.fill();
+            ctx.closePath();
+
+            // Update object position
+            object.x += object.dx;
+            object.y += object.dy;
+
+            // Bounce the object off the edges
+            if (object.x + object.radius > canvas.width || object.x - object.radius < 0) {
+                object.dx = -object.dx;
+            }
+            if (object.y + object.radius > canvas.height || object.y - object.radius < 0) {
+                object.dy = -object.dy;
+            }
+
+            // Loop the animation
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Start and stop buttons
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        startBtn.addEventListener('click', () => {
+            if (!isAnimating) {
+                isAnimating = true;
+                animate();
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            isAnimating = false;
+            cancelAnimationFrame(animationId);
+        });
+
+        // Speed control sliders
+        const speedXInput = document.getElementById('speedX');
+        const speedYInput = document.getElementById('speedY');
+        const speedXValue = document.getElementById('speedXValue');
+        const speedYValue = document.getElementById('speedYValue');
+
+        speedXInput.addEventListener('input', () => {
+            object.dx = parseInt(speedXInput.value);
+            speedXValue.textContent = speedXInput.value;
+        });
+
+        speedYInput.addEventListener('input', () => {
+            object.dy = parseInt(speedYInput.value);
+            speedYValue.textContent = speedYInput.value;
+        });
+
+    </script>
+</body>
+</html>
