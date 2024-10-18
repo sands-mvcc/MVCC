@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPv4 Subnet Calculator</title>
+    <style>
+        /* Reset some default styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a; /* Dark background */
+            color: #ffffff; /* White text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #2e2e2e; /* Dark gray */
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h2 {
+            text-align: center;
+            color: #ff4d4d; /* Red */
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #555555;
+            border-radius: 5px;
+            background-color: #3a3a3a; /* Slightly lighter gray */
+            color: #ffffff;
+            font-size: 1em;
+        }
+
+        input[type="text"]::placeholder {
+            color: #b3b3b3;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff4d4d; /* Red */
+            border: none;
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #e60000; /* Darker red on hover */
+        }
+
+        .output-box {
+            margin-top: 25px;
+            background-color: #3a3a3a; /* Medium gray */
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .output-box strong {
+            color: #ff4d4d; /* Red */
+        }
+
+        .output-field {
+            margin-bottom: 15px;
+        }
+
+        .output-field p {
+            background-color: #4a4a4a; /* Light gray */
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-top: 5px;
+            color: #ffffff;
+            word-wrap: break-word;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h2 {
+                font-size: 1.5em;
+            }
+
+            button {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>IPv4 Subnet Calculator</h2>
+        
+        <!-- Input Section -->
+        <div class="input-group">
+            <label for="ipAddress">IP Address:</label>
+            <input type="text" id="ipAddress" placeholder="e.g., 192.168.1.1" required>
+        </div>
+    
+        <div class="input-group">
+            <label for="subnetMask">Subnet Mask:</label>
+            <input type="text" id="subnetMask" placeholder="e.g., 255.255.255.0" required>
+        </div>
+    
+        <!-- Calculate Button -->
+        <button onclick="calculateSubnet()">Calculate</button>
+    
+        <!-- Output Section -->
+        <div class="output-box" id="outputSection" style="display: none;">
+            <div class="output-field">
+                <strong>Network Subnet Address:</strong>
+                <p id="networkAddress"></p>
+            </div>
+    
+            <div class="output-field">
+                <strong>Broadcast Address:</strong>
+                <p id="broadcastAddress"></p>
+            </div>
+    
+            <div class="output-field">
+                <strong>Usable IPv4 Address Range:</strong>
+                <p id="ipRange"></p>
+            </div>
+    
+            <div class="output-field">
+                <strong>Number of Subnets:</strong>
+                <p id="subnetCount"></p>
+            </div>
+    
+            <div class="output-field">
+                <strong>Number of Hosts Per Subnet:</strong>
+                <p id="hostsPerSubnet"></p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function calculateSubnet() {
+            const ip = document.getElementById("ipAddress").value.trim();
+            const subnetMask = document.getElementById("subnetMask").value.trim();
+
+            if (!validateIPv4(ip) || !validateIPv4(subnetMask)) {
+                alert("Please enter a valid IPv4 address and subnet mask.");
+                return;
+            }
+
+            const ipBinary = convertToBinary(ip);
+            const maskBinary = convertToBinary(subnetMask);
+            
+            const networkAddressBinary = getNetworkAddress(ipBinary, maskBinary);
+            const broadcastAddressBinary = getBroadcastAddress(networkAddressBinary, maskBinary);
+
+            const networkAddress = convertBinaryToIP(networkAddressBinary);
+            const broadcastAddress = convertBinaryToIP(broadcastAddressBinary);
+            const ipRange = getUsableRange(networkAddress, broadcastAddress);
+
+            const subnetBits = maskBinary.replace(/[^1]/g, "").length; // Count 1's in mask (subnet bits)
+            const hostBits = 32 - subnetBits;
+            const hostsPerSubnet = Math.pow(2, hostBits) - 2; // Number of hosts = 2^hostBits - 2
+
+            const classMaskBits = getClassMaskBits(ip); // Get the default mask bits based on the class
+            const actualSubnetBits = subnetBits - classMaskBits; // Subtract default mask bits to get subnet bits
+            const subnetCount = actualSubnetBits >= 0 ? Math.pow(2, actualSubnetBits) : "Invalid Subnet Mask";
+
+            // Display the results
+            document.getElementById("networkAddress").innerText = networkAddress;
+            document.getElementById("broadcastAddress").innerText = broadcastAddress;
+            document.getElementById("ipRange").innerText = ipRange;
+            document.getElementById("subnetCount").innerText = subnetCount;
+            document.getElementById("hostsPerSubnet").innerText = hostsPerSubnet;
+
+            // Show the output section
+            document.getElementById("outputSection").style.display = "block";
+        }
+
+        // Validate IPv4 format
+        function validateIPv4(ip) {
+            const ipv4Pattern = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)$/;
+            return ipv4Pattern.test(ip);
+        }
+
+        // Convert IP to Binary (as a single string)
+        function convertToBinary(ip) {
+            return ip.split('.').map(octet => ("00000000" + parseInt(octet).toString(2)).slice(-8)).join('');
+        }
+
+        // Convert Binary string back to IP
+        function convertBinaryToIP(binary) {
+            return binary.match(/.{8}/g).map(bin => parseInt(bin, 2)).join('.');
+        }
+
+        // Calculate Network Address
+        function getNetworkAddress(ipBinary, maskBinary) {
+            let networkBinary = '';
+            for (let i = 0; i < 32; i++) {
+                networkBinary += (ipBinary[i] === '1' && maskBinary[i] === '1') ? '1' : '0';
+            }
+            return networkBinary;
+        }
+
+        // Calculate Broadcast Address
+        function getBroadcastAddress(networkBinary, maskBinary) {
+            let broadcastBinary = '';
+            for (let i = 0; i < 32; i++) {
+                if (maskBinary[i] === '0') {
+                    broadcastBinary += '1';
+                } else {
+                    broadcastBinary += networkBinary[i];
+                }
+            }
+            return broadcastBinary;
+        }
+
+        // Get Usable IP Range
+        function getUsableRange(networkAddress, broadcastAddress) {
+            const firstUsable = incrementIP(networkAddress);
+            const lastUsable = decrementIP(broadcastAddress);
+            return `${firstUsable} - ${lastUsable}`;
+        }
+
+        // Increment IP address (for first usable address)
+        function incrementIP(ip) {
+            const parts = ip.split('.').map(Number);
+            parts[3] += 1;
+            for (let i = 3; i >= 0; i--) {
+                if (parts[i] === 256) {
+                    parts[i] = 0;
+                    if (i !== 0) parts[i - 1] += 1;
+                }
+            }
+            return parts.join('.');
+        }
+
+        // Decrement IP address (for last usable address)
+        function decrementIP(ip) {
+            const parts = ip.split('.').map(Number);
+            parts[3] -= 1;
+            for (let i = 3; i >= 0; i--) {
+                if (parts[i] === -1) {
+                    parts[i] = 255;
+                    if (i !== 0) parts[i - 1] -= 1;
+                }
+            }
+            return parts.join('.');
+        }
+
+        // Get the number of default bits for the class (A, B, C)
+        function getClassMaskBits(ip) {
+            const firstOctet = parseInt(ip.split('.')[0]);
+            if (firstOctet >= 0 && firstOctet <= 127) {
+                return 8;  // Class A
+            } else if (firstOctet >= 128 && firstOctet <= 191) {
+                return 16; // Class B
+            } else if (firstOctet >= 192 && firstOctet <= 223) {
+                return 24; // Class C
+            } else {
+                return 0;  // Invalid class
+            }
+        }
+    </script>
+</body>
+</html>
