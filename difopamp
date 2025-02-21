@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Differential Op-Amp Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .controls {
+            flex: 1;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        .schematic {
+            flex: 2;
+            position: relative;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        canvas {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 20px;
+            background: white;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 15px 0;
+            height: 8px;
+            border-radius: 4px;
+            -webkit-appearance: none;
+            background: #dee2e6;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #0d6efd;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .value-display {
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            padding: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            color: #495057;
+        }
+        h1 {
+            color: #212529;
+            margin-bottom: 30px;
+        }
+        h3 {
+            color: #495057;
+            margin-bottom: 20px;
+        }
+        label {
+            color: #495057;
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+        .power-rails {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .formula {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Differential Op-Amp Simulator</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <h3>Controls</h3>
+            <label>Input Voltage V1 (V-):</label>
+            <input type="range" id="v1Control" min="-5" max="5" step="0.1" value="0">
+            <div id="v1Display" class="value-display">V1 = 0.0V</div>
+            
+            <label>Input Voltage V2 (V+):</label>
+            <input type="range" id="v2Control" min="-5" max="5" step="0.1" value="0">
+            <div id="v2Display" class="value-display">V2 = 0.0V</div>
+            
+            <label>Gain (A):</label>
+            <input type="range" id="gainControl" min="1" max="10" step="0.1" value="1">
+            <div id="gainDisplay" class="value-display">Gain = 1.0</div>
+            
+            <div class="power-rails">
+                <label>Power Supply:</label>
+                <div class="value-display">V+ = +15V</div>
+                <div class="value-display">V- = -15V</div>
+            </div>
+            
+            <div id="voutDisplay" class="value-display">Vout = 0.0V</div>
+            
+            <div class="formula">
+                Vout = A(V2 - V1)
+            </div>
+        </div>
+        
+        <div class="schematic">
+            <canvas id="diffAmpCanvas" width="500" height="400"></canvas>
+        </div>
+    </div>
+    
+    <canvas id="waveformChart"></canvas>
+
+    <script>
+        let ctx = document.getElementById('diffAmpCanvas').getContext('2d');
+        
+        // Initialize waveform chart
+        const waveformChart = new Chart(
+            document.getElementById('waveformChart'),
+            {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'V1 (Inverting)',
+                            borderColor: '#0d6efd',
+                            data: [],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'V2 (Non-inverting)',
+                            borderColor: '#198754',
+                            data: [],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Output (Vout)',
+                            borderColor: '#dc3545',
+                            data: [],
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Voltage (V)'
+                            },
+                            min: -15,
+                            max: 15,
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            },
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        }
+                    }
+                }
+            }
+        );
+
+        function drawDiffAmp() {
+            ctx.clearRect(0, 0, 500, 400);
+            
+            // Set line width and style
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#212529';
+            
+            const centerX = 250;
+            const centerY = 200;
+            const width = 120;
+            const height = 80;
+            
+            // Draw main triangle
+            ctx.beginPath();
+            ctx.moveTo(centerX - width/2, centerY - height/2);
+            ctx.lineTo(centerX - width/2, centerY + height/2);
+            ctx.lineTo(centerX + width/2, centerY);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Draw resistors (simplified as rectangles)
+            // Input resistors
+            ctx.fillStyle = '#6c757d';
+            ctx.fillRect(centerX - width/2 - 60, centerY - height/4 - 5, 30, 10);
+            ctx.fillRect(centerX - width/2 - 60, centerY + height/4 - 5, 30, 10);
+            
+            // Draw input lines
+            ctx.beginPath();
+            // Non-inverting input (V2)
+            ctx.moveTo(centerX - width/2 - 90, centerY - height/4);
+            ctx.lineTo(centerX - width/2, centerY - height/4);
+            // Inverting input (V1)
+            ctx.moveTo(centerX - width/2 - 90, centerY + height/4);
+            ctx.lineTo(centerX - width/2, centerY + height/4);
+            ctx.stroke();
+            
+            // Draw + and - symbols
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#212529';
+            ctx.fillText('+', centerX - width/2 - 10, centerY - height/4 + 5);
+            ctx.fillText('-', centerX - width/2 - 10, centerY + height/4 + 5);
+            
+            // Draw output line
+            ctx.beginPath();
+            ctx.moveTo(centerX + width/2, centerY);
+            ctx.lineTo(centerX + width/2 + 30, centerY);
+            ctx.stroke();
+            
+            // Add voltage labels
+            ctx.font = '14px Arial';
+            ctx.fillText('V2', centerX - width/2 - 110, centerY - height/4);
+            ctx.fillText('V1', centerX - width/2 - 110, centerY + height/4);
+            ctx.fillText('Vout', centerX + width/2 + 40, centerY);
+            
+            // Draw power supply rails
+            ctx.beginPath();
+            ctx.moveTo(centerX - 20, centerY - height/2 - 20);
+            ctx.lineTo(centerX + 20, centerY - height/2 - 20);
+            ctx.moveTo(centerX, centerY - height/2 - 30);
+            ctx.lineTo(centerX, centerY - height/2 - 10);
+            ctx.moveTo(centerX - 20, centerY + height/2 + 20);
+            ctx.lineTo(centerX + 20, centerY + height/2 + 20);
+            ctx.stroke();
+            
+            // Add power supply labels
+            ctx.fillText('+15V', centerX + 30, centerY - height/2 - 20);
+            ctx.fillText('-15V', centerX + 30, centerY + height/2 + 20);
+            
+            // Draw voltage levels
+            const v1 = parseFloat(document.getElementById('v1Control').value);
+            const v2 = parseFloat(document.getElementById('v2Control').value);
+            const gain = parseFloat(document.getElementById('gainControl').value);
+            const vout = gain * (v2 - v1);
+            
+            // Color code voltage levels
+            ctx.fillStyle = '#0d6efd';
+            ctx.fillText(`${v1.toFixed(1)}V`, centerX - width/2 - 140, centerY + height/4);
+            ctx.fillStyle = '#198754';
+            ctx.fillText(`${v2.toFixed(1)}V`, centerX - width/2 - 140, centerY - height/4);
+            ctx.fillStyle = '#dc3545';
+            ctx.fillText(`${vout.toFixed(1)}V`, centerX + width/2 + 80, centerY);
+        }
+
+        function updateValues() {
+            const v1 = parseFloat(document.getElementById('v1Control').value);
+            const v2 = parseFloat(document.getElementById('v2Control').value);
+            const gain = parseFloat(document.getElementById('gainControl').value);
+            
+            document.getElementById('v1Display').textContent = `V1 = ${v1.toFixed(1)}V`;
+            document.getElementById('v2Display').textContent = `V2 = ${v2.toFixed(1)}V`;
+            document.getElementById('gainDisplay').textContent = `Gain = ${gain.toFixed(1)}`;
+            
+            const vout = Math.min(Math.max(gain * (v2 - v1), -15), 15); // Limit output to power rails
+            document.getElementById('voutDisplay').textContent = `Vout = ${vout.toFixed(1)}V`;
+            
+            updateWaveform(v1, v2, vout);
+            drawDiffAmp();
+        }
+
+        function updateWaveform(v1, v2, vout) {
+            const time = new Date().getTime();
+            
+            if (waveformChart.data.labels.length > 50) {
+                waveformChart.data.labels.shift();
+                waveformChart.data.datasets[0].data.shift();
+                waveformChart.data.datasets[1].data.shift();
+                waveformChart.data.datasets[2].data.shift();
+            }
+            
+            waveformChart.data.labels.push(time);
+            waveformChart.data.datasets[0].data.push(v1);
+            waveformChart.data.datasets[1].data.push(v2);
+            waveformChart.data.datasets[2].data.push(vout);
+            waveformChart.update('none');
+        }
+
+        // Initialize
+        drawDiffAmp();
+        updateValues();
+
+        // Add event listeners
+        document.getElementById('v1Control').addEventListener('input', updateValues);
+        document.getElementById('v2Control').addEventListener('input', updateValues);
+        document.getElementById('gainControl').addEventListener('input', updateValues);
+    </script>
+</body>
+</html>
