@@ -1,108 +1,368 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Non-Inverting Op-Amp Simulator</title>
+    <title>Operational Amplifier Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            text-align: center;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f8f9fa;
         }
-        canvas {
-            border: 1px solid #000;
-            margin-top: 20px;
+        .container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .controls {
-            margin: 20px 0;
+            flex: 1;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        .schematic {
+            flex: 2;
+            position: relative;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        canvas {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 20px;
+            background: white;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 15px 0;
+            height: 8px;
+            border-radius: 4px;
+            -webkit-appearance: none;
+            background: #dee2e6;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #0d6efd;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .value-display {
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            padding: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            color: #495057;
+        }
+        button {
+            background: #0d6efd;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #0b5ed7;
+        }
+        h1 {
+            color: #212529;
+            margin-bottom: 30px;
+        }
+        h3 {
+            color: #495057;
+            margin-bottom: 20px;
         }
         label {
-            margin: 0 10px;
+            color: #495057;
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
-    <h1>Non-Inverting Op-Amp Simulator</h1>
-    <div class="controls">
-        <label>Vin (V): <input type="number" id="vin" value="1" min="0" max="5" step="0.1" onchange="updateSim()"></label>
-        <label>Rf (kΩ): <input type="number" id="rf" value="10" min="1" max="100" step="1" onchange="updateSim()"></label>
-        <label>Rg (kΩ): <input type="number" id="rg" value="10" min="1" max="100" step="1" onchange="updateSim()"></label>
+    <h1>Operational Amplifier Simulator</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <h3>Controls</h3>
+            <label>Input Voltage (Vin):</label>
+            <input type="range" id="vinControl" min="-5" max="5" step="0.1" value="1">
+            <div id="vinDisplay" class="value-display">Vin = 1.0V</div>
+            
+            <label>Feedback Resistor (Rf):</label>
+            <input type="range" id="rfControl" min="1" max="100" step="1" value="10">
+            <div id="rfDisplay" class="value-display">Rf = 10kΩ</div>
+            
+            <label>Input Resistor (R1):</label>
+            <input type="range" id="r1Control" min="1" max="100" step="1" value="10">
+            <div id="r1Display" class="value-display">R1 = 10kΩ</div>
+            
+            <div id="gainDisplay" class="value-display">Gain = 2.0</div>
+            <div id="voutDisplay" class="value-display">Vout = 2.0V</div>
+            
+            <button onclick="toggleMode()">
+                Toggle Inverting/Non-inverting
+            </button>
+        </div>
+        
+        <div class="schematic">
+            <canvas id="opampCanvas" width="500" height="400"></canvas>
+        </div>
     </div>
-    <div>
-        <p>Gain: <span id="gain">2</span></p>
-        <p>Vout: <span id="vout">2</span> V</p>
-    </div>
-    <canvas id="waveform" width="600" height="300"></canvas>
+    
+    <canvas id="waveformChart"></canvas>
 
     <script>
-        const canvas = document.getElementById('waveform');
-        const ctx = canvas.getContext('2d');
-        const vinInput = document.getElementById('vin');
-        const rfInput = document.getElementById('rf');
-        const rgInput = document.getElementById('rg');
-        const gainOutput = document.getElementById('gain');
-        const voutOutput = document.getElementById('vout');
-
-        function calculateOutput() {
-            const vin = parseFloat(vinInput.value);
-            const rf = parseFloat(rfInput.value) * 1000; // Convert kΩ to Ω
-            const rg = parseFloat(rgInput.value) * 1000; // Convert kΩ to Ω
-            const gain = 1 + rf / rg;
-            const vout = vin * gain;
-
-            gainOutput.textContent = gain.toFixed(2);
-            voutOutput.textContent = vout.toFixed(2);
-            return { vin, gain, vout };
-        }
-
-        function drawWaveform() {
-            const { vin, gain, vout } = calculateOutput();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw axes
-            ctx.beginPath();
-            ctx.moveTo(50, canvas.height / 2);
-            ctx.lineTo(canvas.width - 50, canvas.height / 2);
-            ctx.moveTo(50, 20);
-            ctx.lineTo(50, canvas.height - 20);
-            ctx.strokeStyle = '#000';
-            ctx.stroke();
-
-            // Draw input sine wave (blue)
-            ctx.beginPath();
-            ctx.strokeStyle = 'blue';
-            for (let x = 0; x < canvas.width - 100; x++) {
-                const y = Math.sin(x * 0.05) * vin * 50; // Scale for visibility
-                if (x === 0) ctx.moveTo(x + 50, canvas.height / 2 - y);
-                else ctx.lineTo(x + 50, canvas.height / 2 - y);
+        let isInverting = false;
+        let ctx = document.getElementById('opampCanvas').getContext('2d');
+        
+        // Initialize waveform chart
+        const waveformChart = new Chart(
+            document.getElementById('waveformChart'),
+            {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Input (Vin)',
+                            borderColor: '#0d6efd',
+                            data: [],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Output (Vout)',
+                            borderColor: '#dc3545',
+                            data: [],
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Voltage (V)'
+                            },
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            },
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        }
+                    }
+                }
             }
-            ctx.stroke();
+        );
 
-            // Draw output sine wave (red)
+        function drawOpAmp() {
+            ctx.clearRect(0, 0, 500, 400);
+            
+            // Set line width and style
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#212529';
+            
+            // Draw Op-Amp triangle with precise measurements
+            const centerX = 250;
+            const centerY = 200;
+            const width = 120;
+            const height = 80;
+            
+            // Draw main triangle
             ctx.beginPath();
-            ctx.strokeStyle = 'red';
-            for (let x = 0; x < canvas.width - 100; x++) {
-                const y = Math.sin(x * 0.05) * vout * 50; // Scale for visibility
-                if (x === 0) ctx.moveTo(x + 50, canvas.height / 2 - y);
-                else ctx.lineTo(x + 50, canvas.height / 2 - y);
-            }
+            ctx.moveTo(centerX - width/2, centerY - height/2);
+            ctx.lineTo(centerX - width/2, centerY + height/2);
+            ctx.lineTo(centerX + width/2, centerY);
+            ctx.closePath();
             ctx.stroke();
-
-            // Labels
-            ctx.fillStyle = 'blue';
-            ctx.fillText('Vin', canvas.width - 80, canvas.height / 2 - 20);
-            ctx.fillStyle = 'red';
-            ctx.fillText('Vout', canvas.width - 80, canvas.height / 2 - 40);
+            
+            // Draw input lines with proper spacing
+            ctx.beginPath();
+            // Non-inverting input (+)
+            ctx.moveTo(centerX - width/2 - 30, centerY + height/4);
+            ctx.lineTo(centerX - width/2, centerY + height/4);
+            // Inverting input (-)
+            ctx.moveTo(centerX - width/2 - 30, centerY - height/4);
+            ctx.lineTo(centerX - width/2, centerY - height/4);
+            ctx.stroke();
+            
+            // Draw + and - symbols
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#212529';
+            if (isInverting) {
+                ctx.fillText('-', centerX - width/2 - 10, centerY - height/4 + 5);
+                ctx.fillText('+', centerX - width/2 - 10, centerY + height/4 + 5);
+            } else {
+                ctx.fillText('+', centerX - width/2 - 10, centerY - height/4 + 5);
+                ctx.fillText('-', centerX - width/2 - 10, centerY + height/4 + 5);
+            }
+            
+            // Draw output line
+            ctx.beginPath();
+            ctx.moveTo(centerX + width/2, centerY);
+            ctx.lineTo(centerX + width/2 + 30, centerY);
+            ctx.stroke();
+            
+            // Draw feedback and input resistors
+            if (isInverting) {
+                // Rf feedback path
+                ctx.beginPath();
+                ctx.moveTo(centerX + width/2, centerY);
+                ctx.lineTo(centerX + width/2 + 15, centerY - height);
+                ctx.lineTo(centerX - width/2 - 15, centerY - height);
+                ctx.lineTo(centerX - width/2 - 15, centerY - height/4);
+                ctx.stroke();
+                
+                // R1 input path
+                ctx.beginPath();
+                ctx.moveTo(centerX - width/2 - 60, centerY - height/4);
+                ctx.lineTo(centerX - width/2 - 30, centerY - height/4);
+                ctx.stroke();
+                
+                // Draw resistor symbols
+                drawResistor(centerX - width/2 - 45, centerY - height/4, 'R1');
+                drawResistor(centerX, centerY - height, 'Rf');
+            } else {
+                // Non-inverting configuration
+                // Rf feedback path
+                ctx.beginPath();
+                ctx.moveTo(centerX + width/2, centerY);
+                ctx.lineTo(centerX + width/2 + 15, centerY + height);
+                ctx.lineTo(centerX - width/2 - 15, centerY + height);
+                ctx.lineTo(centerX - width/2 - 15, centerY + height/4);
+                ctx.stroke();
+                
+                // R1 ground path
+                ctx.beginPath();
+                ctx.moveTo(centerX - width/2 - 15, centerY + height/4);
+                ctx.lineTo(centerX - width/2 - 60, centerY + height/4);
+                ctx.lineTo(centerX - width/2 - 60, centerY + height/4 + 30);
+                ctx.stroke();
+                
+                // Draw ground symbol
+                drawGround(centerX - width/2 - 60, centerY + height/4 + 30);
+                
+                // Draw resistor symbols
+                drawResistor(centerX, centerY + height, 'Rf');
+                drawResistor(centerX - width/2 - 45, centerY + height/4, 'R1');
+            }
+            
+            // Add voltage labels
+            ctx.font = '14px Arial';
+            ctx.fillText('Vin', centerX - width/2 - 80, centerY - height/4);
+            ctx.fillText('Vout', centerX + width/2 + 40, centerY);
         }
 
-        function updateSim() {
-            calculateOutput();
-            drawWaveform();
+        function drawResistor(x, y, label) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            
+            // Draw resistor zigzag
+            const size = 15;
+            ctx.moveTo(-size, 0);
+            ctx.lineTo(-size/2, -size/2);
+            ctx.lineTo(0, size/2);
+            ctx.lineTo(size/2, -size/2);
+            ctx.lineTo(size, 0);
+            
+            ctx.stroke();
+            
+            // Add label
+            ctx.fillText(label, -size/2, -size);
+            
+            ctx.restore();
         }
 
-        // Initial draw
-        updateSim();
+        function drawGround(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y);
+            ctx.lineTo(x + 10, y);
+            ctx.moveTo(x - 6, y + 4);
+            ctx.lineTo(x + 6, y + 4);
+            ctx.moveTo(x - 2, y + 8);
+            ctx.lineTo(x + 2, y + 8);
+            ctx.stroke();
+        }
+
+        function updateValues() {
+            const vin = parseFloat(document.getElementById('vinControl').value);
+            const rf = parseFloat(document.getElementById('rfControl').value);
+            const r1 = parseFloat(document.getElementById('r1Control').value);
+            
+            document.getElementById('vinDisplay').textContent = `Vin = ${vin.toFixed(1)}V`;
+            document.getElementById('rfDisplay').textContent = `Rf = ${rf}kΩ`;
+            document.getElementById('r1Display').textContent = `R1 = ${r1}kΩ`;
+            
+            let gain, vout;
+            if (isInverting) {
+                gain = -rf/r1;
+                vout = vin * gain;
+            } else {
+                gain = 1 + (rf/r1);
+                vout = vin * gain;
+            }
+            
+            document.getElementById('gainDisplay').textContent = `Gain = ${gain.toFixed(2)}`;
+            document.getElementById('voutDisplay').textContent = `Vout = ${vout.toFixed(2)}V`;
+            
+            updateWaveform(vin, vout);
+            drawOpAmp();
+        }
+
+        function updateWaveform(vin, vout) {
+            const time = new Date().getTime();
+            
+            if (waveformChart.data.labels.length > 50) {
+                waveformChart.data.labels.shift();
+                waveformChart.data.datasets[0].data.shift();
+                waveformChart.data.datasets[1].data.shift();
+            }
+            
+            waveformChart.data.labels.push(time);
+            waveformChart.data.datasets[0].data.push(vin);
+            waveformChart.data.datasets[1].data.push(vout);
+            waveformChart.update('none'); // Disable animation for smoother updates
+        }
+
+        function toggleMode() {
+            isInverting = !isInverting;
+            drawOpAmp();
+            updateValues();
+        }
+
+        // Initialize
+        drawOpAmp();
+        updateValues();
+
+        // Add event listeners
+        document.getElementById('vinControl').addEventListener('input', updateValues);
+        document.getElementById('rfControl').addEventListener('input', updateValues);
+        document.getElementById('r1Control').addEventListener('input', updateValues);
     </script>
 </body>
 </html>
