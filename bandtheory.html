@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Band Theory Animation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1, h2 {
+            color: #333;
+        }
+        
+        .container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .material {
+            width: 280px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .material h3 {
+            text-align: center;
+            margin-top: 0;
+        }
+        
+        canvas {
+            display: block;
+            margin: 10px auto;
+            border: 1px solid #ddd;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .slider-container {
+            margin: 20px auto;
+            width: 80%;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .temperature-display {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0 10px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border: 1px solid #333;
+        }
+        
+        .explanation {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Band Theory in Solids</h1>
+    
+    <div class="explanation">
+        <h2>What is Band Theory?</h2>
+        <p>Band theory describes how electrons behave in solids. In isolated atoms, electrons occupy discrete energy levels. When atoms come together to form a solid, these energy levels split into bands that contain closely spaced energy levels.</p>
+        
+        <p>The key bands for electronic behavior are:</p>
+        <ul>
+            <li><strong>Valence Band:</strong> Contains electrons that are bound to specific atoms</li>
+            <li><strong>Conduction Band:</strong> Contains electrons that are free to move throughout the material</li>
+            <li><strong>Band Gap:</strong> The energy difference between the valence and conduction bands</li>
+        </ul>
+        
+        <p>The size of the band gap determines whether a material is a conductor, semiconductor, or insulator:</p>
+        <ul>
+            <li><strong>Conductors:</strong> Overlapping bands or partially filled bands</li>
+            <li><strong>Semiconductors:</strong> Small band gap (typically 0.1-4 eV)</li>
+            <li><strong>Insulators:</strong> Large band gap (typically > 4 eV)</li>
+        </ul>
+    </div>
+    
+    <div class="temperature-display">Temperature: <span id="temp-value">300</span> K</div>
+    
+    <div class="slider-container">
+        <label for="temperature">Adjust Temperature (0 - 500 K):</label>
+        <input type="range" id="temperature" min="0" max="500" value="300" style="width: 100%;">
+    </div>
+    
+    <div class="controls">
+        <button id="start-btn">Start Animation</button>
+        <button id="stop-btn">Stop Animation</button>
+        <button id="reset-btn">Reset</button>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #3498db;"></div>
+            <span>Conduction Band</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #2ecc71;"></div>
+            <span>Valence Band</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #e74c3c;"></div>
+            <span>Electron</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #fff; border: 1px dashed #e74c3c;"></div>
+            <span>Hole</span>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="material">
+            <h3>Metal (Conductor)</h3>
+            <canvas id="metal-canvas" width="250" height="300"></canvas>
+            <p>Metals have overlapping bands or partially filled bands, allowing electrons to move freely without additional energy.</p>
+        </div>
+        
+        <div class="material">
+            <h3>Semiconductor</h3>
+            <canvas id="semiconductor-canvas" width="250" height="300"></canvas>
+            <p>Semiconductors have a small band gap. Thermal energy can excite electrons from the valence to conduction band.</p>
+        </div>
+        
+        <div class="material">
+            <h3>Insulator</h3>
+            <canvas id="insulator-canvas" width="250" height="300"></canvas>
+            <p>Insulators have a large band gap. Normal temperatures don't provide enough energy for electrons to jump to the conduction band.</p>
+        </div>
+    </div>
+    
+    <script>
+        // Get canvas elements
+        const metalCanvas = document.getElementById('metal-canvas');
+        const semiconductorCanvas = document.getElementById('semiconductor-canvas');
+        const insulatorCanvas = document.getElementById('insulator-canvas');
+        
+        // Get contexts
+        const metalCtx = metalCanvas.getContext('2d');
+        const semiconductorCtx = semiconductorCanvas.getContext('2d');
+        const insulatorCtx = insulatorCanvas.getContext('2d');
+        
+        // Get controls
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const temperatureSlider = document.getElementById('temperature');
+        const tempValueDisplay = document.getElementById('temp-value');
+        
+        // Animation variables
+        let animationId;
+        let isAnimating = false;
+        
+        // Material properties
+        const materials = {
+            metal: {
+                ctx: metalCtx,
+                electrons: [],
+                bandGap: 0,
+                conductionBandHeight: 150,
+                valenceBandTop: 150
+            },
+            semiconductor: {
+                ctx: semiconductorCtx,
+                electrons: [],
+                bandGap: 60,
+                conductionBandHeight: 120,
+                valenceBandTop: 180
+            },
+            insulator: {
+                ctx: insulatorCtx,
+                electrons: [],
+                bandGap: 120,
+                conductionBandHeight: 90,
+                valenceBandTop: 210
+            }
+        };
+        
+        // Initialize electrons
+        function initializeElectrons() {
+            // Clear existing electrons
+            materials.metal.electrons = [];
+            materials.semiconductor.electrons = [];
+            materials.insulator.electrons = [];
+            
+            // Create electrons for metal
+            for (let i = 0; i < 15; i++) {
+                materials.metal.electrons.push({
+                    x: 30 + Math.random() * 190,
+                    y: 150 + Math.random() * 120,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    inConductionBand: true
+                });
+            }
+            
+            // Create electrons for semiconductor
+            for (let i = 0; i < 12; i++) {
+                const inConductionBand = Math.random() < 0.2; // 20% chance to be in conduction band initially
+                materials.semiconductor.electrons.push({
+                    x: 30 + Math.random() * 190,
+                    y: inConductionBand ? 
+                        (50 + Math.random() * 70) : 
+                        (180 + Math.random() * 90),
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    inConductionBand: inConductionBand
+                });
+            }
+            
+            // Create electrons for insulator
+            for (let i = 0; i < 12; i++) {
+                materials.insulator.electrons.push({
+                    x: 30 + Math.random() * 190,
+                    y: 210 + Math.random() * 80,
+                    vx: (Math.random() - 0.5) * 1,
+                    vy: (Math.random() - 0.5) * 1,
+                    inConductionBand: false
+                });
+            }
+        }
+        
+        // Draw bands
+        function drawBands(ctx, conductionBandHeight, valenceBandTop, bandGap) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            
+            // Draw conduction band
+            ctx.fillStyle = '#3498db';
+            ctx.fillRect(20, 20, 210, conductionBandHeight);
+            
+            // Draw valence band
+            ctx.fillStyle = '#2ecc71';
+            ctx.fillRect(20, valenceBandTop, 210, 100);
+            
+            // Label bands
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.fillText('Conduction Band', 75, 40);
+            ctx.fillText('Valence Band', 85, valenceBandTop + 20);
+            
+            // Label band gap
+            if (bandGap > 0) {
+                ctx.fillText(`Band Gap: ${(bandGap * 0.05).toFixed(1)} eV`, 75, conductionBandHeight + bandGap/2 + 5);
+            }
+        }
+        
+        // Draw electrons
+        function drawElectrons(material) {
+            const ctx = material.ctx;
+            
+            material.electrons.forEach(electron => {
+                // Draw electron
+                ctx.beginPath();
+                ctx.arc(electron.x, electron.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#e74c3c';
+                ctx.fill();
+                
+                // If electron jumped to conduction band, draw hole in valence band
+                if (electron.inConductionBand && 
+                    material !== materials.metal) { // No holes in metals
+                    ctx.beginPath();
+                    ctx.arc(electron.x, material.valenceBandTop + 50, 5, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#e74c3c';
+                    ctx.stroke();
+                }
+            });
+        }
+        
+        // Update electron positions
+        function updateElectrons(material, temperature) {
+            material.electrons.forEach(electron => {
+                // Update position
+                electron.x += electron.vx;
+                electron.y += electron.vy;
+                
+                // Bounce off walls
+                if (electron.x < 25) {
+                    electron.x = 25;
+                    electron.vx = -electron.vx;
+                }
+                if (electron.x > 225) {
+                    electron.x = 225;
+                    electron.vx = -electron.vx;
+                }
+                
+                // Confine to appropriate band
+                if (electron.inConductionBand) {
+                    // Conduction band boundary
+                    if (electron.y < 25) {
+                        electron.y = 25;
+                        electron.vy = -electron.vy;
+                    }
+                    if (electron.y > material.conductionBandHeight) {
+                        electron.y = material.conductionBandHeight;
+                        electron.vy = -electron.vy;
+                    }
+                } else {
+                    // Valence band boundary
+                    if (electron.y < material.valenceBandTop) {
+                        electron.y = material.valenceBandTop;
+                        electron.vy = -electron.vy;
+                    }
+                    if (electron.y > material.valenceBandTop + 100) {
+                        electron.y = material.valenceBandTop + 100;
+                        electron.vy = -electron.vy;
+                    }
+                }
+                
+                // Electron thermal excitation (jumping from valence to conduction)
+                // Only for semiconductors and insulators
+                if (!electron.inConductionBand && material !== materials.metal) {
+                    // Probability of jumping increases with temperature, decreases with band gap
+                    const jumpProbability = 0.00005 * temperature / (material.bandGap / 20);
+                    
+                    if (Math.random() < jumpProbability) {
+                        electron.inConductionBand = true;
+                        electron.y = material.conductionBandHeight - Math.random() * 70;
+                    }
+                }
+                
+                // Electron relaxation (falling from conduction to valence)
+                // Only for semiconductors and insulators
+                if (electron.inConductionBand && material !== materials.metal) {
+                    // Base probability of falling back
+                    const fallProbability = 0.001;
+                    
+                    if (Math.random() < fallProbability) {
+                        electron.inConductionBand = false;
+                        electron.y = material.valenceBandTop + Math.random() * 70;
+                    }
+                }
+            });
+        }
+        
+        // Draw everything
+        function draw() {
+            const temperature = parseInt(temperatureSlider.value);
+            
+            // Draw bands for each material
+            drawBands(metalCtx, materials.metal.conductionBandHeight, materials.metal.valenceBandTop, materials.metal.bandGap);
+            drawBands(semiconductorCtx, materials.semiconductor.conductionBandHeight, materials.semiconductor.valenceBandTop, materials.semiconductor.bandGap);
+            drawBands(insulatorCtx, materials.insulator.conductionBandHeight, materials.insulator.valenceBandTop, materials.insulator.bandGap);
+            
+            // Update and draw electrons
+            updateElectrons(materials.metal, temperature);
+            updateElectrons(materials.semiconductor, temperature);
+            updateElectrons(materials.insulator, temperature);
+            
+            drawElectrons(materials.metal);
+            drawElectrons(materials.semiconductor);
+            drawElectrons(materials.insulator);
+            
+            if (isAnimating) {
+                animationId = requestAnimationFrame(draw);
+            }
+        }
+        
+        // Initialize the animation
+        function init() {
+            initializeElectrons();
+            draw();
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', () => {
+            if (!isAnimating) {
+                isAnimating = true;
+                animationId = requestAnimationFrame(draw);
+            }
+        });
+        
+        stopBtn.addEventListener('click', () => {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            temperatureSlider.value = 300;
+            tempValueDisplay.textContent = 300;
+            initializeElectrons();
+            draw();
+        });
+        
+        temperatureSlider.addEventListener('input', () => {
+            tempValueDisplay.textContent = temperatureSlider.value;
+        });
+        
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
