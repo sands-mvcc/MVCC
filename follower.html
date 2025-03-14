@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Op Amp Voltage Follower Simulator</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #e74c3c;
+            --background-color: #f8f9fa;
+            --panel-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #dddddd;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: var(--panel-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .simulator-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .circuit-panel {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .controls-panel {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input[type="range"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        
+        .value-display {
+            font-size: 14px;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .graph-panel {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .graph-container {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            margin: 0 auto;
+        }
+        
+        .graph-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .info-panel {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .info-panel p {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .info-panel ul {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .info-panel li {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .formula {
+            background-color: var(--background-color);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Operational Amplifier - Voltage Follower Simulator</h1>
+            <p>A voltage follower is a unity-gain buffer amplifier with high input impedance and low output impedance.</p>
+        </header>
+        
+        <div class="simulator-container">
+            <div class="circuit-panel">
+                <h2>Circuit Diagram</h2>
+                <div class="canvas-container">
+                    <canvas id="circuitCanvas" width="600" height="250"></canvas>
+                </div>
+                <div class="formula">
+                    <p>V<sub>out</sub> = V<sub>in</sub> × 1</p>
+                </div>
+            </div>
+            
+            <div class="controls-panel">
+                <h2>Simulation Controls</h2>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label for="inputType">Input Signal Type:</label>
+                        <select id="inputType">
+                            <option value="sine">Sine Wave</option>
+                            <option value="square">Square Wave</option>
+                            <option value="triangle">Triangle Wave</option>
+                            <option value="dc">DC Voltage</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="frequency">Signal Frequency (Hz):</label>
+                        <input type="range" id="frequency" min="0.1" max="10" step="0.1" value="1">
+                        <span id="frequencyValue" class="value-display">1 Hz</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="amplitude">Input Amplitude (V):</label>
+                        <input type="range" id="amplitude" min="0.1" max="10" step="0.1" value="1">
+                        <span id="amplitudeValue" class="value-display">1 V</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="noiseLevel">Noise Level (%):</label>
+                        <input type="range" id="noiseLevel" min="0" max="5" step="0.1" value="0">
+                        <span id="noiseLevelValue" class="value-display">0 %</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="gainSlider">Gain Adjustment (Open Loop):</label>
+                        <input type="range" id="gainSlider" min="0.9" max="1.1" step="0.01" value="1.0">
+                        <span id="gainValue" class="value-display">1.0</span>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="inputImpedance">Input Impedance (MΩ):</label>
+                        <select id="inputImpedance">
+                            <option value="1">1 MΩ</option>
+                            <option value="10" selected>10 MΩ</option>
+                            <option value="100">100 MΩ</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="graph-panel">
+                <h2>Signal Visualization</h2>
+                <div class="graph-container">
+                    <canvas id="signalCanvas" width="900" height="300"></canvas>
+                </div>
+                <div class="graph-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3498db;"></div>
+                        <span>Input Signal</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c;"></div>
+                        <span>Output Signal</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h2>About Voltage Followers</h2>
+                <p>A voltage follower (also called a buffer amplifier) is a special case of a non-inverting amplifier with a gain of 1. It provides:</p>
+                <ul>
+                    <li><strong>High input impedance:</strong> Prevents loading of the input source</li>
+                    <li><strong>Low output impedance:</strong> Allows driving of heavy loads</li>
+                    <li><strong>Unity gain:</strong> Output voltage equals input voltage (V<sub>out</sub> = V<sub>in</sub>)</li>
+                </ul>
+                <p>Voltage followers are commonly used for impedance matching, isolation between stages, and as buffers for sensitive signals.</p>
+                <p>In the ideal case, the output exactly follows the input. In practice, there may be slight deviations due to:</p>
+                <ul>
+                    <li>Input bias currents</li>
+                    <li>Input offset voltages</li>
+                    <li>Common-mode rejection ratio (CMRR) limitations</li>
+                    <li>Finite open-loop gain</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const inputType = document.getElementById('inputType');
+        const frequency = document.getElementById('frequency');
+        const frequencyValue = document.getElementById('frequencyValue');
+        const amplitude = document.getElementById('amplitude');
+        const amplitudeValue = document.getElementById('amplitudeValue');
+        const noiseLevel = document.getElementById('noiseLevel');
+        const noiseLevelValue = document.getElementById('noiseLevelValue');
+        const gainSlider = document.getElementById('gainSlider');
+        const gainValue = document.getElementById('gainValue');
+        const inputImpedance = document.getElementById('inputImpedance');
+        
+        const circuitCanvas = document.getElementById('circuitCanvas');
+        const circuitCtx = circuitCanvas.getContext('2d');
+        
+        const signalCanvas = document.getElementById('signalCanvas');
+        const signalCtx = signalCanvas.getContext('2d');
+        
+        // Set canvas dimensions based on display size
+        function setCanvasDimensions() {
+            circuitCanvas.width = circuitCanvas.parentElement.clientWidth;
+            signalCanvas.width = signalCanvas.parentElement.clientWidth;
+            signalCanvas.height = signalCanvas.parentElement.clientHeight;
+            
+            drawCircuit();
+            updateSimulation();
+        }
+        
+        // Set initial dimensions and redraw on resize
+        setCanvasDimensions();
+        window.addEventListener('resize', setCanvasDimensions);
+        
+        // Update display values when controls change
+        function updateDisplayValues() {
+            frequencyValue.textContent = `${frequency.value} Hz`;
+            amplitudeValue.textContent = `${amplitude.value} V`;
+            noiseLevelValue.textContent = `${noiseLevel.value} %`;
+            gainValue.textContent = `${gainSlider.value}`;
+        }
+        
+        // Initialize display values
+        updateDisplayValues();
+        
+        // Add event listeners for updating displays and simulation
+        frequency.addEventListener('input', () => {
+            updateDisplayValues();
+            updateSimulation();
+        });
+        
+        amplitude.addEventListener('input', () => {
+            updateDisplayValues();
+            updateSimulation();
+        });
+        
+        noiseLevel.addEventListener('input', () => {
+            updateDisplayValues();
+            updateSimulation();
+        });
+        
+        gainSlider.addEventListener('input', () => {
+            updateDisplayValues();
+            updateSimulation();
+        });
+        
+        inputType.addEventListener('change', updateSimulation);
+        inputImpedance.addEventListener('change', updateSimulation);
+        
+        // Draw the operational amplifier circuit diagram
+        function drawCircuit() {
+            const ctx = circuitCtx;
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Define positions
+            const midY = height / 2;
+            const startX = width * 0.1;
+            const opampX = width * 0.5;
+            const opampWidth = width * 0.2;
+            const opampHeight = height * 0.4;
+            
+            // Draw input
+            ctx.beginPath();
+            ctx.moveTo(startX, midY);
+            ctx.lineTo(startX + width * 0.15, midY);
+            ctx.stroke();
+            
+            // Draw op amp triangle
+            ctx.beginPath();
+            ctx.moveTo(opampX - opampWidth / 2, midY - opampHeight / 2);
+            ctx.lineTo(opampX - opampWidth / 2, midY + opampHeight / 2);
+            ctx.lineTo(opampX + opampWidth / 2, midY);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Draw + input
+            ctx.beginPath();
+            ctx.moveTo(opampX - opampWidth / 2, midY - opampHeight / 4);
+            ctx.lineTo(opampX - opampWidth / 2 - width * 0.05, midY - opampHeight / 4);
+            ctx.stroke();
+            
+            // Draw - input
+            ctx.beginPath();
+            ctx.moveTo(opampX - opampWidth / 2, midY + opampHeight / 4);
+            ctx.lineTo(opampX - opampWidth / 2 - width * 0.05, midY + opampHeight / 4);
+            ctx.stroke();
+            
+            // Draw output
+            ctx.beginPath();
+            ctx.moveTo(opampX + opampWidth / 2, midY);
+            ctx.lineTo(opampX + opampWidth / 2 + width * 0.15, midY);
+            ctx.stroke();
+            
+            // Draw feedback connection
+            ctx.beginPath();
+            ctx.moveTo(opampX + opampWidth / 2, midY);
+            ctx.lineTo(opampX + opampWidth / 2 + width * 0.05, midY);
+            ctx.lineTo(opampX + opampWidth / 2 + width * 0.05, midY + opampHeight / 2 + height * 0.1);
+            ctx.lineTo(opampX - opampWidth / 2 - width * 0.15, midY + opampHeight / 2 + height * 0.1);
+            ctx.lineTo(opampX - opampWidth / 2 - width * 0.15, midY + opampHeight / 4);
+            ctx.lineTo(opampX - opampWidth / 2 - width * 0.05, midY + opampHeight / 4);
+            ctx.stroke();
+            
+            // Draw ground connection
+            ctx.beginPath();
+            ctx.moveTo(opampX - opampWidth / 2 - width * 0.05, midY - opampHeight / 4);
+            ctx.lineTo(startX + width * 0.15, midY - opampHeight / 4);
+            ctx.lineTo(startX + width * 0.15, midY);
+            ctx.stroke();
+            
+            // Add labels
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#333';
+            
+            // Input/Output labels
+            ctx.fillText('Vin', startX + 5, midY - 10);
+            ctx.fillText('Vout', opampX + opampWidth / 2 + width * 0.1, midY - 10);
+            
+            // Op amp labels
+            ctx.font = '16px Arial';
+            ctx.fillText('+', opampX - opampWidth / 2 + 10, midY - opampHeight / 4 + 5);
+            ctx.fillText('-', opampX - opampWidth / 2 + 10, midY + opampHeight / 4 + 5);
+            
+            // Title
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('Voltage Follower Configuration (Unity Gain Buffer)', width / 2 - 160, height - 20);
+            
+            // Gain label
+            ctx.font = '14px Arial';
+            ctx.fillText(`Gain: ${gainSlider.value}`, opampX - 30, midY - opampHeight / 2 - 10);
+        }
+        
+        // Generate input signal based on type and parameters
+        function generateInputSignal(t) {
+            const freq = parseFloat(frequency.value);
+            const amp = parseFloat(amplitude.value);
+            
+            let signal = 0;
+            
+            switch(inputType.value) {
+                case 'sine':
+                    signal = amp * Math.sin(2 * Math.PI * freq * t);
+                    break;
+                    
+                case 'square':
+                    signal = amp * Math.sign(Math.sin(2 * Math.PI * freq * t));
+                    break;
+                    
+                case 'triangle':
+                    const period = 1 / freq;
+                    const normalized = (t % period) / period;
+                    if (normalized < 0.5) {
+                        signal = amp * (4 * normalized - 1);
+                    } else {
+                        signal = amp * (3 - 4 * normalized);
+                    }
+                    break;
+                    
+                case 'dc':
+                    signal = amp;
+                    break;
+            }
+            
+            // Add noise if enabled
+            if (parseFloat(noiseLevel.value) > 0) {
+                const noiseAmplitude = (parseFloat(noiseLevel.value) / 100) * amp;
+                signal += noiseAmplitude * (Math.random() * 2 - 1);
+            }
+            
+            return signal;
+        }
+        
+        // Calculate output signal considering gain adjustment
+        function calculateOutput(inputSignal) {
+            const gain = parseFloat(gainSlider.value);
+            return inputSignal.map(value => value * gain);
+        }
+        
+        // Draw the grid for the signal graph
+        function drawGrid(ctx) {
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            
+            // Vertical grid lines (time)
+            for (let x = 0; x <= width; x += width / 10) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            
+            // Horizontal grid lines (voltage)
+            for (let y = 0; y <= height; y += height / 8) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+            
+            // Draw x and y axes
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 1.5;
+            
+            // x-axis (middle)
+            ctx.beginPath();
+            ctx.moveTo(0, height / 2);
+            ctx.lineTo(width, height / 2);
+            ctx.stroke();
+            
+            // y-axis (left)
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, height);
+            ctx.stroke();
+            
+            // Add time markers
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            
+            const timeWindow = 2; // 2 seconds window
+            for (let i = 0; i <= 10; i++) {
+                const x = (i / 10) * width;
+                const time = (i / 10) * timeWindow;
+                ctx.fillText(`${time.toFixed(1)}s`, x, height - 5);
+            }
+            
+            // Add voltage markers
+            const maxVoltage = parseFloat(amplitude.value) * 1.5;
+            
+            for (let i = -3; i <= 3; i++) {
+                if (i === 0) continue; // Skip 0 as it's already the x-axis
+                
+                const y = height / 2 - (i * height / 8);
+                const voltage = (i * maxVoltage / 3).toFixed(1);
+                ctx.fillText(`${voltage}V`, 5, y);
+            }
+        }
+        
+        // Draw signals on the graph
+        function drawSignals(inputSignal, outputSignal) {
+            const ctx = signalCtx;
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw the grid
+            drawGrid(ctx);
+            
+            // Calculate vertical scaling based on signal amplitude
+            const maxAmplitude = Math.max(
+                ...inputSignal.map(v => Math.abs(v)), 
+                ...outputSignal.map(v => Math.abs(v))
+            ) * 1.2; // Add 20% margin
+            
+            const verticalScale = (height / 2) / maxAmplitude;
+            const midY = height / 2;
+            
+            // Draw input signal
+            ctx.beginPath();
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i < inputSignal.length; i++) {
+                const x = (i / inputSignal.length) * width;
+                const y = midY - inputSignal[i] * verticalScale;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+            
+            // Draw output signal
+            ctx.beginPath();
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i < outputSignal.length; i++) {
+                const x = (i / outputSignal.length) * width;
+                const y = midY - outputSignal[i] * verticalScale;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+        }
+        
+        // Update the simulation
+        function updateSimulation() {
+            // Draw the circuit diagram
+            drawCircuit();
+            
+            // Generate time points (2 seconds of data)
+            const timeWindow = 2; // seconds
+            const samplesPerSecond = 500;
+            const totalSamples = timeWindow * samplesPerSecond;
+            
+            const timePoints = Array.from(
+                {length: totalSamples}, 
+                (_, i) => i / samplesPerSecond
+            );
+            
+            // Generate input signal
+            const inputSignal = timePoints.map(t => generateInputSignal(t));
+            
+            // Calculate output signal
+            const outputSignal = calculateOutput(inputSignal);
+            
+            // Draw signals
+            drawSignals(inputSignal, outputSignal);
+        }
+        
+        // Initial update
+        updateSimulation();
+    </script>
+</body>
+</html>
