@@ -3,118 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modulus Math Simulator</title>
+    <title>Modular Math Clock Simulator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 50px;
-            background-color: white; /* Background color */
-            color: black; /* Text color */
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
         }
-        canvas {
-            border: 1px solid black; /* Canvas border color */
-            background-color: grey; /* Canvas background color */
+        .clock-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 30px auto;
+        }
+        .clock {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: #f5f5f5;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        .clock-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .marker {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: #333;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .marker-label {
+            position: absolute;
+            font-size: 14px;
+            transform: translate(-50%, -50%);
+            color: #333;
+            font-weight: bold;
+        }
+        .hand {
+            position: absolute;
+            left: 50%;
+            bottom: 50%;
+            width: 4px;
+            height: 40%;
+            background-color: #e74c3c;
+            transform-origin: 50% 100%;
+            border-top-left-radius: 2px;
+            border-top-right-radius: 2px;
+            transform: translateX(-50%) rotate(0deg);
+            transition: transform 0.3s ease;
+        }
+        .center-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #333;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
         .controls {
-            margin-bottom: 20px;
+            margin: 20px auto;
         }
-        label, input, button {
-            margin: 5px;
+        .controls label {
+            margin: 0 10px;
+        }
+        .controls input {
+            width: 60px;
+            margin: 0 5px;
+            text-align: center;
+        }
+        .result {
+            font-size: 20px;
+            margin: 20px 0;
+            height: 30px;
+        }
+        .explanation {
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
         }
         button {
-            background-color: red; /* Button background color */
-            color: white; /* Button text color */
+            background-color: #4CAF50;
             border: none;
-            padding: 5px 10px;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
             cursor: pointer;
+            border-radius: 4px;
         }
-        button:hover {
-            background-color: black; /* Button hover background color */
-        }
-        .results {
-            margin-top: 20px;
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body>
+    <h1>Modular Math Clock Simulator</h1>
+    
+    <div class="explanation">
+        <h3>How Modular Arithmetic Works</h3>
+        <p>Modular arithmetic (or "clock arithmetic") is a system where numbers "wrap around" upon reaching a certain value (the modulus).</p>
+        <p>When we calculate a number <b>mod n</b>, we find the remainder when that number is divided by n.</p>
+        <p>For example, 14 mod 12 = 2, because when 14 is divided by 12, the remainder is 2.</p>
+        <p>This is exactly how a 12-hour clock works! 2 o'clock is the same as 14 o'clock because 14 mod 12 = 2.</p>
+        <p><b>Watch the animation:</b> The clock hand will move continuously clockwise, making complete circles as needed. Each position represents one unit, and the hand will stop after reaching the total number you entered.</p>
+    </div>
+
     <div class="controls">
-        <label for="modulus">Modulus Value:</label>
-        <input type="number" id="modulus" min="1" value="12">
-        <label for="number">Number:</label>
-        <input type="number" id="number" min="0" value="0">
-        <button onclick="startAnimation()">Start Animation</button>
+        <label>Modulus (n): <input type="number" id="modulus" min="2" max="24" value="12"></label>
+        <label>Number to divide: <input type="number" id="number" min="1" max="100" value="14"></label>
+        <button id="updateButton">Update Clock</button>
     </div>
-    <canvas id="clockCanvas" width="300" height="300"></canvas>
-    <div class="results">
-        <p>Original Value: <span id="originalValue">0</span></p>
-        <p>Modulus Value: <span id="modulusValue">12</span></p>
-        <p>Remainder Value: <span id="remainderValue">0</span></p>
+
+    <div class="clock-container">
+        <div class="clock">
+            <div class="clock-face" id="clockFace"></div>
+            <div class="hand" id="clockHand"></div>
+            <div class="center-dot"></div>
+        </div>
     </div>
+
+    <div class="controls">
+        <button id="startButton">Start</button>
+        <button id="resetButton">Reset</button>
+    </div>
+
+    <div class="result" id="result"></div>
 
     <script>
-        const canvas = document.getElementById('clockCanvas');
-        const ctx = canvas.getContext('2d');
-        const radius = canvas.width / 2;
-        ctx.translate(radius, radius);
+        // Sound effect for clock tick
+        const tickSound = new Audio();
+        tickSound.src = "data:audio/wav;base64,UklGRl9vAQBXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YTtvAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wIA//8NAP7/HwD9/zQA/P9LAP3/ZQD9/30A/v+WAP//rgD//8UA//3ZAP/87QD++P8A/fQQAfzwIQH87TIB++xDAfvrVQH87GcB/O95Af3viwH98Z0B/vOvAf/1wQH/9tIB//feAf/24gH/9OYB//LpAf/v6wH/7OwB/+rtAf/n7QH/5e4B/+TuAf/j7wH/4+8B/+TwAf/l8AH/5/EB/+nxAf/s8gH/7/MB//LzAf/19AH/+PUB//v2Af/++AEAAfkBAAP6AQAF+wEAB/wBAAn9AQAL/gEADf4BABD/AQAS/wEAFAAAABUAAAAXAAAAGAAAABkAAAAZAAAAGgAAABoAAAAaAAAAGQAAABkAAAAYAAAAFwAAABYAAAAUAAAAEgAAABAAAAAOAAAACwAAAAkAAAAGAAAABAAAAAEAAAAAAAAA/v///fz//vr//vj//vb//vT//vL//vH//u/+/u3+/uz+/ur+/un+/uj+/uf+/uf+/ub+/ub+/ub+/ub+/ub+/uf+/uj+/un+/ur+/uv+/uz+/u7+/u/+/vH+/vL+/vT+/vb+/vf+/vn+/vv+/v3+/v8AAAABAAACAAEEAAEFAAEHAAEIAAEKAAILAAIMAAINAAIOAAIPAAIQAAIQAAIRAAISAAISAAISAAISAAISAAISAAIRAAIRAAIQAAIQAAIPAAIPAAIOAAINAAIMAAIMAAILAAIKAAIJAAIIAAIHAAIGAAIFAAIEAAIDAAICAAIBAAIA";
 
-        function drawClock(modulus) {
-            ctx.clearRect(-radius, -radius, canvas.width, canvas.height);
-            ctx.beginPath();
-            ctx.arc(0, 0, radius - 10, 0, 2 * Math.PI);
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = 'black'; // Clock outline color
-            ctx.stroke();
+        const clockFace = document.getElementById('clockFace');
+        const clockHand = document.getElementById('clockHand');
+        const modulusInput = document.getElementById('modulus');
+        const numberInput = document.getElementById('number');
+        const resultDisplay = document.getElementById('result');
+        const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
+        const updateButton = document.getElementById('updateButton');
 
-            for (let num = 0; num < modulus; num++) {
-                let angle = num * (2 * Math.PI / modulus) - Math.PI / 2;
-                let x = (radius - 30) * Math.cos(angle);
-                let y = (radius - 30) * Math.sin(angle);
-                ctx.fillStyle = 'black'; // Numbers color
-                ctx.fillText(num, x - 5, y + 5);
+        let modulus = 12;
+        let number = 14;
+        let currentPosition = 0;
+        let animationInterval;
+        let isAnimating = false;
+
+        // Initialize the clock
+        function initClock() {
+            // Clear previous clock face
+            clockFace.innerHTML = '';
+            
+            // Create markers and labels based on modulus
+            for (let i = 0; i < modulus; i++) {
+                const angle = (i / modulus) * 360;
+                const radian = (angle - 90) * (Math.PI / 180); // -90 to start at top
+                
+                // Calculate position
+                const markerX = 50 + 45 * Math.cos(radian);
+                const markerY = 50 + 45 * Math.sin(radian);
+                
+                // Label position (slightly further out)
+                const labelX = 50 + 40 * Math.cos(radian);
+                const labelY = 50 + 40 * Math.sin(radian);
+                
+                // Create marker
+                const marker = document.createElement('div');
+                marker.className = 'marker';
+                marker.style.left = markerX + '%';
+                marker.style.top = markerY + '%';
+                clockFace.appendChild(marker);
+                
+                // Create label
+                const label = document.createElement('div');
+                label.className = 'marker-label';
+                label.style.left = labelX + '%';
+                label.style.top = labelY + '%';
+                label.textContent = i;
+                clockFace.appendChild(label);
+            }
+            
+            // Reset hand position
+            clockHand.style.transform = 'translateX(-50%) rotate(0deg)';
+            currentPosition = 0;
+            
+            // Update result display
+            updateResult();
+        }
+
+        // Update the result display
+        function updateResult() {
+            if (currentPosition === 0) {
+                resultDisplay.textContent = '';
+            } else {
+                const remainder = currentPosition % modulus;
+                const quotient = Math.floor(currentPosition / modulus);
+                resultDisplay.textContent = `${currentPosition} ÷ ${modulus} = ${quotient} remainder ${remainder}`;
             }
         }
 
+        // Start the animation
         function startAnimation() {
-            const modulus = parseInt(document.getElementById('modulus').value);
-            const number = parseInt(document.getElementById('number').value);
-            const remainder = number % modulus;
-
-            document.getElementById('originalValue').innerText = number;
-            document.getElementById('modulusValue').innerText = modulus;
-            document.getElementById('remainderValue').innerText = remainder;
-
-            drawClock(modulus);
-
-            let angle = -Math.PI / 2;
-            const step = (2 * Math.PI / modulus);
-            let count = 0;
-            const interval = setInterval(() => {
-                ctx.clearRect(-radius, -radius, canvas.width, canvas.height);
-                drawClock(modulus);
-
-                angle = count * step - Math.PI / 2;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo((radius - 30) * Math.cos(angle), (radius - 30) * Math.sin(angle));
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = 'black'; // Hand color
-                ctx.stroke();
-
-                // Draw the point at the end of the hand
-                ctx.beginPath();
-                ctx.arc((radius - 30) * Math.cos(angle), (radius - 30) * Math.sin(angle), 5, 0, 2 * Math.PI);
-                ctx.fillStyle = 'red'; // Point color
-                ctx.fill();
-
-                count++;
-                if (count > number) {
-                    clearInterval(interval);
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            startButton.disabled = true;
+            resetButton.disabled = false;
+            updateButton.disabled = true;
+            modulusInput.disabled = true;
+            numberInput.disabled = true;
+            
+            currentPosition = 0;
+            updateResult();
+            
+            // Animate the hand step by step in a clockwise direction
+            animationInterval = setInterval(() => {
+                currentPosition++;
+                
+                // Play tick sound
+                tickSound.currentTime = 0;
+                tickSound.play();
+                
+                // Calculate angle based on current position
+                // We use this formula to ensure continuous clockwise movement
+                const angle = (currentPosition % modulus) * (360 / modulus);
+                clockHand.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+                
+                // Update result
+                const remainder = currentPosition % modulus;
+                const quotient = Math.floor(currentPosition / modulus);
+                resultDisplay.textContent = `${currentPosition} ÷ ${modulus} = ${quotient} remainder ${remainder}`;
+                
+                // Stop when we reach the target number
+                if (currentPosition >= number) {
+                    clearInterval(animationInterval);
+                    isAnimating = false;
+                    startButton.disabled = false;
                 }
-            }, 100);
+            }, 600); // Adjust speed as needed
         }
+
+        // Reset the animation
+        function resetAnimation() {
+            clearInterval(animationInterval);
+            isAnimating = false;
+            currentPosition = 0;
+            
+            // Reset controls
+            startButton.disabled = false;
+            resetButton.disabled = false;
+            updateButton.disabled = false;
+            modulusInput.disabled = false;
+            numberInput.disabled = false;
+            
+            // Reset hand position
+            clockHand.style.transform = 'translateX(-50%) rotate(0deg)';
+            
+            // Clear result
+            resultDisplay.textContent = '';
+        }
+
+        // Update clock with new values
+        function updateClock() {
+            modulus = parseInt(modulusInput.value, 10) || 12;
+            number = parseInt(numberInput.value, 10) || 14;
+            
+            // Validate input
+            if (modulus < 2) modulus = 2;
+            if (modulus > 24) modulus = 24;
+            if (number < 1) number = 1;
+            if (number > 100) number = 100;
+            
+            // Update inputs with validated values
+            modulusInput.value = modulus;
+            numberInput.value = number;
+            
+            // Initialize clock with new modulus
+            initClock();
+        }
+
+        // Event listeners
+        startButton.addEventListener('click', startAnimation);
+        resetButton.addEventListener('click', resetAnimation);
+        updateButton.addEventListener('click', updateClock);
+
+        // Initialize on load
+        updateClock();
     </script>
 </body>
 </html>
