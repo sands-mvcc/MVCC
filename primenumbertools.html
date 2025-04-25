@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime Numbers Teaching Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f8f8;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .sections {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .section {
+            padding: 15px;
+            background-color: #f1f1f1;
+            border-radius: 6px;
+        }
+        .section-title {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+            color: #1a73e8;
+        }
+        .interactive-area {
+            padding: 15px;
+            background-color: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        .visualizer {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .number-box {
+            position: relative;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #e8f0fe;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        .number-box.prime {
+            background-color: #34a853;
+            color: white;
+        }
+        .number-box.composite {
+            background-color: #ea4335;
+            color: white;
+        }
+        .number-box.one {
+            background-color: #fbbc05;
+            color: white;
+        }
+        .number-box.selected {
+            transform: scale(1.1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #135cbc;
+        }
+        button:disabled {
+            background-color: #a1a1a1;
+            cursor: not-allowed;
+        }
+        .range-container {
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+        .slider {
+            width: 100%;
+            margin-top: 5px;
+        }
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f0fe;
+            border-radius: 6px;
+            display: none;
+        }
+        .factor-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .factor {
+            background-color: #dadce0;
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 14px;
+        }
+        .animation-container {
+            position: relative;
+            height: 300px;
+            background-color: #f9f9f9;
+            margin-top: 20px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .sieve-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+        .sieve-number {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background-color: #e8f0fe;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        .sieve-number.crossed {
+            background-color: #ea4335;
+            color: white;
+            text-decoration: line-through;
+        }
+        .sieve-number.prime {
+            background-color: #34a853;
+            color: white;
+        }
+        .challenge-container {
+            margin-top: 20px;
+        }
+        .challenge-problem {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .challenge-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .challenge-option {
+            padding: 10px;
+            background-color: #e8f0fe;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .challenge-option:hover {
+            background-color: #d2e3fc;
+        }
+        .challenge-option.correct {
+            background-color: #34a853;
+            color: white;
+        }
+        .challenge-option.incorrect {
+            background-color: #ea4335;
+            color: white;
+        }
+        .hint {
+            margin-top: 5px;
+            color: #5f6368;
+            font-style: italic;
+        }
+        .progress-container {
+            margin-top: 20px;
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #1a73e8;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .visualizer {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            .sieve-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prime Numbers Teaching Tool</h1>
+        
+        <div class="sections">
+            <div class="section">
+                <div class="section-title">What are Prime Numbers?</div>
+                <p>A prime number is a natural number greater than 1 that cannot be formed by multiplying two smaller natural numbers. A natural number greater than 1 that is not prime is called a composite number.</p>
+                <p>For example, 5 is prime because the only ways of writing it as a product are 1 × 5 or 5 × 1, whereas 6 is composite because it is the product of 2 × 3 (or 3 × 2).</p>
+                <p>The first few prime numbers are: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, ...</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Explore Prime Numbers</div>
+                <p>Click on numbers to check if they are prime or composite. The calculator will show you all the factors of each number.</p>
+                
+                <div class="interactive-area">
+                    <div class="range-container">
+                        <label for="range">Number Range: <span id="range-value">1-100</span></label>
+                        <input type="range" id="range-slider" class="slider" min="1" max="5" value="1">
+                    </div>
+                    
+                    <div class="visualizer" id="number-grid"></div>
+                    
+                    <div class="info-panel" id="info-panel">
+                        <h3 id="selected-number-title">Number: <span id="selected-number">0</span></h3>
+                        <p id="is-prime-text">Classification: <span id="prime-status">Unknown</span></p>
+                        <div id="factor-container">
+                            <p>Factors:</p>
+                            <div class="factor-list" id="factor-list"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button id="highlight-primes-btn">Highlight All Primes</button>
+                        <button id="reset-btn">Reset</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Sieve of Eratosthenes Animation</div>
+                <p>The Sieve of Eratosthenes is an ancient algorithm for finding all prime numbers up to a specified limit. Watch how it works by crossing out multiples of each prime number.</p>
+                
+                <div class="interactive-area">
+                    <div class="controls">
+                        <button id="start-sieve-btn">Start Animation</button>
+                        <button id="reset-sieve-btn">Reset</button>
+                    </div>
+                    
+                    <div class="animation-container">
+                        <div class="sieve-grid" id="sieve-grid"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Prime Number Challenge</div>
+                <p>Test your understanding of prime numbers with these challenges!</p>
+                
+                <div class="interactive-area">
+                    <div class="challenge-container" id="challenge-container">
+                        <div class="challenge-problem" id="challenge-problem"></div>
+                        <div class="hint" id="challenge-hint"></div>
+                        <div class="challenge-options" id="challenge-options"></div>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar" id="challenge-progress"></div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button id="next-challenge-btn">Next Challenge</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Number Grid Variables
+            const numberGrid = document.getElementById('number-grid');
+            const infoPanel = document.getElementById('info-panel');
+            const selectedNumberElement = document.getElementById('selected-number');
+            const primeStatusElement = document.getElementById('prime-status');
+            const factorListElement = document.getElementById('factor-list');
+            const highlightPrimesBtn = document.getElementById('highlight-primes-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const rangeSlider = document.getElementById('range-slider');
+            const rangeValueElement = document.getElementById('range-value');
+            
+            // Sieve Variables
+            const sieveGrid = document.getElementById('sieve-grid');
+            const startSieveBtn = document.getElementById('start-sieve-btn');
+            const resetSieveBtn = document.getElementById('reset-sieve-btn');
+            
+            // Challenge Variables
+            const challengeContainer = document.getElementById('challenge-container');
+            const challengeProblem = document.getElementById('challenge-problem');
+            const challengeHint = document.getElementById('challenge-hint');
+            const challengeOptions = document.getElementById('challenge-options');
+            const nextChallengeBtn = document.getElementById('next-challenge-btn');
+            const challengeProgress = document.getElementById('challenge-progress');
+            
+            let currentRange = 100;
+            let sieveAnimationRunning = false;
+            let currentSieveStep = 0;
+            let sieveNumbers = [];
+            let challengeIndex = 0;
+            let correctAnswers = 0;
+            const totalChallenges = 5;
+            
+            // Initialize the app
+            initializeNumberGrid(currentRange);
+            initializeSieveGrid();
+            loadChallenge();
+            
+            // Event Listeners
+            highlightPrimesBtn.addEventListener('click', highlightAllPrimes);
+            resetBtn.addEventListener('click', resetNumberGrid);
+            rangeSlider.addEventListener('input', updateRange);
+            startSieveBtn.addEventListener('click', startSieveAnimation);
+            resetSieveBtn.addEventListener('click', resetSieveGrid);
+            nextChallengeBtn.addEventListener('click', loadNextChallenge);
+            
+            // Functions for Number Grid
+            function initializeNumberGrid(max) {
+                numberGrid.innerHTML = '';
+                
+                for (let i = 1; i <= max; i++) {
+                    const numberBox = document.createElement('div');
+                    numberBox.className = 'number-box';
+                    numberBox.textContent = i;
+                    numberBox.setAttribute('data-number', i);
+                    
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.textContent = `Click to check if ${i} is prime`;
+                    numberBox.appendChild(tooltip);
+                    
+                    numberBox.addEventListener('click', () => selectNumber(i, numberBox));
+                    numberBox.addEventListener('mouseenter', () => {
+                        tooltip.style.opacity = '1';
+                    });
+                    numberBox.addEventListener('mouseleave', () => {
+                        tooltip.style.opacity = '0';
+                    });
+                    
+                    numberGrid.appendChild(numberBox);
+                }
+            }
+            
+            function isPrime(num) {
+                if (num <= 1) return false;
+                if (num <= 3) return true;
+                if (num % 2 === 0 || num % 3 === 0) return false;
+                
+                for (let i = 5; i * i <= num; i += 6) {
+                    if (num % i === 0 || num % (i + 2) === 0) return false;
+                }
+                
+                return true;
+            }
+            
+            function getFactors(num) {
+                const factors = [];
+                
+                for (let i = 1; i <= num; i++) {
+                    if (num % i === 0) {
+                        factors.push(i);
+                    }
+                }
+                
+                return factors;
+            }
+            
+            function selectNumber(num, element) {
+                // Remove selected class from all boxes
+                document.querySelectorAll('.number-box').forEach(box => {
+                    box.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked box
+                element.classList.add('selected');
+                
+                // Show info panel
+                infoPanel.style.display = 'block';
+                selectedNumberElement.textContent = num;
+                
+                // Determine if prime
+                const prime = isPrime(num);
+                
+                // Update prime status
+                if (num === 1) {
+                    primeStatusElement.textContent = 'Neither prime nor composite';
+                    element.classList.add('one');
+                } else if (prime) {
+                    primeStatusElement.textContent = 'Prime Number';
+                    element.classList.add('prime');
+                } else {
+                    primeStatusElement.textContent = 'Composite Number';
+                    element.classList.add('composite');
+                }
+                
+                // Show factors
+                factorListElement.innerHTML = '';
+                const factors = getFactors(num);
+                factors.forEach(factor => {
+                    const factorElement = document.createElement('div');
+                    factorElement.className = 'factor';
+                    factorElement.textContent = factor;
+                    factorListElement.appendChild(factorElement);
+                });
+                
+                // Add animation when selecting a number
+                createConfettiEffect(element);
+            }
+            
+            function highlightAllPrimes() {
+                const boxes = document.querySelectorAll('.number-box');
+                
+                boxes.forEach(box => {
+                    const num = parseInt(box.getAttribute('data-number'));
+                    
+                    if (num === 1) {
+                        box.classList.add('one');
+                    } else if (isPrime(num)) {
+                        box.classList.add('prime');
+                    } else {
+                        box.classList.add('composite');
+                    }
+                });
+            }
+            
+            function resetNumberGrid() {
+                const boxes = document.querySelectorAll('.number-box');
+                
+                boxes.forEach(box => {
+                    box.classList.remove('prime', 'composite', 'one', 'selected');
+                });
+                
+                infoPanel.style.display = 'none';
+            }
+            
+            function updateRange() {
+                const ranges = [100, 200, 300, 400, 500];
+                currentRange = ranges[rangeSlider.value - 1];
+                rangeValueElement.textContent = `1-${currentRange}`;
+                
+                initializeNumberGrid(currentRange);
+                infoPanel.style.display = 'none';
+            }
+            
+            // Functions for Sieve of Eratosthenes
+            function initializeSieveGrid() {
+                sieveGrid.innerHTML = '';
+                sieveNumbers = [];
+                
+                for (let i = 1; i <= 100; i++) {
+                    const sieveNumber = document.createElement('div');
+                    sieveNumber.className = 'sieve-number';
+                    sieveNumber.textContent = i;
+                    sieveNumber.setAttribute('data-number', i);
+                    
+                    sieveGrid.appendChild(sieveNumber);
+                    sieveNumbers.push({
+                        element: sieveNumber,
+                        value: i,
+                        crossed: false
+                    });
+                }
+                
+                // Mark 1 as special (neither prime nor composite)
+                sieveNumbers[0].element.style.backgroundColor = '#fbbc05';
+                sieveNumbers[0].element.style.color = 'white';
+                sieveNumbers[0].crossed = true;
+            }
+            
+            function startSieveAnimation() {
+                if (sieveAnimationRunning) return;
+                
+                sieveAnimationRunning = true;
+                currentSieveStep = 2; // Start with 2
+                startSieveBtn.disabled = true;
+                
+                runSieveStep();
+            }
+            
+            function runSieveStep() {
+                if (currentSieveStep > 10) {
+                    // Animation complete, highlight remaining primes
+                    highlightRemainingPrimes();
+                    startSieveBtn.disabled = false;
+                    sieveAnimationRunning = false;
+                    return;
+                }
+                
+                // First, highlight the current prime
+                const currentPrimeIndex = currentSieveStep - 1;
+                sieveNumbers[currentPrimeIndex].element.classList.add('prime');
+                
+                // Then cross out all its multiples
+                setTimeout(() => {
+                    crossOutMultiples(currentSieveStep);
+                }, 1000);
+            }
+            
+            function crossOutMultiples(prime) {
+                let hasMoreMultiples = false;
+                let delay = 0;
+                
+                for (let i = prime * 2; i <= 100; i += prime) {
+                    if (!sieveNumbers[i - 1].crossed) {
+                        hasMoreMultiples = true;
+                        
+                        setTimeout(() => {
+                            sieveNumbers[i - 1].element.classList.add('crossed');
+                            sieveNumbers[i - 1].crossed = true;
+                        }, delay);
+                        
+                        delay += 200; // Add delay between each cross-out for animation effect
+                    }
+                }
+                
+                // Move to next prime number
+                setTimeout(() => {
+                    findNextPrime();
+                }, delay + 500);
+            }
+            
+            function findNextPrime() {
+                currentSieveStep++;
+                
+                // Find the next number that's not crossed out
+                while (currentSieveStep <= 10 && sieveNumbers[currentSieveStep - 1].crossed) {
+                    currentSieveStep++;
+                }
+                
+                runSieveStep();
+            }
+            
+            function highlightRemainingPrimes() {
+                sieveNumbers.forEach(num => {
+                    if (!num.crossed && num.value > 1) {
+                        num.element.classList.add('prime');
+                    }
+                });
+            }
+            
+            function resetSieveGrid() {
+                sieveAnimationRunning = false;
+                startSieveBtn.disabled = false;
+                initializeSieveGrid();
+            }
+            
+            // Functions for Challenge
+            function loadChallenge() {
+                const challenges = [
+                    {
+                        question: "Which of these numbers is prime?",
+                        options: [4, 9, 13, 15],
+                        correctAnswer: 13,
+                        hint: "Remember, a prime number has exactly two factors: 1 and itself."
+                    },
+                    {
+                        question: "Which of these numbers is NOT prime?",
+                        options: [3, 5, 7, 9],
+                        correctAnswer: 9,
+                        hint: "Check if the number has factors other than 1 and itself."
+                    },
+                    {
+                        question: "What is the smallest prime number?",
+                        options: [0, 1, 2, 3],
+                        correctAnswer: 2,
+                        hint: "A prime number must be greater than 1."
+                    },
+                    {
+                        question: "How many prime numbers are there between 1 and 10?",
+                        options: [2, 3, 4, 5],
+                        correctAnswer: 4,
+                        hint: "The prime numbers between 1 and 10 are 2, 3, 5, and 7."
+                    },
+                    {
+                        question: "Which of these statements is true?",
+                        options: [
+                            "All even numbers are prime",
+                            "All prime numbers are odd",
+                            "2 is the only even prime number",
+                            "1 is a prime number"
+                        ],
+                        correctAnswer: "2 is the only even prime number",
+                        hint: "Think about the definition of prime numbers and check each statement."
+                    }
+                ];
+                
+                const currentChallenge = challenges[challengeIndex];
+                
+                challengeProblem.textContent = currentChallenge.question;
+                challengeHint.textContent = currentChallenge.hint;
+                challengeOptions.innerHTML = '';
+                
+                currentChallenge.options.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'challenge-option';
+                    optionElement.textContent = option;
+                    optionElement.addEventListener('click', () => checkAnswer(option, optionElement, currentChallenge.correctAnswer));
+                    challengeOptions.appendChild(optionElement);
+                });
+                
+                nextChallengeBtn.disabled = true;
+                
+                // Update progress bar
+                updateProgressBar();
+            }
+            
+            function checkAnswer(selectedAnswer, optionElement, correctAnswer) {
+                // Disable all options
+                document.querySelectorAll('.challenge-option').forEach(option => {
+                    option.style.pointerEvents = 'none';
+                });
+                
+                if (selectedAnswer === correctAnswer) {
+                    optionElement.classList.add('correct');
+                    correctAnswers++;
+                    createConfettiEffect(optionElement);
+                } else {
+                    optionElement.classList.add('incorrect');
+                    
+                    // Highlight the correct answer
+                    document.querySelectorAll('.challenge-option').forEach(option => {
+                        if (option.textContent == correctAnswer) {
+                            option.classList.add('correct');
+                        }
+                    });
+                }
+                
+                nextChallengeBtn.disabled = false;
+                updateProgressBar();
+            }
+            
+            function loadNextChallenge() {
+                challengeIndex++;
+                
+                if (challengeIndex >= totalChallenges) {
+                    // All challenges completed
+                    challengeProblem.textContent = `Challenges completed! You got ${correctAnswers} out of ${totalChallenges} correct.`;
+                    challengeHint.textContent = '';
+                    challengeOptions.innerHTML = '';
+                    nextChallengeBtn.disabled = true;
+                    
+                    if (correctAnswers === totalChallenges) {
+                        createMassiveConfetti();
+                    }
+                } else {
+                    loadChallenge();
+                }
+            }
+            
+            function updateProgressBar() {
+                const progress = ((challengeIndex + 1) / totalChallenges) * 100;
+                challengeProgress.style.width = `${progress}%`;
+            }
+            
+            // Animation effects
+            function createConfettiEffect(element) {
+                const rect = element.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                for (let i = 0; i < 20; i++) {
+                    createConfettiParticle(centerX, centerY);
+                }
+            }
+            
+            function createConfettiParticle(x, y) {
+                const colors = ['#1a73e8', '#34a853', '#fbbc05', '#ea4335'];
+                
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${x}px`;
+                confetti.style.top = `${y}px`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                document.body.appendChild(confetti);
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 3 + Math.random() * 5;
+                const vx = Math.cos(angle) * velocity;
+                const vy = Math.sin(angle) * velocity;
+                
+                setTimeout(() => {
+                    confetti.style.transition = 'all 1s ease-out';
+                    confetti.style.opacity = '1';
+                    confetti.style.left = `${x + vx * 20}px`;
+                    confetti.style.top = `${y + vy * 20}px`;
+                }, 10);
+                
+                setTimeout(() => {
+                    confetti.style.opacity = '0';
+                }, 700);
+                
+                setTimeout(() => {
+                    document.body.removeChild(confetti);
+                }, 1500);
+            }
+            
+            function createMassiveConfetti() {
+                for (let i = 0; i < 100; i++) {
+                    setTimeout(() => {
+                        const x = Math.random() * window.innerWidth;
+                        const y = Math.random() * window.innerHeight;
+                        createConfettiParticle(x, y);
+                    }, i * 50);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
