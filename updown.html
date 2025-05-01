@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Enhanced 4-Bit Counter with Sound</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .display-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .display {
+      font-size: 36px;
+      font-weight: bold;
+      background: #000;
+      color: #0f0;
+      padding: 20px;
+      width: 180px;
+      border-radius: 10px;
+      letter-spacing: 10px;
+    }
+    .decimal-display {
+      font-size: 36px;
+      color: #333;
+      padding-top: 20px;
+    }
+    .controls button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+    }
+    .slider-container {
+      margin-top: 15px;
+    }
+    .slider-container label {
+      font-weight: bold;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      margin-top: 30px;
+    }
+    .direction-label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>4-Bit Up/Down Counter Simulator</h1>
+
+  <div class="display-container">
+    <div class="display" id="counterDisplay">0000</div>
+    <div class="decimal-display" id="decimalDisplay">0</div>
+  </div>
+
+  <div class="controls">
+    <button onclick="toggleDirection()">Toggle Direction</button>
+    <button onclick="stepCounter()">Step</button>
+    <button onclick="toggleAutoCount()">Start/Stop Auto Count</button>
+    <button onclick="resetCounter()">Reset</button>
+  </div>
+
+  <div class="slider-container">
+    <label for="speedSlider">Auto Count Speed (ms): <span id="speedValue">1000</span></label><br>
+    <input type="range" id="speedSlider" min="100" max="2000" value="1000" step="100" oninput="updateSpeed(this.value)">
+  </div>
+
+  <div class="direction-label">Current Direction: <span id="direction">Up</span></div>
+
+  <canvas id="waveCanvas" width="600" height="200"></canvas>
+
+  <script>
+    let counter = 0;
+    let directionUp = true;
+    let autoInterval = null;
+    let speed = 1000;
+    let history = [];
+
+    const binDisplay = document.getElementById('counterDisplay');
+    const decDisplay = document.getElementById('decimalDisplay');
+    const waveCanvas = document.getElementById('waveCanvas');
+    const waveCtx = waveCanvas.getContext('2d');
+
+    function updateDisplay() {
+      const bin = counter.toString(2).padStart(4, '0');
+      binDisplay.textContent = bin;
+      decDisplay.textContent = counter.toString();
+
+      history.push(bin);
+      if (history.length > 60) history.shift();
+
+      drawWaveform();
+    }
+
+    function toggleDirection() {
+      directionUp = !directionUp;
+      document.getElementById('direction').textContent = directionUp ? 'Up' : 'Down';
+    }
+
+    function stepCounter() {
+      if (directionUp) {
+        counter = (counter + 1) & 0xF;
+      } else {
+        counter = (counter - 1 + 16) & 0xF;
+      }
+      updateDisplay();
+      playBeep();
+    }
+
+    function toggleAutoCount() {
+      if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+      } else {
+        autoInterval = setInterval(stepCounter, speed);
+      }
+    }
+
+    function updateSpeed(val) {
+      speed = parseInt(val);
+      document.getElementById('speedValue').textContent = speed;
+      if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = setInterval(stepCounter, speed);
+      }
+    }
+
+    function resetCounter() {
+      counter = 0;
+      history = [];
+      updateDisplay();
+    }
+
+    function drawWaveform() {
+      waveCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+      const bitHeight = 40;
+      const spacing = 10;
+      const startY = 20;
+
+      for (let bit = 0; bit < 4; bit++) {
+        waveCtx.beginPath();
+        waveCtx.moveTo(0, startY + bit * (bitHeight + spacing));
+        for (let i = 0; i < history.length; i++) {
+          const x = i * 10;
+          const y = startY + bit * (bitHeight + spacing);
+          const value = history[i][3 - bit] === '1' ? y : y + bitHeight;
+          waveCtx.lineTo(x, value);
+        }
+        waveCtx.strokeStyle = ['#f00', '#0a0', '#00f', '#888'][bit];
+        waveCtx.stroke();
+      }
+    }
+
+    // Sound generator using Web Audio API
+    function playBeep() {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(500, ctx.currentTime); // 500 Hz
+      gainNode.gain.setValueAtTime(0.1, ctx.currentTime); // low volume
+
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.1); // play for 100ms
+    }
+
+    updateDisplay();
+  </script>
+
+</body>
+</html>
