@@ -1,0 +1,608 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, SkipBack, Volume2, Check, X, HelpCircle, Info } from 'lucide-react';
+
+const BloodPressureMeasurementSimulator = () => {
+  // State variables
+  const [cuffPressure, setCuffPressure] = useState(0);
+  const [maxPressure, setMaxPressure] = useState(180);
+  const [isDeflating, setIsDeflating] = useState(false);
+  const [systolicMarked, setSystolicMarked] = useState(false);
+  const [diastolicMarked, setDiastolicMarked] = useState(false);
+  const [systolicPressure, setSystolicPressure] = useState(0);
+  const [diastolicPressure, setDiastolicPressure] = useState(0);
+  const [actualSystolic, setActualSystolic] = useState(120);
+  const [actualDiastolic, setActualDiastolic] = useState(80);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState(null);
+  const [attempt, setAttempt] = useState(1);
+  const [score, setScore] = useState({ correct: 0, attempts: 0 });
+  const [feedback, setFeedback] = useState('');
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [showResults, setShowResults] = useState(false);
+  const [difficultyLevel, setDifficultyLevel] = useState('normal');
+  const [patientCondition, setPatientCondition] = useState('normal');
+  const [volume, setVolume] = useState(0.7);
+  const [showPhaseInfo, setShowPhaseInfo] = useState(false);
+  
+  // References for audio
+  const audioRef = useRef(null);
+  const timerRef = useRef(null);
+  
+  // Set patient condition and associated blood pressure values
+  const selectPatientCondition = (condition) => {
+    setPatientCondition(condition);
+    
+    // Reset states
+    setSystolicMarked(false);
+    setDiastolicMarked(false);
+    setSystolicPressure(0);
+    setDiastolicPressure(0);
+    setCuffPressure(0);
+    setIsDeflating(false);
+    setCurrentPhase(null);
+    setFeedback('');
+    setShowResults(false);
+    
+    // Set blood pressure based on selected condition
+    switch(condition) {
+      case 'hypertension':
+        setActualSystolic(Math.floor(Math.random() * 30) + 140); // 140-170
+        setActualDiastolic(Math.floor(Math.random() * 20) + 90); // 90-110
+        setMaxPressure(200);
+        break;
+      case 'hypotension':
+        setActualSystolic(Math.floor(Math.random() * 30) + 85); // 85-115
+        setActualDiastolic(Math.floor(Math.random() * 20) + 50); // 50-70
+        setMaxPressure(150);
+        break;
+      case 'normal':
+      default:
+        setActualSystolic(Math.floor(Math.random() * 20) + 110); // 110-130
+        setActualDiastolic(Math.floor(Math.random() * 15) + 70); // 70-85
+        setMaxPressure(180);
+        break;
+    }
+  };
+
+  // Function to determine current Korotkoff phase based on cuff pressure
+  const determinePhase = (pressure) => {
+    const systolicWindow = difficultyLevel === 'hard' ? 3 : 5;
+    const diastolicWindow = difficultyLevel === 'hard' ? 3 : 5;
+    
+    if (pressure > actualSystolic + 5) {
+      return 'none'; // No sounds - cuff pressure too high
+    } else if (pressure <= actualSystolic + 5 && pressure >= actualSystolic - systolicWindow) {
+      return 'phase1'; // Phase 1 - clear tapping sound (systolic)
+    } else if (pressure < actualSystolic - systolicWindow && pressure >= actualSystolic - 15) {
+      return 'phase2'; // Phase 2 - swishing sounds
+    } else if (pressure < actualSystolic - 15 && pressure >= actualDiastolic + 15) {
+      return 'phase3'; // Phase 3 - louder, crisper sounds
+    } else if (pressure < actualDiastolic + 15 && pressure >= actualDiastolic - diastolicWindow) {
+      return 'phase4'; // Phase 4 - muffled sounds
+    } else if (pressure < actualDiastolic - diastolicWindow) {
+      return 'phase5'; // Phase 5 - silence (diastolic)
+    }
+    return 'none';
+  };
+
+  // Function to play appropriate sound based on Korotkoff phase
+  const playKorotkoffSound = (phase) => {
+    if (!audioRef.current) return;
+    
+    switch(phase) {
+      case 'phase1':
+        audioRef.current.src = 'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAXAAAARW5jb2RlZCBieQBMYXZmNTguMjkuMTAwVElUMgAAABcAAABMYXZmNTguMjkuMTAwAAAAAAAAAAAAAP/7kAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAADIACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgP////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAAyDxzbisAAAAAAD/+5BkAAntWN9j+YIAIUIJKI8wQmgwIyMvPSAChOglmTzAgOAAAAQnVyQ/QACoEHA6cZ0HCqCgocZbHOFBwOBwOeTsKoKBgYOgYHAyKjjiEkKsZa4iBoGCgYCAgYCkBZZ9SLLuZSLYyFJnrM6gAv/89LCSzs7M33DfM4+S5JJJOTcnJydaRbRV4yJFFlMy8vf/r//1vWt///2nYYqKIBcXFxfFxRUVFMUBQFBQVBQVBUFQUBQVBQVApRUGP//////Lwo//+FAAAAwQAABmShAAAAAPAAAAAZ//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkBI/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmQfj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkP4/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmRTj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkZY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmRsj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkgY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmSPj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+s/12pf/8jqoW33/8K/nZqsw5//eF6mW/r/GpXf1/jWoD5vt/4Wkb77/3SZ////+MqTf//bAAAAFgAAAMiQAAABYAAAAN+jdG6N0bJ+PK87leee/OJ5553K88888y+ZnnnnlfxgEwJgTAmBMCYEwJj/+5JknY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAThMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAmBMCYEwJgTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/7kmS/j/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uSZOGP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        audioRef.current.play();
+        break;
+      case 'phase2':
+        audioRef.current.src = 'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAXAAAARW5jb2RlZCBieQBMYXZmNTguMjkuMTAwVElUMgAAABcAAABMYXZmNTguMjkuMTAwAAAAAAAAAAAAAP/7kAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAADIACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgP////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAAyDxeqCQAAAAAAD/+5BkAAftiN9h+eEAIYQoJY80IOgp4y0VpYQAhbAlljSwgOBqRjwBQ7oRHgZJcJGJ/+WQDQMDp6UrjsPiR//5YqR6RJbIElwqCIHrGV0UqqzZszmSO7myQZLzKUEDJeZtf///////8zs72ZOSSTnNFcJARRLSAiAEQAoiRRUFfQDw8PDw8PH/QEBAQDQ4QAcnl/mUW6qqw3/+qqpsKoKIE6BgA4AAAAeZxBsAAAAFkAAAAWv/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkFY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmQjj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkN4/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmRNj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkZY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmRsj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5Jkgo/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT/////////////////////////////////////////////////////////////////////////////////////////////+CCBC4IIQggn///xAQQPggggoEBAQUD4IICCggQEB/pJJGBR//5BjkzR+kJn2pGRFh7///////8oIKYQQ4MhhQiw5C/9pJSgggv/6BAQEB8CAgID///UVsNsOCAQEBB34QQUEFFJAAoAAAANkAAAAAoAAAAG/Gt7Wx7r6b2WM3szN61XVzKury71qqNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaP/+5JkmQ/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAATRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaNRqaAAAAAAAAAAAAAAAAP/7kmTPj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uSZOmP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        audioRef.current.play();
+        break;
+      case 'phase3':
+        audioRef.current.src = 'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAXAAAARW5jb2RlZCBieQBMYXZmNTguMjkuMTAwVElUMgAAABcAAABMYXZmNTguMjkuMTAwAAAAAAAAAAAAAP/7kAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAADIACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgP////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAAyDxvqCQAAAAAAD/+5BkAAXtcNxf+aGHIXgkJY8kMOAvAzL5pYwAgzghm/TDBBDyf4CAZCqhLIAOuWODGMYxqfT7JRe5xiN3FkUyBiExCKo8AYAYAYAOQUt3d3d3d3d3eD07vR1vXfrDGNdL3GyRMYxjGN/4xqvWP/LGMYxnlFv9vu/+/+75XLx/5VKpVXwqFQqCgZvZuLVt1LbvgzV69zS+Dne+c+c7vMigAAAAgAAAAAAAAAEsAAADREAAAGGP//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkEY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmQTj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkJY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmQuj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkPY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmRQj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkW4/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmRpj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////CCCEIQQQQQIB/2oYQQM2YR7/uZWxG6dlllJJCCBf//nQDZ//wQQcEEEDAYEBAfBAQDUL///wTAwAAgICALJ//8/AwFqrAoICB/2ggQQEEB///tBBAgZB///8ypFWlVgEBQQHYmCCBAQQD///xJJJFCCEEEBBAAoAAAANkAAAAAoAAAAG/hzne7Oe9V73qqqt72ZmOV5jlMcpbHKUxylscpbHKWxylscpbHKWxylscpb/+5JkgY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAATHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylscpbHKWxylsAAAAAAAAAAAAAAAAP/7kmS9j/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uSZOGP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        audioRef.current.play();
+        break;
+      case 'phase4':
+        audioRef.current.src = 'data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAXAAAARW5jb2RlZCBieQBMYXZmNTguMjkuMTAwVElUMgAAABcAAABMYXZmNTguMjkuMTAwAAAAAAAAAAAAAP/7kAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAADIACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgP////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAAyDxo0igAAAAAAD/+5BkAAXtVNnh+aEPIYQIJY80MORAwzEVpgQchjglkjTQgJA6/GDkLCj6UHi+r5j/fVU/5RmVk1B8kGBUOPBRSiEZGf5RXt3/qgM0ChFCQAUMVD/6JJJb/0Ygp8GGEOJIBQoGn0RIpGJmwdP////KeSSSTkkkkk52ZCEG2qRCVE53e7ve7u93exjTgvAAAAAAAAAAAAAAAAAAoAAAAYNAAAATf/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkFY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmQkj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkN4/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmROj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkYY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7kmRuj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+5JkfY/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAAT//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////4EBBQQMGB8CAgIP/wFf/wFf+Ag//CEpD+BA++EMCpwcIMH/9JiVnZGRlZ2RkZWdkZG///kZG///8RDAwMDAwVBQUFBQqCgoKChgYP/+ggDQUDBa1/////+AxqNR40aNGpNgQEBAQwMDQFUDR+NR40YCB/4AHlkAAAALIAAAC3/e9733ve977RrGrGd5VleZZXmWV5lWZVmVZlWZVmVZlWZVmVZlWZVmP/+5JkjA/wAABpAAAACAAADSAAAAEAAAGkAAAAIAAANIAAAATZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVmVZlWZVAAAAAAAAAAAAAAAAP/7kmS/j/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uSZOKP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        audioRef.current.play();
+        break;
+      case 'phase5':
+      case 'none':
+      default:
+        // No sound
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        break;
+    }
+  };
+
+  // Inflate the cuff
+  const inflateCuff = () => {
+    if (cuffPressure < maxPressure) {
+      setCuffPressure(prevPressure => prevPressure + 5);
+    }
+  };
+
+  // Start deflating the cuff
+  const startDeflation = () => {
+    if (cuffPressure > 0 && !isDeflating) {
+      setIsDeflating(true);
+      // Reset marked pressures
+      setSystolicMarked(false);
+      setDiastolicMarked(false);
+      setSystolicPressure(0);
+      setDiastolicPressure(0);
+    }
+  };
+
+  // Stop deflation
+  const stopDeflation = () => {
+    setIsDeflating(false);
+  };
+
+  // Reset the simulation
+  const resetSimulation = () => {
+    setCuffPressure(0);
+    setIsDeflating(false);
+    setSystolicMarked(false);
+    setDiastolicMarked(false);
+    setSystolicPressure(0);
+    setDiastolicPressure(0);
+    setCurrentPhase(null);
+    setFeedback('');
+    setShowResults(false);
+    
+    // Generate new random blood pressure values within range for selected condition
+    selectPatientCondition(patientCondition);
+  };
+
+  // Mark systolic pressure
+  const markSystolic = () => {
+    if (!systolicMarked && isDeflating) {
+      setSystolicMarked(true);
+      setSystolicPressure(cuffPressure);
+    }
+  };
+
+  // Mark diastolic pressure
+  const markDiastolic = () => {
+    if (systolicMarked && !diastolicMarked && isDeflating) {
+      setDiastolicMarked(true);
+      setDiastolicPressure(cuffPressure);
+      setIsDeflating(false); // Stop deflation once diastolic is marked
+      setShowResults(true);
+      
+      // Calculate score
+      const systolicDiff = Math.abs(actualSystolic - systolicPressure);
+      const diastolicDiff = Math.abs(actualDiastolic - diastolicPressure);
+      
+      const systolicAccurate = systolicDiff <= (difficultyLevel === 'hard' ? 4 : 6);
+      const diastolicAccurate = diastolicDiff <= (difficultyLevel === 'hard' ? 4 : 6);
+      
+      let feedbackMessage = '';
+      
+      if (systolicAccurate && diastolicAccurate) {
+        feedbackMessage = 'Excellent! Your reading is very accurate.';
+        setScore(prev => ({ correct: prev.correct + 1, attempts: prev.attempts + 1 }));
+      } else if (systolicAccurate) {
+        feedbackMessage = `Good systolic reading, but your diastolic is off by ${diastolicDiff} mmHg. The actual diastolic pressure is ${actualDiastolic} mmHg.`;
+        setScore(prev => ({ correct: prev.correct, attempts: prev.attempts + 1 }));
+      } else if (diastolicAccurate) {
+        feedbackMessage = `Good diastolic reading, but your systolic is off by ${systolicDiff} mmHg. The actual systolic pressure is ${actualSystolic} mmHg.`;
+        setScore(prev => ({ correct: prev.correct, attempts: prev.attempts + 1 }));
+      } else {
+        feedbackMessage = `Your reading of ${systolicPressure}/${diastolicPressure} is not accurate. The actual blood pressure is ${actualSystolic}/${actualDiastolic} mmHg. Try again and listen carefully for the Korotkoff sounds.`;
+        setScore(prev => ({ correct: prev.correct, attempts: prev.attempts + 1 }));
+      }
+      
+      setFeedback(feedbackMessage);
+      setAttempt(prev => prev + 1);
+    }
+  };
+
+  // Effect for cuff deflation
+  useEffect(() => {
+    if (isDeflating && cuffPressure > 0) {
+      const deflationRate = difficultyLevel === 'hard' ? 1000 : (difficultyLevel === 'normal' ? 800 : 600);
+      
+      timerRef.current = setTimeout(() => {
+        setCuffPressure(prevPressure => Math.max(0, prevPressure - 2));
+      }, deflationRate);
+      
+      return () => clearTimeout(timerRef.current);
+    }
+  }, [isDeflating, cuffPressure, difficultyLevel]);
+
+  // Effect to determine the current Korotkoff phase
+  useEffect(() => {
+    if (cuffPressure > 0) {
+      const newPhase = determinePhase(cuffPressure);
+      if (newPhase !== currentPhase) {
+        setCurrentPhase(newPhase);
+        setAudioPlaying(newPhase !== 'none' && newPhase !== 'phase5');
+      }
+    } else {
+      setCurrentPhase(null);
+      setAudioPlaying(false);
+    }
+  }, [cuffPressure, currentPhase]);
+
+  // Effect to play appropriate sounds
+  useEffect(() => {
+    if (isDeflating && audioPlaying) {
+      playKorotkoffSound(currentPhase);
+    } else if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [currentPhase, isDeflating, audioPlaying]);
+
+  // Calculate success rate
+  const successRate = score.attempts > 0 ? Math.round((score.correct / score.attempts) * 100) : 0;
+
+  return (
+    <div className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 bg-gray-100 rounded-lg shadow-lg">
+      <audio ref={audioRef} volume={volume} />
+      
+      {/* Title and Instructions button */}
+      <div className="w-full flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-blue-800">Blood Pressure Measurement Simulator</h1>
+        <button 
+          onClick={() => setShowInstructions(!showInstructions)}
+          className="flex items-center bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700"
+        >
+          <HelpCircle size={18} className="mr-1" />
+          {showInstructions ? 'Hide Instructions' : 'Show Instructions'}
+        </button>
+      </div>
+      
+      {/* Instructions Panel */}
+      {showInstructions && (
+        <div className="w-full bg-white p-4 mb-4 rounded-md shadow">
+          <h2 className="text-lg font-semibold mb-2 text-blue-700">How to Use the Simulator</h2>
+          <ol className="list-decimal pl-5 space-y-2">
+            <li>Select a patient condition and difficulty level</li>
+            <li>Inflate the cuff by clicking the "Inflate Cuff" button until the pressure is high enough (above systolic)</li>
+            <li>Click "Start Deflating" to begin releasing pressure from the cuff</li>
+            <li>Listen carefully for Korotkoff sounds (turn up your volume)</li>
+            <li>When you hear the first clear tapping sound (Phase 1), click "Mark Systolic"</li>
+            <li>Continue deflating until the sounds disappear (Phase 5), then click "Mark Diastolic"</li>
+            <li>View your results and try again to improve accuracy</li>
+          </ol>
+          <div className="mt-4">
+            <button 
+              onClick={() => setShowPhaseInfo(!showPhaseInfo)}
+              className="text-blue-600 underline flex items-center"
+            >
+              <Info size={16} className="mr-1" />
+              {showPhaseInfo ? 'Hide Korotkoff Sounds Info' : 'Learn About Korotkoff Sounds'}
+            </button>
+          </div>
+          
+          {showPhaseInfo && (
+            <div className="mt-3 p-3 bg-blue-50 rounded-md">
+              <h3 className="font-semibold text-blue-800 mb-2">The Five Phases of Korotkoff Sounds</h3>
+              <ul className="space-y-1">
+                <li><span className="font-medium">Phase 1:</span> Clear, sharp tapping sounds - <span className="font-semibold text-red-600">This indicates SYSTOLIC pressure</span></li>
+                <li><span className="font-medium">Phase 2:</span> Swishing or whooshing sounds</li>
+                <li><span className="font-medium">Phase 3:</span> Crisp, loud sounds similar to Phase 1 but sharper</li>
+                <li><span className="font-medium">Phase 4:</span> Muffled, softer blowing sounds</li>
+                <li><span className="font-medium">Phase 5:</span> Silence (sounds disappear completely) - <span className="font-semibold text-red-600">This indicates DIASTOLIC pressure</span></li>
+              </ul>
+              <p className="mt-2 text-sm">In clinical practice, Phase 1 corresponds to systolic pressure and Phase 5 (complete disappearance of sounds) corresponds to diastolic pressure.</p>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Settings Panel */}
+      <div className="w-full bg-white p-4 mb-4 rounded-md shadow">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <h3 className="font-semibold mb-2">Patient Condition</h3>
+            <div className="flex flex-col space-y-2">
+              <button 
+                className={`px-3 py-1 rounded-md ${patientCondition === 'normal' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => selectPatientCondition('normal')}
+              >
+                Normal
+              </button>
+              <button 
+                className={`px-3 py-1 rounded-md ${patientCondition === 'hypertension' ? 'bg-red-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => selectPatientCondition('hypertension')}
+              >
+                Hypertension
+              </button>
+              <button 
+                className={`px-3 py-1 rounded-md ${patientCondition === 'hypotension' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => selectPatientCondition('hypotension')}
+              >
+                Hypotension
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="font-semibold mb-2">Difficulty Level</h3>
+            <div className="flex flex-col space-y-2">
+              <button 
+                className={`px-3 py-1 rounded-md ${difficultyLevel === 'easy' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => setDifficultyLevel('easy')}
+              >
+                Easy
+              </button>
+              <button 
+                className={`px-3 py-1 rounded-md ${difficultyLevel === 'normal' ? 'bg-yellow-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => setDifficultyLevel('normal')}
+              >
+                Normal
+              </button>
+              <button 
+                className={`px-3 py-1 rounded-md ${difficultyLevel === 'hard' ? 'bg-red-600 text-white' : 'bg-gray-200'}`}
+                onClick={() => setDifficultyLevel('hard')}
+              >
+                Hard
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="font-semibold mb-2">Volume</h3>
+            <div className="flex items-center">
+              <Volume2 size={18} className="mr-2" />
+              <input 
+                type="range" 
+                min="0" 
+                max="1" 
+                step="0.1" 
+                value={volume} 
+                onChange={(e) => setVolume(parseFloat(e.target.value))}
+                className="w-full"
+              />
+            </div>
+            <div className="mt-4">
+              <p className="text-sm">Success Rate: {successRate}% ({score.correct}/{score.attempts})</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Blood Pressure Cuff and Controls */}
+      <div className="w-full bg-white p-6 rounded-md shadow-md mb-4">
+        <div className="flex flex-col items-center">
+          {/* Sphygmomanometer Display */}
+          <div className="w-full max-w-md h-36 border-4 border-gray-700 rounded-full bg-white relative mb-6">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-4xl font-bold text-red-600">{cuffPressure}</span>
+              <span className="text-lg ml-1">mmHg</span>
+            </div>
+            
+            {/* Pressure gauge indicators */}
+            <div className="absolute top-0 left-0 w-full h-full">
+              {/* Gauge markings - simplified */}
+              <div className="w-full h-full relative">
+                {Array.from({ length: maxPressure / 20 + 1 }).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="absolute font-semibold text-xs"
+                    style={{
+                      top: '50%',
+                      left: `${(i * 20 / maxPressure) * 100}%`,
+                      transform: 'translateY(-50%)'
+                    }}
+                  >
+                    {i * 20}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Current pressure indicator */}
+              <div 
+                className="absolute w-2 h-6 bg-red-600 rounded-b-full"
+                style={{
+                  left: `${(cuffPressure / maxPressure) * 100}%`,
+                  top: '50%',
+                  transform: 'translateX(-50%)'
+                }}
+              ></div>
+              
+              {/* Systolic marker if set */}
+              {systolicMarked && (
+                <div 
+                  className="absolute w-2 h-6 bg-green-600 rounded-b-full"
+                  style={{
+                    left: `${(systolicPressure / maxPressure) * 100}%`,
+                    top: '50%',
+                    transform: 'translateX(-50%)'
+                  }}
+                ></div>
+              )}
+              
+              {/* Diastolic marker if set */}
+              {diastolicMarked && (
+                <div 
+                  className="absolute w-2 h-6 bg-blue-600 rounded-b-full"
+                  style={{
+                    left: `${(diastolicPressure / maxPressure) * 100}%`,
+                    top: '50%',
+                    transform: 'translateX(-50%)'
+                  }}
+                ></div>
+              )}
+            </div>
+          </div>
+          
+          {/* Visual representation of arm with cuff */}
+          <div className="w-full max-w-md h-24 bg-gray-200 rounded-md relative mb-6">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-3/4 h-10 bg-gradient-to-r from-gray-300 to-gray-400 rounded-md"></div>
+              <div 
+                className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3/5 h-16 ${cuffPressure > 0 ? 'bg-red-400' : 'bg-blue-400'} rounded-md flex items-center justify-center border-2 border-gray-600`}
+              >
+                <span className="text-white font-bold">BP CUFF</span>
+              </div>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 mb-6 flex items-center">
+                <div className="w-4 h-4 rounded-full bg-blue-600"></div>
+                <div className="h-1 w-16 bg-blue-600"></div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Current Phase Display */}
+          <div className="w-full max-w-md mb-4 text-center">
+            <h3 className="text-lg font-semibold mb-1">Current Sound:</h3>
+            <div className="py-2 px-4 bg-gray-100 rounded-md">
+              {!isDeflating ? (
+                <span>Not deflating - no sounds</span>
+              ) : currentPhase === 'none' || currentPhase === 'phase5' ? (
+                <span>No sounds</span>
+              ) : currentPhase === 'phase1' ? (
+                <span className="font-semibold text-red-600">Phase 1: Clear tapping sounds (Systolic)</span>
+              ) : currentPhase === 'phase2' ? (
+                <span>Phase 2: Swishing sounds</span>
+              ) : currentPhase === 'phase3' ? (
+                <span>Phase 3: Crisp, loud sounds</span>
+              ) : currentPhase === 'phase4' ? (
+                <span className="font-semibold text-blue-600">Phase 4: Muffled, softer sounds (approaching Diastolic)</span>
+              ) : (
+                <span>-</span>
+              )}
+            </div>
+          </div>
+          
+          {/* Controls */}
+          <div className="w-full max-w-md grid grid-cols-2 gap-3">
+            <button 
+              onClick={inflateCuff}
+              disabled={isDeflating || cuffPressure >= maxPressure}
+              className={`py-2 px-4 rounded-md font-medium ${isDeflating || cuffPressure >= maxPressure ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+            >
+              Inflate Cuff
+            </button>
+            
+            {!isDeflating ? (
+              <button 
+                onClick={startDeflation}
+                disabled={cuffPressure <= 0}
+                className={`py-2 px-4 rounded-md font-medium ${cuffPressure <= 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+              >
+                <Play size={16} className="inline mr-1" />
+                Start Deflating
+              </button>
+            ) : (
+              <button 
+                onClick={stopDeflation}
+                className="py-2 px-4 bg-red-600 text-white rounded-md font-medium hover:bg-red-700"
+              >
+                <Pause size={16} className="inline mr-1" />
+                Pause Deflation
+              </button>
+            )}
+            
+            <button 
+              onClick={markSystolic}
+              disabled={!isDeflating || systolicMarked}
+              className={`py-2 px-4 rounded-md font-medium ${!isDeflating || systolicMarked ? 'bg-gray-300 cursor-not-allowed' : 'bg-yellow-600 text-white hover:bg-yellow-700'}`}
+            >
+              Mark Systolic
+            </button>
+            
+            <button 
+              onClick={markDiastolic}
+              disabled={!systolicMarked || diastolicMarked || !isDeflating}
+              className={`py-2 px-4 rounded-md font-medium ${!systolicMarked || diastolicMarked || !isDeflating ? 'bg-gray-300 cursor-not-allowed' : 'bg-yellow-600 text-white hover:bg-yellow-700'}`}
+            >
+              Mark Diastolic
+            </button>
+            
+            <button 
+              onClick={resetSimulation}
+              className="py-2 px-4 bg-gray-600 text-white rounded-md font-medium hover:bg-gray-700 col-span-2"
+            >
+              <SkipBack size={16} className="inline mr-1" />
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Results */}
+      {showResults && (
+        <div className={`w-full p-4 rounded-md shadow mb-4 ${feedback.includes('Excellent') ? 'bg-green-100 border-l-4 border-green-500' : feedback.includes('Good') ? 'bg-yellow-100 border-l-4 border-yellow-500' : 'bg-red-100 border-l-4 border-red-500'}`}>
+          <h2 className="text-lg font-semibold mb-2">Results</h2>
+          <div className="mb-2">
+            <p>Your reading: <span className="font-bold">{systolicPressure}/{diastolicPressure} mmHg</span></p>
+            <p>Actual BP: <span className="font-bold">{actualSystolic}/{actualDiastolic} mmHg</span></p>
+          </div>
+          <p className="text-sm italic">{feedback}</p>
+          
+          <div className="mt-3 flex space-x-2">
+            {feedback.includes('Excellent') ? (
+              <Check size={20} className="text-green-600" />
+            ) : (
+              <X size={20} className="text-red-600" />
+            )}
+            <p className="text-sm">
+              <span className="font-medium">Interpretation:</span> {' '}
+              {actualSystolic >= 140 || actualDiastolic >= 90 ? 
+                'Hypertension (High Blood Pressure)' : 
+                actualSystolic < 90 || actualDiastolic < 60 ? 
+                'Hypotension (Low Blood Pressure)' : 
+                'Normal Blood Pressure'}
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Educational Information */}
+      <div className="w-full bg-white p-4 rounded-md shadow">
+        <h2 className="text-lg font-semibold mb-2 text-blue-700">Blood Pressure Categories</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Systolic (mmHg)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diastolic (mmHg)</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-blue-600">Hypotension</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">&lt; 90</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">&lt; 60</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-green-600">Normal</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">&lt; 120</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">&lt; 80</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-yellow-600">Elevated</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">120-129</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">&lt; 80</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-red-500">Hypertension Stage 1</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">130-139</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">80-89</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-red-600">Hypertension Stage 2</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">≥ 140</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">≥ 90</td>
+              </tr>
+              <tr>
+                <td className="px-6 py-2 whitespace-nowrap text-sm font-medium text-red-800">Hypertensive Crisis</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">&gt; 180</td>
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">&gt; 120</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BloodPressureMeasurementSimulator;
