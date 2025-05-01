@@ -1,0 +1,140 @@
+import React, { useState, useEffect } from 'react';
+
+const ADCSimulator = () => {
+  // State variables
+  const [analogInput, setAnalogInput] = useState(0);
+  const [digitalOutput, setDigitalOutput] = useState(0);
+  const [binaryOutput, setBinaryOutput] = useState('00000000');
+  
+  // ADC configuration
+  const MIN_VOLTAGE = -12;
+  const MAX_VOLTAGE = 12;
+  const VOLTAGE_RANGE = MAX_VOLTAGE - MIN_VOLTAGE;
+  const BIT_DEPTH = 8;
+  const MAX_DIGITAL_VALUE = Math.pow(2, BIT_DEPTH) - 1; // 255
+  const VOLTAGE_STEP = VOLTAGE_RANGE / MAX_DIGITAL_VALUE; // ~0.09375V per step
+  
+  // Convert analog to digital whenever the input changes
+  useEffect(() => {
+    // Ensure input is within range
+    const clampedInput = Math.max(MIN_VOLTAGE, Math.min(MAX_VOLTAGE, analogInput));
+    
+    // Scale the input voltage to 0-255 range
+    const normalized = clampedInput - MIN_VOLTAGE; // Shift to 0-24V range
+    const rawDigital = Math.round(normalized / VOLTAGE_STEP);
+    
+    // Set digital output value
+    setDigitalOutput(rawDigital);
+    
+    // Convert to 8-bit binary representation
+    const binary = rawDigital.toString(2).padStart(8, '0');
+    setBinaryOutput(binary);
+  }, [analogInput]);
+  
+  // Calculate position for the voltage marker
+  const getMarkerPosition = () => {
+    const percentage = ((analogInput - MIN_VOLTAGE) / VOLTAGE_RANGE) * 100;
+    return Math.max(0, Math.min(100, percentage));
+  };
+
+  // Calculate the actual voltage represented by the digital value
+  const getQuantizedVoltage = () => {
+    const normalized = digitalOutput * VOLTAGE_STEP;
+    return (normalized + MIN_VOLTAGE).toFixed(3);
+  };
+  
+  return (
+    <div className="p-6 max-w-3xl mx-auto bg-gray-50 rounded-xl shadow-md">
+      <h1 className="text-2xl font-bold mb-6 text-center text-blue-800">8-bit Analog-to-Digital Converter</h1>
+      
+      {/* Input section */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-2">Analog Input</h2>
+        <div className="flex items-center mb-2">
+          <input
+            type="range"
+            min={MIN_VOLTAGE}
+            max={MAX_VOLTAGE}
+            step="0.01"
+            value={analogInput}
+            onChange={(e) => setAnalogInput(parseFloat(e.target.value))}
+            className="w-full"
+          />
+        </div>
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>{MIN_VOLTAGE}V</span>
+          <span>0V</span>
+          <span>{MAX_VOLTAGE}V</span>
+        </div>
+        <div className="mt-2 text-center font-mono bg-white p-2 rounded border">
+          Input Voltage: <span className="font-bold text-blue-700">{analogInput.toFixed(3)}V</span>
+        </div>
+      </div>
+      
+      {/* Conversion Visualization */}
+      <div className="mb-8 p-4 bg-white rounded-lg border">
+        <h2 className="text-lg font-semibold mb-3">Conversion Process</h2>
+        
+        {/* Voltage scale visualization */}
+        <div className="relative h-12 bg-gradient-to-r from-blue-700 via-blue-500 to-red-500 rounded-md mb-2">
+          <div 
+            className="absolute top-0 bottom-0 w-1 bg-black" 
+            style={{ left: `${getMarkerPosition()}%` }}
+          />
+          <div 
+            className="absolute top-full mt-1 transform -translate-x-1/2 text-sm font-mono"
+            style={{ left: `${getMarkerPosition()}%` }}
+          >
+            {analogInput.toFixed(3)}V
+          </div>
+        </div>
+        
+        {/* Quantization effect visualization */}
+        <div className="mt-8 bg-gray-100 p-3 rounded-md">
+          <p className="mb-2">Quantization:</p>
+          <ul className="list-disc pl-5 text-sm">
+            <li>Voltage Range: {MIN_VOLTAGE}V to {MAX_VOLTAGE}V (Total: {VOLTAGE_RANGE}V)</li>
+            <li>Digital Range: 0 to {MAX_DIGITAL_VALUE} ({BIT_DEPTH}-bit resolution)</li>
+            <li>Voltage per Step: {VOLTAGE_STEP.toFixed(5)}V</li>
+            <li>
+              Quantized Voltage: <span className="font-mono font-bold">{getQuantizedVoltage()}V</span>
+              {analogInput.toFixed(3) !== getQuantizedVoltage() && 
+                <span className="text-red-500"> (Quantization error: {(analogInput - getQuantizedVoltage()).toFixed(5)}V)</span>
+              }
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      {/* Output section */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">Digital Output</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white p-3 rounded border">
+            <p className="text-sm text-gray-500 mb-1">Decimal</p>
+            <p className="font-mono text-2xl text-center font-bold">{digitalOutput}</p>
+          </div>
+          <div className="bg-white p-3 rounded border">
+            <p className="text-sm text-gray-500 mb-1">Binary</p>
+            <p className="font-mono text-2xl text-center font-bold">{binaryOutput}</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Technical explanation */}
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <h2 className="text-lg font-semibold mb-2">How This ADC Works</h2>
+        <p className="mb-2">This simulator demonstrates an 8-bit ADC converting voltages from -12V to +12V:</p>
+        <ol className="list-decimal pl-5 space-y-1 text-sm">
+          <li>The input range (-12V to +12V) is divided into 256 equal steps</li>
+          <li>Each step represents approximately 0.09375V (24V ÷ 256)</li>
+          <li>The analog input is normalized to calculate which of the 256 levels it falls into</li>
+          <li>Quantization error occurs because continuous values are rounded to discrete steps</li>
+          <li>The digital output is represented in both decimal (0-255) and binary formats</li>
+        </ol>
+      </div>
+    </div>
+  );
+};
+
+export default ADCSimulator;
