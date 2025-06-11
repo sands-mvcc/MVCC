@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perplexity & Burstiness Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f9fafb;
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 16px;
+        }
+
+        .header p {
+            font-size: 1.125rem;
+            color: #6b7280;
+            max-width: 768px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+            background-color: #e5e7eb;
+            padding: 4px;
+            border-radius: 8px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            font-weight: 600;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            color: #374151;
+        }
+
+        .tab-button.active {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .tab-button:hover:not(.active) {
+            background-color: #d1d5db;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .tab-content {
+            padding: 24px;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-box {
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .info-box.blue {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .info-box.green {
+            background-color: #f0fdf4;
+            border-left: 4px solid #10b981;
+        }
+
+        .info-box.purple {
+            background-color: #faf5ff;
+            border-left: 4px solid #8b5cf6;
+        }
+
+        .info-box h3 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .info-box.blue h3 {
+            color: #1e40af;
+        }
+
+        .info-box.green h3 {
+            color: #047857;
+        }
+
+        .info-box.purple h3 {
+            color: #7c3aed;
+        }
+
+        .math-formula {
+            background: white;
+            padding: 16px;
+            border-radius: 4px;
+            border-left: 4px solid #60a5fa;
+            margin-top: 12px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .sample-text {
+            padding: 12px;
+            background-color: #f9fafb;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+
+        .sample-text-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .sample-text-type {
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .perplexity-score {
+            font-size: 0.875rem;
+            background-color: #dbeafe;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .sample-text-content {
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        .textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            height: 96px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .result-box {
+            margin-top: 12px;
+            padding: 12px;
+            background-color: #f0fdf4;
+            border-radius: 4px;
+        }
+
+        .result-box .score {
+            font-weight: 500;
+        }
+
+        .result-box .interpretation {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin-top: 4px;
+        }
+
+        .select {
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #e5e7eb;
+        }
+
+        .table th,
+        .table td {
+            border: 1px solid #e5e7eb;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+
+        .table td {
+            font-size: 0.875rem;
+        }
+
+        .complexity-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .complexity-high {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+
+        .complexity-medium {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+
+        .complexity-low {
+            background-color: #dcfce7;
+            color: #16a34a;
+        }
+
+        .characteristics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .characteristic-box {
+            padding: 16px;
+            border-radius: 4px;
+        }
+
+        .characteristic-box.human {
+            background-color: #eff6ff;
+        }
+
+        .characteristic-box.ai {
+            background-color: #f0fdf4;
+        }
+
+        .characteristic-box h5 {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .characteristic-box.human h5 {
+            color: #1e40af;
+        }
+
+        .characteristic-box.ai h5 {
+            color: #047857;
+        }
+
+        .characteristic-box ul {
+            font-size: 0.875rem;
+            margin-top: 8px;
+            padding-left: 16px;
+        }
+
+        .characteristic-box.human ul {
+            color: #1e40af;
+        }
+
+        .characteristic-box.ai ul {
+            color: #047857;
+        }
+
+        .application-boxes {
+            display: grid;
+            gap: 12px;
+        }
+
+        .application-box {
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .application-box.blue {
+            background-color: #eff6ff;
+            border-left-color: #3b82f6;
+        }
+
+        .application-box.green {
+            background-color: #f0fdf4;
+            border-left-color: #10b981;
+        }
+
+        .application-box.yellow {
+            background-color: #fffbeb;
+            border-left-color: #f59e0b;
+        }
+
+        .application-box h5 {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .application-box p {
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        .limitations-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .limitation-box {
+            padding: 16px;
+            border-radius: 4px;
+        }
+
+        .limitation-box.orange {
+            background-color: #fff7ed;
+        }
+
+        .limitation-box.red {
+            background-color: #fef2f2;
+        }
+
+        .limitation-box h5 {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .limitation-box.orange h5 {
+            color: #ea580c;
+        }
+
+        .limitation-box.red h5 {
+            color: #dc2626;
+        }
+
+        .limitation-box ul {
+            font-size: 0.875rem;
+            padding-left: 16px;
+        }
+
+        .limitation-box.orange ul {
+            color: #ea580c;
+        }
+
+        .limitation-box.red ul {
+            color: #dc2626;
+        }
+
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .footer p {
+            margin-bottom: 8px;
+        }
+
+        .burstiness-scores {
+            display: grid;
+            gap: 12px;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: #f9fafb;
+            border-radius: 4px;
+        }
+
+        .score-item .name {
+            font-weight: 500;
+        }
+
+        .score-item .score-info {
+            text-align: right;
+        }
+
+        .score-value {
+            font-size: 1.125rem;
+            font-weight: bold;
+        }
+
+        .score-level {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .characteristics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .limitations-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .tabs {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Perplexity & Burstiness Simulator</h1>
+            <p>
+                Explore the key metrics used to evaluate language models and distinguish between human and AI-generated text. 
+                Interactive demonstrations show how these concepts work in practice.
+            </p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('perplexity', this)">Perplexity</button>
+            <button class="tab-button" onclick="switchTab('burstiness', this)">Burstiness</button>
+            <button class="tab-button" onclick="switchTab('comparison', this)">Comparison</button>
+        </div>
+
+        <div class="main-content">
+            <!-- Perplexity Tab -->
+            <div id="perplexity-tab" class="tab-content active">
+                <div class="info-box blue">
+                    <h3>What is Perplexity?</h3>
+                    <p>
+                        Perplexity measures how well a language model predicts the next word in a sequence. It quantifies the model's "surprise" when encountering new data — lower surprise indicates better prediction accuracy.
+                    </p>
+                    <div class="math-formula">
+                        <p><strong>Mathematical Definition:</strong></p>
+                        <p style="margin-top: 8px;">PPL(X) = exp(-1/N × Σ log P(xi|x&lt;i))</p>
+                        <p style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">Where lower values indicate better prediction</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h4>Perplexity Comparison</h4>
+                        <div class="chart-container">
+                            <canvas id="perplexityChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4>Sample Texts</h4>
+                        <div id="sampleTexts"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>Interactive Perplexity Calculator</h4>
+                    <textarea 
+                        id="customText" 
+                        class="textarea" 
+                        placeholder="Enter your own text to calculate its perplexity..."
+                        oninput="calculateCustomPerplexity()"
+                    ></textarea>
+                    <div id="customResult" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Burstiness Tab -->
+            <div id="burstiness-tab" class="tab-content">
+                <div class="info-box green">
+                    <h3>What is Burstiness?</h3>
+                    <p>
+                        Burstiness is a measure of how much writing patterns and text perplexities vary over the entire document. As humans, we have a tendency to vary our writing patterns, while language models write with a very consistent level of AI-likeness.
+                    </p>
+                    <div class="math-formula">
+                        <p><strong>Key Characteristics:</strong></p>
+                        <ul style="margin-top: 8px; padding-left: 16px;">
+                            <li>High burstiness: Variable sentence lengths and structures</li>
+                            <li>Low burstiness: Consistent, uniform patterns</li>
+                            <li>Measures intermittent increases and decreases in activity</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h4>Burstiness Comparison</h4>
+                        <div class="chart-container">
+                            <canvas id="burstinessChart"></canvas>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">Higher values indicate more variation in writing patterns</p>
+                    </div>
+
+                    <div class="card">
+                        <h4>Burstiness Scores</h4>
+                        <div id="burstinessScores" class="burstiness-scores"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>Sentence-by-Sentence Analysis</h4>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 8px;">Select Text to Analyze:</label>
+                        <select id="textSelector" class="select" onchange="updateSentenceAnalysis()">
+                            <option value="0">Human Text</option>
+                            <option value="1">AI Text</option>
+                            <option value="2">Mixed Text</option>
+                        </select>
+                    </div>
+                    
+                    <div style="overflow-x: auto;">
+                        <table class="table" id="sentenceTable">
+                            <thead>
+                                <tr>
+                                    <th>Sentence</th>
+                                    <th>Length</th>
+                                    <th>Perplexity</th>
+                                    <th>Complexity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sentenceTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Tab -->
+            <div id="comparison-tab" class="tab-content">
+                <div class="info-box purple">
+                    <h3>Perplexity vs Burstiness</h3>
+                    <p>
+                        Understanding how these metrics work together to distinguish human and AI-generated text.
+                    </p>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h4>Human vs AI Characteristics</h4>
+                        <div class="characteristics-grid">
+                            <div class="characteristic-box human">
+                                <h5>Human Writing</h5>
+                                <ul>
+                                    <li>Higher perplexity (more surprising word choices)</li>
+                                    <li>Higher burstiness (varied sentence structures)</li>
+                                    <li>Natural inconsistencies and creativity</li>
+                                    <li>Emotional and contextual variations</li>
+                                </ul>
+                            </div>
+                            <div class="characteristic-box ai">
+                                <h5>AI Writing</h5>
+                                <ul>
+                                    <li>Lower perplexity (predictable patterns)</li>
+                                    <li>Lower burstiness (consistent structure)</li>
+                                    <li>Formulaic word selection</li>
+                                    <li>Uniform sentence construction</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4>Real-World Applications</h4>
+                        <div class="application-boxes">
+                            <div class="application-box blue">
+                                <h5>AI Detection</h5>
+                                <p>GPTZero and other tools use these metrics to identify AI-generated content</p>
+                            </div>
+                            <div class="application-box green">
+                                <h5>Language Model Evaluation</h5>
+                                <p>Perplexity is a key metric for evaluating language model performance</p>
+                            </div>
+                            <div class="application-box yellow">
+                                <h5>Content Quality Assessment</h5>
+                                <p>Writers use these concepts to improve engagement and naturalness</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>Limitations and Considerations</h4>
+                    <div class="limitations-grid">
+                        <div class="limitation-box orange">
+                            <h5>Perplexity Limitations</h5>
+                            <ul>
+                                <li>May not capture broad contextual understanding</li>
+                                <li>Challenges in capturing ambiguity and creativity</li>
+                                <li>Vocabulary size affects performance</li>
+                                <li>Can flag human text as AI-generated</li>
+                            </ul>
+                        </div>
+                        <div class="limitation-box red">
+                            <h5>Burstiness Limitations</h5>
+                            <ul>
+                                <li>Genre-dependent patterns can skew results</li>
+                                <li>Cultural and linguistic variations</li>
+                                <li>False positives with non-native speakers</li>
+                                <li>Context-dependent meaning</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This simulator demonstrates simplified versions of perplexity and burstiness calculations for educational purposes.</p>
+            <p>Real-world implementations use more sophisticated algorithms and larger datasets.</p>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to store chart instances
+        let perplexityChartInstance = null;
+        let burstinessChartInstance = null;
+
+        // Sample texts for demonstration
+        const sampleTexts = {
+            human: "The cat sat on the mat. But wait - this wasn't just any ordinary feline! This particular cat, with its magnificent whiskers twitching mysteriously, had discovered something extraordinary beneath that worn, threadbare mat.",
+            ai: "The cat sat on the mat. The cat was comfortable on the mat. The mat provided a good surface for the cat. The cat remained on the mat for an extended period.",
+            mixed: "The weather is nice today. It's sunny and warm. However, the meteorological conditions exhibit fascinating atmospheric dynamics! The barometric pressure fluctuates unpredictably."
+        };
+
+        // Vocabulary for probability calculations
+        const vocabulary = ['the', 'cat', 'sat', 'on', 'mat', 'was', 'is', 'nice', 'today', 'and', 'warm', 'a', 'good', 'surface', 'for', 'provided', 'comfortable', 'remained', 'extended', 'period', 'weather', 'sunny', 'it', 'however', 'meteorological', 'conditions', 'exhibit', 'fascinating', 'atmospheric', 'dynamics', 'barometric', 'pressure', 'fluctuates', 'unpredictably', 'but', 'wait', 'this', 'wasn', 't', 'just', 'any', 'ordinary', 'feline', 'particular', 'with', 'its', 'magnificent', 'whiskers', 'twitching', 'mysteriously', 'had', 'discovered', 'something', 'extraordinary', 'beneath', 'that', 'worn', 'threadbare'];
+
+        // Calculate perplexity for a sentence
+        function calculatePerplexity(sentence) {
+            const words = sentence.toLowerCase().replace(/[^a-z\s]/g, '').split(' ').filter(w => w.length > 0);
+            if (words.length === 0) return 1;
+
+            let totalLogProb = 0;
+            
+            words.forEach((word, index) => {
+                const context = words.slice(Math.max(0, index - 2), index);
+                
+                // Simulate probability based on word frequency and context
+                let probability;
+                
+                if (vocabulary.includes(word)) {
+                    // Common words have higher probability
+                    const baseProb = vocabulary.indexOf(word) < 20 ? 0.1 : 0.05;
+                    
+                    // Context influences probability
+                    if (context.includes('the') && ['cat', 'mat', 'weather'].includes(word)) {
+                        probability = baseProb * 2;
+                    } else if (context.includes('cat') && ['sat', 'was'].includes(word)) {
+                        probability = baseProb * 1.5;
+                    } else {
+                        probability = baseProb;
+                    }
+                } else {
+                    // Rare/unknown words have low probability
+                    probability = 0.01;
+                }
+                
+                // Ensure probability is within bounds
+                probability = Math.max(0.001, Math.min(0.5, probability));
+                totalLogProb += Math.log(probability);
+            });
+
+            const avgLogProb = totalLogProb / words.length;
+            return Math.exp(-avgLogProb);
+        }
+
+        // Calculate burstiness for a text
+        function calculateBurstiness(text) {
+            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            if (sentences.length === 0) return 0;
+
+            const sentenceLengths = sentences.map(s => s.trim().split(/\s+/).length);
+            const perplexities = sentences.map(s => calculatePerplexity(s));
+            
+            // Calculate variance in sentence lengths
+            const avgLength = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
+            const lengthVariance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / sentenceLengths.length;
+            
+            // Calculate variance in perplexities
+            const avgPerplexity = perplexities.reduce((a, b) => a + b, 0) / perplexities.length;
+            const perplexityVariance = perplexities.reduce((sum, perp) => sum + Math.pow(perp - avgPerplexity, 2), 0) / perplexities.length;
+            
+            // Combine both measures for burstiness score
+            return Math.sqrt(lengthVariance + perplexityVariance);
+        }
+
+        // Switch between tabs
+        function switchTab(tabName, buttonElement) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked button
+            buttonElement.classList.add('active');
+            
+            // Initialize content for specific tabs
+            setTimeout(() => {
+                if (tabName === 'perplexity') {
+                    initializePerplexityChart();
+                    initializeSampleTexts();
+                } else if (tabName === 'burstiness') {
+                    initializeBurstinessChart();
+                    initializeBurstinessScores();
+                    updateSentenceAnalysis();
+                }
+            }, 100);
+        }
+
+        // Initialize perplexity chart
+        function initializePerplexityChart() {
+            const canvas = document.getElementById('perplexityChart');
+            if (!canvas) return;
+            
+            // Destroy existing chart if it exists
+            if (perplexityChartInstance) {
+                perplexityChartInstance.destroy();
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            const data = Object.entries(sampleTexts).map(([type, text]) => ({
+                type: type.charAt(0).toUpperCase() + type.slice(1),
+                perplexity: calculatePerplexity(text)
+            }));
+
+            perplexityChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.type),
+                    datasets: [{
+                        label: 'Perplexity',
+                        data: data.map(d => d.perplexity),
+                        backgroundColor: ['#8884d8', '#82ca9d', '#ffc658'],
+                        borderColor: ['#8884d8', '#82ca9d', '#ffc658'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Perplexity Score'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Text Type'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Perplexity: ' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize sample texts display
+        function initializeSampleTexts() {
+            const container = document.getElementById('sampleTexts');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            Object.entries(sampleTexts).forEach(([type, text]) => {
+                const perplexity = calculatePerplexity(text);
+                
+                const sampleDiv = document.createElement('div');
+                sampleDiv.className = 'sample-text';
+                sampleDiv.innerHTML = `
+                    <div class="sample-text-header">
+                        <span class="sample-text-type">${type} Text:</span>
+                        <span class="perplexity-score">PPL: ${perplexity.toFixed(2)}</span>
+                    </div>
+                    <p class="sample-text-content">${text}</p>
+                `;
+                
+                container.appendChild(sampleDiv);
+            });
+        }
+
+        // Calculate custom perplexity
+        function calculateCustomPerplexity() {
+            const textInput = document.getElementById('customText');
+            const resultDiv = document.getElementById('customResult');
+            
+            if (!textInput || !resultDiv) return;
+            
+            const text = textInput.value;
+            
+            if (text.trim()) {
+                const perplexity = calculatePerplexity(text);
+                const interpretation = perplexity < 10 ? 'Low perplexity - very predictable (AI-like)' :
+                                    perplexity < 30 ? 'Medium perplexity - moderately predictable' :
+                                    'High perplexity - unpredictable (human-like)';
+                
+                resultDiv.innerHTML = `
+                    <div class="result-box">
+                        <p class="score">Your text perplexity: ${perplexity.toFixed(2)}</p>
+                        <p class="interpretation">${interpretation}</p>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+            } else {
+                resultDiv.style.display = 'none';
+            }
+        }
+
+        // Initialize burstiness chart
+        function initializeBurstinessChart() {
+            const canvas = document.getElementById('burstinessChart');
+            if (!canvas) return;
+            
+            // Destroy existing chart if it exists
+            if (burstinessChartInstance) {
+                burstinessChartInstance.destroy();
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            const data = Object.entries(sampleTexts).map(([type, text]) => ({
+                type: type.charAt(0).toUpperCase() + type.slice(1),
+                burstiness: calculateBurstiness(text),
+                avgPerplexity: calculatePerplexity(text)
+            }));
+
+            burstinessChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Text Types',
+                        data: data.map((d, index) => ({ 
+                            x: d.avgPerplexity, 
+                            y: d.burstiness,
+                            label: d.type
+                        })),
+                        backgroundColor: ['#8884d8', '#82ca9d', '#ffc658'],
+                        borderColor: ['#8884d8', '#82ca9d', '#ffc658'],
+                        pointRadius: 8,
+                        pointHoverRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Average Perplexity'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Burstiness Score'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const dataIndex = context.dataIndex;
+                                    const type = data[dataIndex].type;
+                                    return `${type}: Perplexity ${context.parsed.x.toFixed(2)}, Burstiness ${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize burstiness scores
+        function initializeBurstinessScores() {
+            const container = document.getElementById('burstinessScores');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            Object.entries(sampleTexts).forEach(([type, text]) => {
+                const burstiness = calculateBurstiness(text);
+                const level = burstiness > 15 ? 'High' : burstiness > 8 ? 'Medium' : 'Low';
+                
+                const scoreDiv = document.createElement('div');
+                scoreDiv.className = 'score-item';
+                scoreDiv.innerHTML = `
+                    <span class="name">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                    <div class="score-info">
+                        <div class="score-value">${burstiness.toFixed(2)}</div>
+                        <div class="score-level">${level} Burstiness</div>
+                    </div>
+                `;
+                
+                container.appendChild(scoreDiv);
+            });
+        }
+
+        // Update sentence analysis
+        function updateSentenceAnalysis() {
+            const selector = document.getElementById('textSelector');
+            const tbody = document.getElementById('sentenceTableBody');
+            
+            if (!selector || !tbody) return;
+            
+            const selectedIndex = parseInt(selector.value);
+            const selectedText = Object.values(sampleTexts)[selectedIndex];
+            
+            if (!selectedText) return;
+            
+            const sentences = selectedText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            tbody.innerHTML = '';
+            
+            sentences.forEach((sentence, index) => {
+                const trimmedSentence = sentence.trim();
+                const perplexity = calculatePerplexity(trimmedSentence);
+                const length = trimmedSentence.split(/\s+/).length;
+                const complexity = sentence.includes('!') || sentence.includes('?') ? 'High' : 
+                                 sentence.split(',').length > 1 ? 'Medium' : 'Low';
+                
+                const complexityClass = complexity === 'High' ? 'complexity-high' :
+                                      complexity === 'Medium' ? 'complexity-medium' : 'complexity-low';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${trimmedSentence}</td>
+                    <td style="text-align: center;">${length}</td>
+                    <td style="text-align: center;">${perplexity.toFixed(2)}</td>
+                    <td style="text-align: center;">
+                        <span class="complexity-badge ${complexityClass}">${complexity}</span>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Initialize perplexity tab content (default active tab)
+                initializePerplexityChart();
+                initializeSampleTexts();
+                
+                // Add error handling for chart canvas elements
+                const perplexityCanvas = document.getElementById('perplexityChart');
+                const burstinessCanvas = document.getElementById('burstinessChart');
+                
+                if (!perplexityCanvas) {
+                    console.warn('Perplexity chart canvas not found');
+                }
+                
+                if (!burstinessCanvas) {
+                    console.warn('Burstiness chart canvas not found');
+                }
+                
+                // Initialize custom text calculator
+                const customTextArea = document.getElementById('customText');
+                if (customTextArea) {
+                    customTextArea.addEventListener('input', calculateCustomPerplexity);
+                }
+                
+                // Initialize text selector
+                const textSelector = document.getElementById('textSelector');
+                if (textSelector) {
+                    textSelector.addEventListener('change', updateSentenceAnalysis);
+                }
+                
+            } catch (error) {
+                console.error('Error initializing simulator:', error);
+            }
+        });
+
+        // Handle window resize for chart responsiveness
+        window.addEventListener('resize', function() {
+            if (perplexityChartInstance) {
+                perplexityChartInstance.resize();
+            }
+            if (burstinessChartInstance) {
+                burstinessChartInstance.resize();
+            }
+        });
+
+        // Error handling for chart operations
+        function handleChartError(chartName, error) {
+            console.error(`Error with ${chartName} chart:`, error);
+            const container = document.querySelector(`#${chartName}Chart`).parentElement;
+            if (container) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #ef4444;">
+                        <p>Error loading ${chartName} chart</p>
+                        <p style="font-size: 0.875rem; margin-top: 8px;">Please refresh the page to try again</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Utility function to safely get element
+        function safeGetElement(id) {
+            const element = document.getElementById(id);
+            if (!element) {
+                console.warn(`Element with id '${id}' not found`);
+            }
+            return element;
+        }
+
+        // Enhanced error handling wrapper
+        function withErrorHandling(fn, context = 'operation') {
+            return function(...args) {
+                try {
+                    return fn.apply(this, args);
+                } catch (error) {
+                    console.error(`Error in ${context}:`, error);
+                    return null;
+                }
+            };
+        }
+
+        // Wrap key functions with error handling
+        const safeCalculatePerplexity = withErrorHandling(calculatePerplexity, 'perplexity calculation');
+        const safeCalculateBurstiness = withErrorHandling(calculateBurstiness, 'burstiness calculation');
+    </script>
+</body>
+</html>
