@@ -1,549 +1,607 @@
-import React, { useState, useEffect } from 'react';
-import { Info, RefreshCw } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human Genetics Simulator</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .animate-spin { animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-const GeneticsSimulator = () => {
-  // Define traits and their dominance
-  const [eyeColorParent1, setEyeColorParent1] = useState('Bb');
-  const [eyeColorParent2, setEyeColorParent2] = useState('bb');
-  const [hairColorParent1, setHairColorParent1] = useState('Hh');
-  const [hairColorParent2, setHairColorParent2] = useState('hh');
-  const [showInfo, setShowInfo] = useState(false);
-  const [activeTab, setActiveTab] = useState('single');
-  
-  // State for offspring results
-  const [eyeResults, setEyeResults] = useState([]);
-  const [hairResults, setHairResults] = useState([]);
-  const [combinedResults, setCombinedResults] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  
-  // Calculate Punnett square results
-  useEffect(() => {
-    calculatePunnettSquare();
-  }, [eyeColorParent1, eyeColorParent2, hairColorParent1, hairColorParent2]);
-  
-  const calculatePunnettSquare = () => {
-    // Extract alleles
-    const eyeAlleles1 = eyeColorParent1.split('');
-    const eyeAlleles2 = eyeColorParent2.split('');
-    const hairAlleles1 = hairColorParent1.split('');
-    const hairAlleles2 = hairColorParent2.split('');
-    
-    // Eye color Punnett square
-    const eyeGenotypes = [];
-    for (let i = 0; i < eyeAlleles1.length; i++) {
-      for (let j = 0; j < eyeAlleles2.length; j++) {
-        // Sort alleles to keep dominant first
-        const alleles = [eyeAlleles1[i], eyeAlleles2[j]].sort();
-        eyeGenotypes.push(alleles.join(''));
-      }
-    }
-    
-    // Hair color Punnett square
-    const hairGenotypes = [];
-    for (let i = 0; i < hairAlleles1.length; i++) {
-      for (let j = 0; j < hairAlleles2.length; j++) {
-        // Sort alleles to keep dominant first
-        const alleles = [hairAlleles1[i], hairAlleles2[j]].sort();
-        hairGenotypes.push(alleles.join(''));
-      }
-    }
-    
-    // Process results
-    setEyeResults(processResults(eyeGenotypes, 'eye'));
-    setHairResults(processResults(hairGenotypes, 'hair'));
-    
-    // Calculate combined results
-    const combined = [];
-    for (let i = 0; i < eyeGenotypes.length; i++) {
-      for (let j = 0; j < hairGenotypes.length; j++) {
-        combined.push({
-          eyeGenotype: eyeGenotypes[i],
-          eyePhenotype: getEyePhenotype(eyeGenotypes[i]),
-          hairGenotype: hairGenotypes[j],
-          hairPhenotype: getHairPhenotype(hairGenotypes[j])
-        });
-      }
-    }
-    setCombinedResults(combined);
-  };
-  
-  const processResults = (genotypes, trait) => {
-    // Count occurrences of each genotype
-    const counts = {};
-    genotypes.forEach(genotype => {
-      counts[genotype] = (counts[genotype] || 0) + 1;
-    });
-    
-    // Calculate percentages and determine phenotypes
-    const total = genotypes.length;
-    return Object.keys(counts).map(genotype => {
-      const percentage = (counts[genotype] / total) * 100;
-      const phenotype = trait === 'eye' ? getEyePhenotype(genotype) : getHairPhenotype(genotype);
-      
-      return {
-        genotype,
-        phenotype,
-        count: counts[genotype],
-        percentage: percentage.toFixed(1)
-      };
-    });
-  };
-  
-  const getEyePhenotype = (genotype) => {
-    return genotype.includes('B') ? 'Brown' : 'Blue';
-  };
-  
-  const getHairPhenotype = (genotype) => {
-    return genotype.includes('H') ? 'Dark' : 'Blonde';
-  };
-  
-  const getResultSummary = (results) => {
-    // Group by phenotype
-    const phenotypeCounts = {};
-    results.forEach(result => {
-      phenotypeCounts[result.phenotype] = (phenotypeCounts[result.phenotype] || 0) + parseFloat(result.percentage);
-    });
-    
-    return Object.keys(phenotypeCounts).map(phenotype => ({
-      phenotype,
-      percentage: phenotypeCounts[phenotype].toFixed(1)
-    }));
-  };
-  
-  const getEyeColor = (phenotype) => {
-    return phenotype === 'Brown' ? '#6B4423' : '#4B86DB';
-  };
-  
-  const getHairColor = (phenotype) => {
-    return phenotype === 'Dark' ? '#3A2718' : '#E6C27A';
-  };
-  
-  // Calculate phenotype combinations
-  const combinedPhenotypes = combinedResults.reduce((acc, result) => {
-    const combination = `${result.eyePhenotype} eyes, ${result.hairPhenotype} hair`;
-    acc[combination] = (acc[combination] || 0) + 1;
-    return acc;
-  }, {});
-  
-  const phenotypePercentages = Object.keys(combinedPhenotypes).map(combo => ({
-    combination: combo,
-    percentage: ((combinedPhenotypes[combo] / combinedResults.length) * 100).toFixed(1)
-  }));
+    <script type="text/babel" data-presets="react">
+        const { useState, useEffect } = React;
 
-  const triggerAnimation = () => {
-    setIsAnimating(true);
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 800);
-  };
+        // Define Lucide icons as SVG components since CDN version has issues
+        const Info = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10"/>
+                <path d="m12 13 0-5"/>
+                <path d="m12 17 .01 0"/>
+            </svg>
+        );
 
-  // Character components
-  const ParentIcon = ({ eyeColor, hairColor, gender }) => {
-    return (
-      <div className="flex flex-col items-center">
-        <div className="relative w-16 h-16 mb-1">
-          {/* Head */}
-          <div 
-            className="absolute top-2 w-12 h-14 rounded-full left-2"
-            style={{backgroundColor: '#FFE0C2'}}
-          ></div>
-          
-          {/* Hair */}
-          <div 
-            className={`absolute top-0 w-14 h-6 left-1 ${gender === 'female' ? 'rounded-t-full' : ''}`}
-            style={{backgroundColor: hairColor}}
-          ></div>
-          
-          {/* Eyes */}
-          <div 
-            className="absolute top-6 left-4 w-3 h-2 rounded-full"
-            style={{backgroundColor: eyeColor}}
-          ></div>
-          <div 
-            className="absolute top-6 right-4 w-3 h-2 rounded-full"
-            style={{backgroundColor: eyeColor}}
-          ></div>
-          
-          {/* Mouth */}
-          <div 
-            className="absolute top-10 left-6 w-4 h-1 rounded-full bg-red-400"
-          ></div>
-        </div>
-        <div className="text-sm font-medium">Parent {gender === 'male' ? '1' : '2'}</div>
-      </div>
-    );
-  };
+        const RefreshCw = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M21 2v6h-6"/>
+                <path d="m21 13-9-9"/>
+                <path d="M8 11V7a4 4 0 0 1 8 0"/>
+                <path d="M3 21v-6h6"/>
+                <path d="m3 11 9 9"/>
+                <path d="M16 13v4a4 4 0 0 1-8 0"/>
+            </svg>
+        );
 
-  const ChildIcon = ({ eyeColor, hairColor }) => {
-    return (
-      <div className="flex flex-col items-center">
-        <div className="relative w-12 h-12 mb-1">
-          {/* Head */}
-          <div 
-            className="absolute top-1 w-10 h-10 rounded-full left-1"
-            style={{backgroundColor: '#FFE0C2'}}
-          ></div>
-          
-          {/* Hair */}
-          <div 
-            className="absolute top-0 w-10 h-4 left-1 rounded-t-full"
-            style={{backgroundColor: hairColor}}
-          ></div>
-          
-          {/* Eyes */}
-          <div 
-            className="absolute top-4 left-3 w-2 h-1 rounded-full"
-            style={{backgroundColor: eyeColor}}
-          ></div>
-          <div 
-            className="absolute top-4 right-3 w-2 h-1 rounded-full"
-            style={{backgroundColor: eyeColor}}
-          ></div>
-          
-          {/* Mouth */}
-          <div 
-            className="absolute top-7 left-5 w-2 h-0.5 rounded-full bg-red-400"
-          ></div>
-        </div>
-      </div>
-    );
-  };
-
-  // Punnett Square component
-  const PunnettSquare = ({ parent1Alleles, parent2Alleles, traitType }) => {
-    return (
-      <div className="border-2 border-gray-300 rounded-md overflow-hidden">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="border-2 border-gray-300 p-2 bg-gray-100"></th>
-              {parent2Alleles.split('').map((allele, i) => (
-                <th key={i} className={`border-2 border-gray-300 p-2 ${allele === allele.toUpperCase() ? 'bg-yellow-100' : 'bg-blue-100'}`}>
-                  <div className="text-lg font-bold">{allele}</div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {parent1Alleles.split('').map((allele1, i) => (
-              <tr key={i}>
-                <th className={`border-2 border-gray-300 p-2 ${allele1 === allele1.toUpperCase() ? 'bg-yellow-100' : 'bg-blue-100'}`}>
-                  <div className="text-lg font-bold">{allele1}</div>
-                </th>
-                {parent2Alleles.split('').map((allele2, j) => {
-                  const alleles = [allele1, allele2].sort();
-                  const genotype = alleles.join('');
-                  const phenotype = traitType === 'eye' ? getEyePhenotype(genotype) : getHairPhenotype(genotype);
-                  const color = traitType === 'eye' ? getEyeColor(phenotype) : getHairColor(phenotype);
-                  const bgColor = genotype === genotype.toUpperCase() ? 'bg-yellow-50' : 
-                                  genotype === genotype.toLowerCase() ? 'bg-blue-50' : 'bg-green-50';
-                  
-                  return (
-                    <td key={j} className={`border-2 border-gray-300 p-3 text-center ${bgColor}`}>
-                      <div className="text-lg font-bold mb-1">{genotype}</div>
-                      <div className="flex justify-center">
-                        <div 
-                          className={`w-5 h-3 ${traitType === 'eye' ? 'rounded-full' : 'rounded-md'}`}
-                          style={{backgroundColor: color}}
-                        ></div>
-                      </div>
-                      <div className="text-xs mt-1">{phenotype}</div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
-
-  const ResultsChart = ({ results, traitType }) => {
-    const summary = getResultSummary(results);
-    
-    return (
-      <div className="mt-4">
-        <h5 className="font-semibold mb-2">Possible Outcomes:</h5>
-        <div className="space-y-2">
-          {summary.map((result, i) => (
-            <div key={i} className="relative pt-1">
-              <div className="flex items-center mb-1">
-                <div 
-                  className={`w-4 h-4 ${traitType === 'eye' ? 'rounded-full' : 'rounded-md'} mr-2`}
-                  style={{
-                    backgroundColor: traitType === 'eye' 
-                      ? getEyeColor(result.phenotype) 
-                      : getHairColor(result.phenotype)
-                  }}
-                ></div>
-                <span className="font-medium">{result.phenotype} {traitType === 'eye' ? 'eyes' : 'hair'}: {result.percentage}%</span>
-              </div>
-              <div className="overflow-hidden h-4 mb-4 text-xs flex rounded-full bg-gray-200">
-                <div 
-                  style={{ width: `${result.percentage}%` }}
-                  className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                    traitType === 'eye'
-                      ? (result.phenotype === 'Brown' ? 'bg-amber-600' : 'bg-blue-500')
-                      : (result.phenotype === 'Dark' ? 'bg-amber-800' : 'bg-yellow-400')
-                  } transition-all duration-500 ease-in-out`}
-                ></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="p-6 max-w-4xl mx-auto bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow-lg">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2 text-indigo-800">Human Genetics Simulator</h1>
-        <div className="w-24 h-1 bg-indigo-500 mx-auto rounded-full"></div>
-        <p className="mt-2 text-gray-600">Explore inheritance patterns with Punnett squares</p>
-      </div>
-      
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-indigo-700">Genetic Traits Inheritance</h2>
-        <button 
-          onClick={() => setShowInfo(!showInfo)}
-          className="flex items-center bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-full transition-colors"
-        >
-          <Info size={18} className="mr-1" />
-          {showInfo ? 'Hide Info' : 'Show Info'}
-        </button>
-      </div>
-      
-      {showInfo && (
-        <div className="bg-indigo-50 p-5 rounded-lg mb-6 border-l-4 border-indigo-400 shadow-sm">
-          <h3 className="font-semibold text-lg mb-3 text-indigo-800">Understanding Genetics:</h3>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-2 text-indigo-700">Key Concepts:</h4>
-              <ul className="space-y-2">
-                <li className="flex items-start">
-                  <span><strong>Genotype:</strong> The genetic makeup (allele combination)</span>
-                </li>
-                <li className="flex items-start">
-                  <span><strong>Phenotype:</strong> The observable trait expression</span>
-                </li>
-                <li className="flex items-start">
-                  <span><strong>Dominant:</strong> Trait expressed when at least one dominant allele is present</span>
-                </li>
-                <li className="flex items-start">
-                  <span><strong>Recessive:</strong> Trait only expressed when two recessive alleles are present</span>
-                </li>
-              </ul>
-            </div>
+        const GeneticsSimulator = () => {
+            // Define traits and their dominance
+            const [eyeColorParent1, setEyeColorParent1] = useState('Bb');
+            const [eyeColorParent2, setEyeColorParent2] = useState('bb');
+            const [hairColorParent1, setHairColorParent1] = useState('Hh');
+            const [hairColorParent2, setHairColorParent2] = useState('hh');
+            const [showInfo, setShowInfo] = useState(false);
             
-            <div>
-              <h4 className="font-semibold mb-2 text-indigo-700">Allele Representations:</h4>
-              <div className="space-y-3">
-                <div>
-                  <div className="font-medium mb-1">Eye Color:</div>
-                  <div className="flex items-center mb-1">
-                    <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#6B4423'}}></div>
-                    <span><strong>B</strong> (Dominant): Brown eyes</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#4B86DB'}}></div>
-                    <span><strong>b</strong> (Recessive): Blue eyes</span>
-                  </div>
-                </div>
+            // State for offspring results
+            const [eyeResults, setEyeResults] = useState([]);
+            const [hairResults, setHairResults] = useState([]);
+            const [combinedResults, setCombinedResults] = useState([]);
+            const [isAnimating, setIsAnimating] = useState(false);
+            
+            // Calculate Punnett square results
+            useEffect(() => {
+                calculatePunnettSquare();
+            }, [eyeColorParent1, eyeColorParent2, hairColorParent1, hairColorParent2]);
+            
+            // Helper function to properly sort alleles (dominant first)
+            const sortAlleles = (allele1, allele2) => {
+                // If one is uppercase and other is lowercase, put uppercase first
+                if (allele1 === allele1.toUpperCase() && allele2 === allele2.toLowerCase()) {
+                    return allele1 + allele2;
+                } else if (allele2 === allele2.toUpperCase() && allele1 === allele1.toLowerCase()) {
+                    return allele2 + allele1;
+                } else {
+                    // If both are same case, sort alphabetically
+                    return [allele1, allele2].sort().join('');
+                }
+            };
+            
+            const calculatePunnettSquare = () => {
+                // Extract alleles
+                const eyeAlleles1 = eyeColorParent1.split('');
+                const eyeAlleles2 = eyeColorParent2.split('');
+                const hairAlleles1 = hairColorParent1.split('');
+                const hairAlleles2 = hairColorParent2.split('');
                 
-                <div>
-                  <div className="font-medium mb-1">Hair Color:</div>
-                  <div className="flex items-center mb-1">
-                    <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#3A2718'}}></div>
-                    <span><strong>H</strong> (Dominant): Dark hair</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#E6C27A'}}></div>
-                    <span><strong>h</strong> (Recessive): Blonde hair</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-6 mb-4 md:mb-0">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <ParentIcon 
-                eyeColor={getEyeColor(getEyePhenotype(eyeColorParent1))}
-                hairColor={getHairColor(getHairPhenotype(hairColorParent1))}
-                gender="male"
-              />
-            </div>
+                // Eye color Punnett square
+                const eyeGenotypes = [];
+                for (let i = 0; i < eyeAlleles1.length; i++) {
+                    for (let j = 0; j < eyeAlleles2.length; j++) {
+                        const genotype = sortAlleles(eyeAlleles1[i], eyeAlleles2[j]);
+                        eyeGenotypes.push(genotype);
+                    }
+                }
+                
+                // Hair color Punnett square
+                const hairGenotypes = [];
+                for (let i = 0; i < hairAlleles1.length; i++) {
+                    for (let j = 0; j < hairAlleles2.length; j++) {
+                        const genotype = sortAlleles(hairAlleles1[i], hairAlleles2[j]);
+                        hairGenotypes.push(genotype);
+                    }
+                }
+                
+                // Process results
+                setEyeResults(processResults(eyeGenotypes, 'eye'));
+                setHairResults(processResults(hairGenotypes, 'hair'));
+                
+                // Calculate combined results (should only be 4 combinations for single trait crosses)
+                const combined = [];
+                for (let i = 0; i < eyeGenotypes.length; i++) {
+                    combined.push({
+                        eyeGenotype: eyeGenotypes[i],
+                        eyePhenotype: getEyePhenotype(eyeGenotypes[i]),
+                        hairGenotype: hairGenotypes[i], // Use same index, not nested loop
+                        hairPhenotype: getHairPhenotype(hairGenotypes[i])
+                    });
+                }
+                setCombinedResults(combined);
+            };
             
-            <div className={`text-4xl font-bold text-indigo-600 ${isAnimating ? 'animate-pulse' : ''}`}>+</div>
+            const processResults = (genotypes, trait) => {
+                // Count occurrences of each genotype
+                const counts = {};
+                genotypes.forEach(genotype => {
+                    counts[genotype] = (counts[genotype] || 0) + 1;
+                });
+                
+                // Calculate percentages and determine phenotypes
+                const total = genotypes.length;
+                return Object.keys(counts).map(genotype => {
+                    const percentage = (counts[genotype] / total) * 100;
+                    const phenotype = trait === 'eye' ? getEyePhenotype(genotype) : getHairPhenotype(genotype);
+                    
+                    return {
+                        genotype,
+                        phenotype,
+                        count: counts[genotype],
+                        percentage: percentage.toFixed(1)
+                    };
+                });
+            };
             
-            <div className="bg-pink-50 p-4 rounded-lg">
-              <ParentIcon 
-                eyeColor={getEyeColor(getEyePhenotype(eyeColorParent2))}
-                hairColor={getHairColor(getHairPhenotype(hairColorParent2))}
-                gender="female"
-              />
-            </div>
-          </div>
-          
-          <button
-            onClick={triggerAnimation}
-            className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors"
-          >
-            <RefreshCw size={18} className={`mr-2 ${isAnimating ? 'animate-spin' : ''}`} />
-            Calculate Inheritance
-          </button>
-        </div>
-        
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-bold mb-4 text-lg text-indigo-700">Parent 1 Genotype</h3>
+            const getEyePhenotype = (genotype) => {
+                return genotype.includes('B') ? 'Brown' : 'Blue';
+            };
             
-            <div className="mb-5 bg-gray-50 p-4 rounded-lg">
-              <label className="block mb-2 font-medium">Eye Color:</label>
-              <select 
-                value={eyeColorParent1}
-                onChange={e => setEyeColorParent1(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="BB">BB (Homozygous Brown)</option>
-                <option value="Bb">Bb (Heterozygous Brown)</option>
-                <option value="bb">bb (Homozygous Blue)</option>
-              </select>
-              <div className="mt-3 flex items-center">
-                <div 
-                  className="w-6 h-6 rounded-full mr-2 shadow-inner" 
-                  style={{backgroundColor: getEyeColor(getEyePhenotype(eyeColorParent1))}}
-                ></div>
-                <span>Phenotype: {getEyePhenotype(eyeColorParent1)} eyes</span>
-              </div>
-            </div>
+            const getHairPhenotype = (genotype) => {
+                return genotype.includes('H') ? 'Dark' : 'Blonde';
+            };
             
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <label className="block mb-2 font-medium">Hair Color:</label>
-              <select 
-                value={hairColorParent1}
-                onChange={e => setHairColorParent1(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="HH">HH (Homozygous Dark)</option>
-                <option value="Hh">Hh (Heterozygous Dark)</option>
-                <option value="hh">hh (Homozygous Blonde)</option>
-              </select>
-              <div className="mt-3 flex items-center">
-                <div 
-                  className="w-6 h-6 rounded-full mr-2 shadow-inner" 
-                  style={{backgroundColor: getHairColor(getHairPhenotype(hairColorParent1))}}
-                ></div>
-                <span>Phenotype: {getHairPhenotype(hairColorParent1)} hair</span>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="font-bold mb-4 text-lg text-indigo-700">Parent 2 Genotype</h3>
+            const getResultSummary = (results) => {
+                // Group by phenotype
+                const phenotypeCounts = {};
+                results.forEach(result => {
+                    phenotypeCounts[result.phenotype] = (phenotypeCounts[result.phenotype] || 0) + parseFloat(result.percentage);
+                });
+                
+                return Object.keys(phenotypeCounts).map(phenotype => ({
+                    phenotype,
+                    percentage: phenotypeCounts[phenotype].toFixed(1)
+                }));
+            };
             
-            <div className="mb-5 bg-gray-50 p-4 rounded-lg">
-              <label className="block mb-2 font-medium">Eye Color:</label>
-              <select 
-                value={eyeColorParent2}
-                onChange={e => setEyeColorParent2(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="BB">BB (Homozygous Brown)</option>
-                <option value="Bb">Bb (Heterozygous Brown)</option>
-                <option value="bb">bb (Homozygous Blue)</option>
-              </select>
-              <div className="mt-3 flex items-center">
-                <div 
-                  className="w-6 h-6 rounded-full mr-2 shadow-inner" 
-                  style={{backgroundColor: getEyeColor(getEyePhenotype(eyeColorParent2))}}
-                ></div>
-                <span>Phenotype: {getEyePhenotype(eyeColorParent2)} eyes</span>
-              </div>
-            </div>
+            const getEyeColor = (phenotype) => {
+                return phenotype === 'Brown' ? '#6B4423' : '#4B86DB';
+            };
             
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <label className="block mb-2 font-medium">Hair Color:</label>
-              <select 
-                value={hairColorParent2}
-                onChange={e => setHairColorParent2(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="HH">HH (Homozygous Dark)</option>
-                <option value="Hh">Hh (Heterozygous Dark)</option>
-                <option value="hh">hh (Homozygous Blonde)</option>
-              </select>
-              <div className="mt-3 flex items-center">
-                <div 
-                  className="w-6 h-6 rounded-full mr-2 shadow-inner" 
-                  style={{backgroundColor: getHairColor(getHairPhenotype(hairColorParent2))}}
-                ></div>
-                <span>Phenotype: {getHairPhenotype(hairColorParent2)} hair</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mb-6">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="mb-4">
-            <h3 className="text-xl font-semibold text-indigo-700 pb-2 border-b border-gray-200 mb-4">Punnett Squares</h3>
+            const getHairColor = (phenotype) => {
+                return phenotype === 'Dark' ? '#3A2718' : '#E6C27A';
+            };
             
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-bold mb-3 text-indigo-700">Eye Color Inheritance</h4>
-                <PunnettSquare parent1Alleles={eyeColorParent1} parent2Alleles={eyeColorParent2} traitType="eye" />
-                <ResultsChart results={eyeResults} traitType="eye" />
-              </div>
-              
-              <div>
-                <h4 className="font-bold mb-3 text-indigo-700">Hair Color Inheritance</h4>
-                <PunnettSquare parent1Alleles={hairColorParent1} parent2Alleles={hairColorParent2} traitType="hair" />
-                <ResultsChart results={hairResults} traitType="hair" />
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-semibold text-indigo-700 pb-2 border-b border-gray-200 mb-4">Combined Traits Inheritance</h3>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {phenotypePercentages.map((combo, i) => {
-              const isBlueEyes = combo.combination.includes('Blue');
-              const isBlondeHair = combo.combination.includes('Blonde');
-              const eyeColor = isBlueEyes ? '#4B86DB' : '#6B4423';
-              const hairColor = isBlondeHair ? '#E6C27A' : '#3A2718';
-              
-              return (
-                <div key={i} className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center">
-                  <div className="text-2xl font-bold mb-1">{combo.percentage}%</div>
-                  <ChildIcon eyeColor={eyeColor} hairColor={hairColor} />
-                  <div className="mt-2 text-center text-sm">
-                    <div className="font-medium">{combo.combination}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="mt-6 bg-yellow-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-700">
-              This simulator demonstrates basic Mendelian inheritance for two traits. In reality, human genetics is more complex with multiple genes influencing traits like eye and hair color. This model simplifies eye color to a single gene with brown dominant over blue, and hair color to dark being dominant over blonde.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+            // Calculate phenotype combinations
+            const combinedPhenotypes = combinedResults.reduce((acc, result) => {
+                const combination = `${result.eyePhenotype} eyes, ${result.hairPhenotype} hair`;
+                acc[combination] = (acc[combination] || 0) + 1;
+                return acc;
+            }, {});
+            
+            const phenotypePercentages = Object.keys(combinedPhenotypes).map(combo => ({
+                combination: combo,
+                percentage: ((combinedPhenotypes[combo] / combinedResults.length) * 100).toFixed(1)
+            }));
 
-export default GeneticsSimulator;
+            const triggerAnimation = () => {
+                setIsAnimating(true);
+                setTimeout(() => {
+                    setIsAnimating(false);
+                }, 800);
+            };
+
+            // Character components
+            const ParentIcon = ({ eyeColor, hairColor, gender }) => (
+                <div className="flex flex-col items-center">
+                    <div className="relative w-16 h-16 mb-1">
+                        {/* Head */}
+                        <div 
+                            className="absolute top-2 w-12 h-14 rounded-full left-2"
+                            style={{backgroundColor: '#FFE0C2'}}
+                        />
+                        
+                        {/* Hair */}
+                        <div 
+                            className={`absolute top-0 w-14 h-6 left-1 ${gender === 'female' ? 'rounded-t-full' : ''}`}
+                            style={{backgroundColor: hairColor}}
+                        />
+                        
+                        {/* Eyes */}
+                        <div 
+                            className="absolute top-6 left-4 w-3 h-2 rounded-full"
+                            style={{backgroundColor: eyeColor}}
+                        />
+                        <div 
+                            className="absolute top-6 right-4 w-3 h-2 rounded-full"
+                            style={{backgroundColor: eyeColor}}
+                        />
+                        
+                        {/* Mouth */}
+                        <div className="absolute top-10 left-6 w-4 h-1 rounded-full bg-red-400" />
+                    </div>
+                    <div className="text-sm font-medium">Parent {gender === 'male' ? '1' : '2'}</div>
+                </div>
+            );
+
+            const ChildIcon = ({ eyeColor, hairColor }) => (
+                <div className="flex flex-col items-center">
+                    <div className="relative w-12 h-12 mb-1">
+                        {/* Head */}
+                        <div 
+                            className="absolute top-1 w-10 h-10 rounded-full left-1"
+                            style={{backgroundColor: '#FFE0C2'}}
+                        />
+                        
+                        {/* Hair */}
+                        <div 
+                            className="absolute top-0 w-10 h-4 left-1 rounded-t-full"
+                            style={{backgroundColor: hairColor}}
+                        />
+                        
+                        {/* Eyes */}
+                        <div 
+                            className="absolute top-4 left-3 w-2 h-1 rounded-full"
+                            style={{backgroundColor: eyeColor}}
+                        />
+                        <div 
+                            className="absolute top-4 right-3 w-2 h-1 rounded-full"
+                            style={{backgroundColor: eyeColor}}
+                        />
+                        
+                        {/* Mouth */}
+                        <div className="absolute top-7 left-5 w-2 h-0.5 rounded-full bg-red-400" />
+                    </div>
+                </div>
+            );
+
+            // Punnett Square component
+            const PunnettSquare = ({ parent1Alleles, parent2Alleles, traitType }) => {
+                const alleles1 = parent1Alleles.split('');
+                const alleles2 = parent2Alleles.split('');
+                
+                return (
+                    <div className="border-2 border-gray-300 rounded-md overflow-hidden">
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr>
+                                    <th className="border-2 border-gray-300 p-2 bg-gray-100"></th>
+                                    {alleles2.map((allele, i) => (
+                                        <th key={i} className={`border-2 border-gray-300 p-2 ${allele === allele.toUpperCase() ? 'bg-yellow-100' : 'bg-blue-100'}`}>
+                                            <div className="text-lg font-bold">{allele}</div>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {alleles1.map((allele1, i) => (
+                                    <tr key={i}>
+                                        <th className={`border-2 border-gray-300 p-2 ${allele1 === allele1.toUpperCase() ? 'bg-yellow-100' : 'bg-blue-100'}`}>
+                                            <div className="text-lg font-bold">{allele1}</div>
+                                        </th>
+                                        {alleles2.map((allele2, j) => {
+                                            const genotype = sortAlleles(allele1, allele2);
+                                            const phenotype = traitType === 'eye' ? getEyePhenotype(genotype) : getHairPhenotype(genotype);
+                                            const color = traitType === 'eye' ? getEyeColor(phenotype) : getHairColor(phenotype);
+                                            
+                                            // Determine background color based on genotype
+                                            let bgColor = 'bg-gray-50';
+                                            if (genotype.charAt(0) === genotype.charAt(0).toUpperCase() && 
+                                                genotype.charAt(1) === genotype.charAt(1).toUpperCase()) {
+                                                bgColor = 'bg-yellow-50'; // Homozygous dominant
+                                            } else if (genotype.charAt(0) === genotype.charAt(0).toLowerCase() && 
+                                                       genotype.charAt(1) === genotype.charAt(1).toLowerCase()) {
+                                                bgColor = 'bg-blue-50'; // Homozygous recessive
+                                            } else {
+                                                bgColor = 'bg-green-50'; // Heterozygous
+                                            }
+                                            
+                                            return (
+                                                <td key={j} className={`border-2 border-gray-300 p-3 text-center ${bgColor}`}>
+                                                    <div className="text-lg font-bold mb-1">{genotype}</div>
+                                                    <div className="flex justify-center">
+                                                        <div 
+                                                            className={`w-5 h-3 ${traitType === 'eye' ? 'rounded-full' : 'rounded-md'}`}
+                                                            style={{backgroundColor: color}}
+                                                        />
+                                                    </div>
+                                                    <div className="text-xs mt-1">{phenotype}</div>
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            };
+
+            const ResultsChart = ({ results, traitType }) => {
+                const summary = getResultSummary(results);
+                
+                return (
+                    <div className="mt-4">
+                        <h5 className="font-semibold mb-2">Possible Outcomes:</h5>
+                        <div className="space-y-2">
+                            {summary.map((result, i) => (
+                                <div key={i} className="relative pt-1">
+                                    <div className="flex items-center mb-1">
+                                        <div 
+                                            className={`w-4 h-4 ${traitType === 'eye' ? 'rounded-full' : 'rounded-md'} mr-2`}
+                                            style={{
+                                                backgroundColor: traitType === 'eye' 
+                                                    ? getEyeColor(result.phenotype) 
+                                                    : getHairColor(result.phenotype)
+                                            }}
+                                        />
+                                        <span className="font-medium">{result.phenotype} {traitType === 'eye' ? 'eyes' : 'hair'}: {result.percentage}%</span>
+                                    </div>
+                                    <div className="overflow-hidden h-4 mb-4 text-xs flex rounded-full bg-gray-200">
+                                        <div 
+                                            style={{ width: `${result.percentage}%` }}
+                                            className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
+                                                traitType === 'eye'
+                                                    ? (result.phenotype === 'Brown' ? 'bg-amber-600' : 'bg-blue-500')
+                                                    : (result.phenotype === 'Dark' ? 'bg-amber-800' : 'bg-yellow-400')
+                                            } transition-all duration-500 ease-in-out`}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="p-6 max-w-4xl mx-auto bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow-lg">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold mb-2 text-indigo-800">Human Genetics Simulator</h1>
+                        <div className="w-24 h-1 bg-indigo-500 mx-auto rounded-full"></div>
+                        <p className="mt-2 text-gray-600">Explore inheritance patterns with Punnett squares</p>
+                    </div>
+                    
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold text-indigo-700">Genetic Traits Inheritance</h2>
+                        <button 
+                            onClick={() => setShowInfo(!showInfo)}
+                            className="flex items-center bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-full transition-colors"
+                        >
+                            <Info size={18} className="mr-1" />
+                            {showInfo ? 'Hide Info' : 'Show Info'}
+                        </button>
+                    </div>
+                    
+                    {showInfo && (
+                        <div className="bg-indigo-50 p-5 rounded-lg mb-6 border-l-4 border-indigo-400 shadow-sm">
+                            <h3 className="font-semibold text-lg mb-3 text-indigo-800">Understanding Genetics:</h3>
+                            
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 className="font-semibold mb-2 text-indigo-700">Key Concepts:</h4>
+                                    <ul className="space-y-2">
+                                        <li className="flex items-start">
+                                            <span><strong>Genotype:</strong> The genetic makeup (allele combination)</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span><strong>Phenotype:</strong> The observable trait expression</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span><strong>Dominant:</strong> Trait expressed when at least one dominant allele is present</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span><strong>Recessive:</strong> Trait only expressed when two recessive alleles are present</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h4 className="font-semibold mb-2 text-indigo-700">Allele Representations:</h4>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="font-medium mb-1">Eye Color:</div>
+                                            <div className="flex items-center mb-1">
+                                                <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#6B4423'}}></div>
+                                                <span><strong>B</strong> (Dominant): Brown eyes</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#4B86DB'}}></div>
+                                                <span><strong>b</strong> (Recessive): Blue eyes</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <div className="font-medium mb-1">Hair Color:</div>
+                                            <div className="flex items-center mb-1">
+                                                <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#3A2718'}}></div>
+                                                <span><strong>H</strong> (Dominant): Dark hair</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#E6C27A'}}></div>
+                                                <span><strong>h</strong> (Recessive): Blonde hair</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                            <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-6 mb-4 md:mb-0">
+                                <div className="bg-blue-50 p-4 rounded-lg">
+                                    <ParentIcon 
+                                        eyeColor={getEyeColor(getEyePhenotype(eyeColorParent1))}
+                                        hairColor={getHairColor(getHairPhenotype(hairColorParent1))}
+                                        gender="male"
+                                    />
+                                </div>
+                                
+                                <div className={`text-4xl font-bold text-indigo-600 ${isAnimating ? 'animate-pulse' : ''}`}>+</div>
+                                
+                                <div className="bg-pink-50 p-4 rounded-lg">
+                                    <ParentIcon 
+                                        eyeColor={getEyeColor(getEyePhenotype(eyeColorParent2))}
+                                        hairColor={getHairColor(getHairPhenotype(hairColorParent2))}
+                                        gender="female"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={triggerAnimation}
+                                className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors"
+                            >
+                                <RefreshCw size={18} className={`mr-2 ${isAnimating ? 'animate-spin' : ''}`} />
+                                Calculate Inheritance
+                            </button>
+                        </div>
+                        
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 className="font-bold mb-4 text-lg text-indigo-700">Parent 1 Genotype</h3>
+                                
+                                <div className="mb-5 bg-gray-50 p-4 rounded-lg">
+                                    <label className="block mb-2 font-medium">Eye Color:</label>
+                                    <select 
+                                        value={eyeColorParent1}
+                                        onChange={e => setEyeColorParent1(e.target.value)}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    >
+                                        <option value="BB">BB (Homozygous Brown)</option>
+                                        <option value="Bb">Bb (Heterozygous Brown)</option>
+                                        <option value="bb">bb (Homozygous Blue)</option>
+                                    </select>
+                                    <div className="mt-3 flex items-center">
+                                        <div 
+                                            className="w-6 h-6 rounded-full mr-2 shadow-inner" 
+                                            style={{backgroundColor: getEyeColor(getEyePhenotype(eyeColorParent1))}}
+                                        />
+                                        <span>Phenotype: {getEyePhenotype(eyeColorParent1)} eyes</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <label className="block mb-2 font-medium">Hair Color:</label>
+                                    <select 
+                                        value={hairColorParent1}
+                                        onChange={e => setHairColorParent1(e.target.value)}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    >
+                                        <option value="HH">HH (Homozygous Dark)</option>
+                                        <option value="Hh">Hh (Heterozygous Dark)</option>
+                                        <option value="hh">hh (Homozygous Blonde)</option>
+                                    </select>
+                                    <div className="mt-3 flex items-center">
+                                        <div 
+                                            className="w-6 h-6 rounded-full mr-2 shadow-inner" 
+                                            style={{backgroundColor: getHairColor(getHairPhenotype(hairColorParent1))}}
+                                        />
+                                        <span>Phenotype: {getHairPhenotype(hairColorParent1)} hair</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 className="font-bold mb-4 text-lg text-indigo-700">Parent 2 Genotype</h3>
+                                
+                                <div className="mb-5 bg-gray-50 p-4 rounded-lg">
+                                    <label className="block mb-2 font-medium">Eye Color:</label>
+                                    <select 
+                                        value={eyeColorParent2}
+                                        onChange={e => setEyeColorParent2(e.target.value)}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    >
+                                        <option value="BB">BB (Homozygous Brown)</option>
+                                        <option value="Bb">Bb (Heterozygous Brown)</option>
+                                        <option value="bb">bb (Homozygous Blue)</option>
+                                    </select>
+                                    <div className="mt-3 flex items-center">
+                                        <div 
+                                            className="w-6 h-6 rounded-full mr-2 shadow-inner" 
+                                            style={{backgroundColor: getEyeColor(getEyePhenotype(eyeColorParent2))}}
+                                        />
+                                        <span>Phenotype: {getEyePhenotype(eyeColorParent2)} eyes</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <label className="block mb-2 font-medium">Hair Color:</label>
+                                    <select 
+                                        value={hairColorParent2}
+                                        onChange={e => setHairColorParent2(e.target.value)}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    >
+                                        <option value="HH">HH (Homozygous Dark)</option>
+                                        <option value="Hh">Hh (Heterozygous Dark)</option>
+                                        <option value="hh">hh (Homozygous Blonde)</option>
+                                    </select>
+                                    <div className="mt-3 flex items-center">
+                                        <div 
+                                            className="w-6 h-6 rounded-full mr-2 shadow-inner" 
+                                            style={{backgroundColor: getHairColor(getHairPhenotype(hairColorParent2))}}
+                                        />
+                                        <span>Phenotype: {getHairPhenotype(hairColorParent2)} hair</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-6">
+                        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                            <div className="mb-4">
+                                <h3 className="text-xl font-semibold text-indigo-700 pb-2 border-b border-gray-200 mb-4">Punnett Squares</h3>
+                                
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 className="font-bold mb-3 text-indigo-700">Eye Color Inheritance</h4>
+                                        <PunnettSquare parent1Alleles={eyeColorParent1} parent2Alleles={eyeColorParent2} traitType="eye" />
+                                        <ResultsChart results={eyeResults} traitType="eye" />
+                                    </div>
+                                    
+                                    <div>
+                                        <h4 className="font-bold mb-3 text-indigo-700">Hair Color Inheritance</h4>
+                                        <PunnettSquare parent1Alleles={hairColorParent1} parent2Alleles={hairColorParent2} traitType="hair" />
+                                        <ResultsChart results={hairResults} traitType="hair" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h3 className="text-xl font-semibold text-indigo-700 pb-2 border-b border-gray-200 mb-4">Combined Traits Inheritance</h3>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {phenotypePercentages.map((combo, i) => {
+                                    const isBlueEyes = combo.combination.includes('Blue');
+                                    const isBlondeHair = combo.combination.includes('Blonde');
+                                    const eyeColor = isBlueEyes ? '#4B86DB' : '#6B4423';
+                                    const hairColor = isBlondeHair ? '#E6C27A' : '#3A2718';
+                                    
+                                    return (
+                                        <div key={i} className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center">
+                                            <div className="text-2xl font-bold mb-1">{combo.percentage}%</div>
+                                            <ChildIcon eyeColor={eyeColor} hairColor={hairColor} />
+                                            <div className="mt-2 text-center text-sm">
+                                                <div className="font-medium">{combo.combination}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            
+                            <div className="mt-6 bg-yellow-50 p-4 rounded-lg">
+                                <p className="text-sm text-gray-700">
+                                    This simulator demonstrates basic Mendelian inheritance for two traits. In reality, human genetics is more complex with multiple genes influencing traits like eye and hair color. This model simplifies eye color to a single gene with brown dominant over blue, and hair color to dark being dominant over blonde.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<GeneticsSimulator />, document.getElementById('root'));
