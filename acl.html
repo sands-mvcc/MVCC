@@ -2,118 +2,711 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ACL Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Cisco ACL Simulator</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 8px;
+        * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
-        .form-group input[type="checkbox"] {
-            width: auto;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-        .form-group button {
-            padding: 10px 15px;
-            background-color: #007BFF;
-            color: #fff;
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .panel h2 {
+            color: #2a5298;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #2a5298;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 25px;
             border: none;
+            border-radius: 8px;
             cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
-        .output {
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+
+        .acl-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .acl-entry {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2a5298;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .acl-entry:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .acl-entry.permit {
+            border-left-color: #28a745;
+        }
+
+        .acl-entry.deny {
+            border-left-color: #dc3545;
+        }
+
+        .acl-entry-content {
+            flex: 1;
+        }
+
+        .acl-entry-number {
+            font-weight: bold;
+            color: #2a5298;
+            margin-right: 10px;
+        }
+
+        .acl-entry-action {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .permit-badge {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .deny-badge {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .packet-test {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .test-result {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        .result-permit {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result-deny {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
             margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .visualization {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 15px 0;
+        }
+
+        .flow-step {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            margin: 0 10px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .flow-step.active {
+            border-color: #2a5298;
+            background: #f0f7ff;
+        }
+
+        .arrow {
+            font-size: 1.5rem;
+            color: #2a5298;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
             padding: 10px;
-            border: 1px solid #ddd;
-            background-color: #f9f9f9;
-            white-space: pre-wrap;
+            border-radius: 5px;
+            margin-top: 10px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .help-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .wildcard-helper {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #2196f3;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 Advanced Cisco ACL Simulator</h1>
+            <p>Professional-grade Access Control List testing and validation tool</p>
+        </div>
 
-<h1>Access Control List (ACL) Generator</h1>
-<form id="acl-form">
-    <div class="form-group">
-        <label for="acl-type">ACL Type:</label>
-        <select id="acl-type" name="aclType">
-            <option value="ipv4">IPv4</option>
-            <option value="ipv6">IPv6</option>
-            <option value="mac">MAC</option>
-            <option value="vlan">VLAN</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="acl-name">ACL Name:</label>
-        <input type="text" id="acl-name" name="aclName" placeholder="Enter ACL Name">
-    </div>
-    <div class="form-group">
-        <label for="source">Source:</label>
-        <input type="text" id="source" name="source" placeholder="Enter Source Address">
-    </div>
-    <div class="form-group">
-        <label for="source-mask">Source Wildcard Mask:</label>
-        <input type="text" id="source-mask" name="sourceMask" placeholder="Enter Source Wildcard Mask (e.g., 0.0.0.255)">
-    </div>
-    <div class="form-group">
-        <label for="destination">Destination:</label>
-        <input type="text" id="destination" name="destination" placeholder="Enter Destination Address">
-    </div>
-    <div class="form-group">
-        <label for="destination-mask">Destination Wildcard Mask:</label>
-        <input type="text" id="destination-mask" name="destinationMask" placeholder="Enter Destination Wildcard Mask (e.g., 0.0.0.255)">
-    </div>
-    <div class="form-group">
-        <label for="protocol">Protocol:</label>
-        <input type="text" id="protocol" name="protocol" placeholder="Enter Protocol">
-    </div>
-    <div class="form-group">
-        <label for="action">Action:</label>
-        <input type="checkbox" id="permit" name="action" value="permit"> Permit
-        <input type="checkbox" id="deny" name="action" value="deny"> Deny
-    </div>
-    <button type="button" onclick="generateACL()">Generate ACL</button>
-</form>
+        <div class="main-content">
+            <!-- ACL Configuration Panel -->
+            <div class="panel">
+                <h2>ACL Configuration</h2>
+                
+                <div class="form-group">
+                    <label for="aclType">ACL Type</label>
+                    <select id="aclType" onchange="toggleACLFields()">
+                        <option value="standard">Standard (1-99, 1300-1999)</option>
+                        <option value="extended">Extended (100-199, 2000-2699)</option>
+                        <option value="named">Named ACL</option>
+                    </select>
+                    <div class="help-text">Standard ACLs filter by source IP only. Extended ACLs filter by source, destination, protocol, and ports.</div>
+                </div>
 
-<div id="output" class="output"></div>
+                <div class="form-group">
+                    <label for="aclNumber">ACL Number/Name</label>
+                    <input type="text" id="aclNumber" placeholder="e.g., 10, 100, or MY_ACL" value="10">
+                </div>
 
-<script>
-    function generateACL() {
-        var aclType = document.getElementById('acl-type').value;
-        var aclName = document.getElementById('acl-name').value;
-        var source = document.getElementById('source').value;
-        var sourceMask = document.getElementById('source-mask').value;
-        var destination = document.getElementById('destination').value;
-        var destinationMask = document.getElementById('destination-mask').value;
-        var protocol = document.getElementById('protocol').value;
-        var action = document.getElementById('permit').checked ? 'permit' : 'deny';
+                <div class="form-group">
+                    <label for="action">Action</label>
+                    <select id="action">
+                        <option value="permit">Permit</option>
+                        <option value="deny">Deny</option>
+                    </select>
+                </div>
 
-        var aclCommand = '';
+                <div class="form-group">
+                    <label for="protocol" id="protocolLabel" style="display:none;">Protocol</label>
+                    <select id="protocol" style="display:none;">
+                        <option value="ip">IP</option>
+                        <option value="tcp">TCP</option>
+                        <option value="udp">UDP</option>
+                        <option value="icmp">ICMP</option>
+                    </select>
+                </div>
 
-        if (aclType === 'ipv4' || aclType === 'ipv6') {
-            aclCommand += aclType + ' access-list ' + aclName + '\n';
-            aclCommand += action + ' ' + protocol + ' ' + source + ' ' + sourceMask + ' ' + destination + ' ' + destinationMask;
-        } else if (aclType === 'mac') {
-            aclCommand += 'mac access-list ' + aclName + '\n';
-            aclCommand += action + ' ' + source + ' ' + destination + ' ' + protocol;
-        } else if (aclType === 'vlan') {
-            aclCommand += 'vlan access-map ' + aclName + '\n';
-            aclCommand += 'match ' + protocol + ' address ' + source + ' ' + destination + '\n';
-            aclCommand += 'action ' + action;
+                <div class="form-group">
+                    <label for="sourceIP">Source IP Address</label>
+                    <input type="text" id="sourceIP" placeholder="e.g., 192.168.1.0, any, host 192.168.1.1" value="192.168.1.0">
+                    <div class="help-text">Use 'any' for any source, 'host x.x.x.x' for specific host</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sourceWildcard">Source Wildcard Mask</label>
+                    <input type="text" id="sourceWildcard" placeholder="e.g., 0.0.0.255" value="0.0.0.255">
+                    <div class="wildcard-helper">
+                        <strong>Wildcard Mask Helper:</strong><br>
+                        0.0.0.0 = Exact match<br>
+                        0.0.0.255 = Match any host in /24 subnet<br>
+                        0.0.255.255 = Match any host in /16 subnet
+                    </div>
+                </div>
+
+                <div id="extendedFields" style="display:none;">
+                    <div class="form-group">
+                        <label for="destIP">Destination IP Address</label>
+                        <input type="text" id="destIP" placeholder="e.g., 10.0.0.0, any, host 10.0.0.1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="destWildcard">Destination Wildcard Mask</label>
+                        <input type="text" id="destWildcard" placeholder="e.g., 0.0.0.255">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="port">Port (optional)</label>
+                        <input type="text" id="port" placeholder="e.g., 80, 443, eq 80, range 80 90">
+                        <div class="help-text">Use 'eq 80' for port 80, 'range 80 90' for port range</div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="addACLEntry()">Add ACL Entry</button>
+                <button class="btn btn-secondary" onclick="generateConfig()">Generate Config</button>
+                <button class="btn btn-danger" onclick="clearACL()">Clear All</button>
+
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="permitCount">0</div>
+                        <div class="stat-label">Permit Rules</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="denyCount">0</div>
+                        <div class="stat-label">Deny Rules</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalCount">0</div>
+                        <div class="stat-label">Total Rules</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACL Display and Testing Panel -->
+            <div class="panel">
+                <h2>Current ACL & Testing</h2>
+                
+                <div id="aclDisplay" class="acl-list">
+                    <p style="text-align: center; color: #666; font-style: italic;">No ACL entries configured</p>
+                </div>
+
+                <div class="packet-test">
+                    <h3 style="margin-bottom: 15px; color: #2a5298;">Packet Testing</h3>
+                    
+                    <div class="form-group">
+                        <label for="testSourceIP">Test Source IP</label>
+                        <input type="text" id="testSourceIP" placeholder="e.g., 192.168.1.100" value="192.168.1.100">
+                    </div>
+
+                    <div class="form-group" id="testExtendedFields" style="display:none;">
+                        <label for="testDestIP">Test Destination IP</label>
+                        <input type="text" id="testDestIP" placeholder="e.g., 10.0.0.1">
+                    </div>
+
+                    <div class="form-group" id="testProtocolField" style="display:none;">
+                        <label for="testProtocol">Test Protocol</label>
+                        <select id="testProtocol">
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                            <option value="icmp">ICMP</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="testPortField" style="display:none;">
+                        <label for="testPort">Test Port</label>
+                        <input type="number" id="testPort" placeholder="e.g., 80" value="80">
+                    </div>
+
+                    <button class="btn" onclick="testPacket()">Test Packet</button>
+                    <button class="btn btn-secondary" onclick="runBulkTest()">Bulk Test</button>
+
+                    <div id="testResults"></div>
+                </div>
+
+                <div class="visualization">
+                    <h3 style="margin-bottom: 15px; color: #2a5298;">Packet Processing Flow</h3>
+                    <div class="flow-diagram">
+                        <div class="flow-step" id="step1">
+                            <strong>Packet Arrives</strong><br>
+                            <small>Source IP evaluated</small>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="flow-step" id="step2">
+                            <strong>ACL Processing</strong><br>
+                            <small>Rules checked top-down</small>
+                        </div>
+                        <div class="arrow">→</div>
+                        <div class="flow-step" id="step3">
+                            <strong>Decision</strong><br>
+                            <small>Permit or Deny</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let aclEntries = [];
+        let currentACLType = 'standard';
+
+        function toggleACLFields() {
+            const aclType = document.getElementById('aclType').value;
+            currentACLType = aclType;
+            const extendedFields = document.getElementById('extendedFields');
+            const protocolField = document.getElementById('protocol');
+            const protocolLabel = document.getElementById('protocolLabel');
+            const testExtendedFields = document.getElementById('testExtendedFields');
+            const testProtocolField = document.getElementById('testProtocolField');
+            const testPortField = document.getElementById('testPortField');
+
+            if (aclType === 'extended') {
+                extendedFields.style.display = 'block';
+                protocolField.style.display = 'block';
+                protocolLabel.style.display = 'block';
+                testExtendedFields.style.display = 'block';
+                testProtocolField.style.display = 'block';
+                testPortField.style.display = 'block';
+            } else {
+                extendedFields.style.display = 'none';
+                protocolField.style.display = 'none';
+                protocolLabel.style.display = 'none';
+                testExtendedFields.style.display = 'none';
+                testProtocolField.style.display = 'none';
+                testPortField.style.display = 'none';
+            }
         }
 
-        document.getElementById('output').innerText = aclCommand;
-    }
-</script>
+        function validateIP(ip) {
+            if (ip === 'any') return true;
+            if (ip.startsWith('host ')) {
+                ip = ip.substring(5);
+            }
+            const regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!regex.test(ip)) return false;
+            
+            return ip.split('.').every(octet => {
+                const num = parseInt(octet);
+                return num >= 0 && num <= 255;
+            });
+        }
 
-</body>
-</html>
+        function validateWildcard(wildcard) {
+            const regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!regex.test(wildcard)) return false;
+            
+            return wildcard.split('.').every(octet => {
+                const num = parseInt(octet);
+                return num >= 0 && num <= 255;
+            });
+        }
+
+        function addACLEntry() {
+            const aclNumber = document.getElementById('aclNumber').value;
+            const action = document.getElementById('action').value;
+            const sourceIP = document.getElementById('sourceIP').value;
+            const sourceWildcard = document.getElementById('sourceWildcard').value;
+            const protocol = document.getElementById('protocol').value;
+            const destIP = document.getElementById('destIP').value;
+            const destWildcard = document.getElementById('destWildcard').value;
+            const port = document.getElementById('port').value;
+
+            // Validation
+            if (!aclNumber) {
+                showError('ACL Number/Name is required');
+                return;
+            }
+
+            if (!validateIP(sourceIP)) {
+                showError('Invalid source IP address');
+                return;
+            }
+
+            if (sourceIP !== 'any' && !sourceIP.startsWith('host ') && !validateWildcard(sourceWildcard)) {
+                showError('Invalid source wildcard mask');
+                return;
+            }
+
+            if (currentACLType === 'extended') {
+                if (!validateIP(destIP)) {
+                    showError('Invalid destination IP address');
+                    return;
+                }
+                if (destIP !== 'any' && !destIP.startsWith('host ') && !validateWildcard(destWildcard)) {
+                    showError('Invalid destination wildcard mask');
+                    return;
+                }
+            }
+
+            const entry = {
+                number: aclNumber,
+                action: action,
+                protocol: currentACLType === 'extended' ? protocol : 'ip',
+                sourceIP: sourceIP,
+                sourceWildcard: sourceWildcard,
+                destIP: currentACLType === 'extended' ? destIP : '',
+                destWildcard: currentACLType === 'extended' ? destWildcard : '',
+                port: currentACLType === 'extended' ? port : '',
+                type: currentACLType
+            };
+
+            aclEntries.push(entry);
+            updateACLDisplay();
+            updateStats();
+            showSuccess('ACL entry added successfully');
+        }
+
+        function updateACLDisplay() {
+            const display = document.getElementById('aclDisplay');
+            
+            if (aclEntries.length === 0) {
+                display.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No ACL entries configured</p>';
+                return;
+            }
+
+            let html = '';
+            aclEntries.forEach((entry, index) => {
+                let entryText = `access-list ${entry.number} ${entry.action}`;
+                
+                if (entry.type === 'extended') {
+                    entryText += ` ${entry.protocol}`;
+                }
+                
+                entryText += ` ${entry.sourceIP}`;
+                if (entry.sourceIP !== 'any' && !entry.sourceIP.startsWith('host ')) {
+                    entryText += ` ${entry.sourceWildcard}`;
+                }
+
+                if (entry.type === 'extended' && entry.destIP) {
+                    entryText += ` ${entry.destIP}`;
+                    if (entry.destIP !== 'any' && !entry.destIP.startsWith('host ')) {
+                        entryText += ` ${entry.destWildcard}`;
+                    }
+                    if (entry.port) {
+                        entryText += ` ${entry.port}`;
+                    }
+                }
+
+                html += `
+                    <div class="acl-entry ${entry.action}">
+                        <div class="acl-entry-content">
+                            <span class="acl-entry-number">${index + 1}.</span>
+                            ${entryText}
+                        </div>
+                        <div>
+                            <span class="acl-entry-action ${entry.action}-badge">${entry.action}</span>
+                            <button class="btn btn-danger" style="margin-left: 10px; padding: 5px 10px; font-size: 0.8rem;" onclick="removeACLEntry(${index})">Remove</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Add implicit deny all
+            html += `
+                <div class="acl-entry deny" style="opacity: 0.7;">
+                    <div class="acl-entry-content">
+                        <span class="acl-entry-number">∞.</span>
+                        <em>access-list ${aclEntries[0]?.number || 'X'} deny ip any any (implicit)</em>
+                    </div>
+                    <div>
+                        <span class="acl-entry-action deny-badge">deny</span>
+                    </div>
+                </div>
+            `;
+
+            display.innerHTML = html;
+        }
+
+        function removeACLEntry(index) {
+            aclEntries.splice(index, 1);
+            updateACLDisplay();
+            updateStats();
+        }
+
+        function updateStats() {
+            const permitCount = aclEntries.filter(entry => entry.action === 'permit').length;
+            const denyCount = aclEntries.filter(entry => entry.action === 'deny').length;
+            
+            document.getElementById('permitCount').textContent = permitCount;
+            document.getElementById('denyCount').textContent = denyCount;
+            document.getElementById('totalCount').textContent = aclEntries.length;
+        }
+
+        function clearACL() {
+            if (confirm('Are you sure you want to clear all ACL entries?')) {
+                aclEntries = [];
+                updateACLDisplay();
+                updateStats();
+                document.getElementById('testResults').innerHTML = '';
+                showSuccess('All ACL entries cleared');
+            }
+        }
+
+        function generateConfig() {
+            if (aclEntries.length === 0) {
+                showError('No ACL entries to generate configuration');
+                return;
+            }
+
+            let config = '! Generated ACL Configuration\n';
+            config += '! Copy and paste into Cisco router/switch\n\n';
+
+            // Generate interface application command
+            config += '! Apply to interface (example):\n';
+            config += '! interface fastethernet0/0\n';
+            config += `! ip access-group ${aclEntries[0].number} in\n\n`;
+
+            aclEntries.forEach(entry => {
+                let line = `access-list ${entry.number} ${entry.action}`;
+                
+                if (entry.type === 'extended') {
+                    line += ` ${entry.protocol}`;
+                }
+                
+                line += ` ${entry.sourceIP}`;
+                if (entry.sourceIP !== 'any' && !entry.sourceIP.startsWith('host ')) {
+                    line += ` ${entry.sourceWildcard}`;
+                }
+
+                if (entry.type === 'extended' && entry.destIP) {
+                    line += ` ${entry.destIP}`;
+                    if (entry.destIP !== 'any' && !entry.destIP.startsWith('host ')) {
