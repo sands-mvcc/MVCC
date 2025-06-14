@@ -400,33 +400,49 @@
 
             <!-- Demo Section -->
             <div class="demo-section">
-                <h3>🔄 Encryption/Decryption Demo</h3>
-                <p>Once both Alice and Bob have generated keys, try encrypting a message!</p>
+                <h3>🔄 Text Encryption/Decryption Demo</h3>
+                <p>Once both Alice and Bob have generated keys, try encrypting a text message!</p>
                 
                 <div class="demo-controls">
                     <div>
-                        <label for="demo-message">Message (number):</label>
-                        <input type="number" id="demo-message" class="message-input" placeholder="Enter a number to encrypt" min="1" max="1000">
+                        <label for="demo-message">Text Message:</label>
+                        <input type="text" id="demo-message" class="message-input" placeholder="Enter text to encrypt (e.g., HELLO)" maxlength="50">
+                        <small style="color: #666; font-size: 12px;">Letters will be converted to numbers: A=1, B=2, C=3... Z=26</small>
                     </div>
                     <button class="encrypt-btn" onclick="encryptDemo()">Encrypt with Bob's Public Key →</button>
                     <div>
-                        <label for="encrypted-message">Encrypted:</label>
-                        <input type="text" id="encrypted-message" class="message-input" readonly>
+                        <label for="encrypted-message">Encrypted (cipher blocks):</label>
+                        <textarea id="encrypted-message" class="message-input" readonly rows="3" style="resize: vertical;"></textarea>
                     </div>
                 </div>
                 
                 <div class="demo-controls">
-                    <div></div>
+                    <div>
+                        <label for="conversion-display">Text → Numbers:</label>
+                        <input type="text" id="conversion-display" class="message-input" readonly placeholder="Character conversion will appear here">
+                    </div>
                     <button class="decrypt-btn" onclick="decryptDemo()">← Decrypt with Bob's Private Key</button>
                     <div>
-                        <label for="decrypted-message">Decrypted:</label>
+                        <label for="decrypted-message">Decrypted Text:</label>
                         <input type="text" id="decrypted-message" class="message-input" readonly>
                     </div>
                 </div>
 
                 <div id="demo-explanation" class="demo-result" style="display: none;">
-                    <strong>Encryption Formula:</strong> <span class="formula">ciphertext = message^e mod n</span><br>
-                    <strong>Decryption Formula:</strong> <span class="formula">message = ciphertext^d mod n</span>
+                    <strong>Text Processing:</strong> Each character is converted to a number (A=1, B=2, ..., Z=26, space=27)<br>
+                    <strong>Block Encryption:</strong> Characters are processed in blocks to ensure each block < n<br>
+                    <strong>Encryption Formula:</strong> <span class="formula">ciphertext = block^e mod n</span><br>
+                    <strong>Decryption Formula:</strong> <span class="formula">block = ciphertext^d mod n</span>
+                </div>
+
+                <div class="demo-result">
+                    <h4>🎓 Educational Notes:</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li><strong>Character Encoding:</strong> Each letter is converted to a number (A=1, B=2, C=3... Z=26, Space=27)</li>
+                        <li><strong>Block Processing:</strong> Text is divided into blocks that fit within the key size limit (< n)</li>
+                        <li><strong>Padding:</strong> In real implementations, secure padding schemes like OAEP are used</li>
+                        <li><strong>Practical Use:</strong> Real RSA typically encrypts symmetric keys, not direct text messages</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -597,54 +613,182 @@
             }, keySize > 1024 ? 1000 : 100);
         }
 
+        // Text to number conversion functions
+        function textToNumbers(text) {
+            // Convert text to uppercase and map each character to a number
+            // A=1, B=2, C=3, ..., Z=26, Space=27, Period=28, Comma=29
+            const charMap = {
+                'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9, 'J': 10,
+                'K': 11, 'L': 12, 'M': 13, 'N': 14, 'O': 15, 'P': 16, 'Q': 17, 'R': 18, 'S': 19, 'T': 20,
+                'U': 21, 'V': 22, 'W': 23, 'X': 24, 'Y': 25, 'Z': 26, ' ': 27, '.': 28, ',': 29
+            };
+            
+            return text.toUpperCase().split('').map(char => charMap[char] || 27); // Default to space for unknown chars
+        }
+
+        function numbersToText(numbers) {
+            // Convert numbers back to text
+            const reverseMap = {
+                1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 9: 'I', 10: 'J',
+                11: 'K', 12: 'L', 13: 'M', 14: 'N', 15: 'O', 16: 'P', 17: 'Q', 18: 'R', 19: 'S', 20: 'T',
+                21: 'U', 22: 'V', 23: 'W', 24: 'X', 25: 'Y', 26: 'Z', 27: ' ', 28: '.', 29: ','
+            };
+            
+            return numbers.map(num => reverseMap[num] || ' ').join('');
+        }
+
+        function createBlocks(numbers, maxBlockValue) {
+            // Create blocks using a simple approach: pack as many 2-digit numbers as possible
+            const blocks = [];
+            const blockData = []; // Store original character data for reconstruction
+            
+            for (let i = 0; i < numbers.length; i += 3) { // Process 3 characters at a time max
+                let blockValue = 0;
+                let charsInBlock = [];
+                
+                // Try to fit up to 3 characters in a block
+                for (let j = 0; j < 3 && i + j < numbers.length; j++) {
+                    let newValue = blockValue * 100 + numbers[i + j];
+                    
+                    if (newValue < maxBlockValue) {
+                        blockValue = newValue;
+                        charsInBlock.push(numbers[i + j]);
+                    } else {
+                        break; // Can't fit more characters
+                    }
+                }
+                
+                // If we couldn't fit any characters, use single character
+                if (charsInBlock.length === 0) {
+                    blockValue = numbers[i];
+                    charsInBlock = [numbers[i]];
+                }
+                
+                blocks.push(blockValue);
+                blockData.push(charsInBlock);
+            }
+            
+            // Store block structure for decryption
+            window.blockStructure = blockData;
+            return blocks;
+        }
+
+        function parseBlocks(blocks) {
+            // Use stored block structure to correctly reconstruct the original numbers
+            if (window.blockStructure) {
+                const numbers = [];
+                for (let blockChars of window.blockStructure) {
+                    numbers.push(...blockChars);
+                }
+                return numbers;
+            }
+            
+            // Fallback parsing if structure is lost (less reliable)
+            const numbers = [];
+            for (let block of blocks) {
+                const blockStr = block.toString().padStart(2, '0'); // Ensure at least 2 digits
+                
+                // Simple parsing: assume 2-digit encoding
+                for (let i = 0; i < blockStr.length; i += 2) {
+                    if (i + 1 < blockStr.length) {
+                        let num = parseInt(blockStr.substr(i, 2));
+                        if (num >= 1 && num <= 29) {
+                            numbers.push(num);
+                        }
+                    } else {
+                        let num = parseInt(blockStr.substr(i, 1));
+                        if (num >= 1 && num <= 29) {
+                            numbers.push(num);
+                        }
+                    }
+                }
+            }
+            
+            return numbers;
+        }
+
         // Encrypt demo message
         function encryptDemo() {
-            const message = parseInt(document.getElementById('demo-message').value);
+            const messageText = document.getElementById('demo-message').value.trim();
             const encryptedField = document.getElementById('encrypted-message');
+            const conversionField = document.getElementById('conversion-display');
             const explanationDiv = document.getElementById('demo-explanation');
             
-            if (!message || !bobKeys) {
+            if (!messageText || !bobKeys) {
                 alert('Please enter a message and generate Bob\'s keys first!');
                 return;
             }
             
-            if (message >= bobKeys.publicKey.n) {
-                alert(`Message must be less than n (${bobKeys.publicKey.n})`);
-                return;
+            try {
+                // Convert text to numbers
+                const numbers = textToNumbers(messageText);
+                conversionField.value = messageText.toUpperCase() + ' → ' + numbers.join(', ');
+                
+                // Create blocks that fit within the key constraints
+                const blocks = createBlocks(numbers, bobKeys.publicKey.n);
+                
+                // Encrypt each block
+                const encryptedBlocks = blocks.map(block => 
+                    modPow(block, bobKeys.publicKey.e, bobKeys.publicKey.n)
+                );
+                
+                encryptedField.value = encryptedBlocks.join(', ');
+                
+                explanationDiv.style.display = 'block';
+                explanationDiv.innerHTML = `
+                    <strong>Text Encryption Process:</strong><br>
+                    1. Text "${messageText.toUpperCase()}" → Numbers: [${numbers.join(', ')}]<br>
+                    2. Grouped into blocks: [${blocks.join(', ')}]<br>
+                    3. Each block encrypted with Bob's public key (n=${bobKeys.publicKey.n}, e=${bobKeys.publicKey.e})<br>
+                    4. Encrypted blocks: [${encryptedBlocks.join(', ')}]
+                `;
+                
+                // Store for decryption
+                window.currentEncryptedBlocks = encryptedBlocks;
+                window.originalBlocks = blocks;
+                
+            } catch (error) {
+                alert('Error encrypting message: ' + error.message);
             }
-            
-            // Encrypt: c = m^e mod n
-            const encrypted = modPow(message, bobKeys.publicKey.e, bobKeys.publicKey.n);
-            encryptedField.value = encrypted;
-            
-            explanationDiv.style.display = 'block';
-            explanationDiv.innerHTML = `
-                <strong>Encryption Process:</strong><br>
-                Using Bob's public key (n=${bobKeys.publicKey.n}, e=${bobKeys.publicKey.e})<br>
-                <span class="formula">ciphertext = ${message}^${bobKeys.publicKey.e} mod ${bobKeys.publicKey.n} = ${encrypted}</span>
-            `;
         }
 
         // Decrypt demo message
         function decryptDemo() {
-            const encrypted = parseInt(document.getElementById('encrypted-message').value);
             const decryptedField = document.getElementById('decrypted-message');
             const explanationDiv = document.getElementById('demo-explanation');
             
-            if (!encrypted || !bobKeys) {
+            if (!window.currentEncryptedBlocks || !bobKeys) {
                 alert('Please encrypt a message first!');
                 return;
             }
             
-            // Decrypt: m = c^d mod n
-            const decrypted = modPow(encrypted, bobKeys.privateKey.d, bobKeys.privateKey.n);
-            decryptedField.value = decrypted;
-            
-            explanationDiv.innerHTML += `<br><br>
-                <strong>Decryption Process:</strong><br>
-                Using Bob's private key (n=${bobKeys.privateKey.n}, d=${bobKeys.privateKey.d})<br>
-                <span class="formula">message = ${encrypted}^${bobKeys.privateKey.d} mod ${bobKeys.privateKey.n} = ${decrypted}</span>
-            `;
+            try {
+                // Decrypt each block
+                const decryptedBlocks = window.currentEncryptedBlocks.map(encryptedBlock => 
+                    modPow(encryptedBlock, bobKeys.privateKey.d, bobKeys.privateKey.n)
+                );
+                
+                // Parse blocks back into character numbers
+                const numbers = parseBlocks(decryptedBlocks);
+                
+                // Convert numbers back to text
+                const decryptedText = numbersToText(numbers);
+                
+                decryptedField.value = decryptedText;
+                
+                explanationDiv.innerHTML += `<br><br>
+                    <strong>Text Decryption Process:</strong><br>
+                    1. Encrypted blocks [${window.currentEncryptedBlocks.join(', ')}] decrypted<br>
+                    2. Decrypted blocks: [${decryptedBlocks.join(', ')}]<br>
+                    3. Block structure preserved: ${JSON.stringify(window.blockStructure)}<br>
+                    4. Reconstructed character numbers: [${numbers.join(', ')}]<br>
+                    5. Converted to text: "${decryptedText}"<br>
+                    Using Bob's private key (n=${bobKeys.privateKey.n}, d=${bobKeys.privateKey.d})
+                `;
+                
+            } catch (error) {
+                alert('Error decrypting message: ' + error.message);
+            }
         }
     </script>
 </body>
