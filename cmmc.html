@@ -3,727 +3,1657 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NIST SP 800-171 Applicability Study</title>
+    <title>CMMC Auditor Progress Dashboard - NIST SP 800-171</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            color: #333;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
             padding: 20px;
         }
+
         .container {
-            width: 100%;
+            max-width: 1400px;
             margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
             position: relative;
         }
-        .title {
-            text-align: center;
-            color: #c00;
-            font-size: 22px;
-            margin-bottom: 20px;
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
-        .buttons-container {
-            position: absolute;
-            top: 0;
-            right: 0;
-            display: flex;
-            gap: 10px;
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
         }
-        .level-button {
-            background-color: #000;
-            color: #fff;
-            padding: 10px;
-            border: none;
-            cursor: pointer;
+
+        .progress-overview {
+            background: #f8f9fa;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .progress-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             text-align: center;
-            border-radius: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .progress-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .progress-card h3 {
             font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .level-button.active {
-            background-color: blue;
+
+        .progress-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-        .level-button:hover {
-            background-color: #333;
+
+        .progress-card .percentage {
+            font-size: 14px;
+            color: #6c757d;
         }
-        .domain-container {
+
+        .controls-container {
             display: flex;
             flex-wrap: wrap;
-            margin-top: 40px; /* Push content below the level buttons */
+            padding: 20px;
+            gap: 20px;
+            align-items: center;
         }
-        .domain-section {
-            flex: 1;
-            margin: 5px;
+
+        .level-controls, .view-controls, .assessment-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
-        .domain-button {
-            width: 100%;
-            background-color: #000;
-            color: #fff;
-            padding: 10px;
-            margin-bottom: 5px;
+
+        .control-label {
+            font-weight: 600;
+            color: #495057;
+            margin-right: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
             border: none;
+            border-radius: 6px;
             cursor: pointer;
-            text-align: left;
-            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-level {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-level.active {
+            background: #007bff;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-view {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-view.active {
+            background: #20c997;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-container {
+            margin-left: auto;
+            position: relative;
+        }
+
+        .search-input {
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            width: 250px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .domains-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .domain-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .domain-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .domain-header {
+            background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+            color: white;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .domain-header:hover {
+            background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+        }
+
+        .domain-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .domain-progress {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .expand-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .domain-card.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .domain-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .domain-card.expanded .domain-content {
+            display: block;
+        }
+
+        .capability-item {
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .capability-header {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .capability-header:hover {
+            background: #e9ecef;
+        }
+
+        .capability-id {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .practice-container {
+            display: none;
+            padding: 15px;
+            background: #ffffff;
+        }
+
+        .capability-item.expanded .practice-container {
+            display: block;
+        }
+
+        .practice-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .practice-item:hover {
+            background: #f8f9fa;
+        }
+
+        .practice-info {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .practice-id {
+            font-weight: 600;
+            color: #495057;
             font-size: 14px;
         }
-        .domain-button:hover {
-            background-color: #333;
+
+        .practice-description {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 4px;
         }
-        .capabilities, .practices {
-            display: none;
-            margin-top: 5px;
+
+        .assessment-controls-practice {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
-        .capability-button, .practice-button {
-            background-color: #666;
-            color: #fff;
-            padding: 8px;
-            margin-top: 5px;
+
+        .status-select {
+            padding: 6px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 12px;
+            min-width: 120px;
+        }
+
+        .evidence-btn {
+            padding: 6px 12px;
+            background: #17a2b8;
+            color: white;
             border: none;
+            border-radius: 4px;
+            font-size: 12px;
             cursor: pointer;
-            text-align: left;
-            border-radius: 5px;
-            width: 100%; /* Align with domain button */
-            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        .evidence-btn:hover {
+            background: #138496;
+        }
+
+        .evidence-btn.has-evidence {
+            background: #28a745;
+        }
+
+        .notes-btn {
+            padding: 6px 12px;
+            background: #ffc107;
+            color: #212529;
+            border: none;
+            border-radius: 4px;
             font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease;
         }
-        .capability-button:hover, .practice-button:hover {
-            background-color: #555;
+
+        .notes-btn:hover {
+            background: #e0a800;
         }
-        .practice-button.active {
-            background-color: red;
-            color: #fff;
-            border: 1px solid #000; /* Black outline */
+
+        .status-not-started { background: #f8f9fa; border-left: 4px solid #6c757d; }
+        .status-in-progress { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .status-completed { background: #d4edda; border-left: 4px solid #28a745; }
+        .status-non-compliant { background: #f8d7da; border-left: 4px solid #dc3545; }
+        .status-not-applicable { background: #e2e3e5; border-left: 4px solid #6c757d; }
+
+        .level-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            margin-left: 10px;
         }
-        .practice-button {
-            background-color: #fff;
-            color: #000;
-            border: 1px solid #000; /* Black outline */
-        }
-        .practice-button:hover {
-            background-color: #f0f0f0;
-        }
-        .checkboxes {
+
+        .level-1 { background: #28a745; }
+        .level-2 { background: #ffc107; color: #212529; }
+        .level-3 { background: #dc3545; }
+
+        .modal {
             display: none;
-            margin-top: 5px;
-            margin-left: 20px;
-            font-size: 12px;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
         }
-        .checkboxes label {
-            margin-right: 15px;
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .file-upload {
+            border: 2px dashed #ced4da;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: #007bff;
+        }
+
+        .evidence-list {
+            margin-top: 15px;
+        }
+
+        .evidence-item {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .report-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .export-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-export {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .btn-export:hover {
+            background: #5a32a3;
+        }
+
+        @media (max-width: 768px) {
+            .controls-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .level-controls, .view-controls, .assessment-controls {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .search-container {
+                margin-left: 0;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .domains-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>CMMC Auditor Progress Dashboard</h1>
+            <div class="subtitle">NIST SP 800-171 Rev. 3 Compliance Assessment Tracking</div>
+        </div>
 
-<div class="container">
-    <div class="title">NIST SP 800-171 Applicability Study</div>
-    
-    <!-- Level Buttons -->
-    <div class="buttons-container">
-        <button class="level-button" onclick="highlightPractices(1)">Level 1</button>
-        <button class="level-button" onclick="highlightPractices(2)">Level 2</button>
-        <button class="level-button" onclick="highlightPractices(3)">Level 3</button>
+        <div class="progress-overview">
+            <div class="progress-card">
+                <h3>Total Practices</h3>
+                <div class="number" id="totalPractices">97</div>
+                <div class="percentage">NIST SP 800-171 Rev. 3</div>
+            </div>
+            <div class="progress-card">
+                <h3>Completed</h3>
+                <div class="number" id="completedPractices" style="color: #28a745;">0</div>
+                <div class="percentage" id="completedPercentage">0%</div>
+            </div>
+            <div class="progress-card">
+                <h3>In Progress</h3>
+                <div class="number" id="inProgressPractices" style="color: #ffc107;">0</div>
+                <div class="percentage" id="inProgressPercentage">0%</div>
+            </div>
+            <div class="progress-card">
+                <h3>Non-Compliant</h3>
+                <div class="number" id="nonCompliantPractices" style="color: #dc3545;">0</div>
+                <div class="percentage" id="nonCompliantPercentage">0%</div>
+            </div>
+            <div class="progress-card">
+                <h3>Evidence Items</h3>
+                <div class="number" id="evidenceCount" style="color: #17a2b8;">0</div>
+                <div class="percentage">Collected</div>
+            </div>
+        </div>
+
+        <div class="controls-container">
+            <div class="level-controls">
+                <span class="control-label">CMMC Level:</span>
+                <button class="btn btn-level" onclick="filterByLevel('all')" id="level-all">All Levels</button>
+                <button class="btn btn-level" onclick="filterByLevel(1)" id="level-1">Level 1</button>
+                <button class="btn btn-level" onclick="filterByLevel(2)" id="level-2">Level 2</button>
+                <button class="btn btn-level" onclick="filterByLevel(3)" id="level-3">Level 3</button>
+            </div>
+
+            <div class="view-controls">
+                <span class="control-label">View:</span>
+                <button class="btn btn-view active" onclick="setViewMode('all')" id="view-all">All</button>
+                <button class="btn btn-view" onclick="setViewMode('pending')" id="view-pending">Pending</button>
+                <button class="btn btn-view" onclick="setViewMode('issues')" id="view-issues">Issues</button>
+            </div>
+
+            <div class="assessment-controls">
+                <button class="btn btn-export" onclick="exportReport()">Export Report</button>
+                <button class="btn btn-export" onclick="showBulkActions()">Bulk Actions</button>
+            </div>
+
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search practices..." onkeyup="searchPractices(this.value)">
+            </div>
+        </div>
+
+        <div class="domains-grid" id="domains-container"></div>
+
+        <div class="report-section">
+            <h3>Assessment Summary</h3>
+            <div id="assessmentSummary"></div>
+        </div>
     </div>
-    
-    <div class="domain-container" id="domains-container"></div>
 
-</div>
+    <!-- Evidence Modal -->
+    <div id="evidenceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Evidence Management</h2>
+                <span class="close" onclick="closeModal('evidenceModal')">&times;</span>
+            </div>
+            <div id="evidenceModalContent"></div>
+        </div>
+    </div>
 
-<script>
-    const nistData = {
-        "domains": [
-            {
-                "name": "Access Control (AC)",
-                "capabilities": [
-                    {
-                        "id": "AC01",
-                        "description": "Limit system access to authorized users and the types of transactions/functions that authorized users are permitted to execute.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "AC.1.001",
-                                "description": "Limit system access to authorized users.",
-                                "level": 1
-                            },
-                            {
-                                "id": "AC.1.002",
-                                "description": "Limit system access to the types of transactions and functions that authorized users are permitted to execute.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "AC02",
-                        "description": "Control the flow of CUI in accordance with approved authorizations.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "AC.2.005",
-                                "description": "Control the flow of CUI in accordance with approved authorizations.",
-                                "level": 2
-                            }
-                        ]
-                    },
-                    {
-                        "id": "AC03",
-                        "description": "Use mechanisms to protect information during transmissions and ensure data integrity.",
-                        "level": 3,
-                        "practices": [
-                            {
-                                "id": "AC.3.017",
-                                "description": "Use session lock with pattern-hiding displays to prevent access/viewing of data after a period of inactivity.",
-                                "level": 3
-                            },
-                            {
-                                "id": "AC.3.018",
-                                "description": "Require multifactor authentication to establish nonlocal maintenance sessions via external networks.",
-                                "level": 3
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Awareness and Training (AT)",
-                "capabilities": [
-                    {
-                        "id": "AT01",
-                        "description": "Ensure personnel are trained and aware of the security risks and policies.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "AT.1.001",
-                                "description": "Ensure that managers, system administrators, and users are made aware of the security risks associated with their activities.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "AT02",
-                        "description": "Provide training for incident response to personnel.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "AT.2.001",
-                                "description": "Provide incident response training to personnel.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Audit and Accountability (AU)",
-                "capabilities": [
-                    {
-                        "id": "AU01",
-                        "description": "Create, protect, and retain audit records to establish events and identify individuals associated with those events.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "AU.1.001",
-                                "description": "Create audit records that contain sufficient detail.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "AU02",
-                        "description": "Protect and retain audit records from unauthorized access, modification, and deletion.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "AU.2.005",
-                                "description": "Protect audit information and audit tools from unauthorized access, modification, and deletion.",
-                                "level": 2
-                            }
-                        ]
-                    },
-                    {
-                        "id": "AU03",
-                        "description": "Generate audit events for monitoring and control.",
-                        "level": 3,
-                        "practices": [
-                            {
-                                "id": "AU.3.001",
-                                "description": "Generate audit events for monitoring and control.",
-                                "level": 3
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Configuration Management (CM)",
-                "capabilities": [
-                    {
-                        "id": "CM01",
-                        "description": "Establish and maintain baseline configurations for information systems.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "CM.1.001",
-                                "description": "Establish and maintain baseline configurations.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "CM02",
-                        "description": "Develop and maintain configuration control and documentation.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "CM.2.061",
-                                "description": "Develop, document, and maintain a current baseline configuration of the information system.",
-                                "level": 2
-                            }
-                        ]
-                    },
-                    {
-                        "id": "CM03",
-                        "description": "Restrict, disable, or prevent the use of nonessential programs, ports, and services.",
-                        "level": 3,
-                        "practices": [
-                            {
-                                "id": "CM.3.067",
-                                "description": "Restrict, disable, or prevent the use of nonessential programs, functions, ports, protocols, and services.",
-                                "level": 3
-                            },
-                            {
-                                "id": "CM.3.068",
-                                "description": "Apply a security configuration baseline to IT systems.",
-                                "level": 3
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Identification and Authentication (IA)",
-                "capabilities": [
-                    {
-                        "id": "IA01",
-                        "description": "Identify and authenticate users, processes, and devices before granting access.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "IA.1.001",
-                                "description": "Identify and authenticate users, processes acting on behalf of users, or devices.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "IA02",
-                        "description": "Use multifactor authentication for access to privileged and non-privileged accounts.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "IA.2.002",
-                                "description": "Use multifactor authentication for network access to privileged and non-privileged accounts.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Incident Response (IR)",
-                "capabilities": [
-                    {
-                        "id": "IR01",
-                        "description": "Establish incident-handling capabilities for organizational information systems.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "IR.1.001",
-                                "description": "Establish an operational incident-handling capability for organizational information systems.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "IR02",
-                        "description": "Track, document, and report incidents to appropriate officials.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "IR.2.001",
-                                "description": "Track, document, and report incidents to appropriate organizational officials.",
-                                "level": 2
-                            }
-                        ]
-                    },
-                    {
-                        "id": "IR03",
-                        "description": "Perform root cause analysis on incidents and take corrective actions.",
-                        "level": 3,
-                        "practices": [
-                            {
-                                "id": "IR.3.001",
-                                "description": "Perform root cause analysis on incidents and take corrective actions.",
-                                "level": 3
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Maintenance (MA)",
-                "capabilities": [
-                    {
-                        "id": "MA01",
-                        "description": "Perform periodic and timely maintenance on information systems.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "MA.1.001",
-                                "description": "Perform periodic and timely maintenance on organizational information systems.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "MA02",
-                        "description": "Control maintenance activities, tools, and personnel with access to the information system.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "MA.2.001",
-                                "description": "Control maintenance activities, tools, and personnel with access to the information system.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Media Protection (MP)",
-                "capabilities": [
-                    {
-                        "id": "MP01",
-                        "description": "Protect information system media containing CUI during transport and storage.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "MP.1.001",
-                                "description": "Protect information system media containing CUI by physically controlling and securely storing the media.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "MP02",
-                        "description": "Sanitize media before disposal or reuse.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "MP.2.001",
-                                "description": "Protect information system media during transport outside of controlled areas.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Personnel Security (PS)",
-                "capabilities": [
-                    {
-                        "id": "PS01",
-                        "description": "Screen individuals prior to authorizing access to systems containing CUI.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "PS.1.001",
-                                "description": "Screen individuals prior to authorizing access to the information system containing CUI.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "PS02",
-                        "description": "Terminate access when personnel are terminated or transferred.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "PS.2.001",
-                                "description": "Terminate information system access when personnel are terminated or transferred.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Physical Protection (PE)",
-                "capabilities": [
-                    {
-                        "id": "PE01",
-                        "description": "Limit physical access to systems, equipment, and environments to authorized individuals.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "PE.1.001",
-                                "description": "Limit physical access to organizational systems, equipment, and the respective operating environments to authorized individuals.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "PE02",
-                        "description": "Escort visitors and monitor visitor activity.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "PE.2.001",
-                                "description": "Escort visitors and monitor visitor activity.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Risk Assessment (RA)",
-                "capabilities": [
-                    {
-                        "id": "RA01",
-                        "description": "Identify and assess risk to operations, assets, and individuals.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "RA.1.001",
-                                "description": "Identify and evaluate risk to organizational operations, assets, and individuals.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "RA02",
-                        "description": "Perform vulnerability scans periodically and when new vulnerabilities are identified.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "RA.2.001",
-                                "description": "Scan for vulnerabilities in the information system and hosted applications periodically.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "Security Assessment (CA)",
-                "capabilities": [
-                    {
-                        "id": "CA01",
-                        "description": "Develop, document, and periodically update security plans and policies.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "CA.1.001",
-                                "description": "Develop, document, and periodically update security plans, policies, and procedures.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "CA02",
-                        "description": "Assess and monitor security controls on an ongoing basis.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "CA.2.001",
-                                "description": "Assess and monitor the implementation of security controls in organizational information systems.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "System and Communications Protection (SC)",
-                "capabilities": [
-                    {
-                        "id": "SC01",
-                        "description": "Monitor, control, and protect organizational communications at system boundaries.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "SC.1.001",
-                                "description": "Monitor, control, and protect organizational communications at system boundaries.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "SC02",
-                        "description": "Implement cryptographic protections to protect CUI during transmission.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "SC.2.001",
-                                "description": "Implement cryptographic mechanisms to protect the confidentiality of CUI during transmission.",
-                                "level": 2
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "System and Information Integrity (SI)",
-                "capabilities": [
-                    {
-                        "id": "SI01",
-                        "description": "Identify, report, and correct information system flaws.",
-                        "level": 1,
-                        "practices": [
-                            {
-                                "id": "SI.1.001",
-                                "description": "Identify, report, and correct information system flaws.",
-                                "level": 1
-                            }
-                        ]
-                    },
-                    {
-                        "id": "SI02",
-                        "description": "Provide protection from malicious code at appropriate locations.",
-                        "level": 2,
-                        "practices": [
-                            {
-                                "id": "SI.2.001",
-                                "description": "Implement protections against malicious code at appropriate locations.",
-                                "level": 2
-                            }
-                        ]
-                    },
-                    {
-                        "id": "SI03",
-                        "description": "Perform periodic system scans and real-time scans of files from external sources.",
-                        "level": 3,
-                        "practices": [
-                            {
-                                "id": "SI.3.001",
-                                "description": "Perform periodic scans of the information system and real-time scans of files from external sources.",
-                                "level": 3
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
-    };
+    <!-- Notes Modal -->
+    <div id="notesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Assessment Notes</h2>
+                <span class="close" onclick="closeModal('notesModal')">&times;</span>
+            </div>
+            <div id="notesModalContent"></div>
+        </div>
+    </div>
 
-    // Function to generate the HTML content from the JSON data
-    function generateContent() {
-        const container = document.getElementById('domains-container');
+    <script>
+        // Enhanced NIST SP 800-171 Rev. 3 data with 97 practices across 17 domains
+        const nistData = {
+            "domains": [
+                {
+                    "name": "Access Control (AC)",
+                    "id": "AC",
+                    "practices": [
+                        { "id": "AC.L1-3.1.1", "description": "Limit system access to authorized users, processes acting on behalf of users, and devices (including other systems).", "level": 1 },
+                        { "id": "AC.L1-3.1.2", "description": "Limit system access to the types of transactions and functions that authorized users are permitted to execute.", "level": 1 },
+                        { "id": "AC.L2-3.1.3", "description": "Control the flow of CUI in accordance with approved authorizations.", "level": 2 },
+                        { "id": "AC.L2-3.1.4", "description": "Separate the duties of individuals to reduce the risk of malevolent activity without collusion.", "level": 2 },
+                        { "id": "AC.L2-3.1.5", "description": "Employ the principle of least privilege, including for specific security functions and privileged accounts.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Awareness and Training (AT)",
+                    "id": "AT",
+                    "practices": [
+                        { "id": "AT.L1-3.2.1", "description": "Ensure that managers, system administrators, and users of organizational systems are made aware of the security risks associated with their activities and of the applicable policies, standards, and procedures related to the security of those systems.", "level": 1 },
+                        { "id": "AT.L1-3.2.2", "description": "Ensure that personnel are trained to carry out their assigned information security-related duties and responsibilities.", "level": 1 },
+                        { "id": "AT.L2-3.2.3", "description": "Provide security awareness training on recognizing and reporting potential indicators of insider threat.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Audit and Accountability (AU)",
+                    "id": "AU",
+                    "practices": [
+                        { "id": "AU.L1-3.3.1", "description": "Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.", "level": 1 },
+                        { "id": "AU.L1-3.3.2", "description": "Ensure that the actions of individual system users can be uniquely traced to those users so they can be held accountable for their actions.", "level": 1 },
+                        { "id": "AU.L2-3.3.3", "description": "Review and update logged events.", "level": 2 },
+                        { "id": "AU.L2-3.3.4", "description": "Alert in the event of an audit logging process failure.", "level": 2 },
+                        { "id": "AU.L2-3.3.5", "description": "Correlate audit record review, analysis, and reporting processes for investigation and response to indications of unlawful, unauthorized, suspicious, or unusual activity.", "level": 2 },
+                        { "id": "AU.L2-3.3.6", "description": "Provide audit record reduction and report generation to support on-demand analysis and reporting.", "level": 2 },
+                        { "id": "AU.L2-3.3.7", "description": "Provide a system capability that compares and synchronizes audit records with other audit records for consistency.", "level": 2 },
+                        { "id": "AU.L2-3.3.8", "description": "Protect audit information and audit logging tools from unauthorized access, modification, and deletion.", "level": 2 },
+                        { "id": "AU.L2-3.3.9", "description": "Limit management of audit logging functionality to a subset of privileged users.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Assessment, Authorization, and Monitoring (CA)",
+                    "id": "CA",
+                    "practices": [
+                        { "id": "CA.L1-3.12.1", "description": "Develop, document, and update security plans that describe system boundaries, operating environment, how controls are implemented, and describe relationships with or connections to other systems.", "level": 1 },
+                        { "id": "CA.L1-3.12.2", "description": "Develop, document, and update implementation plans that describe how to implement assigned controls within the specified control implementation time frames.", "level": 1 },
+                        { "id": "CA.L1-3.12.3", "description": "Monitor and control external system services provided to the organization.", "level": 1 },
+                        { "id": "CA.L1-3.12.4", "description": "Develop, document, and update plans of action and milestones to correct deficiencies and reduce or eliminate known vulnerabilities in the system.", "level": 1 },
+                        { "id": "CA.L2-3.12.5", "description": "Conduct assessments of security controls to determine effectiveness and verify compliance.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Configuration Management (CM)",
+                    "id": "CM",
+                    "practices": [
+                        { "id": "CM.L1-3.4.1", "description": "Establish and maintain baseline configurations and inventories of organizational systems (including hardware, software, firmware, and documentation) throughout the respective system development life cycles.", "level": 1 },
+                        { "id": "CM.L1-3.4.2", "description": "Establish and enforce security configuration settings for information technology products employed in organizational systems.", "level": 1 },
+                        { "id": "CM.L2-3.4.3", "description": "Track, review, approve, or disapprove, and log changes to organizational systems.", "level": 2 },
+                        { "id": "CM.L2-3.4.4", "description": "Analyze the security impact of changes prior to implementation.", "level": 2 },
+                        { "id": "CM.L2-3.4.5", "description": "Define, document, approve, and enforce physical and logical access restrictions associated with changes to organizational systems.", "level": 2 },
+                        { "id": "CM.L2-3.4.6", "description": "Employ the principle of least functionality by configuring organizational systems to provide only essential capabilities.", "level": 2 },
+                        { "id": "CM.L2-3.4.7", "description": "Restrict, disable, or prevent the use of nonessential programs, functions, ports, protocols, and services.", "level": 2 },
+                        { "id": "CM.L2-3.4.8", "description": "Apply deny-by-exception (blacklisting) policy to prevent the use of unauthorized software or deny-all, permit-by-exception (whitelisting) policy to allow the execution of authorized software.", "level": 2 },
+                        { "id": "CM.L2-3.4.9", "description": "Control and monitor user-installed software.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Identification and Authentication (IA)",
+                    "id": "IA",
+                    "practices": [
+                        { "id": "IA.L1-3.5.1", "description": "Identify system users, processes acting on behalf of users, and devices.", "level": 1 },
+                        { "id": "IA.L1-3.5.2", "description": "Authenticate (or verify) the identities of users, processes, or devices, as a prerequisite to allowing access to organizational systems.", "level": 1 },
+                        { "id": "IA.L2-3.5.3", "description": "Use multifactor authentication for local and network access to privileged accounts and for network access to non-privileged accounts.", "level": 2 },
+                        { "id": "IA.L2-3.5.4", "description": "Employ replay-resistant authentication mechanisms for network access to privileged and non-privileged accounts.", "level": 2 },
+                        { "id": "IA.L2-3.5.5", "description": "Prevent reuse of identifiers for a defined period.", "level": 2 },
+                        { "id": "IA.L2-3.5.6", "description": "Disable identifiers after a defined period of inactivity.", "level": 2 },
+                        { "id": "IA.L2-3.5.7", "description": "Enforce a minimum password complexity and change of characters when new passwords are created.", "level": 2 },
+                        { "id": "IA.L2-3.5.8", "description": "Prohibit password reuse for a specified number of generations.", "level": 2 },
+                        { "id": "IA.L2-3.5.9", "description": "Allow temporary password use for system logons with an immediate change to a permanent password.", "level": 2 },
+                        { "id": "IA.L2-3.5.10", "description": "Store and transmit only cryptographically-protected passwords.", "level": 2 },
+                        { "id": "IA.L2-3.5.11", "description": "Obscure feedback of authentication information.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Incident Response (IR)",
+                    "id": "IR",
+                    "practices": [
+                        { "id": "IR.L1-3.6.1", "description": "Establish an operational incident-handling capability for organizational systems that includes preparation, detection, analysis, containment, recovery, and user response activities.", "level": 1 },
+                        { "id": "IR.L1-3.6.2", "description": "Track, document, and report incidents to designated officials and/or authorities both internal and external to the organization.", "level": 1 },
+                        { "id": "IR.L2-3.6.3", "description": "Test the organizational incident response capability.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Maintenance (MA)",
+                    "id": "MA",
+                    "practices": [
+                        { "id": "MA.L1-3.7.1", "description": "Perform maintenance on organizational systems.", "level": 1 },
+                        { "id": "MA.L1-3.7.2", "description": "Provide controls on the tools, techniques, mechanisms, and personnel used to conduct system maintenance.", "level": 1 },
+                        { "id": "MA.L2-3.7.3", "description": "Ensure equipment removed for off-site maintenance is sanitized of any CUI.", "level": 2 },
+                        { "id": "MA.L2-3.7.4", "description": "Check media containing diagnostic and test programs for malicious code before the media are used in organizational systems.", "level": 2 },
+                        { "id": "MA.L2-3.7.5", "description": "Require multifactor authentication to establish nonlocal maintenance sessions via external network connections and terminate such connections when nonlocal maintenance is complete.", "level": 2 },
+                        { "id": "MA.L2-3.7.6", "description": "Supervise the maintenance activities of maintenance personnel without required access authorization.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Media Protection (MP)",
+                    "id": "MP",
+                    "practices": [
+                        { "id": "MP.L1-3.8.1", "description": "Protect (i.e., physically control and securely store) system media containing CUI, both paper and digital.", "level": 1 },
+                        { "id": "MP.L1-3.8.2", "description": "Limit access to CUI on system media to authorized users.", "level": 1 },
+                        { "id": "MP.L1-3.8.3", "description": "Sanitize or destroy system media containing CUI before disposal or release for reuse.", "level": 1 },
+                        { "id": "MP.L2-3.8.4", "description": "Mark media with necessary CUI markings and distribution limitations.", "level": 2 },
+                        { "id": "MP.L2-3.8.5", "description": "Prohibit the use of portable storage devices when such devices have no identifiable owner.", "level": 2 },
+                        { "id": "MP.L2-3.8.6", "description": "Implement cryptographic mechanisms to protect the confidentiality of CUI stored on digital media during transport unless otherwise protected by alternative physical safeguards.", "level": 2 },
+                        { "id": "MP.L2-3.8.7", "description": "Control the use of removable media on system components.", "level": 2 },
+                        { "id": "MP.L2-3.8.8", "description": "Prohibit the use of portable storage devices when such devices have no identifiable owner.", "level": 2 },
+                        { "id": "MP.L2-3.8.9", "description": "Protect the confidentiality of backup CUI at storage locations.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Personnel Security (PS)",
+                    "id": "PS",
+                    "practices": [
+                        { "id": "PS.L1-3.9.1", "description": "Screen individuals prior to authorizing access to organizational systems containing CUI.", "level": 1 },
+                        { "id": "PS.L1-3.9.2", "description": "Ensure that organizational systems containing CUI are protected during and after personnel actions such as terminations and transfers.", "level": 1 }
+                    ]
+                },
+                {
+                    "name": "Physical Protection (PE)",
+                    "id": "PE",
+                    "practices": [
+                        { "id": "PE.L1-3.10.1", "description": "Limit physical access to organizational systems, equipment, and the respective operating environments to authorized individuals.", "level": 1 },
+                        { "id": "PE.L1-3.10.2", "description": "Protect and monitor the physical facility and support infrastructure for organizational systems.", "level": 1 },
+                        { "id": "PE.L2-3.10.3", "description": "Escort visitors and monitor visitor activity.", "level": 2 },
+                        { "id": "PE.L2-3.10.4", "description": "Maintain audit logs of physical access.", "level": 2 },
+                        { "id": "PE.L2-3.10.5", "description": "Control and manage physical access devices.", "level": 2 },
+                        { "id": "PE.L2-3.10.6", "description": "Enforce safeguarding measures for CUI at alternate work sites.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Planning (PL)",
+                    "id": "PL",
+                    "practices": [
+                        { "id": "PL.L1-3.12.1", "description": "Develop, document, and update security plans that describe system boundaries, operating environment, and the responsibilities and expected behavior of all individuals with access to the system.", "level": 1 },
+                        { "id": "PL.L1-3.12.2", "description": "Define user actions that can be performed on the system without identification or authentication.", "level": 1 },
+                        { "id": "PL.L2-3.12.3", "description": "Monitor and control system connections and use.", "level": 2 },
+                        { "id": "PL.L2-3.12.4", "description": "Develop, document, and update plans of action and milestones for the system.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Risk Assessment (RA)",
+                    "id": "RA",
+                    "practices": [
+                        { "id": "RA.L1-3.11.1", "description": "Periodically assess the risk to organizational operations (including mission, functions, image, or reputation), organizational assets, and individuals, resulting from the operation of organizational systems and the associated processing, storage, or transmission of CUI.", "level": 1 },
+                        { "id": "RA.L2-3.11.2", "description": "Scan for vulnerabilities in organizational systems and applications periodically and when new vulnerabilities affecting those systems and applications are identified.", "level": 2 },
+                        { "id": "RA.L2-3.11.3", "description": "Remediate vulnerabilities in accordance with risk assessments.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "System and Services Acquisition (SA)",
+                    "id": "SA",
+                    "practices": [
+                        { "id": "SA.L1-3.13.1", "description": "Monitor, control, and protect organizational communications (i.e., information transmitted or received by organizational systems) at the external boundaries and key internal boundaries of organizational systems.", "level": 1 },
+                        { "id": "SA.L1-3.13.2", "description": "Employ architectural designs, software development techniques, and systems engineering principles that promote effective information security within organizational systems.", "level": 1 },
+                        { "id": "SA.L2-3.13.3", "description": "Separate user functionality from system management functionality.", "level": 2 },
+                        { "id": "SA.L2-3.13.4", "description": "Prevent unauthorized and unintended information transfer via shared system resources.", "level": 2 },
+                        { "id": "SA.L2-3.13.5", "description": "Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "System and Communications Protection (SC)",
+                    "id": "SC",
+                    "practices": [
+                        { "id": "SC.L1-3.13.1", "description": "Monitor, control, and protect organizational communications (i.e., information transmitted or received by organizational systems) at the external boundaries and key internal boundaries of organizational systems.", "level": 1 },
+                        { "id": "SC.L1-3.13.2", "description": "Employ architectural designs, software development techniques, and systems engineering principles that promote effective information security within organizational systems.", "level": 1 },
+                        { "id": "SC.L2-3.13.3", "description": "Separate user functionality from system management functionality.", "level": 2 },
+                        { "id": "SC.L2-3.13.4", "description": "Prevent unauthorized and unintended information transfer via shared system resources.", "level": 2 },
+                        { "id": "SC.L2-3.13.5", "description": "Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.", "level": 2 },
+                        { "id": "SC.L2-3.13.6", "description": "Deny network communications traffic by default and allow network communications traffic by exception (i.e., deny all, permit by exception).", "level": 2 },
+                        { "id": "SC.L2-3.13.7", "description": "Prevent remote devices from simultaneously establishing non-remote connections with organizational systems and communicating via some other connection to resources in external networks (i.e., split tunneling).", "level": 2 },
+                        { "id": "SC.L2-3.13.8", "description": "Implement cryptographic mechanisms to prevent unauthorized disclosure of CUI during transmission unless otherwise protected by alternative physical safeguards.", "level": 2 },
+                        { "id": "SC.L2-3.13.9", "description": "Terminate network connections associated with communications sessions at the end of the sessions or after a defined period of inactivity.", "level": 2 },
+                        { "id": "SC.L2-3.13.10", "description": "Establish and manage cryptographic keys for cryptography employed in organizational systems.", "level": 2 },
+                        { "id": "SC.L2-3.13.11", "description": "Employ FIPS-validated cryptography when used to protect the confidentiality of CUI.", "level": 2 },
+                        { "id": "SC.L2-3.13.12", "description": "Prohibit remote activation of collaborative computing devices and provide indication of devices in use to users present at the device.", "level": 2 },
+                        { "id": "SC.L2-3.13.13", "description": "Control and monitor the use of mobile code.", "level": 2 },
+                        { "id": "SC.L2-3.13.14", "description": "Control and monitor the use of Voice over Internet Protocol (VoIP) technologies.", "level": 2 },
+                        { "id": "SC.L2-3.13.15", "description": "Protect the authenticity of communications sessions.", "level": 2 },
+                        { "id": "SC.L2-3.13.16", "description": "Protect the confidentiality of CUI at rest.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "System and Information Integrity (SI)",
+                    "id": "SI",
+                    "practices": [
+                        { "id": "SI.L1-3.14.1", "description": "Identify, report, and correct system flaws in a timely manner.", "level": 1 },
+                        { "id": "SI.L1-3.14.2", "description": "Provide protection from malicious code at designated locations within organizational systems.", "level": 1 },
+                        { "id": "SI.L1-3.14.3", "description": "Monitor system security alerts and advisories and take action in response.", "level": 1 },
+                        { "id": "SI.L1-3.14.4", "description": "Update malicious code protection mechanisms when new releases are available.", "level": 1 },
+                        { "id": "SI.L1-3.14.5", "description": "Perform periodic scans of organizational systems and real-time scans of files from external sources as files are downloaded, opened, or executed.", "level": 1 },
+                        { "id": "SI.L2-3.14.6", "description": "Monitor organizational systems, including inbound and outbound communications traffic, to detect attacks and indicators of potential attacks.", "level": 2 },
+                        { "id": "SI.L2-3.14.7", "description": "Identify unauthorized use of organizational systems.", "level": 2 }
+                    ]
+                },
+                {
+                    "name": "Supply Chain Risk Management (SR)",
+                    "id": "SR",
+                    "practices": [
+                        { "id": "SR.L2-3.20.1", "description": "Identify and document supply chain elements, processes, and actors for systems, system components, and system services.", "level": 2 },
+                        { "id": "SR.L2-3.20.2", "description": "Establish and maintain the provenance of elements, processes, tools, and information used to develop and maintain systems.", "level": 2 },
+                        { "id": "SR.L2-3.20.3", "description": "Employ mechanisms to ensure the integrity of the elements, processes, tools, and information of systems.", "level": 2 }
+                    ]
+                }
+            ]
+        };
 
-        nistData.domains.forEach(domain => {
-            // Create a domain section container
-            const domainSection = document.createElement('div');
-            domainSection.className = 'domain-section';
-            container.appendChild(domainSection);
+        // Assessment data storage
+        let assessmentData = {};
+        let evidenceData = {};
+        let notesData = {};
+        let currentFilter = 'all';
+        let currentView = 'all';
 
-            // Create domain button
-            const domainButton = document.createElement('button');
-            domainButton.className = 'domain-button';
-            domainButton.textContent = domain.name;
-            domainButton.onclick = function() {
-                toggleCapabilities(domainSection);
+        // Initialize the dashboard
+        function initializeDashboard() {
+            generateDomainsContent();
+            updateProgressOverview();
+            setActiveFilter('level-all');
+            setActiveView('view-all');
+            loadAssessmentData();
+        }
+
+        // Generate domain content
+        function generateDomainsContent() {
+            const container = document.getElementById('domains-container');
+            container.innerHTML = '';
+
+            nistData.domains.forEach(domain => {
+                const domainCard = document.createElement('div');
+                domainCard.className = 'domain-card';
+                domainCard.setAttribute('data-domain', domain.id);
+
+                const domainProgress = calculateDomainProgress(domain);
+                
+                domainCard.innerHTML = `
+                    <div class="domain-header" onclick="toggleDomain('${domain.id}')">
+                        <div>
+                            <h3>${domain.name}</h3>
+                            <div class="domain-progress">${domainProgress.completed}/${domainProgress.total} practices completed (${domainProgress.percentage}%)</div>
+                        </div>
+                        <div class="expand-icon">▼</div>
+                    </div>
+                    <div class="domain-content">
+                        ${generatePracticesContent(domain.practices)}
+                    </div>
+                `;
+
+                container.appendChild(domainCard);
+            });
+        }
+
+        // Generate practices content for a domain
+        function generatePracticesContent(practices) {
+            return practices.map(practice => `
+                <div class="practice-item ${getStatusClass(practice.id)}" data-practice-id="${practice.id}" data-level="${practice.level}">
+                    <div class="practice-info">
+                        <div class="practice-id">
+                            ${practice.id}
+                            <span class="level-indicator level-${practice.level}">Level ${practice.level}</span>
+                        </div>
+                        <div class="practice-description">${practice.description}</div>
+                    </div>
+                    <div class="assessment-controls-practice">
+                        <select class="status-select" onchange="updatePracticeStatus('${practice.id}', this.value)">
+                            <option value="not-started">Not Started</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="non-compliant">Non-Compliant</option>
+                            <option value="not-applicable">Not Applicable</option>
+                        </select>
+                        <button class="evidence-btn ${hasEvidence(practice.id) ? 'has-evidence' : ''}" 
+                                onclick="openEvidenceModal('${practice.id}')">
+                            Evidence (${getEvidenceCount(practice.id)})
+                        </button>
+                        <button class="notes-btn" onclick="openNotesModal('${practice.id}')">
+                            Notes
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle domain expansion
+        function toggleDomain(domainId) {
+            const domainCard = document.querySelector(`[data-domain="${domainId}"]`);
+            domainCard.classList.toggle('expanded');
+        }
+
+        // Filter by CMMC level
+        function filterByLevel(level) {
+            currentFilter = level;
+            setActiveFilter(`level-${level}`);
+            applyFilters();
+        }
+
+        // Set view mode
+        function setViewMode(mode) {
+            currentView = mode;
+            setActiveView(`view-${mode}`);
+            applyFilters();
+        }
+
+        // Apply current filters
+        function applyFilters() {
+            const practices = document.querySelectorAll('.practice-item');
+            
+            practices.forEach(practice => {
+                let show = true;
+                
+                // Level filter
+                if (currentFilter !== 'all') {
+                    const practiceLevel = parseInt(practice.getAttribute('data-level'));
+                    if (practiceLevel !== currentFilter) {
+                        show = false;
+                    }
+                }
+                
+                // View filter
+                if (currentView !== 'all') {
+                    const practiceId = practice.getAttribute('data-practice-id');
+                    const status = getAssessmentStatus(practiceId);
+                    
+                    if (currentView === 'pending' && status === 'completed') {
+                        show = false;
+                    } else if (currentView === 'issues' && status !== 'non-compliant') {
+                        show = false;
+                    }
+                }
+                
+                practice.style.display = show ? 'flex' : 'none';
+            });
+
+            // Hide domains with no visible practices
+            nistData.domains.forEach(domain => {
+                const domainCard = document.querySelector(`[data-domain="${domain.id}"]`);
+                const visiblePractices = domainCard.querySelectorAll('.practice-item[style="display: flex;"], .practice-item:not([style])');
+                domainCard.style.display = visiblePractices.length > 0 ? 'block' : 'none';
+            });
+        }
+
+        // Search practices
+        function searchPractices(query) {
+            const practices = document.querySelectorAll('.practice-item');
+            const searchTerm = query.toLowerCase();
+            
+            practices.forEach(practice => {
+                const practiceId = practice.querySelector('.practice-id').textContent.toLowerCase();
+                const description = practice.querySelector('.practice-description').textContent.toLowerCase();
+                
+                const matches = practiceId.includes(searchTerm) || description.includes(searchTerm);
+                
+                if (query === '' || matches) {
+                    practice.style.display = 'flex';
+                } else {
+                    practice.style.display = 'none';
+                }
+            });
+        }
+
+        // Update practice status
+        function updatePracticeStatus(practiceId, status) {
+            assessmentData[practiceId] = {
+                ...assessmentData[practiceId],
+                status: status,
+                lastUpdated: new Date().toISOString()
             };
-            domainSection.appendChild(domainButton);
+            
+            updatePracticeDisplay(practiceId);
+            updateProgressOverview();
+            saveAssessmentData();
+        }
 
-            // Create capabilities container within the domain section
-            const capabilitiesContainer = document.createElement('div');
-            capabilitiesContainer.className = 'capabilities';
-            domainSection.appendChild(capabilitiesContainer);
+        // Update practice display based on status
+        function updatePracticeDisplay(practiceId) {
+            const practice = document.querySelector(`[data-practice-id="${practiceId}"]`);
+            if (practice) {
+                // Remove existing status classes
+                practice.classList.remove('status-not-started', 'status-in-progress', 'status-completed', 'status-non-compliant', 'status-not-applicable');
+                
+                // Add new status class
+                const status = getAssessmentStatus(practiceId);
+                practice.classList.add(`status-${status}`);
+                
+                // Update select value
+                const select = practice.querySelector('.status-select');
+                if (select) {
+                    select.value = status;
+                }
+            }
+        }
 
-            domain.capabilities.forEach(capability => {
-                // Create capability button with ID and mouseover description
-                const capabilityButton = document.createElement('button');
-                capabilityButton.className = 'capability-button';
-                capabilityButton.textContent = capability.id;
-                capabilityButton.title = capability.description; // Mouseover with description
-                capabilityButton.onclick = function() {
-                    togglePractices(capabilityButton);
-                };
-                capabilitiesContainer.appendChild(capabilityButton);
+        // Get assessment status for a practice
+        function getAssessmentStatus(practiceId) {
+            return assessmentData[practiceId]?.status || 'not-started';
+        }
 
-                // Create practices container within the capability container
-                const practicesContainer = document.createElement('div');
-                practicesContainer.className = 'practices';
-                capabilitiesContainer.appendChild(practicesContainer);
+        // Get status CSS class
+        function getStatusClass(practiceId) {
+            const status = getAssessmentStatus(practiceId);
+            return `status-${status}`;
+        }
 
-                capability.practices.forEach(practice => {
-                    // Create practice button with ID only
-                    const practiceButton = document.createElement('button');
-                    practiceButton.className = 'practice-button';
-                    practiceButton.textContent = practice.id;
-                    practiceButton.dataset.level = practice.level;
-                    practiceButton.onclick = function() {
-                        toggleCheckboxes(practiceButton);
-                    };
-                    practicesContainer.appendChild(practiceButton);
+        // Calculate domain progress
+        function calculateDomainProgress(domain) {
+            const completed = domain.practices.filter(p => getAssessmentStatus(p.id) === 'completed').length;
+            const total = domain.practices.length;
+            const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            return { completed, total, percentage };
+        }
 
-                    // Create checkboxes within the practices container
-                    const checkboxes = document.createElement('div');
-                    checkboxes.className = 'checkboxes';
-                    checkboxes.innerHTML = `
-                        <label><input type="checkbox" name="${practice.id}-applicable"> Applicable</label>
-                        <label><input type="checkbox" name="${practice.id}-notapplicable"> Not Applicable</label>
-                    `;
-                    practicesContainer.appendChild(checkboxes);
+        // Update progress overview
+        function updateProgressOverview() {
+            const allPractices = [];
+            nistData.domains.forEach(domain => {
+                allPractices.push(...domain.practices);
+            });
+
+            const totals = {
+                total: allPractices.length,
+                completed: 0,
+                inProgress: 0,
+                nonCompliant: 0,
+                evidence: 0
+            };
+
+            allPractices.forEach(practice => {
+                const status = getAssessmentStatus(practice.id);
+                switch (status) {
+                    case 'completed':
+                        totals.completed++;
+                        break;
+                    case 'in-progress':
+                        totals.inProgress++;
+                        break;
+                    case 'non-compliant':
+                        totals.nonCompliant++;
+                        break;
+                }
+                
+                if (hasEvidence(practice.id)) {
+                    totals.evidence += getEvidenceCount(practice.id);
+                }
+            });
+
+            // Update display
+            document.getElementById('totalPractices').textContent = totals.total;
+            document.getElementById('completedPractices').textContent = totals.completed;
+            document.getElementById('completedPercentage').textContent = `${Math.round((totals.completed / totals.total) * 100)}%`;
+            document.getElementById('inProgressPractices').textContent = totals.inProgress;
+            document.getElementById('inProgressPercentage').textContent = `${Math.round((totals.inProgress / totals.total) * 100)}%`;
+            document.getElementById('nonCompliantPractices').textContent = totals.nonCompliant;
+            document.getElementById('nonCompliantPercentage').textContent = `${Math.round((totals.nonCompliant / totals.total) * 100)}%`;
+            document.getElementById('evidenceCount').textContent = totals.evidence;
+        }
+
+        // Evidence management
+        function hasEvidence(practiceId) {
+            return evidenceData[practiceId] && evidenceData[practiceId].length > 0;
+        }
+
+        function getEvidenceCount(practiceId) {
+            return evidenceData[practiceId] ? evidenceData[practiceId].length : 0;
+        }
+
+        function openEvidenceModal(practiceId) {
+            const modal = document.getElementById('evidenceModal');
+            const content = document.getElementById('evidenceModalContent');
+            
+            const practice = findPracticeById(practiceId);
+            const evidence = evidenceData[practiceId] || [];
+            
+            content.innerHTML = `
+                <div class="form-group">
+                    <h3>${practice.id}</h3>
+                    <p>${practice.description}</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Add Evidence</label>
+                    <div class="file-upload" onclick="document.getElementById('evidenceFile-${practiceId}').click()">
+                        <input type="file" id="evidenceFile-${practiceId}" style="display: none" multiple onchange="handleEvidenceUpload('${practiceId}', this.files)">
+                        Click to upload files or drag and drop
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Evidence Description</label>
+                    <textarea class="form-control" id="evidenceDescription-${practiceId}" placeholder="Describe the evidence..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn btn-view" onclick="addEvidence('${practiceId}')">Add Evidence</button>
+                </div>
+                
+                <div class="evidence-list">
+                    <h4>Current Evidence (${evidence.length})</h4>
+                    ${evidence.map((item, index) => `
+                        <div class="evidence-item">
+                            <div>
+                                <strong>${item.name}</strong><br>
+                                <small>${item.description}</small><br>
+                                <small>Added: ${new Date(item.dateAdded).toLocaleDateString()}</small>
+                            </div>
+                            <button class="btn" onclick="removeEvidence('${practiceId}', ${index})" style="background: #dc3545; color: white;">Remove</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function addEvidence(practiceId) {
+            const description = document.getElementById(`evidenceDescription-${practiceId}`).value;
+            const fileInput = document.getElementById(`evidenceFile-${practiceId}`);
+            
+            if (!evidenceData[practiceId]) {
+                evidenceData[practiceId] = [];
+            }
+            
+            // Add text evidence
+            if (description.trim()) {
+                evidenceData[practiceId].push({
+                    name: 'Text Evidence',
+                    description: description,
+                    type: 'text',
+                    dateAdded: new Date().toISOString()
+                });
+            }
+            
+            // Add file evidence
+            if (fileInput.files.length > 0) {
+                Array.from(fileInput.files).forEach(file => {
+                    evidenceData[practiceId].push({
+                        name: file.name,
+                        description: description || 'File upload',
+                        type: 'file',
+                        size: file.size,
+                        dateAdded: new Date().toISOString()
+                    });
+                });
+            }
+            
+            saveAssessmentData();
+            updateEvidenceDisplay(practiceId);
+            openEvidenceModal(practiceId); // Refresh modal
+        }
+
+        function removeEvidence(practiceId, index) {
+            evidenceData[practiceId].splice(index, 1);
+            saveAssessmentData();
+            updateEvidenceDisplay(practiceId);
+            openEvidenceModal(practiceId); // Refresh modal
+        }
+
+        function updateEvidenceDisplay(practiceId) {
+            const evidenceBtn = document.querySelector(`[data-practice-id="${practiceId}"] .evidence-btn`);
+            if (evidenceBtn) {
+                const count = getEvidenceCount(practiceId);
+                evidenceBtn.textContent = `Evidence (${count})`;
+                evidenceBtn.classList.toggle('has-evidence', count > 0);
+            }
+            updateProgressOverview();
+        }
+
+        // Notes management
+        function openNotesModal(practiceId) {
+            const modal = document.getElementById('notesModal');
+            const content = document.getElementById('notesModalContent');
+            
+            const practice = findPracticeById(practiceId);
+            const notes = notesData[practiceId] || '';
+            
+            content.innerHTML = `
+                <div class="form-group">
+                    <h3>${practice.id}</h3>
+                    <p>${practice.description}</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Assessment Notes</label>
+                    <textarea class="form-control" id="practiceNotes-${practiceId}" rows="10" placeholder="Add your assessment notes, findings, recommendations...">${notes}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn btn-view" onclick="saveNotes('${practiceId}')">Save Notes</button>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function saveNotes(practiceId) {
+            const notes = document.getElementById(`practiceNotes-${practiceId}`).value;
+            notesData[practiceId] = notes;
+            saveAssessmentData();
+            closeModal('notesModal');
+        }
+
+        // Modal management
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Utility functions
+        function findPracticeById(practiceId) {
+            for (const domain of nistData.domains) {
+                const practice = domain.practices.find(p => p.id === practiceId);
+                if (practice) return practice;
+            }
+            return null;
+        }
+
+        function setActiveFilter(filterId) {
+            document.querySelectorAll('.btn-level').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(filterId).classList.add('active');
+        }
+
+        function setActiveView(viewId) {
+            document.querySelectorAll('.btn-view').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // Data persistence
+        function saveAssessmentData() {
+            const data = {
+                assessmentData,
+                evidenceData,
+                notesData,
+                lastSaved: new Date().toISOString()
+            };
+            
+            // In a real implementation, this would save to a backend
+            // For now, we'll use localStorage as a demo
+            try {
+                const dataString = JSON.stringify(data);
+                // Note: localStorage is not available in Claude artifacts
+                console.log('Assessment data saved:', data);
+            } catch (error) {
+                console.warn('Could not save data:', error);
+            }
+        }
+
+        function loadAssessmentData() {
+            // In a real implementation, this would load from a backend
+            // For demo purposes, we'll start with empty data
+            assessmentData = {};
+            evidenceData = {};
+            notesData = {};
+            
+            // Update all practice displays
+            nistData.domains.forEach(domain => {
+                domain.practices.forEach(practice => {
+                    updatePracticeDisplay(practice.id);
                 });
             });
-        });
-    }
+        }
 
-    // Function to toggle capabilities visibility within a domain section
-    function toggleCapabilities(domainSection) {
-        const capabilities = domainSection.querySelector('.capabilities');
-        capabilities.style.display = (capabilities.style.display === 'none' || capabilities.style.display === '') ? 'block' : 'none';
-    }
+        // Export functionality
+        function exportReport() {
+            const report = generateAssessmentReport();
+            downloadReport(report);
+        }
 
-    // Function to toggle practices visibility within a capability container
-    function togglePractices(capabilityButton) {
-        const practices = capabilityButton.nextElementSibling;
-        practices.style.display = (practices.style.display === 'none' || practices.style.display === '') ? 'block' : 'none';
-    }
+        function generateAssessmentReport() {
+            const allPractices = [];
+            nistData.domains.forEach(domain => {
+                allPractices.push(...domain.practices.map(p => ({
+                    ...p,
+                    domain: domain.name,
+                    status: getAssessmentStatus(p.id),
+                    evidenceCount: getEvidenceCount(p.id),
+                    notes: notesData[p.id] || ''
+                })));
+            });
 
-    // Function to toggle checkboxes visibility within a practice container
-    function toggleCheckboxes(practiceButton) {
-        const checkboxes = practiceButton.nextElementSibling;
-        checkboxes.style.display = (checkboxes.style.display === 'none' || checkboxes.style.display === '') ? 'block' : 'none';
-    }
+            const completionStats = {
+                total: allPractices.length,
+                completed: allPractices.filter(p => p.status === 'completed').length,
+                inProgress: allPractices.filter(p => p.status === 'in-progress').length,
+                nonCompliant: allPractices.filter(p => p.status === 'non-compliant').length,
+                notApplicable: allPractices.filter(p => p.status === 'not-applicable').length
+            };
 
-    // Function to highlight practices based on selected level
-    function highlightPractices(level) {
-        // Remove active class from all level buttons
-        const levelButtons = document.querySelectorAll('.level-button');
-        levelButtons.forEach(button => {
-            button.classList.remove('active');
-        });
+            return {
+                generatedDate: new Date().toISOString(),
+                assessor: 'CMMC Assessor', // Could be made configurable
+                organization: 'Assessment Target', // Could be made configurable
+                completionStats,
+                practiceDetails: allPractices,
+                domainSummary: nistData.domains.map(domain => ({
+                    name: domain.name,
+                    progress: calculateDomainProgress(domain)
+                }))
+            };
+        }
 
-        // Add active class to the clicked level button
-        levelButtons[level - 1].classList.add('active');
+        function downloadReport(report) {
+            const reportText = `
+CMMC Assessment Report
+Generated: ${new Date(report.generatedDate).toLocaleString()}
+Assessor: ${report.assessor}
+Organization: ${report.organization}
 
-        // Highlight practice buttons based on the selected level
-        const practiceButtons = document.querySelectorAll('.practice-button');
-        practiceButtons.forEach(button => {
-            if (button.dataset.level <= level) {
-                button.classList.add('active');
-            } else {
-                button.classList.remove('active');
+ASSESSMENT SUMMARY
+==================
+Total Practices: ${report.completionStats.total}
+Completed: ${report.completionStats.completed} (${Math.round((report.completionStats.completed / report.completionStats.total) * 100)}%)
+In Progress: ${report.completionStats.inProgress} (${Math.round((report.completionStats.inProgress / report.completionStats.total) * 100)}%)
+Non-Compliant: ${report.completionStats.nonCompliant} (${Math.round((report.completionStats.nonCompliant / report.completionStats.total) * 100)}%)
+Not Applicable: ${report.completionStats.notApplicable} (${Math.round((report.completionStats.notApplicable / report.completionStats.total) * 100)}%)
+
+DOMAIN SUMMARY
+==============
+${report.domainSummary.map(domain => 
+    `${domain.name}: ${domain.progress.completed}/${domain.progress.total} (${domain.progress.percentage}%)`
+).join('\n')}
+
+DETAILED FINDINGS
+=================
+${report.practiceDetails.map(practice => `
+Practice: ${practice.id}
+Domain: ${practice.domain}
+Level: ${practice.level}
+Status: ${practice.status.toUpperCase()}
+Evidence Items: ${practice.evidenceCount}
+Description: ${practice.description}
+Notes: ${practice.notes || 'No notes provided'}
+---
+`).join('')}
+            `;
+
+            const blob = new Blob([reportText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CMMC_Assessment_Report_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showBulkActions() {
+            const modal = document.getElementById('evidenceModal');
+            const content = document.getElementById('evidenceModalContent');
+            
+            content.innerHTML = `
+                <h3>Bulk Actions</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Select Action</label>
+                    <select class="form-control" id="bulkAction">
+                        <option value="">Choose an action...</option>
+                        <option value="mark-completed">Mark as Completed</option>
+                        <option value="mark-in-progress">Mark as In Progress</option>
+                        <option value="mark-not-applicable">Mark as Not Applicable</option>
+                        <option value="clear-status">Clear Status</option>
+                        <option value="export-filtered">Export Filtered Items</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Filter Criteria</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <select class="form-control" id="bulkLevel">
+                            <option value="">All Levels</option>
+                            <option value="1">Level 1 Only</option>
+                            <option value="2">Level 2 Only</option>
+                            <option value="3">Level 3 Only</option>
+                        </select>
+                        <select class="form-control" id="bulkDomain">
+                            <option value="">All Domains</option>
+                            ${nistData.domains.map(domain => 
+                                `<option value="${domain.id}">${domain.name}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button class="btn btn-view" onclick="executeBulkAction()">Execute Action</button>
+                    <button class="btn" onclick="closeModal('evidenceModal')" style="background: #6c757d; color: white; margin-left: 10px;">Cancel</button>
+                </div>
+                
+                <div id="bulkActionResult" style="margin-top: 20px;"></div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function executeBulkAction() {
+            const action = document.getElementById('bulkAction').value;
+            const level = document.getElementById('bulkLevel').value;
+            const domain = document.getElementById('bulkDomain').value;
+            const resultDiv = document.getElementById('bulkActionResult');
+            
+            if (!action) {
+                resultDiv.innerHTML = '<div style="color: red;">Please select an action.</div>';
+                return;
+            }
+            
+            let affectedPractices = [];
+            
+            // Collect practices based on filters
+            nistData.domains.forEach(domainData => {
+                if (domain && domainData.id !== domain) return;
+                
+                domainData.practices.forEach(practice => {
+                    if (level && practice.level.toString() !== level) return;
+                    affectedPractices.push(practice);
+                });
+            });
+            
+            // Execute action
+            let actionCount = 0;
+            switch (action) {
+                case 'mark-completed':
+                    affectedPractices.forEach(practice => {
+                        updatePracticeStatus(practice.id, 'completed');
+                        actionCount++;
+                    });
+                    break;
+                case 'mark-in-progress':
+                    affectedPractices.forEach(practice => {
+                        updatePracticeStatus(practice.id, 'in-progress');
+                        actionCount++;
+                    });
+                    break;
+                case 'mark-not-applicable':
+                    affectedPractices.forEach(practice => {
+                        updatePracticeStatus(practice.id, 'not-applicable');
+                        actionCount++;
+                    });
+                    break;
+                case 'clear-status':
+                    affectedPractices.forEach(practice => {
+                        updatePracticeStatus(practice.id, 'not-started');
+                        actionCount++;
+                    });
+                    break;
+                case 'export-filtered':
+                    exportFilteredPractices(affectedPractices);
+                    actionCount = affectedPractices.length;
+                    break;
+            }
+            
+            resultDiv.innerHTML = `<div style="color: green;">Action completed successfully! ${actionCount} practices affected.</div>`;
+            
+            if (action !== 'export-filtered') {
+                setTimeout(() => {
+                    closeModal('evidenceModal');
+                    updateProgressOverview();
+                }, 2000);
+            }
+        }
+
+        function exportFilteredPractices(practices) {
+            const reportText = `
+CMMC Filtered Assessment Report
+Generated: ${new Date().toLocaleString()}
+Filtered Practices: ${practices.length}
+
+PRACTICE DETAILS
+================
+${practices.map(practice => `
+Practice: ${practice.id}
+Level: ${practice.level}
+Status: ${getAssessmentStatus(practice.id).toUpperCase()}
+Evidence Items: ${getEvidenceCount(practice.id)}
+Description: ${practice.description}
+Notes: ${notesData[practice.id] || 'No notes provided'}
+---
+`).join('')}
+            `;
+
+            const blob = new Blob([reportText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CMMC_Filtered_Report_${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Event handlers for file upload
+        function handleEvidenceUpload(practiceId, files) {
+            // This would handle file uploads in a real implementation
+            console.log(`Files selected for practice ${practiceId}:`, files);
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const evidenceModal = document.getElementById('evidenceModal');
+            const notesModal = document.getElementById('notesModal');
+            
+            if (event.target === evidenceModal) {
+                evidenceModal.style.display = 'none';
+            }
+            if (event.target === notesModal) {
+                notesModal.style.display = 'none';
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            // Esc key to close modals
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
+            
+            // Ctrl+E for export
+            if (event.ctrlKey && event.key === 'e') {
+                event.preventDefault();
+                exportReport();
+            }
+            
+            // Ctrl+F to focus search
+            if (event.ctrlKey && event.key === 'f') {
+                event.preventDefault();
+                document.querySelector('.search-input').focus();
             }
         });
-    }
 
-    // Generate the content on page load
-    window.onload = generateContent;
-</script>
+        // Assessment summary generation
+        function updateAssessmentSummary() {
+            const summaryDiv = document.getElementById('assessmentSummary');
+            
+            const criticalFindings = [];
+            const recommendations = [];
+            
+            nistData.domains.forEach(domain => {
+                domain.practices.forEach(practice => {
+                    const status = getAssessmentStatus(practice.id);
+                    const evidenceCount = getEvidenceCount(practice.id);
+                    
+                    if (status === 'non-compliant') {
+                        criticalFindings.push({
+                            id: practice.id,
+                            description: practice.description,
+                            level: practice.level,
+                            domain: domain.name
+                        });
+                    }
+                    
+                    if (status === 'completed' && evidenceCount === 0) {
+                        recommendations.push({
+                            id: practice.id,
+                            issue: 'Missing evidence documentation',
+                            recommendation: 'Collect and document evidence to support compliance assertion'
+                        });
+                    }
+                });
+            });
+            
+            const totalPractices = nistData.domains.reduce((total, domain) => total + domain.practices.length, 0);
+            const completedPractices = nistData.domains.reduce((total, domain) => 
+                total + domain.practices.filter(p => getAssessmentStatus(p.id) === 'completed').length, 0);
+            const completionRate = Math.round((completedPractices / totalPractices) * 100);
+            
+            summaryDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="color: #dc3545; margin-bottom: 15px;">Critical Findings (${criticalFindings.length})</h4>
+                        ${criticalFindings.length === 0 ? 
+                            '<p style="color: #28a745;">No critical findings identified.</p>' :
+                            criticalFindings.slice(0, 5).map(finding => `
+                                <div style="margin-bottom: 10px; padding: 10px; background: #f8d7da; border-radius: 4px;">
+                                    <strong>${finding.id}</strong> (Level ${finding.level})<br>
+                                    <small>${finding.domain}</small><br>
+                                    <span style="font-size: 12px;">${finding.description}</span>
+                                </div>
+                            `).join('')
+                        }
+                        ${criticalFindings.length > 5 ? `<p><em>... and ${criticalFindings.length - 5} more</em></p>` : ''}
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="color: #ffc107; margin-bottom: 15px;">Recommendations (${recommendations.length})</h4>
+                        ${recommendations.length === 0 ? 
+                            '<p style="color: #28a745;">No recommendations at this time.</p>' :
+                            recommendations.slice(0, 5).map(rec => `
+                                <div style="margin-bottom: 10px; padding: 10px; background: #fff3cd; border-radius: 4px;">
+                                    <strong>${rec.id}</strong><br>
+                                    <small style="color: #856404;">${rec.issue}</small><br>
+                                    <span style="font-size: 12px;">${rec.recommendation}</span>
+                                </div>
+                            `).join('')
+                        }
+                        ${recommendations.length > 5 ? `<p><em>... and ${recommendations.length - 5} more</em></p>` : ''}
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h4 style="color: #007bff; margin-bottom: 15px;">Assessment Status</h4>
+                        <div style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span>Overall Completion</span>
+                                <span>${completionRate}%</span>
+                            </div>
+                            <div style="background: #e9ecef; height: 10px; border-radius: 5px;">
+                                <div style="background: #007bff; height: 100%; width: ${completionRate}%; border-radius: 5px;"></div>
+                            </div>
+                        </div>
+                        <div style="font-size: 14px;">
+                            <p><strong>Next Steps:</strong></p>
+                            ${completionRate < 25 ? 
+                                '<p>• Focus on completing Level 1 practices<br>• Document system boundaries and controls<br>• Begin evidence collection</p>' :
+                                completionRate < 75 ? 
+                                '<p>• Address non-compliant findings<br>• Complete evidence documentation<br>• Review Level 2 requirements</p>' :
+                                '<p>• Final review of all practices<br>• Ensure complete evidence documentation<br>• Prepare for formal assessment</p>'
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            updateAssessmentSummary();
+            
+            // Set up periodic auto-updates
+            setInterval(() => {
+                updateProgressOverview();
+                updateAssessmentSummary();
+            }, 30000); // Update every 30 seconds
+        });
+
+        // Auto-save functionality
+        let autoSaveTimeout;
+        function scheduleAutoSave() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                saveAssessmentData();
+            }, 5000); // Save 5 seconds after last change
+        }
+
+        // Override the updatePracticeStatus function to include auto-save
+        const originalUpdatePracticeStatus = updatePracticeStatus;
+        updatePracticeStatus = function(practiceId, status) {
+            originalUpdatePracticeStatus(practiceId, status);
+            scheduleAutoSave();
+        };
+    </script>
 </body>
 </html>
+                
