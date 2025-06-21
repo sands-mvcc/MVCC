@@ -3,180 +3,1043 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Header Illustration</title>
+    <title>IPv4 Subnetting Learning Simulator</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            color: #333;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
         }
-        h1 {
+
+        .header {
             text-align: center;
-            color: #d9534f;
+            color: white;
+            margin-bottom: 30px;
         }
-        .description-box {
-            background-color: #f8f9fa;
-            border: 2px solid #333;
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+        }
+
+        .panel h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .game-area {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .game-modes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .game-mode-btn {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
+        }
+
+        .game-mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+        }
+
+        .game-mode-btn.active {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+        }
+
+        .question-area {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #4299e1;
+        }
+
+        .binary-display {
+            font-family: 'Courier New', monospace;
+            background: #2d3748;
+            color: #e2e8f0;
             padding: 15px;
-            border-radius: 5px;
+            border-radius: 8px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #a0aec0, #718096);
+        }
+
+        .feedback {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+
+        .feedback.correct {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .feedback.incorrect {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-item .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4299e1;
+        }
+
+        .score-item .label {
+            font-size: 0.9em;
+            color: #718096;
+        }
+
+        .tutorial {
+            background: #bee3f8;
+            border-radius: 10px;
+            padding: 20px;
             margin-bottom: 20px;
         }
-        h2 {
-            color: #d9534f;
-            border-bottom: 2px solid #333;
-            padding-bottom: 5px;
-            margin-top: 20px;
+
+        .tutorial h3 {
+            color: #2b6cb0;
+            margin-bottom: 15px;
         }
-        table {
+
+        .tutorial ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .tutorial li {
+            padding: 8px 0;
+            border-bottom: 1px solid #90cdf4;
+        }
+
+        .tutorial li:last-child {
+            border-bottom: none;
+        }
+
+        .cidr-table {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .cidr-table table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        th, td {
-            border: 1px solid #000;
+
+        .cidr-table th,
+        .cidr-table td {
             padding: 12px;
             text-align: left;
-            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
         }
-        th {
-            background-color: #333;
-            color: #ffffff;
+
+        .cidr-table th {
+            background: #4299e1;
+            color: white;
+            font-weight: 600;
         }
-        tr:nth-child(even) td {
-            background-color: #f2f2f2;
+
+        .cidr-table tr:nth-child(even) {
+            background: #f7fafc;
         }
-        tr:nth-child(odd) td {
-            background-color: #ffffff;
+
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 10px;
+            height: 20px;
+            margin: 20px 0;
+            overflow: hidden;
         }
-        a {
-            color: #d9534f;
-            text-decoration: none;
-            cursor: pointer;
+
+        .progress-fill {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
         }
-        a:hover {
-            text-decoration: underline;
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .game-modes {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
         }
-        .description {
-            margin-top: 20px;
-            background-color: #f8f9fa;
-            padding: 15px;
-            border: 2px solid #333;
-            border-radius: 5px;
-        }
-        .description a {
-            color: #d9534f;
-            text-decoration: none;
-        }
-        .description a:hover {
-            text-decoration: underline;
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
         }
     </style>
-    <script>
-        function showDescription(id) {
-            const descriptions = document.querySelectorAll('.description');
-            descriptions.forEach(description => {
-                description.style.display = 'none';
-            });
-            document.getElementById(id).style.display = 'block';
-        }
-    </script>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 IPv4 Subnetting Learning Simulator</h1>
+            <p>Master subnet calculations through interactive games and practice exercises</p>
+        </div>
 
-<h1>IP Header Illustration</h1>
+        <div class="main-content">
+            <div class="panel">
+                <h2>
+                    <span class="icon">📚</span>
+                    Quick Reference
+                </h2>
+                <div class="tutorial">
+                    <h3>Key Concepts:</h3>
+                    <ul>
+                        <li><strong>IP Address:</strong> 32-bit identifier (4 octets)</li>
+                        <li><strong>Subnet Mask:</strong> Defines network vs host bits</li>
+                        <li><strong>CIDR:</strong> /24 = 24 network bits, 8 host bits</li>
+                        <li><strong>Network Address:</strong> First address in subnet</li>
+                        <li><strong>Broadcast Address:</strong> Last address in subnet</li>
+                        <li><strong>Usable Hosts:</strong> Total hosts - 2</li>
+                    </ul>
+                </div>
+                
+                <div class="cidr-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>CIDR</th>
+                                <th>Subnet Mask</th>
+                                <th>Hosts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>/24</td><td>255.255.255.0</td><td>254</td></tr>
+                            <tr><td>/25</td><td>255.255.255.128</td><td>126</td></tr>
+                            <tr><td>/26</td><td>255.255.255.192</td><td>62</td></tr>
+                            <tr><td>/27</td><td>255.255.255.224</td><td>30</td></tr>
+                            <tr><td>/28</td><td>255.255.255.240</td><td>14</td></tr>
+                            <tr><td>/29</td><td>255.255.255.248</td><td>6</td></tr>
+                            <tr><td>/30</td><td>255.255.255.252</td><td>2</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-<div class="description-box">
-    <p>The Internet Protocol (IP) is a set of rules governing the format of data sent over the Internet or other networks. IP addresses, which are used to uniquely identify devices on a network, are part of this protocol. IP is responsible for addressing and routing packets of data so that they can travel across networks and arrive at the correct destination.</p>
-</div>
+            <div class="panel">
+                <h2>
+                    <span class="icon">📊</span>
+                    Your Progress
+                </h2>
+                <div class="score-board">
+                    <div class="score-item">
+                        <div class="value" id="correctCount">0</div>
+                        <div class="label">Correct</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="value" id="totalCount">0</div>
+                        <div class="label">Total</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="value" id="accuracy">0%</div>
+                        <div class="label">Accuracy</div>
+                    </div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 15px;">
+                    <button class="btn secondary" onclick="resetProgress()">Reset Progress</button>
+                </div>
+            </div>
+        </div>
 
-<h2>IP Header</h2>
-<table>
-    <tr>
-        <th colspan="4"><a onclick="showDescription('desc-version')">Version</a> (4 bits)</th>
-        <th colspan="4"><a onclick="showDescription('desc-ihl')">IHL</a> (4 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-dscp')">DSCP</a> (6 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-ecn')">ECN</a> (2 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-totallength')">Total Length</a> (16 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="16"><a onclick="showDescription('desc-identification')">Identification</a> (16 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-flags')">Flags</a> (3 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-fragmentoffset')">Fragment Offset</a> (13 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="8"><a onclick="showDescription('desc-ttl')">Time to Live</a> (8 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-protocol')">Protocol</a> (8 bits)</th>
-        <th colspan="16"><a onclick="showDescription('desc-headerchecksum')">Header Checksum</a> (16 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-sourceaddress')">Source Address</a> (32 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-destinationaddress')">Destination Address</a> (32 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-options')">Options + Padding</a> (Variable length)</th>
-    </tr>
-</table>
+        <div class="game-area">
+            <h2>
+                <span class="icon">🎮</span>
+                Interactive Learning Games
+            </h2>
+            
+            <div class="game-modes">
+                <button class="game-mode-btn active" onclick="setGameMode('subnet-mask')">
+                    Subnet Mask Calculator
+                </button>
+                <button class="game-mode-btn" onclick="setGameMode('network-address')">
+                    Network Address
+                </button>
+                <button class="game-mode-btn" onclick="setGameMode('broadcast-address')">
+                    Broadcast Address
+                </button>
+                <button class="game-mode-btn" onclick="setGameMode('cidr-conversion')">
+                    CIDR Conversion
+                </button>
+                <button class="game-mode-btn" onclick="setGameMode('host-count')">
+                    Host Count
+                </button>
+            </div>
 
-<div class="description" id="desc-version">
-    <h2>Version (4 bits)</h2>
-    <p>Indicates the version of the IP protocol. For IPv4, this value is 4. <a href="#desc-version">Back to header</a></p>
-</div>
-<div class="description" id="desc-ihl">
-    <h2>IHL (4 bits)</h2>
-    <p>Internet Header Length, the length of the IP header, measured in 32-bit words. <a href="#desc-ihl">Back to header</a></p>
-</div>
-<div class="description" id="desc-dscp">
-    <h2>DSCP (6 bits)</h2>
-    <p>DiffServ Code Point, used for packet classification. <a href="#desc-dscp">Back to header</a></p>
-</div>
-<div class="description" id="desc-ecn">
-    <h2>ECN (2 bits)</h2>
-    <p>Explicit Congestion Notification, used for indicating network congestion. <a href="#desc-ecn">Back to header</a></p>
-</div>
-<div class="description" id="desc-totallength">
-    <h2>Total Length (16 bits)</h2>
-    <p>The total length of the IP packet (header + data), in bytes. <a href="#desc-totallength">Back to header</a></p>
-</div>
-<div class="description" id="desc-identification">
-    <h2>Identification (16 bits)</h2>
-    <p>Identifies the fragments of a single IP packet. <a href="#desc-identification">Back to header</a></p>
-</div>
-<div class="description" id="desc-flags">
-    <h2>Flags (3 bits)</h2>
-    <p>Control flags for fragmenting packets. <a href="#desc-flags">Back to header</a></p>
-</div>
-<div class="description" id="desc-fragmentoffset">
-    <h2>Fragment Offset (13 bits)</h2>
-    <p>Indicates the position of the fragment in the original packet. <a href="#desc-fragmentoffset">Back to header</a></p>
-</div>
-<div class="description" id="desc-ttl">
-    <h2>Time to Live (8 bits)</h2>
-    <p>Indicates the maximum time the packet is allowed to remain in the network. <a href="#desc-ttl">Back to header</a></p>
-</div>
-<div class="description" id="desc-protocol">
-    <h2>Protocol (8 bits)</h2>
-    <p>Indicates the next level protocol used in the data portion of the IP datagram. <a href="#desc-protocol">Back to header</a></p>
-</div>
-<div class="description" id="desc-headerchecksum">
-    <h2>Header Checksum (16 bits)</h2>
-    <p>A checksum on the header to ensure integrity. <a href="#desc-headerchecksum">Back to header</a></p>
-</div>
-<div class="description" id="desc-sourceaddress">
-    <h2>Source Address (32 bits)</h2>
-    <p>Specifies the sender's IP address. <a href="#desc-sourceaddress">Back to header</a></p>
-</div>
-<div class="description" id="desc-destinationaddress">
-    <h2>Destination Address (32 bits)</h2>
-    <p>Specifies the receiver's IP address. <a href="#desc-destinationaddress">Back to header</a></p>
-</div>
-<div class="description" id="desc-options">
-    <h2>Options + Padding (Variable length)</h2>
-    <p>Optional fields used for various purposes, and padding to ensure the header is a multiple of 32 bits. <a href="#desc-options">Back to header</a></p>
-</div>
+            <div id="gameContent">
+                <!-- Game content will be populated here -->
+            </div>
+        </div>
+    </div>
 
+    <script>
+        // Game state
+        let currentGameMode = 'subnet-mask';
+        let currentQuestion = null;
+        let stats = {
+            correct: 0,
+            total: 0
+        };
+
+        // Load stats from localStorage
+        function loadStats() {
+            const saved = localStorage.getItem('subnetStats');
+            if (saved) {
+                stats = JSON.parse(saved);
+                updateStatsDisplay();
+            }
+        }
+
+        // Save stats to localStorage
+        function saveStats() {
+            localStorage.setItem('subnetStats', JSON.stringify(stats));
+        }
+
+        // Reset progress
+        function resetProgress() {
+            stats = { correct: 0, total: 0 };
+            saveStats();
+            updateStatsDisplay();
+        }
+
+        // Update stats display
+        function updateStatsDisplay() {
+            document.getElementById('correctCount').textContent = stats.correct;
+            document.getElementById('totalCount').textContent = stats.total;
+            const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            document.getElementById('progressFill').style.width = accuracy + '%';
+        }
+
+        // Utility functions
+        function ipToBinary(ip) {
+            return ip.split('.').map(octet => 
+                parseInt(octet).toString(2).padStart(8, '0')
+            ).join('.');
+        }
+
+        function binaryToIp(binary) {
+            return binary.split('.').map(octet => 
+                parseInt(octet, 2)
+            ).join('.');
+        }
+
+        function cidrToSubnetMask(cidr) {
+            const mask = '1'.repeat(cidr) + '0'.repeat(32 - cidr);
+            const octets = [];
+            for (let i = 0; i < 4; i++) {
+                octets.push(parseInt(mask.substr(i * 8, 8), 2));
+            }
+            return octets.join('.');
+        }
+
+        function subnetMaskToCidr(mask) {
+            const binary = mask.split('.').map(octet => 
+                parseInt(octet).toString(2).padStart(8, '0')
+            ).join('');
+            return binary.indexOf('0') === -1 ? 32 : binary.indexOf('0');
+        }
+
+        function calculateNetworkAddress(ip, mask) {
+            const ipOctets = ip.split('.').map(x => parseInt(x));
+            const maskOctets = mask.split('.').map(x => parseInt(x));
+            return ipOctets.map((octet, i) => octet & maskOctets[i]).join('.');
+        }
+
+        function calculateBroadcastAddress(ip, mask) {
+            const ipOctets = ip.split('.').map(x => parseInt(x));
+            const maskOctets = mask.split('.').map(x => parseInt(x));
+            return ipOctets.map((octet, i) => octet | (255 - maskOctets[i])).join('.');
+        }
+
+        function calculateHostCount(cidr) {
+            const hostBits = 32 - cidr;
+            return Math.pow(2, hostBits) - 2; // -2 for network and broadcast
+        }
+
+        function generateRandomIP() {
+            return [
+                Math.floor(Math.random() * 224) + 1, // 1-224 (avoid Class D/E)
+                Math.floor(Math.random() * 256),
+                Math.floor(Math.random() * 256),
+                Math.floor(Math.random() * 254) + 1  // 1-254
+            ].join('.');
+        }
+
+        function generateRandomCIDR() {
+            const common = [8, 16, 24, 25, 26, 27, 28, 29, 30];
+            return common[Math.floor(Math.random() * common.length)];
+        }
+
+        // Set game mode
+        function setGameMode(mode) {
+            currentGameMode = mode;
+            
+            // Update button states
+            document.querySelectorAll('.game-mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            generateQuestion();
+        }
+
+        // Generate question based on current game mode
+        function generateQuestion() {
+            const gameContent = document.getElementById('gameContent');
+            
+            switch (currentGameMode) {
+                case 'subnet-mask':
+                    generateSubnetMaskQuestion();
+                    break;
+                case 'network-address':
+                    generateNetworkAddressQuestion();
+                    break;
+                case 'broadcast-address':
+                    generateBroadcastAddressQuestion();
+                    break;
+                case 'cidr-conversion':
+                    generateCIDRConversionQuestion();
+                    break;
+                case 'host-count':
+                    generateHostCountQuestion();
+                    break;
+            }
+        }
+
+        function generateSubnetMaskQuestion() {
+            const cidr = generateRandomCIDR();
+            const correctAnswer = cidrToSubnetMask(cidr);
+            
+            currentQuestion = {
+                type: 'subnet-mask',
+                cidr: cidr,
+                answer: correctAnswer
+            };
+
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <div class="question-area">
+                    <h3>🎯 Subnet Mask Calculator</h3>
+                    <p><strong>Question:</strong> What is the subnet mask for a /${cidr} network?</p>
+                    
+                    <div class="binary-display" id="binaryHelp">
+                        CIDR /${cidr} means ${cidr} network bits and ${32-cidr} host bits
+                        Network bits (1s): ${'1'.repeat(cidr)}
+                        Host bits (0s): ${'0'.repeat(32-cidr)}
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="subnetMaskAnswer">Enter the subnet mask in dotted decimal notation:</label>
+                        <input type="text" id="subnetMaskAnswer" placeholder="e.g., 255.255.255.0" 
+                               onkeypress="if(event.key==='Enter') checkSubnetMaskAnswer()">
+                    </div>
+                    
+                    <button class="btn" onclick="checkSubnetMaskAnswer()">Submit Answer</button>
+                    <button class="btn secondary" onclick="showSubnetMaskHint()">Show Hint</button>
+                    <button class="btn secondary" onclick="generateQuestion()">New Question</button>
+                </div>
+                <div id="feedback"></div>
+            `;
+        }
+
+        function generateNetworkAddressQuestion() {
+            const ip = generateRandomIP();
+            const cidr = generateRandomCIDR();
+            const mask = cidrToSubnetMask(cidr);
+            const correctAnswer = calculateNetworkAddress(ip, mask);
+            
+            currentQuestion = {
+                type: 'network-address',
+                ip: ip,
+                cidr: cidr,
+                mask: mask,
+                answer: correctAnswer
+            };
+
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <div class="question-area">
+                    <h3>🌐 Network Address Calculator</h3>
+                    <p><strong>Question:</strong> What is the network address for ${ip}/${cidr}?</p>
+                    
+                    <div class="binary-display">
+                        IP Address: ${ip}
+                        Binary:     ${ipToBinary(ip)}
+                        
+                        Subnet Mask: ${mask}
+                        Binary:      ${ipToBinary(mask)}
+                        
+                        Network = IP AND Subnet Mask
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="networkAnswer">Enter the network address:</label>
+                        <input type="text" id="networkAnswer" placeholder="e.g., 192.168.1.0" 
+                               onkeypress="if(event.key==='Enter') checkNetworkAnswer()">
+                    </div>
+                    
+                    <button class="btn" onclick="checkNetworkAnswer()">Submit Answer</button>
+                    <button class="btn secondary" onclick="showNetworkHint()">Show Hint</button>
+                    <button class="btn secondary" onclick="generateQuestion()">New Question</button>
+                </div>
+                <div id="feedback"></div>
+            `;
+        }
+
+        function generateBroadcastAddressQuestion() {
+            const ip = generateRandomIP();
+            const cidr = generateRandomCIDR();
+            const mask = cidrToSubnetMask(cidr);
+            const correctAnswer = calculateBroadcastAddress(ip, mask);
+            
+            currentQuestion = {
+                type: 'broadcast-address',
+                ip: ip,
+                cidr: cidr,
+                mask: mask,
+                answer: correctAnswer
+            };
+
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <div class="question-area">
+                    <h3>📡 Broadcast Address Calculator</h3>
+                    <p><strong>Question:</strong> What is the broadcast address for ${ip}/${cidr}?</p>
+                    
+                    <div class="binary-display">
+                        IP Address: ${ip}
+                        Binary:     ${ipToBinary(ip)}
+                        
+                        Subnet Mask: ${mask}
+                        Binary:      ${ipToBinary(mask)}
+                        
+                        Broadcast = IP OR (NOT Subnet Mask)
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="broadcastAnswer">Enter the broadcast address:</label>
+                        <input type="text" id="broadcastAnswer" placeholder="e.g., 192.168.1.255" 
+                               onkeypress="if(event.key==='Enter') checkBroadcastAnswer()">
+                    </div>
+                    
+                    <button class="btn" onclick="checkBroadcastAnswer()">Submit Answer</button>
+                    <button class="btn secondary" onclick="showBroadcastHint()">Show Hint</button>
+                    <button class="btn secondary" onclick="generateQuestion()">New Question</button>
+                </div>
+                <div id="feedback"></div>
+            `;
+        }
+
+        function generateCIDRConversionQuestion() {
+            const isSubnetToCIDR = Math.random() > 0.5;
+            
+            if (isSubnetToCIDR) {
+                const cidr = generateRandomCIDR();
+                const mask = cidrToSubnetMask(cidr);
+                
+                currentQuestion = {
+                    type: 'cidr-conversion',
+                    subtype: 'subnet-to-cidr',
+                    mask: mask,
+                    answer: cidr
+                };
+
+                document.getElementById('gameContent').innerHTML = `
+                    <div class="question-area">
+                        <h3>🔄 CIDR Conversion</h3>
+                        <p><strong>Question:</strong> Convert subnet mask ${mask} to CIDR notation</p>
+                        
+                        <div class="binary-display">
+                            Subnet Mask: ${mask}
+                            Binary:      ${ipToBinary(mask)}
+                            
+                            Count the consecutive 1s from the left
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="cidrAnswer">Enter CIDR notation (just the number):</label>
+                            <input type="number" id="cidrAnswer" placeholder="e.g., 24" min="0" max="32"
+                                   onkeypress="if(event.key==='Enter') checkCIDRAnswer()">
+                        </div>
+                        
+                        <button class="btn" onclick="checkCIDRAnswer()">Submit Answer</button>
+                        <button class="btn secondary" onclick="showCIDRHint()">Show Hint</button>
+                        <button class="btn secondary" onclick="generateQuestion()">New Question</button>
+                    </div>
+                    <div id="feedback"></div>
+                `;
+            } else {
+                const cidr = generateRandomCIDR();
+                const correctAnswer = cidrToSubnetMask(cidr);
+                
+                currentQuestion = {
+                    type: 'cidr-conversion',
+                    subtype: 'cidr-to-subnet',
+                    cidr: cidr,
+                    answer: correctAnswer
+                };
+
+                document.getElementById('gameContent').innerHTML = `
+                    <div class="question-area">
+                        <h3>🔄 CIDR Conversion</h3>
+                        <p><strong>Question:</strong> Convert /${cidr} to subnet mask notation</p>
+                        
+                        <div class="binary-display">
+                            CIDR /${cidr} means ${cidr} network bits and ${32-cidr} host bits
+                            Binary: ${'1'.repeat(cidr)}${'0'.repeat(32-cidr)}
+                            
+                            Convert each 8-bit group to decimal
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="maskAnswer">Enter subnet mask:</label>
+                            <input type="text" id="maskAnswer" placeholder="e.g., 255.255.255.0"
+                                   onkeypress="if(event.key==='Enter') checkCIDRAnswer()">
+                        </div>
+                        
+                        <button class="btn" onclick="checkCIDRAnswer()">Submit Answer</button>
+                        <button class="btn secondary" onclick="showCIDRHint()">Show Hint</button>
+                        <button class="btn secondary" onclick="generateQuestion()">New Question</button>
+                    </div>
+                    <div id="feedback"></div>
+                `;
+            }
+        }
+
+        function generateHostCountQuestion() {
+            const cidr = generateRandomCIDR();
+            const correctAnswer = calculateHostCount(cidr);
+            
+            currentQuestion = {
+                type: 'host-count',
+                cidr: cidr,
+                answer: correctAnswer
+            };
+
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <div class="question-area">
+                    <h3>👥 Host Count Calculator</h3>
+                    <p><strong>Question:</strong> How many usable host addresses are available in a /${cidr} network?</p>
+                    
+                    <div class="binary-display">
+                        CIDR /${cidr}:
+                        Network bits: ${cidr}
+                        Host bits: ${32-cidr}
+                        
+                        Formula: 2^(host bits) - 2
+                        Total addresses: 2^${32-cidr} = ${Math.pow(2, 32-cidr)}
+                        Usable hosts: ${Math.pow(2, 32-cidr)} - 2 = ${correctAnswer}
+                        (-2 for network and broadcast addresses)
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="hostAnswer">Enter the number of usable hosts:</label>
+                        <input type="number" id="hostAnswer" placeholder="e.g., 254" min="0"
+                               onkeypress="if(event.key==='Enter') checkHostAnswer()">
+                    </div>
+                    
+                    <button class="btn" onclick="checkHostAnswer()">Submit Answer</button>
+                    <button class="btn secondary" onclick="showHostHint()">Show Hint</button>
+                    <button class="btn secondary" onclick="generateQuestion()">New Question</button>
+                </div>
+                <div id="feedback"></div>
+            `;
+        }
+
+        // Check answer functions
+        function checkSubnetMaskAnswer() {
+            const userAnswer = document.getElementById('subnetMaskAnswer').value.trim();
+            const feedback = document.getElementById('feedback');
+            
+            stats.total++;
+            
+            if (userAnswer === currentQuestion.answer) {
+                stats.correct++;
+                feedback.innerHTML = `
+                    <div class="feedback correct">
+                        ✅ Correct! The subnet mask for /${currentQuestion.cidr} is ${currentQuestion.answer}
+                        <br>Binary: ${ipToBinary(currentQuestion.answer)}
+                    </div>
+                `;
+            } else {
+                feedback.innerHTML = `
+                    <div class="feedback incorrect">
+                        ❌ Incorrect. Your answer: ${userAnswer}
+                        <br>Correct answer: ${currentQuestion.answer}
+                        <br>Binary: ${ipToBinary(currentQuestion.answer)}
+                        <br>Remember: /${currentQuestion.cidr} means ${currentQuestion.cidr} network bits followed by ${32-currentQuestion.cidr} host bits.
+                    </div>
+                `;
+            }
+            
+            saveStats();
+            updateStatsDisplay();
+        }
+
+        function checkNetworkAnswer() {
+            const userAnswer = document.getElementById('networkAnswer').value.trim();
+            const feedback = document.getElementById('feedback');
+            
+            stats.total++;
+            
+            if (userAnswer === currentQuestion.answer) {
+                stats.correct++;
+                feedback.innerHTML = `
+                    <div class="feedback correct">
+                        ✅ Correct! The network address is ${currentQuestion.answer}
+                        <br>Calculation: ${currentQuestion.ip} AND ${currentQuestion.mask} = ${currentQuestion.answer}
+                    </div>
+                `;
+            } else {
+                feedback.innerHTML = `
+                    <div class="feedback incorrect">
+                        ❌ Incorrect. Your answer: ${userAnswer}
+                        <br>Correct answer: ${currentQuestion.answer}
+                        <br>Tip: Perform bitwise AND between IP and subnet mask.
+                    </div>
+                `;
+            }
+            
+            saveStats();
+            updateStatsDisplay();
+        }
+
+        function checkBroadcastAnswer() {
+            const userAnswer = document.getElementById('broadcastAnswer').value.trim();
+            const feedback = document.getElementById('feedback');
+            
+            stats.total++;
+            
+            if (userAnswer === currentQuestion.answer) {
+                stats.correct++;
+                feedback.innerHTML = `
+                    <div class="feedback correct">
+                        ✅ Correct! The broadcast address is ${currentQuestion.answer}
+                        <br>Network: ${calculateNetworkAddress(currentQuestion.ip, currentQuestion.mask)}
+                        <br>Broadcast: ${currentQuestion.answer}
+                    </div>
+                `;
+            } else {
+                feedback.innerHTML = `
+                    <div class="feedback incorrect">
+                        ❌ Incorrect. Your answer: ${userAnswer}
+                        <br>Correct answer: ${currentQuestion.answer}
+                        <br>Tip: Set all host bits to 1 in the network address.
+                    </div>
+                `;
+            }
+            
+            saveStats();
+            updateStatsDisplay();
+        }
+
+        function checkCIDRAnswer() {
+            let userAnswer, fieldId;
+            
+            if (currentQuestion.subtype === 'subnet-to-cidr') {
+                userAnswer = parseInt(document.getElementById('cidrAnswer').value);
+                fieldId = 'cidrAnswer';
+            } else {
+                userAnswer = document.getElementById('maskAnswer').value.trim();
+                fieldId = 'maskAnswer';
+            }
+            
+            const feedback = document.getElementById('feedback');
+            stats.total++;
+            
+            if ((currentQuestion.subtype === 'subnet-to-cidr' && userAnswer === currentQuestion.answer) ||
+                (currentQuestion.subtype === 'cidr-to-subnet' && userAnswer === currentQuestion.answer)) {
+                stats.correct++;
+                
+                if (currentQuestion.subtype === 'subnet-to-cidr') {
+                    feedback.innerHTML = `
+                        <div class="feedback correct">
+                            ✅ Correct! ${currentQuestion.mask} = /${currentQuestion.answer}
+                            <br>Binary has ${currentQuestion.answer} consecutive 1s
+                        </div>
+                    `;
+                } else {
+                    feedback.innerHTML = `
+                        <div class="feedback correct">
+                            ✅ Correct! /${currentQuestion.cidr} = ${currentQuestion.answer}
+                            <br>Binary: ${ipToBinary(currentQuestion.answer)}
+                        </div>
+                    `;
+                }
+            } else {
+                if (currentQuestion.subtype === 'subnet-to-cidr') {
+                    feedback.innerHTML = `
+                        <div class="feedback incorrect">
+                            ❌ Incorrect. Your answer: /${userAnswer}
+                            <br>Correct answer: /${currentQuestion.answer}
+                            <br>Count the consecutive 1s: ${ipToBinary(currentQuestion.mask)}
+                        </div>
+                    `;
+                } else {
+                    feedback.innerHTML = `
+                        <div class="feedback incorrect">
+                            ❌ Incorrect. Your answer: ${userAnswer}
+                            <br>Correct answer: ${currentQuestion.answer}
+                            <br>Binary: ${ipToBinary(currentQuestion.answer)}
+                        </div>
+                    `;
+                }
+            }
+            
+            saveStats();
+            updateStatsDisplay();
+        }
+
+        function checkHostAnswer() {
+            const userAnswer = parseInt(document.getElementById('hostAnswer').value);
+            const feedback = document.getElementById('feedback');
+            
+            stats.total++;
+            
+            if (userAnswer === currentQuestion.answer) {
+                stats.correct++;
+                feedback.innerHTML = `
+                    <div class="feedback correct">
+                        ✅ Correct! A /${currentQuestion.cidr} network has ${currentQuestion.answer} usable hosts
+                        <br>Calculation: 2^${32-currentQuestion.cidr} - 2 = ${Math.pow(2, 32-currentQuestion.cidr)} - 2 = ${currentQuestion.answer}
+                    </div>
+                `;
+            } else {
+                feedback.innerHTML = `
+                    <div class="feedback incorrect">
+                        ❌ Incorrect. Your answer: ${userAnswer}
+                        <br>Correct answer: ${currentQuestion.answer}
+                        <br>Formula: 2^(host bits) - 2 = 2^${32-currentQuestion.cidr} - 2 = ${currentQuestion.answer}
+                    </div>
+                `;
+            }
+            
+            saveStats();
+            updateStatsDisplay();
+        }
+
+        // Hint functions
+        function showSubnetMaskHint() {
+            const feedback = document.getElementById('feedback');
+            feedback.innerHTML = `
+                <div class="feedback" style="background: #fef5e7; color: #744210; border-color: #f6ad55;">
+                    💡 Hint: /${currentQuestion.cidr} means ${currentQuestion.cidr} network bits (1s) followed by ${32-currentQuestion.cidr} host bits (0s).
+                    <br>Binary: ${'1'.repeat(currentQuestion.cidr)}${'0'.repeat(32-currentQuestion.cidr)}
+                    <br>Convert each 8-bit group to decimal: 
+                    ${['1'.repeat(currentQuestion.cidr) + '0'.repeat(32-currentQuestion.cidr)].map(b => 
+                        [b.substr(0,8), b.substr(8,8), b.substr(16,8), b.substr(24,8)]
+                        .map(octet => parseInt(octet, 2)).join('.')
+                    )}
+                </div>
+            `;
+        }
+
+        function showNetworkHint() {
+            const feedback = document.getElementById('feedback');
+            feedback.innerHTML = `
+                <div class="feedback" style="background: #fef5e7; color: #744210; border-color: #f6ad55;">
+                    💡 Hint: Perform bitwise AND between IP address and subnet mask.
+                    <br>Where subnet mask bit = 1, keep the IP bit
+                    <br>Where subnet mask bit = 0, result bit = 0
+                </div>
+            `;
+        }
+
+        function showBroadcastHint() {
+            const feedback = document.getElementById('feedback');
+            const network = calculateNetworkAddress(currentQuestion.ip, currentQuestion.mask);
+            feedback.innerHTML = `
+                <div class="feedback" style="background: #fef5e7; color: #744210; border-color: #f6ad55;">
+                    💡 Hint: Start with network address ${network}
+                    <br>Set all host bits (0s in subnet mask) to 1
+                    <br>Host bits are the rightmost ${32-currentQuestion.cidr} bits
+                </div>
+            `;
+        }
+
+        function showCIDRHint() {
+            const feedback = document.getElementById('feedback');
+            if (currentQuestion.subtype === 'subnet-to-cidr') {
+                feedback.innerHTML = `
+                    <div class="feedback" style="background: #fef5e7; color: #744210; border-color: #f6ad55;">
+                        💡 Hint: Count consecutive 1s from left in binary representation
+                        <br>${ipToBinary(currentQuestion.mask)}
+                        <br>↑ Count these 1s
+                    </div>
+                `;
+            } else {
+                feedback.innerHTML = `
+                    <div class="feedback" style="background: #fef5e7; color: #744210; border-color: #f6ad55;">
+                        💡 Hint: /${currentQuestion.cidr} = ${currentQuestion.cidr} ones followed by ${32-currentQuestion.cidr} zeros
+                        <br>Binary: ${'1'.repeat(currentQuestion.cidr)}${'0'.repeat(32-currentQuestion.cidr)}
+                        <br>Convert each 8-bit group to decimal
+                    </div>
+                `;
+            }
+        }
+
+        function showHostHint() {
+            const feedback = document.getElementById('feedback');
+            feedback.innerHTML = `
+                <div class="feedback" style="background: #fef5e7; color: #744210; border-color: #f6ad55;">
+                    💡 Hint: Use formula 2^(host bits) - 2
+                    <br>Host bits = 32 - ${currentQuestion.cidr} = ${32-currentQuestion.cidr}
+                    <br>Total addresses = 2^${32-currentQuestion.cidr} = ${Math.pow(2, 32-currentQuestion.cidr)}
+                    <br>Subtract 2 for network and broadcast addresses
+                </div>
+            `;
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            generateQuestion();
+        });
+    </script>
 </body>
 </html>
