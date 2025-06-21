@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARP Header Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .controls-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+        }
+
+        .visualization-section {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 1.4em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            font-weight: 600;
+        }
+
+        .field-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .field-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .field-description {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input, select {
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .hex-display {
+            background: #ecf0f1;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #2c3e50;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .packet-visualization {
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .packet-header {
+            background: #34495e;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .packet-field {
+            display: flex;
+            border-bottom: 1px solid #bdc3c7;
+            transition: background-color 0.3s;
+        }
+
+        .packet-field:hover {
+            background-color: #f8f9fa;
+        }
+
+        .packet-field:last-child {
+            border-bottom: none;
+        }
+
+        .field-name {
+            background: #ecf0f1;
+            padding: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 180px;
+            border-right: 1px solid #bdc3c7;
+        }
+
+        .field-value {
+            padding: 12px;
+            flex-grow: 1;
+            font-family: 'Courier New', monospace;
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .field-bits {
+            background: #3498db;
+            color: white;
+            padding: 12px;
+            font-size: 12px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .preset-btn:hover {
+            background: #2980b9;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .valid {
+            border-color: #27ae60 !important;
+        }
+
+        .invalid {
+            border-color: #e74c3c !important;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .input-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ARP Header Interactive Simulator</h1>
+            <p>Explore and understand the Address Resolution Protocol packet structure</p>
+        </div>
+
+        <div class="main-content">
+            <div class="controls-section">
+                <h2 class="section-title">ARP Header Configuration</h2>
+                
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="loadPreset('request')">ARP Request</button>
+                    <button class="preset-btn" onclick="loadPreset('reply')">ARP Reply</button>
+                    <button class="preset-btn" onclick="loadPreset('clear')">Clear All</button>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Hardware Type (16 bits)</label>
+                    <div class="field-description">Specifies the network link protocol type (e.g., Ethernet = 1)</div>
+                    <div class="input-row">
+                        <select id="hardwareType" onchange="updateField('hardwareType')">
+                            <option value="1">1 - Ethernet</option>
+                            <option value="6">6 - IEEE 802 Networks</option>
+                            <option value="7">7 - ARCNET</option>
+                            <option value="15">15 - Frame Relay</option>
+                            <option value="16">16 - ATM</option>
+                        </select>
+                        <div class="hex-display" id="hardwareType-hex">0x0001</div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Protocol Type (16 bits)</label>
+                    <div class="field-description">Specifies the internetwork protocol type</div>
+                    <div class="input-row">
+                        <select id="protocolType" onchange="updateField('protocolType')">
+                            <option value="2048">0x0800 - IPv4</option>
+                            <option value="34525">0x86DD - IPv6</option>
+                            <option value="2054">0x0806 - ARP</option>
+                        </select>
+                        <div class="hex-display" id="protocolType-hex">0x0800</div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Hardware Address Length (8 bits)</label>
+                    <div class="field-description">Length of hardware address in bytes (6 for Ethernet MAC)</div>
+                    <div class="input-row">
+                        <input type="number" id="hardwareLength" min="1" max="255" value="6" onchange="updateField('hardwareLength')">
+                        <div class="hex-display" id="hardwareLength-hex">0x06</div>
+                    </div>
+                    <div class="error" id="hardwareLength-error"></div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Protocol Address Length (8 bits)</label>
+                    <div class="field-description">Length of protocol address in bytes (4 for IPv4)</div>
+                    <div class="input-row">
+                        <input type="number" id="protocolLength" min="1" max="255" value="4" onchange="updateField('protocolLength')">
+                        <div class="hex-display" id="protocolLength-hex">0x04</div>
+                    </div>
+                    <div class="error" id="protocolLength-error"></div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Operation (16 bits)</label>
+                    <div class="field-description">Specifies the operation being performed</div>
+                    <div class="input-row">
+                        <select id="operation" onchange="updateField('operation')">
+                            <option value="1">1 - ARP Request</option>
+                            <option value="2">2 - ARP Reply</option>
+                            <option value="3">3 - RARP Request</option>
+                            <option value="4">4 - RARP Reply</option>
+                        </select>
+                        <div class="hex-display" id="operation-hex">0x0001</div>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Sender Hardware Address</label>
+                    <div class="field-description">MAC address of the sender (format: XX:XX:XX:XX:XX:XX)</div>
+                    <div class="input-row">
+                        <input type="text" id="senderHardware" placeholder="00:11:22:33:44:55" onchange="updateField('senderHardware')">
+                    </div>
+                    <div class="error" id="senderHardware-error"></div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Sender Protocol Address</label>
+                    <div class="field-description">IP address of the sender (format: XXX.XXX.XXX.XXX)</div>
+                    <div class="input-row">
+                        <input type="text" id="senderProtocol" placeholder="192.168.1.100" onchange="updateField('senderProtocol')">
+                    </div>
+                    <div class="error" id="senderProtocol-error"></div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Target Hardware Address</label>
+                    <div class="field-description">MAC address of the target (00:00:00:00:00:00 for requests)</div>
+                    <div class="input-row">
+                        <input type="text" id="targetHardware" placeholder="00:00:00:00:00:00" onchange="updateField('targetHardware')">
+                    </div>
+                    <div class="error" id="targetHardware-error"></div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Target Protocol Address</label>
+                    <div class="field-description">IP address of the target</div>
+                    <div class="input-row">
+                        <input type="text" id="targetProtocol" placeholder="192.168.1.1" onchange="updateField('targetProtocol')">
+                    </div>
+                    <div class="error" id="targetProtocol-error"></div>
+                </div>
+            </div>
+
+            <div class="visualization-section">
+                <h2 class="section-title">ARP Packet Visualization</h2>
+                
+                <div class="packet-visualization">
+                    <div class="packet-header">ARP Header Structure</div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Hardware Type</div>
+                        <div class="field-value" id="viz-hardwareType">0x0001</div>
+                        <div class="field-bits">16 bits</div>
+                    </div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Protocol Type</div>
+                        <div class="field-value" id="viz-protocolType">0x0800</div>
+                        <div class="field-bits">16 bits</div>
+                    </div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Hardware Length</div>
+                        <div class="field-value" id="viz-hardwareLength">0x06</div>
+                        <div class="field-bits">8 bits</div>
+                    </div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Protocol Length</div>
+                        <div class="field-value" id="viz-protocolLength">0x04</div>
+                        <div class="field-bits">8 bits</div>
+                    </div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Operation</div>
+                        <div class="field-value" id="viz-operation">0x0001</div>
+                        <div class="field-bits">16 bits</div>
+                    </div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Sender Hardware</div>
+                        <div class="field-value" id="viz-senderHardware">--:--:--:--:--:--</div>
+                        <div class="field-bits">48 bits</div>
+                    </div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Sender Protocol</div>
+                        <div class="field-value" id="viz-senderProtocol">---.---.---.---</div>
+                        <div class="field-bits">32 bits</div>
+                    </div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Target Hardware</div>
+                        <div class="field-value" id="viz-targetHardware">--:--:--:--:--:--</div>
+                        <div class="field-bits">48 bits</div>
+                    </div>
+                    
+                    <div class="packet-field">
+                        <div class="field-name">Target Protocol</div>
+                        <div class="field-value" id="viz-targetProtocol">---.---.---.---</div>
+                        <div class="field-bits">32 bits</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <h3 style="color: #2c3e50; margin-bottom: 10px;">Packet Analysis</h3>
+                    <div id="packetAnalysis">
+                        <p><strong>Total Header Size:</strong> <span id="headerSize">28 bytes</span></p>
+                        <p><strong>Packet Type:</strong> <span id="packetType">ARP Request</span></p>
+                        <p><strong>Valid Configuration:</strong> <span id="validConfig">✓ Valid</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Validation functions
+        function validateMAC(mac) {
+            const macRegex = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
+            return macRegex.test(mac);
+        }
+
+        function validateIP(ip) {
+            const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipRegex.test(ip)) return false;
+            
+            const parts = ip.split('.');
+            return parts.every(part => {
+                const num = parseInt(part);
+                return num >= 0 && num <= 255;
+            });
+        }
+
+        function updateField(fieldName) {
+            const element = document.getElementById(fieldName);
+            const errorElement = document.getElementById(fieldName + '-error');
+            const hexElement = document.getElementById(fieldName + '-hex');
+            const vizElement = document.getElementById('viz-' + fieldName);
+            
+            let value = element.value;
+            let isValid = true;
+            let hexValue = '';
+            let displayValue = value;
+            
+            // Clear previous errors
+            if (errorElement) errorElement.textContent = '';
+            element.classList.remove('valid', 'invalid');
+            
+            switch(fieldName) {
+                case 'hardwareType':
+                case 'protocolType':
+                case 'operation':
+                    hexValue = '0x' + parseInt(value).toString(16).toUpperCase().padStart(4, '0');
+                    break;
+                    
+                case 'hardwareLength':
+                case 'protocolLength':
+                    const num = parseInt(value);
+                    if (num < 1 || num > 255) {
+                        isValid = false;
+                        if (errorElement) errorElement.textContent = 'Value must be between 1 and 255';
+                    }
+                    hexValue = '0x' + num.toString(16).toUpperCase().padStart(2, '0');
+                    break;
+                    
+                case 'senderHardware':
+                case 'targetHardware':
+                    if (value && !validateMAC(value)) {
+                        isValid = false;
+                        if (errorElement) errorElement.textContent = 'Invalid MAC address format (use XX:XX:XX:XX:XX:XX)';
+                    }
+                    displayValue = value || '--:--:--:--:--:--';
+                    break;
+                    
+                case 'senderProtocol':
+                case 'targetProtocol':
+                    if (value && !validateIP(value)) {
+                        isValid = false;
+                        if (errorElement) errorElement.textContent = 'Invalid IP address format';
+                    }
+                    displayValue = value || '---.---.---.---';
+                    break;
+            }
+            
+            // Update hex display
+            if (hexElement) {
+                hexElement.textContent = hexValue;
+            }
+            
+            // Update visualization
+            if (vizElement) {
+                if (hexValue) {
+                    vizElement.textContent = hexValue;
+                } else {
+                    vizElement.textContent = displayValue;
+                }
+            }
+            
+            // Update validation styling
+            element.classList.add(isValid ? 'valid' : 'invalid');
+            
+            updatePacketAnalysis();
+        }
+
+        function updatePacketAnalysis() {
+            const hardwareLength = parseInt(document.getElementById('hardwareLength').value) || 6;
+            const protocolLength = parseInt(document.getElementById('protocolLength').value) || 4;
+            const operation = parseInt(document.getElementById('operation').value) || 1;
+            
+            // Calculate header size
+            const fixedHeaderSize = 8; // First 4 fields
+            const variableSize = (hardwareLength * 2) + (protocolLength * 2);
+            const totalSize = fixedHeaderSize + variableSize;
+            
+            document.getElementById('headerSize').textContent = totalSize + ' bytes';
+            
+            // Determine packet type
+            let packetType = '';
+            switch(operation) {
+                case 1: packetType = 'ARP Request'; break;
+                case 2: packetType = 'ARP Reply'; break;
+                case 3: packetType = 'RARP Request'; break;
+                case 4: packetType = 'RARP Reply'; break;
+                default: packetType = 'Unknown Operation';
+            }
+            document.getElementById('packetType').textContent = packetType;
+            
+            // Validate configuration
+            const allFields = ['hardwareType', 'protocolType', 'hardwareLength', 'protocolLength', 'operation'];
+            const isValid = allFields.every(field => {
+                const element = document.getElementById(field);
+                return !element.classList.contains('invalid');
+            });
+            
+            const validConfigElement = document.getElementById('validConfig');
+            if (isValid) {
+                validConfigElement.textContent = '✓ Valid';
+                validConfigElement.style.color = '#27ae60';
+            } else {
+                validConfigElement.textContent = '✗ Invalid';
+                validConfigElement.style.color = '#e74c3c';
+            }
+        }
+
+        function loadPreset(type) {
+            switch(type) {
+                case 'request':
+                    document.getElementById('hardwareType').value = '1';
+                    document.getElementById('protocolType').value = '2048';
+                    document.getElementById('hardwareLength').value = '6';
+                    document.getElementById('protocolLength').value = '4';
+                    document.getElementById('operation').value = '1';
+                    document.getElementById('senderHardware').value = '00:11:22:33:44:55';
+                    document.getElementById('senderProtocol').value = '192.168.1.100';
+                    document.getElementById('targetHardware').value = '00:00:00:00:00:00';
+                    document.getElementById('targetProtocol').value = '192.168.1.1';
+                    break;
+                    
+                case 'reply':
+                    document.getElementById('hardwareType').value = '1';
+                    document.getElementById('protocolType').value = '2048';
+                    document.getElementById('hardwareLength').value = '6';
+                    document.getElementById('protocolLength').value = '4';
+                    document.getElementById('operation').value = '2';
+                    document.getElementById('senderHardware').value = 'AA:BB:CC:DD:EE:FF';
+                    document.getElementById('senderProtocol').value = '192.168.1.1';
+                    document.getElementById('targetHardware').value = '00:11:22:33:44:55';
+                    document.getElementById('targetProtocol').value = '192.168.1.100';
+                    break;
+                    
+                case 'clear':
+                    document.getElementById('hardwareType').value = '1';
+                    document.getElementById('protocolType').value = '2048';
+                    document.getElementById('hardwareLength').value = '6';
+                    document.getElementById('protocolLength').value = '4';
+                    document.getElementById('operation').value = '1';
+                    document.getElementById('senderHardware').value = '';
+                    document.getElementById('senderProtocol').value = '';
+                    document.getElementById('targetHardware').value = '';
+                    document.getElementById('targetProtocol').value = '';
+                    break;
+            }
+            
+            // Update all fields
+            ['hardwareType', 'protocolType', 'hardwareLength', 'protocolLength', 'operation', 
+             'senderHardware', 'senderProtocol', 'targetHardware', 'targetProtocol'].forEach(updateField);
+        }
+
+        // Initialize with default values
+        window.onload = function() {
+            ['hardwareType', 'protocolType', 'hardwareLength', 'protocolLength', 'operation', 
+             'senderHardware', 'senderProtocol', 'targetHardware', 'targetProtocol'].forEach(updateField);
+        };
+    </script>
+</body>
+</html>
