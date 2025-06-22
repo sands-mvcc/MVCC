@@ -1,341 +1,853 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
-    <title>DHCP Process Demonstration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced DHCP DORA Process Simulator</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+        * {
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            background-color: #333;
-            color: #fff;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
 
         .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
             text-align: center;
-            background-color: #222;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            margin-bottom: 20px;
-            color: #fff;
         }
 
-        h1 {
-            color: #f00;
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
         }
 
-        .process {
-            margin: 20px 0;
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
         }
 
-        .step-button, .reset-button {
-            background-color: #f00;
-            color: #ffffff;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .step-button:hover, .reset-button:hover {
-            background-color: #b00;
-        }
-
-        .dropdown {
-            margin-bottom: 20px;
-        }
-
-        .description {
-            margin-top: 20px;
-        }
-
-        .description p {
-            font-size: 18px;
-            color: #ccc;
+        .main-content {
+            padding: 30px;
         }
 
         .network-diagram {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 40px;
+            margin-bottom: 30px;
             position: relative;
-            width: 700px; /* Adjusted to fit all workstations horizontally */
-            height: 400px;
-            margin-top: 40px;
+            height: 500px;
+            border: 2px dashed #dee2e6;
+            overflow: hidden;
         }
 
-        .device, .dhcp-server {
+        .device {
             position: absolute;
-            border: 2px solid #fff;
+            width: 100px;
+            height: 90px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
             text-align: center;
-            line-height: 1.5;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
 
-        .dhcp-server {
-            width: 3in;
-            height: 1.5in;
-            background-color: #888;
-            top: 14px;
-            left: 50%;
-            transform: translateX(-50%);
+        .device:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         }
 
-        .workstation {
-            width: 2in;
-            height: 1.5in;
-            background-color: #f00;
-            color: #FFF;
-            transition: background-color 0.3s;
-            position: absolute;
-            top: 250px;
+        .client {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
         }
 
-        .workstation-1 {
-            left: 50px;
+        .client.selected {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            transform: scale(1.1);
         }
 
-        .workstation-2 {
-            left: 250px;
+        .server {
+            background: linear-gradient(135deg, #27ae60, #229954);
         }
 
-        .workstation-3 {
-            left: 450px;
+        .device-icon {
+            font-size: 1.8em;
+            margin-bottom: 2px;
         }
+
+        .device-label {
+            font-size: 0.75em;
+            line-height: 1.1;
+        }
+
+        .device-ip {
+            font-size: 0.6em;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        /* Position devices */
+        #client1 { left: 50px; top: 50px; }
+        #client2 { left: 50px; top: 200px; }
+        #client3 { left: 50px; top: 350px; }
+        #client4 { left: 200px; top: 50px; }
+        #server1 { right: 200px; top: 100px; }
+        #server2 { right: 50px; top: 250px; }
 
         .message {
             position: absolute;
-            background-color: #fff;
-            border: 1px solid #000;
-            padding: 5px;
-            border-radius: 5px;
+            background: #3498db;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.7em;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.5s ease;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .message.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .message.discover { background: #e74c3c; }
+        .message.offer { background: #f39c12; }
+        .message.request { background: #9b59b6; }
+        .message.ack { background: #27ae60; }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .client-selection {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .client-selection h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
             text-align: center;
-            width: auto;
-            color: #000;
         }
 
-        .message-top {
-            left: 50%;
-            transform: translateX(-50%);
+        .client-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
-        .message-left {
-            left: -220px;
-            top: 0;
-            transform: translateY(50%);
-        }
-
-        .ip-address {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 14px;
-            color: #000;
-            background-color: rgba(255, 255, 255, 0.7);
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-
-        .available-addresses {
-            position: absolute;
-            top: 14px;
-            right: -220px;
-            background-color: #444;
-            border: 1px solid #fff;
+        .client-btn {
             padding: 10px;
-            border-radius: 5px;
-            color: #fff;
+            border: 2px solid #bdc3c7;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: bold;
         }
 
-        .available-addresses table {
-            border-collapse: collapse;
-            width: 100%;
+        .client-btn:hover {
+            border-color: #3498db;
+            background: #ebf3fd;
         }
 
-        .available-addresses th, .available-addresses td {
-            border: 1px solid #fff;
-            padding: 5px;
-            text-align: left;
+        .client-btn.selected {
+            border-color: #f39c12;
+            background: #fef9e7;
+            color: #f39c12;
         }
 
-        .strikethrough {
-            text-decoration: line-through;
-            color: red;
+        .simulation-controls {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn.reset {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .step-info {
+            background: #ecf0f1;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .step-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .step-number {
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 0.9em;
+        }
+
+        .step-description {
+            color: #34495e;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .step-details {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .server-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .server-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #27ae60;
+        }
+
+        .server-card h3 {
+            color: #27ae60;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            background: #ecf0f1;
+            height: 8px;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .packet-animation {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #f39c12;
+            border-radius: 50%;
+            opacity: 0;
+            z-index: 5;
+        }
+
+        @keyframes packetFlow {
+            0% { opacity: 1; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.5); }
+        }
+
+        .offers-section {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .offers-section.show {
+            display: block;
+        }
+
+        .offer-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .offer-card {
+            background: white;
+            border: 2px solid #f39c12;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .offer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .offer-card.selected {
+            border-color: #27ae60;
+            background: #d5edda;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .device {
+                width: 80px;
+                height: 70px;
+                font-size: 0.8em;
+            }
+            
+            .network-diagram {
+                height: 400px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>DHCP Process Demonstration</h1>
-        <div class="dropdown">
-            <label for="workstation-select">Select Workstation:</label>
-            <select id="workstation-select">
-                <option value="workstation-1">Workstation 1</option>
-                <option value="workstation-2">Workstation 2</option>
-                <option value="workstation-3">Workstation 3</option>
-            </select>
+        <div class="header">
+            <h1>🌐 Advanced DHCP DORA Simulator</h1>
+            <p>Multi-Client, Multi-Server DHCP Learning Environment</p>
         </div>
-        <div class="process">
-            <button class="step-button" onclick="showStep('discover')">Discover</button>
-            <button class="step-button" onclick="showStep('offer')">Offer</button>
-            <button class="step-button" onclick="showStep('request')">Request</button>
-            <button class="step-button" onclick="showStep('acknowledge')">Acknowledge</button>
-            <button class="reset-button" onclick="resetSimulation()">Reset</button>
-        </div>
-        <div class="description" id="description">
-            <p>Click on the buttons above to see each step of the DHCP process.</p>
-        </div>
-    </div>
 
-    <div class="network-diagram">
-        <div class="dhcp-server">DHCP Server</div>
-        <div class="available-addresses">
-            <h3>Available Addresses</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>IP Address</th>
-                    </tr>
-                </thead>
-                <tbody id="address-list">
-                    <tr id="ip-16"><td>192.168.1.16</td></tr>
-                    <tr id="ip-17"><td>192.168.1.17</td></tr>
-                    <tr id="ip-18"><td>192.168.1.18</td></tr>
-                    <tr id="ip-19"><td>192.168.1.19</td></tr>
-                    <tr id="ip-20"><td>192.168.1.20</td></tr>
-                    <tr id="ip-21"><td>192.168.1.21</td></tr>
-                    <tr id="ip-22"><td>192.168.1.22</td></tr>
-                    <tr id="ip-23"><td>192.168.1.23</td></tr>
-                    <tr id="ip-24"><td>192.168.1.24</td></tr>
-                </tbody>
-            </table>
+        <div class="main-content">
+            <div class="status" id="status">Select a client device to start DHCP simulation</div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="controls">
+                <div class="client-selection">
+                    <h3>📱 Select Client Device</h3>
+                    <div class="client-buttons">
+                        <div class="client-btn" onclick="selectClient('client1')">
+                            <div>💻 Laptop</div>
+                            <div style="font-size: 0.8em;">Client 1</div>
+                        </div>
+                        <div class="client-btn" onclick="selectClient('client2')">
+                            <div>📱 Phone</div>
+                            <div style="font-size: 0.8em;">Client 2</div>
+                        </div>
+                        <div class="client-btn" onclick="selectClient('client3')">
+                            <div>📟 Tablet</div>
+                            <div style="font-size: 0.8em;">Client 3</div>
+                        </div>
+                        <div class="client-btn" onclick="selectClient('client4')">
+                            <div>🖥️ Desktop</div>
+                            <div style="font-size: 0.8em;">Client 4</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="simulation-controls">
+                    <h3>🎮 Simulation Controls</h3>
+                    <button class="btn" id="startBtn" onclick="startSimulation()" disabled>Start DORA Process</button>
+                    <button class="btn" id="nextBtn" onclick="nextStep()" disabled>Next Step</button>
+                    <button class="btn reset" onclick="resetSimulation()">Reset All</button>
+                </div>
+            </div>
+
+            <div class="network-diagram" id="networkDiagram">
+                <div class="device client" id="client1">
+                    <div class="device-icon">💻</div>
+                    <div class="device-label">Laptop</div>
+                    <div class="device-ip">No IP</div>
+                </div>
+
+                <div class="device client" id="client2">
+                    <div class="device-icon">📱</div>
+                    <div class="device-label">Phone</div>
+                    <div class="device-ip">No IP</div>
+                </div>
+
+                <div class="device client" id="client3">
+                    <div class="device-icon">📟</div>
+                    <div class="device-label">Tablet</div>
+                    <div class="device-ip">No IP</div>
+                </div>
+
+                <div class="device client" id="client4">
+                    <div class="device-icon">🖥️</div>
+                    <div class="device-label">Desktop</div>
+                    <div class="device-ip">No IP</div>
+                </div>
+
+                <div class="device server" id="server1">
+                    <div class="device-icon">🖥️</div>
+                    <div class="device-label">DHCP Server 1</div>
+                    <div class="device-ip">192.168.1.1</div>
+                </div>
+
+                <div class="device server" id="server2">
+                    <div class="device-icon">🖥️</div>
+                    <div class="device-label">DHCP Server 2</div>
+                    <div class="device-ip">192.168.2.1</div>
+                </div>
+            </div>
+
+            <div class="offers-section" id="offersSection">
+                <h3>📋 DHCP Offers Received - Choose One:</h3>
+                <p>Both servers have responded with offers. The client must choose which offer to accept.</p>
+                <div class="offer-cards">
+                    <div class="offer-card" onclick="selectOffer('server1')">
+                        <h4>🖥️ Server 1 Offer</h4>
+                        <p><strong>IP:</strong> 192.168.1.100</p>
+                        <p><strong>Subnet:</strong> 255.255.255.0</p>
+                        <p><strong>Gateway:</strong> 192.168.1.1</p>
+                        <p><strong>DNS:</strong> 8.8.8.8</p>
+                        <p><strong>Lease:</strong> 24 hours</p>
+                    </div>
+                    <div class="offer-card" onclick="selectOffer('server2')">
+                        <h4>🖥️ Server 2 Offer</h4>
+                        <p><strong>IP:</strong> 192.168.2.100</p>
+                        <p><strong>Subnet:</strong> 255.255.255.0</p>
+                        <p><strong>Gateway:</strong> 192.168.2.1</p>
+                        <p><strong>DNS:</strong> 8.8.4.4</p>
+                        <p><strong>Lease:</strong> 12 hours</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="server-info">
+                <div class="server-card">
+                    <h3>🖥️ DHCP Server 1</h3>
+                    <p><strong>IP Pool:</strong> 192.168.1.100-199</p>
+                    <p><strong>Subnet:</strong> 255.255.255.0</p>
+                    <p><strong>Gateway:</strong> 192.168.1.1</p>
+                    <p><strong>DNS:</strong> 8.8.8.8, 8.8.4.4</p>
+                </div>
+                <div class="server-card">
+                    <h3>🖥️ DHCP Server 2</h3>
+                    <p><strong>IP Pool:</strong> 192.168.2.100-199</p>
+                    <p><strong>Subnet:</strong> 255.255.255.0</p>
+                    <p><strong>Gateway:</strong> 192.168.2.1</p>
+                    <p><strong>DNS:</strong> 8.8.4.4, 1.1.1.1</p>
+                </div>
+            </div>
+
+            <div class="step-info" id="stepInfo">
+                <div class="step-title">
+                    <div class="step-number">ℹ️</div>
+                    Welcome to Advanced DHCP Simulation
+                </div>
+                <div class="step-description">
+                    This simulator demonstrates DHCP in a multi-server environment. Select a client device above to begin the DORA process and see how multiple DHCP servers respond to a single request.
+                </div>
+                <div class="step-details">
+                    <strong>Scenario:</strong> You have 4 client devices that need IP addresses and 2 DHCP servers with different IP pools. When a client requests an address, both servers will respond with offers, and the client must choose one.
+                </div>
+            </div>
         </div>
-        <div class="device workstation workstation-1">
-            Workstation 1
-            <div class="ip-address" id="ip-address-1" style="display: none;"></div>
-        </div>
-        <div class="device workstation workstation-2">
-            Workstation 2
-            <div class="ip-address" id="ip-address-2" style="display: none;"></div>
-        </div>
-        <div class="device workstation workstation-3">
-            Workstation 3
-            <div class="ip-address" id="ip-address-3" style="display: none;"></div>
-        </div>
-        <div class="message" id="message" style="display: none;"></div>
     </div>
 
     <script>
-        let currentWorkstation = 'workstation-1';
-        let ipAddressIndex = 0;
-        const ipAddresses = ['192.168.1.16', '192.168.1.17', '192.168.1.18', '192.168.1.19', '192.168.1.20', '192.168.1.21', '192.168.1.22', '192.168.1.23', '192.168.1.24'];
-        const assignedAddresses = {};
-
-        document.getElementById('workstation-select').addEventListener('change', function() {
-            currentWorkstation = this.value;
-        });
-
-        function showStep(step) {
-            const description = document.getElementById('description');
-            const messageBox = document.getElementById('message');
-            const ipAddress1 = document.getElementById('ip-address-1');
-            const ipAddress2 = document.getElementById('ip-address-2');
-            const ipAddress3 = document.getElementById('ip-address-3');
-            const workstation1 = document.querySelector('.workstation-1');
-            const workstation2 = document.querySelector('.workstation-2');
-            const workstation3 = document.querySelector('.workstation-3');
-
-            let selectedWorkstation;
-            let ipAddressBox;
-
-            switch(currentWorkstation) {
-                case 'workstation-1':
-                    selectedWorkstation = workstation1;
-                    ipAddressBox = ipAddress1;
-                    break;
-                case 'workstation-2':
-                    selectedWorkstation = workstation2;
-                    ipAddressBox = ipAddress2;
-                    break;
-                case 'workstation-3':
-                    selectedWorkstation = workstation3;
-                    ipAddressBox = ipAddress3;
-                    break;
+        let currentStep = 0;
+        let selectedClient = null;
+        let selectedOffer = null;
+        let isSimulationRunning = false;
+        
+        const steps = [
+            {
+                title: "Step 1: DHCP Discover (Broadcast)",
+                number: "1",
+                description: "The selected client broadcasts a DHCPDISCOVER message to find available DHCP servers. This broadcast reaches all servers on the network segment.",
+                details: "Message Type: DHCPDISCOVER<br>Source: 0.0.0.0:68<br>Destination: 255.255.255.255:67<br>Transaction ID: 0x12345678<br>Client MAC: AA:BB:CC:DD:EE:FF",
+                action: "discover"
+            },
+            {
+                title: "Step 2: Multiple DHCP Offers",
+                number: "2", 
+                description: "Both DHCP servers respond with DHCPOFFER messages, each containing different IP configurations from their respective pools. The client now has multiple options to choose from.",
+                details: "Server 1 offers: 192.168.1.100/24<br>Server 2 offers: 192.168.2.100/24<br>Both offers include gateway, DNS, and lease information",
+                action: "offer"
+            },
+            {
+                title: "Step 3: DHCP Request (Client Choice)",
+                number: "3",
+                description: "The client selects one offer and broadcasts a DHCPREQUEST message. This serves to accept the chosen offer and implicitly decline the other offer.",
+                details: "Message Type: DHCPREQUEST<br>Requested IP: [Selected offer]<br>Server Identifier: [Selected server]<br>This broadcast informs all servers of the client's choice",
+                action: "request"
+            },
+            {
+                title: "Step 4: DHCP Acknowledge",
+                number: "4",
+                description: "The chosen server responds with DHCPACK to confirm the lease. The other server may send DHCPNAK or simply ignore the request since it wasn't selected.",
+                details: "Message Type: DHCPACK<br>Confirmed IP: [Selected IP]<br>The client can now use this IP configuration for network communication",
+                action: "ack"
             }
+        ];
 
-            if (step === 'discover') {
-                selectedWorkstation.style.backgroundColor = '#FF0000';
-                messageBox.style.display = 'block';
-                messageBox.style.top = (selectedWorkstation.offsetTop - 40) + 'px';
-                messageBox.style.left = (selectedWorkstation.offsetLeft) + 'px';
-                messageBox.textContent = 'I need an IP address';
-            } else if (step === 'offer') {
-                messageBox.style.display = 'none';
-                messageBox.style.display = 'block';
-                messageBox.style.top = '70px';
-                messageBox.style.left = '150px';
-                messageBox.textContent = `OK here is an IP address ${ipAddresses[ipAddressIndex]}`;
-            } else if (step === 'request') {
-                messageBox.style.display = 'none';
-                ipAddressBox.style.display = 'block';
-                ipAddressBox.textContent = ipAddresses[ipAddressIndex];
-                assignedAddresses[currentWorkstation] = ipAddresses[ipAddressIndex];
-            } else if (step === 'acknowledge') {
-                messageBox.style.display = 'block';
-                messageBox.style.top = (selectedWorkstation.offsetTop - 40) + 'px';
-                messageBox.style.left = (selectedWorkstation.offsetLeft) + 'px';
-                messageBox.textContent = 'Got - Thanks!';
-                document.getElementById(`ip-${ipAddresses[ipAddressIndex].split('.')[3]}`).classList.add('strikethrough');
-                ipAddressIndex = findNextAvailableIndex();
+        const clientPositions = {
+            client1: { x: 50, y: 50 },
+            client2: { x: 50, y: 200 },
+            client3: { x: 50, y: 350 },
+            client4: { x: 200, y: 50 }
+        };
+
+        const serverPositions = {
+            server1: { x: 1000, y: 100 },
+            server2: { x: 1100, y: 250 }
+        };
+
+        function selectClient(clientId) {
+            // Remove previous selection
+            document.querySelectorAll('.client-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelectorAll('.client').forEach(client => client.classList.remove('selected'));
+            
+            // Add new selection
+            event.target.closest('.client-btn').classList.add('selected');
+            document.getElementById(clientId).classList.add('selected');
+            
+            selectedClient = clientId;
+            document.getElementById('startBtn').disabled = false;
+            updateStatus(`${clientId.toUpperCase()} selected - Click 'Start DORA Process' to begin`);
+            
+            resetSimulation(false);
+        }
+
+        function selectOffer(serverId) {
+            document.querySelectorAll('.offer-card').forEach(card => card.classList.remove('selected'));
+            event.target.closest('.offer-card').classList.add('selected');
+            
+            selectedOffer = serverId;
+            updateStatus(`Offer from ${serverId.toUpperCase()} selected - Click 'Next Step' to continue`);
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        function startSimulation() {
+            if (!selectedClient) {
+                alert('Please select a client device first!');
+                return;
+            }
+            
+            isSimulationRunning = true;
+            currentStep = 0;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = false;
+            document.getElementById('offersSection').classList.remove('show');
+            updateStatus("DHCP simulation started - Click 'Next Step' to proceed");
+            updateProgress(0);
+            clearMessages();
+        }
+
+        function nextStep() {
+            if (currentStep < steps.length) {
+                const step = steps[currentStep];
+                
+                if (currentStep === 1) {
+                    // Show offers after step 2
+                    document.getElementById('offersSection').classList.add('show');
+                    document.getElementById('nextBtn').disabled = true;
+                    updateStatus("Both servers responded with offers - Please select one to continue");
+                } else if (currentStep === 2 && !selectedOffer) {
+                    alert('Please select an offer first!');
+                    return;
+                }
+                
+                executeStep(currentStep);
+                currentStep++;
+                updateProgress((currentStep / steps.length) * 100);
+                
+                if (currentStep >= steps.length) {
+                    completeSimulation();
+                }
             }
         }
 
-        function resetSimulation() {
-            // Reset assigned addresses but keep track of used addresses
-            for (let key in assignedAddresses) {
-                delete assignedAddresses[key];
+        function executeStep(stepIndex) {
+            const step = steps[stepIndex];
+            updateStepInfo(step);
+            
+            switch(step.action) {
+                case 'discover':
+                    animateDiscover();
+                    break;
+                case 'offer':
+                    animateOffers();
+                    break;
+                case 'request':
+                    animateRequest();
+                    break;
+                case 'ack':
+                    animateAck();
+                    break;
             }
-
-            // Reset workstation colors and IP address displays
-            const workstations = document.querySelectorAll('.workstation');
-            workstations.forEach(ws => ws.style.backgroundColor = '#f00');
-            const ipAddressBoxes = document.querySelectorAll('.ip-address');
-            ipAddressBoxes.forEach(box => {
-                box.style.display = 'none';
-                box.textContent = '';
-            });
-
-            // Keep strikethrough on used addresses
-            const addressList = document.querySelectorAll('.available-addresses td');
-            addressList.forEach(address => {
-                if (!address.classList.contains('strikethrough')) {
-                    address.classList.remove('strikethrough');
-                }
-            });
-
-            // Hide message box
-            const messageBox = document.getElementById('message');
-            messageBox.style.display = 'none';
-
-            // Reset description
-            const description = document.getElementById('description');
-            description.innerHTML = `<p>Click on the buttons above to see each step of the DHCP process.</p>`;
+            
+            updateStatus(`Executing: ${step.title}`);
         }
 
-        function findNextAvailableIndex() {
-            for (let i = 0; i < ipAddresses.length; i++) {
-                if (!document.getElementById(`ip-${ipAddresses[i].split('.')[3]}`).classList.contains('strikethrough')) {
-                    return i;
-                }
+        function animateDiscover() {
+            const clientEl = document.getElementById(selectedClient);
+            highlightDevice(selectedClient);
+            
+            // Animate broadcast to both servers
+            setTimeout(() => {
+                createMessage(selectedClient, 'server1', 'DHCPDISCOVER', 'discover');
+                createMessage(selectedClient, 'server2', 'DHCPDISCOVER', 'discover');
+            }, 500);
+        }
+
+        function animateOffers() {
+            setTimeout(() => {
+                highlightDevice('server1');
+                highlightDevice('server2');
+                createMessage('server1', selectedClient, 'DHCPOFFER', 'offer');
+                createMessage('server2', selectedClient, 'DHCPOFFER', 'offer');
+            }, 500);
+        }
+
+        function animateRequest() {
+            setTimeout(() => {
+                highlightDevice(selectedClient);
+                // Broadcast request to both servers
+                createMessage(selectedClient, 'server1', 'DHCPREQUEST', 'request');
+                createMessage(selectedClient, 'server2', 'DHCPREQUEST', 'request');
+            }, 500);
+        }
+
+        function animateAck() {
+            setTimeout(() => {
+                highlightDevice(selectedOffer);
+                createMessage(selectedOffer, selectedClient, 'DHCPACK', 'ack');
+            }, 500);
+        }
+
+        function createMessage(fromId, toId, text, type) {
+            const diagram = document.getElementById('networkDiagram');
+            const fromEl = document.getElementById(fromId);
+            const toEl = document.getElementById(toId);
+            
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            
+            // Calculate position
+            const fromRect = fromEl.getBoundingClientRect();
+            const toRect = toEl.getBoundingClientRect();
+            const diagramRect = diagram.getBoundingClientRect();
+            
+            const midX = (fromEl.offsetLeft + toEl.offsetLeft) / 2;
+            const midY = (fromEl.offsetTop + toEl.offsetTop) / 2;
+            
+            message.style.left = midX + 'px';
+            message.style.top = midY + 'px';
+            
+            diagram.appendChild(message);
+            
+            setTimeout(() => {
+                message.classList.add('show');
+            }, 100);
+            
+            // Create packet animation
+            createPacketAnimation(fromId, toId);
+        }
+
+        function createPacketAnimation(fromId, toId) {
+            const diagram = document.getElementById('networkDiagram');
+            const fromEl = document.getElementById(fromId);
+            const toEl = document.getElementById(toId);
+            
+            const packet = document.createElement('div');
+            packet.className = 'packet-animation';
+            
+            const startX = fromEl.offsetLeft + fromEl.offsetWidth/2;
+            const startY = fromEl.offsetTop + fromEl.offsetHeight/2;
+            const endX = toEl.offsetLeft + toEl.offsetWidth/2;
+            const endY = toEl.offsetTop + toEl.offsetHeight/2;
+            
+            packet.style.left = startX + 'px';
+            packet.style.top = startY + 'px';
+            diagram.appendChild(packet);
+            
+            packet.style.animation = 'packetFlow 1s ease-in-out';
+            packet.style.transform = `translate(${endX - startX}px, ${endY - startY}px)`;
+            
+            setTimeout(() => {
+                packet.remove();
+            }, 1000);
+        }
+
+        function highlightDevice(deviceId) {
+            const device = document.getElementById(deviceId);
+            device.style.transform = 'scale(1.1)';
+            device.style.boxShadow = '0 8px 25px rgba(52, 152, 219, 0.5)';
+            
+            setTimeout(() => {
+                device.style.transform = '';
+                device.style.boxShadow = '';
+            }, 1500);
+        }
+
+        function completeSimulation() {
+            document.getElementById('nextBtn').disabled = true;
+            updateStatus("DHCP process completed successfully! 🎉");
+            
+            // Update client IP
+            const clientEl = document.getElementById(selectedClient);
+            const ipEl = clientEl.querySelector('.device-ip');
+            
+            if (selectedOffer === 'server1') {
+                ipEl.textContent = '192.168.1.100/24';
+            } else {
+                ipEl.textContent = '192.168.2.100/24';
             }
-            return 0; // If all addresses are used, reset to the beginning
+            
+            setTimeout(() => {
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('startBtn').textContent = "Restart Simulation";
+            }, 2000);
+        }
+
+        function updateStepInfo(step) {
+            const stepInfo = document.getElementById('stepInfo');
+            stepInfo.innerHTML = `
+                <div class="step-title">
+                    <div class="step-number">${step.number}</div>
+                    ${step.title}
+                </div>
+                <div class="step-description">
+                    ${step.description}
+                </div>
+                <div class="step-details">
+                    ${step.details}
+                </div>
+            `;
+        }
+
+        function clearMessages() {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(msg => msg.remove());
+        }
+
+        function updateProgress(percentage) {
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function resetSimulation(full = true) {
+            isSimulationRunning = false;
+            currentStep = 0;
+            selectedOffer = null;
+            
+            if (full) {
+                selectedClient = null;
+                document.querySelectorAll('.client-btn').forEach(btn => btn.classList.remove('selected'));
+                document.querySelectorAll('.client').forEach(client => client.classList.remove('selected'));
+                document.getElementById('startBtn').disabled = true;
+                updateStatus("Select a client device to start DHCP simulation");
+            }
+            
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('startBtn').textContent = "Start DORA Process";
+            document.getElementById('offersSection').classList.remove('show');
+            
+            // Reset client IPs
+            document.querySelectorAll('.client .device-ip').forEach(ip => {
+                ip.textContent = 'No IP';
+            });
+            
+            updateProgress(0);
+            clearMessages();
+            
+            // Reset step info
+            document.getElementById('stepInfo').innerHTML = `
+                <div class="step-title">
+                    <div class="step-number">ℹ️</div>
+                    Welcome to Advanced DHCP Simulation
+                </div>
+                <div class="step-description">
+                    This simulator demonstrates DHCP in a multi-server environment. Select a client device above to begin the DORA process and see how multiple DHCP servers respond to a single request.
+                </div>
+                <div class="step-details">
+                    <strong>Scenario:</strong> You have 4 client devices that need IP addresses and 2 DHCP servers with different IP pools. When a client requests an address, both servers will respond with offers, and the client must choose one.
+                </div>
+            `;
         }
     </script>
 </body>
