@@ -182,28 +182,29 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 4px;
-            background: #e74c3c;
-            border-radius: 2px;
-            transform-origin: bottom center;
+            border-radius: 3px;
+            transform-origin: 50% 100%;
             transition: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             z-index: 5;
         }
 
         .pointer.start {
-            height: 80px;
-            margin-left: -2px;
-            margin-top: -80px;
+            width: 4px;
+            height: 90px;
             background: #3498db;
+            margin-left: -2px;
+            margin-top: -90px;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
         }
 
         .pointer.result {
-            height: 100px;
-            margin-left: -2px;
-            margin-top: -100px;
-            background: #e74c3c;
             width: 6px;
+            height: 110px;
+            background: #e74c3c;
             margin-left: -3px;
+            margin-top: -110px;
+            box-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
+            z-index: 6;
         }
 
         .result-section {
@@ -247,6 +248,26 @@
         .modulus-info h4 {
             color: #856404;
             margin-bottom: 8px;
+        }
+
+        .pointer-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
         }
 
         .examples-section {
@@ -351,12 +372,20 @@
                     <div class="clock-face">
                         <div class="clock-numbers" id="clock-numbers"></div>
                         <div class="pointer start" id="start-pointer"></div>
-                        <div class="pointer result" id="result-pointer"></div>
+                        <div class="pointer result" id="result-pointer" style="opacity: 0;"></div>
                         <div class="clock-center"></div>
                     </div>
                 </div>
-                <p><span style="color: #3498db;">●</span> Blue pointer: Starting number</p>
-                <p><span style="color: #e74c3c;">●</span> Red pointer: Final result</p>
+                <div class="pointer-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #3498db;"></div>
+                        <span>Starting Position</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e74c3c;"></div>
+                        <span>Final Result</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -390,11 +419,11 @@
     <script>
         let currentOperation = 'add';
 
-        // Initialize the clock
+        // Initialize the clock and pointers
         function initializeClock() {
             const modulus = parseInt(document.getElementById('modulus').value);
             drawClock(modulus);
-            updatePointers();
+            updateAllPointers();
         }
 
         // Draw clock numbers based on modulus
@@ -403,7 +432,7 @@
             clockNumbers.innerHTML = '';
             
             for (let i = 0; i < modulus; i++) {
-                const angle = (i * 360 / modulus) - 90; // Start from top
+                const angle = (i * 360 / modulus) - 90; // Start from top (12 o'clock position)
                 const radian = (angle * Math.PI) / 180;
                 const x = 50 + 35 * Math.cos(radian); // Position on circle
                 const y = 50 + 35 * Math.sin(radian);
@@ -417,16 +446,39 @@
             }
         }
 
-        // Update pointer positions
-        function updatePointers() {
+        // Calculate angle for a number on the clock
+        function calculateAngle(number, modulus) {
+            // Normalize the number to be within the modulus range
+            const normalizedNumber = ((number % modulus) + modulus) % modulus;
+            // Calculate angle: start from top (0 degrees = 12 o'clock), go clockwise
+            return (normalizedNumber * 360 / modulus) - 90;
+        }
+
+        // Update all pointers based on current inputs
+        function updateAllPointers() {
             const modulus = parseInt(document.getElementById('modulus').value);
             const num1 = parseInt(document.getElementById('number1').value) || 0;
             
-            // Calculate angles for pointers
-            const startAngle = (num1 % modulus) * (360 / modulus) - 90;
+            // Update start pointer (blue)
+            const startAngle = calculateAngle(num1, modulus);
+            const startPointer = document.getElementById('start-pointer');
+            startPointer.style.transform = `translate(-50%, 0) rotate(${startAngle}deg)`;
+            startPointer.style.opacity = '1';
             
-            document.getElementById('start-pointer').style.transform = 
-                `translate(-50%, 0) rotate(${startAngle}deg)`;
+            // Hide result pointer initially
+            const resultPointer = document.getElementById('result-pointer');
+            resultPointer.style.opacity = '0';
+        }
+
+        // Update only the start pointer (called when inputs change)
+        function updateStartPointer() {
+            const modulus = parseInt(document.getElementById('modulus').value);
+            const num1 = parseInt(document.getElementById('number1').value) || 0;
+            
+            const startAngle = calculateAngle(num1, modulus);
+            const startPointer = document.getElementById('start-pointer');
+            startPointer.style.transform = `translate(-50%, 0) rotate(${startAngle}deg)`;
+            startPointer.style.opacity = '1';
         }
 
         // Set operation
@@ -527,12 +579,14 @@
 
         // Animate result pointer
         function animateResultPointer(result, modulus) {
-            const resultAngle = (result * (360 / modulus)) - 90;
+            const resultAngle = calculateAngle(result, modulus);
+            const resultPointer = document.getElementById('result-pointer');
             
+            // Show and animate the result pointer
             setTimeout(() => {
-                document.getElementById('result-pointer').style.transform = 
-                    `translate(-50%, 0) rotate(${resultAngle}deg)`;
-            }, 100);
+                resultPointer.style.opacity = '1';
+                resultPointer.style.transform = `translate(-50%, 0) rotate(${resultAngle}deg)`;
+            }, 200);
         }
 
         // Set example values
@@ -550,19 +604,32 @@
         }
 
         // Event listeners
-        document.getElementById('modulus').addEventListener('change', initializeClock);
-        document.getElementById('number1').addEventListener('input', updatePointers);
+        document.getElementById('modulus').addEventListener('change', () => {
+            initializeClock();
+        });
+        
+        document.getElementById('number1').addEventListener('input', () => {
+            updateStartPointer();
+            // Hide result pointer when input changes
+            document.getElementById('result-pointer').style.opacity = '0';
+        });
+
+        document.getElementById('number2').addEventListener('input', () => {
+            // Hide result pointer when input changes
+            document.getElementById('result-pointer').style.opacity = '0';
+        });
 
         document.querySelectorAll('.operation-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 setOperation(e.target.dataset.op);
+                // Hide result pointer when operation changes
+                document.getElementById('result-pointer').style.opacity = '0';
             });
         });
 
         // Initialize when page loads
         window.addEventListener('load', () => {
             initializeClock();
-            updatePointers();
         });
 
         // Enter key to calculate
