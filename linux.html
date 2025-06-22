@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Command Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .terminal-container {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: rgba(74, 144, 226, 0.3);
+            border-color: #4a90e2;
+        }
+
+        .lessons {
+            display: none;
+        }
+
+        .lessons.active {
+            display: block;
+        }
+
+        .lesson {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lesson:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .lesson.completed {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .lesson.active {
+            border-color: #4a90e2;
+            background: rgba(74, 144, 226, 0.1);
+        }
+
+        .lesson h3 {
+            color: #4a90e2;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .lesson p {
+            font-size: 12px;
+            line-height: 1.4;
+            opacity: 0.8;
+        }
+
+        .progress {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 6px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .terminal {
+            flex: 1;
+            background: #000;
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.4;
+            overflow-y: auto;
+            min-height: 600px;
+            max-height: 70vh;
+            border: 2px solid #333;
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .terminal-title {
+            color: #4a90e2;
+            font-weight: bold;
+        }
+
+        .output-line {
+            margin-bottom: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .command-line {
+            color: #4CAF50;
+        }
+
+        .error {
+            color: #f44336;
+        }
+
+        .success {
+            color: #4CAF50;
+        }
+
+        .info {
+            color: #2196F3;
+        }
+
+        .warning {
+            color: #FF9800;
+        }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .prompt {
+            color: #4CAF50;
+            margin-right: 8px;
+        }
+
+        #commandInput {
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            flex: 1;
+            caret-color: #4CAF50;
+        }
+
+        .lesson-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+
+        .lesson-panel.active {
+            display: block;
+        }
+
+        .lesson-title {
+            color: #4a90e2;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .lesson-objective {
+            color: #e0e0e0;
+            margin-bottom: 15px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .lesson-commands {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .lesson-commands h4 {
+            color: #4CAF50;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .lesson-commands ul {
+            list-style: none;
+            font-size: 12px;
+        }
+
+        .lesson-commands li {
+            margin-bottom: 4px;
+            color: #ccc;
+        }
+
+        .lesson-commands code {
+            color: #4a90e2;
+            background: rgba(74, 144, 226, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .hint {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            color: #FFC107;
+            font-size: 12px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="mode-toggle">
+                <button class="mode-btn active" onclick="setMode('practice')">Practice</button>
+                <button class="mode-btn" onclick="setMode('lessons')">Lessons</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="commandCount">0</div>
+                    <div class="stat-label">Commands</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="lessonsCompleted">0</div>
+                    <div class="stat-label">Lessons</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="accuracy">100%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+            </div>
+
+            <div class="lessons" id="lessonsPanel">
+                <div class="lesson" onclick="startLesson(0)">
+                    <h3>Lesson 1: Basic Navigation</h3>
+                    <p>Learn to navigate directories with pwd, ls, and cd commands.</p>
+                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
+                </div>
+                <div class="lesson" onclick="startLesson(1)">
+                    <h3>Lesson 2: File Management</h3>
+                    <p>Create, copy, move, and delete files and directories.</p>
+                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
+                </div>
+                <div class="lesson" onclick="startLesson(2)">
+                    <h3>Lesson 3: Viewing Files</h3>
+                    <p>Display and search file contents with cat, head, tail, and grep.</p>
+                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
+                </div>
+                <div class="lesson" onclick="startLesson(3)">
+                    <h3>Lesson 4: System Information</h3>
+                    <p>Check system info, disk usage, and running processes.</p>
+                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
+                </div>
+                <div class="lesson" onclick="startLesson(4)">
+                    <h3>Lesson 5: Text Editing</h3>
+                    <p>Basic text editing with nano and file manipulation.</p>
+                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
+                </div>
+                <div class="lesson" onclick="startLesson(5)">
+                    <h3>Lesson 6: Network Commands</h3>
+                    <p>Network connectivity and file transfer commands.</p>
+                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
+                </div>
+            </div>
+
+            <div id="currentLessonPanel" class="lesson-panel">
+                <div class="lesson-title" id="lessonTitle"></div>
+                <div class="lesson-objective" id="lessonObjective"></div>
+                <div class="lesson-commands">
+                    <h4>Commands to try:</h4>
+                    <ul id="lessonCommands"></ul>
+                </div>
+                <div class="hint" id="lessonHint" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-title">Linux Command Simulator</div>
+            </div>
+            <div class="terminal" id="terminal">
+                <div class="output-line success">Welcome to the Linux Command Simulator!</div>
+                <div class="output-line info">Type 'help' to see available commands or switch to Lessons mode for guided learning.</div>
+                <div class="output-line">Use the up/down arrow keys to navigate command history.</div>
+                <div class="output-line"></div>
+            </div>
+            <div class="input-line">
+                <span class="prompt" id="prompt">user@simulator:~$</span>
+                <input type="text" id="commandInput" autocomplete="off" autofocus>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentMode = 'practice';
+        let currentLesson = -1;
+        let lessonProgress = Array(6).fill(0);
+        let commandHistory = [];
+        let historyIndex = -1;
+        let stats = { commands: 0, correct: 0, lessons: 0 };
+
+        // Virtual File System
+        class VirtualFileSystem {
+            constructor() {
+                this.currentPath = '/home/user';
+                this.files = {
+                    '/': {
+                        type: 'directory',
+                        contents: ['home', 'etc', 'var', 'usr', 'tmp']
+                    },
+                    '/home': {
+                        type: 'directory',
+                        contents: ['user']
+                    },
+                    '/home/user': {
+                        type: 'directory',
+                        contents: ['documents', 'downloads', 'demo.txt', '.bashrc']
+                    },
+                    '/home/user/documents': {
+                        type: 'directory',
+                        contents: ['notes.txt', 'project']
+                    },
+                    '/home/user/documents/project': {
+                        type: 'directory',
+                        contents: ['readme.md', 'src']
+                    },
+                    '/home/user/documents/project/src': {
+                        type: 'directory',
+                        contents: ['main.js', 'utils.js']
+                    },
+                    '/home/user/downloads': {
+                        type: 'directory',
+                        contents: ['file1.zip', 'image.png']
+                    },
+                    '/etc': {
+                        type: 'directory',
+                        contents: ['hosts', 'passwd', 'fstab']
+                    },
+                    '/var': {
+                        type: 'directory',
+                        contents: ['log', 'tmp']
+                    },
+                    '/var/log': {
+                        type: 'directory',
+                        contents: ['system.log', 'error.log']
+                    },
+                    '/usr': {
+                        type: 'directory',
+                        contents: ['bin', 'lib', 'share']
+                    },
+                    '/tmp': {
+                        type: 'directory',
+                        contents: []
+                    },
+                    '/home/user/demo.txt': {
+                        type: 'file',
+                        content: 'This is a demo file.\nIt contains multiple lines.\nYou can view it with cat, head, or tail commands.\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8\nLine 9\nLast line'
+                    },
+                    '/home/user/.bashrc': {
+                        type: 'file',
+                        content: '# Bash configuration file\nexport PATH=$PATH:/usr/local/bin\nalias ll="ls -la"\nalias la="ls -A"'
+                    },
+                    '/home/user/documents/notes.txt': {
+                        type: 'file',
+                        content: 'Meeting Notes\n============\n\n1. Project deadline: Next Friday\n2. Review documentation\n3. Test the new features\n4. Deploy to staging'
+                    },
+                    '/home/user/documents/project/readme.md': {
+                        type: 'file',
+                        content: '# Project Documentation\n\nThis is a sample project for learning Linux commands.\n\n## Features\n- File management\n- Text processing\n- System monitoring'
+                    },
+                    '/home/user/documents/project/src/main.js': {
+                        type: 'file',
+                        content: 'console.log("Hello, World!");\n\nfunction main() {\n    return "This is the main function";\n}'
+                    },
+                    '/home/user/documents/project/src/utils.js': {
+                        type: 'file',
+                        content: 'function formatDate(date) {\n    return date.toISOString();\n}\n\nmodule.exports = { formatDate };'
+                    },
+                    '/etc/hosts': {
+                        type: 'file',
+                        content: '127.0.0.1 localhost\n::1 localhost\n192.168.1.1 router'
+                    },
+                    '/etc/passwd': {
+                        type: 'file',
+                        content: 'root:x:0:0:root:/root:/bin/bash\nuser:x:1000:1000:User:/home/user:/bin/bash'
+                    },
+                    '/var/log/system.log': {
+                        type: 'file',
+                        content: '[2025-06-21 10:00:01] System started\n[2025-06-21 10:00:15] Network interface up\n[2025-06-21 10:01:00] User login: user'
+                    },
+                    '/var/log/error.log': {
+                        type: 'file',
+                        content: '[2025-06-21 09:45:12] WARNING: Low disk space\n[2025-06-21 10:00:05] ERROR: Failed to load module xyz'
+                    }
+                };
+                this.processes = [
+                    { pid: 1, name: 'systemd', cpu: 0.1, memory: 0.5 },
+                    { pid: 123, name: 'bash', cpu: 0.2, memory: 1.2 },
+                    { pid: 456, name: 'firefox', cpu: 15.6, memory: 24.3 },
+                    { pid: 789, name: 'code', cpu: 8.2, memory: 18.7 },
+                    { pid: 321, name: 'chrome', cpu: 12.4, memory: 32.1 }
+                ];
+            }
+
+            resolvePath(path) {
+                if (path.startsWith('/')) {
+                    return path;
+                }
+                if (path === '..') {
+                    const parts = this.currentPath.split('/').filter(p => p);
+                    parts.pop();
+                    return '/' + parts.join('/') || '/';
+                }
+                if (path === '~') {
+                    return '/home/user';
+                }
+                if (path === '.') {
+                    return this.currentPath;
+                }
+                if (this.currentPath === '/') {
+                    return '/' + path;
+                }
+                return this.currentPath + '/' + path;
+            }
+
+            exists(path) {
+                return this.files.hasOwnProperty(path);
+            }
+
+            isDirectory(path) {
+                return this.exists(path) && this.files[path].type === 'directory';
+            }
+
+            isFile(path) {
+                return this.exists(path) && this.files[path].type === 'file';
+            }
+
+            getContents(path) {
+                if (this.isDirectory(path)) {
+                    return this.files[path].contents || [];
+                }
+                return [];
+            }
+
+            getFileContent(path) {
+                if (this.isFile(path)) {
+                    return this.files[path].content || '';
+                }
+                return null;
+            }
+
+            createFile(path, content = '') {
+                this.files[path] = { type: 'file', content };
+                const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
+                const fileName = path.substring(path.lastIndexOf('/') + 1);
+                if (this.isDirectory(parentPath)) {
+                    const contents = this.getContents(parentPath);
+                    if (!contents.includes(fileName)) {
+                        contents.push(fileName);
+                    }
+                }
+            }
+
+            createDirectory(path) {
+                this.files[path] = { type: 'directory', contents: [] };
+                const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
+                const dirName = path.substring(path.lastIndexOf('/') + 1);
+                if (this.isDirectory(parentPath)) {
+                    const contents = this.getContents(parentPath);
+                    if (!contents.includes(dirName)) {
+                        contents.push(dirName);
+                    }
+                }
+            }
+
+            remove(path) {
+                if (this.exists(path)) {
+                    const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
+                    const itemName = path.substring(path.lastIndexOf('/') + 1);
+                    
+                    if (this.isDirectory(parentPath)) {
+                        const contents = this.getContents(parentPath);
+                        const index = contents.indexOf(itemName);
+                        if (index > -1) {
+                            contents.splice(index, 1);
+                        }
+                    }
+                    
+                    delete this.files[path];
+                    return true;
+                }
+                return false;
+            }
+
+            copy(source, dest) {
+                if (this.exists(source)) {
+                    this.files[dest] = { ...this.files[source] };
+                    const parentPath = dest.substring(0, dest.lastIndexOf('/')) || '/';
+                    const itemName = dest.substring(dest.lastIndexOf('/') + 1);
+                    if (this.isDirectory(parentPath)) {
+                        const contents = this.getContents(parentPath);
+                        if (!contents.includes(itemName)) {
+                            contents.push(itemName);
+                        }
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            getCurrentDirectory() {
+                return this.currentPath.split('/').pop() || '/';
+            }
+
+            getPromptPath() {
+                if (this.currentPath === '/home/user') {
+                    return '~';
+                }
+                return this.currentPath;
+            }
+        }
+
+        const fs = new VirtualFileSystem();
+
+        // Lesson definitions
+        const lessons = [
+            {
+                title: "Basic Navigation",
+                objective: "Learn to navigate the filesystem using basic commands. Start by checking where you are, list files, and move between directories.",
+                commands: [
+                    "pwd - Show current directory",
+                    "ls - List files and directories",
+                    "ls -l - Detailed file listing",
+                    "ls -a - Show hidden files",
+                    "cd documents - Change to documents directory",
+                    "cd .. - Go back to parent directory",
+                    "cd ~ - Go to home directory"
+                ],
+                requiredCommands: ['pwd', 'ls', 'cd'],
+                hints: [
+                    "Start with 'pwd' to see where you are",
+                    "Use 'ls' to see what's in the current directory",
+                    "Try 'cd documents' to enter the documents folder",
+                    "Use 'cd ..' to go back up one level"
+                ]
+            },
+            {
+                title: "File Management",
+                objective: "Create, copy, move, and delete files and directories. Learn the essential file operations every Linux user needs.",
+                commands: [
+                    "touch newfile.txt - Create empty file",
+                    "mkdir newfolder - Create directory",
+                    "cp demo.txt backup.txt - Copy file",
+                    "mv backup.txt renamed.txt - Move/rename file",
+                    "rm renamed.txt - Delete file",
+                    "rmdir newfolder - Remove empty directory"
+                ],
+                requiredCommands: ['touch', 'mkdir', 'cp', 'mv'],
+                hints: [
+                    "Use 'touch filename' to create an empty file",
+                    "Use 'mkdir dirname' to create a new directory",
+                    "Copy files with 'cp source destination'",
+                    "Move or rename with 'mv old new'"
+                ]
+            },
+            {
+                title: "Viewing Files",
+                objective: "Learn different ways to view and search file contents. Master the tools for reading and finding information in files.",
+                commands: [
+                    "cat demo.txt - Display entire file",
+                    "head demo.txt - Show first 10 lines",
+                    "tail demo.txt - Show last 10 lines",
+                    "head -n 5 demo.txt - Show first 5 lines",
+                    "grep 'Line' demo.txt - Search for text",
+                    "grep -n 'demo' demo.txt - Search with line numbers"
+                ],
+                requiredCommands: ['cat', 'head', 'tail', 'grep'],
+                hints: [
+                    "Use 'cat' to display the entire file content",
+                    "Use 'head' and 'tail' to see the beginning or end",
+                    "Search for text patterns with 'grep'",
+                    "Add -n to grep to show line numbers"
+                ]
+            },
+            {
+                title: "System Information",
+                objective: "Check system information, disk usage, and running processes. Learn to monitor your system's status.",
+                commands: [
+                    "whoami - Show current username",
+                    "uname -a - Display system information",
+                    "df -h - Show disk usage",
+                    "du -h documents - Show directory size",
+                    "ps - Show running processes",
+                    "ps aux - Detailed process list",
+                    "top - Dynamic process viewer"
+                ],
+                requiredCommands: ['whoami', 'uname', 'df', 'ps'],
+                hints: [
+                    "Use 'whoami' to see your username",
+                    "Check system info with 'uname -a'",
+                    "View disk space with 'df -h'",
+                    "See running processes with 'ps'"
+                ]
+            },
+            {
+                title: "Text Editing",
+                objective: "Learn basic text editing and file manipulation. Understand how to modify file contents.",
+                commands: [
+                    "nano demo.txt - Edit file with nano",
+                    "echo 'Hello World' > newfile.txt - Write to file",
+                    "echo 'Append text' >> newfile.txt - Append to file",
+                    "wc demo.txt - Count lines, words, characters",
+                    "sort demo.txt - Sort file contents",
+                    "uniq demo.txt - Remove duplicate lines"
+                ],
+                requiredCommands: ['nano', 'echo', 'wc'],
+                hints: [
+                    "Use 'nano filename' to edit files",
+                    "In nano simulator, press Ctrl+X to exit",
+                    "Use 'echo' with > to write or >> to append",
+                    "Count file statistics with 'wc'"
+                ]
+            },
+            {
+                title: "Network Commands",
+                objective: "Learn network connectivity and file transfer commands. Understand basic networking tools.",
+                commands: [
+                    "ping google.com - Test network connectivity",
+                    "wget http://example.com/file.txt - Download file",
+                    "curl http://example.com - Fetch web content",
+                    "ssh user@server - Connect to remote server",
+                    "scp file.txt user@server:/path - Copy file to server",
+                    "netstat -an - Show network connections"
+                ],
+                requiredCommands: ['ping', 'wget', 'curl', 'netstat'],
+                hints: [
+                    "Test connectivity with 'ping hostname'",
+                    "Download files with 'wget URL'",
+                    "Fetch web content with 'curl URL'",
+                    "View network connections with 'netstat'"
+                ]
+            }
+        ];
+
+        // Command implementations
+        const commands = {
+            help: () => {
+                return [
+                    { text: "Available commands:", class: "info" },
+                    { text: "", class: "" },
+                    { text: "File and Directory Management:", class: "warning" },
+                    { text: "  ls [-l] [-a] [-h] [path]  - List directory contents", class: "" },
+                    { text: "  cd [path]                - Change directory", class: "" },
+                    { text: "  pwd                       - Print working directory", class: "" },
+                    { text: "  mkdir [-p] <dir>          - Create directory", class: "" },
+                    { text: "  rmdir <dir>               - Remove empty directory", class: "" },
+                    { text: "  touch <file>              - Create empty file", class: "" },
+                    { text: "  cp [-r] <src> <dest>      - Copy files/directories", class: "" },
+                    { text: "  mv <src> <dest>           - Move/rename files", class: "" },
+                    { text: "  rm [-r] <file>            - Remove files/directories", class: "" },
+                    { text: "", class: "" },
+                    { text: "Viewing and Manipulating Files:", class: "warning" },
+                    { text: "  cat <file>                - Display file contents", class: "" },
+                    { text: "  head [-n num] <file>      - Show first lines", class: "" },
+                    { text: "  tail [-n num] <file>      - Show last lines", class: "" },
+                    { text: "  grep [-n] [-i] <pattern> <file> - Search in files", class: "" },
+                    { text: "  nano <file>               - Edit file", class: "" },
+                    { text: "  echo <text>               - Display text", class: "" },
+                    { text: "  wc <file>                 - Count lines, words, chars", class: "" },
+                    { text: "", class: "" },
+                    { text: "System Information:", class: "warning" },
+                    { text: "  whoami                    - Show current user", class: "" },
+                    { text: "  uname [-a]                - System information", class: "" },
+                    { text: "  df [-h]                   - Disk space usage", class: "" },
+                    { text: "  du [-h] [path]            - Directory usage", class: "" },
+                    { text: "  ps [aux]                  - Show processes", class: "" },
+                    { text: "  top                       - Dynamic process viewer", class: "" },
+                    { text: "  kill <pid>                - Terminate process", class: "" },
+                    { text: "", class: "" },
+                    { text: "Network Commands:", class: "warning" },
+                    { text: "  ping <host>               - Test connectivity", class: "" },
+                    { text: "  wget <url>                - Download file", class: "" },
+                    { text: "  curl <url>                - Fetch web content", class: "" },
+                    { text: "  ssh <user@host>           - Remote login", class: "" },
+                    { text: "  scp <src> <dest>          - Secure copy", class: "" },
+                    { text: "  netstat [-an]             - Network connections", class: "" },
+                    { text: "", class: "" },
+                    { text: "Other Commands:", class: "warning" },
+                    { text: "  man <command>             - Show manual page", class: "" },
+                    { text: "  clear                     - Clear terminal", class: "" },
+                    { text: "  history                   - Show command history", class: "" }
+                ];
+            },
+
+            pwd: () => {
+                return [{ text: fs.currentPath, class: "" }];
+            },
+
+            ls: (args) => {
+                const flags = { long: false, all: false, human: false };
+                let path = fs.currentPath;
+                
+                args.forEach(arg => {
+                    if (arg === '-l') flags.long = true;
+                    else if (arg === '-a') flags.all = true;
+                    else if (arg === '-h') flags.human = true;
+                    else if (arg === '-la' || arg === '-al') { flags.long = true; flags.all = true; }
+                    else if (!arg.startsWith('-')) path = fs.resolvePath(arg);
+                });
+
+                if (!fs.exists(path)) {
+                    return [{ text: `ls: cannot access '${path}': No such file or directory`, class: "error" }];
+                }
+
+                if (fs.isFile(path)) {
+                    const fileName = path.split('/').pop();
+                    return flags.long ? 
+                        [{ text: `-rw-r--r-- 1 user user  1024 Jun 21 10:00 ${fileName}`, class: "" }] :
+                        [{ text: fileName, class: "" }];
+                }
+
+                let contents = fs.getContents(path);
+                if (!flags.all) {
+                    contents = contents.filter(item => !item.startsWith('.'));
+                } else {
+                    contents = ['.', '..', ...contents];
+                }
+
+                if (contents.length === 0) {
+                    return [{ text: "", class: "" }];
+                }
+
+                if (flags.long) {
+                    const result = [];
+                    if (flags.all) {
+                        result.push({ text: "total " + contents.length, class: "info" });
+                    }
+                    contents.forEach(item => {
+                        if (item === '.' || item === '..') {
+                            result.push({ text: `drwxr-xr-x 2 user user 4096 Jun 21 10:00 ${item}`, class: "" });
+                        } else {
+                            const itemPath = path === '/' ? `/${item}` : `${path}/${item}`;
+                            const isDir = fs.isDirectory(itemPath);
+                            const permissions = isDir ? 'drwxr-xr-x' : '-rw-r--r--';
+                            const size = isDir ? '4096' : '1024';
+                            result.push({ text: `${permissions} 1 user user ${size} Jun 21 10:00 ${item}`, class: "" });
+                        }
+                    });
+                    return result;
+                }
+
+                return contents.map(item => ({ text: item, class: "" }));
+            },
+
+            cd: (args) => {
+                let path = args[0] || '/home/user';
+                path = fs.resolvePath(path);
+
+                if (!fs.exists(path)) {
+                    return [{ text: `cd: ${path}: No such file or directory`, class: "error" }];
+                }
+
+                if (!fs.isDirectory(path)) {
+                    return [{ text: `cd: ${path}: Not a directory`, class: "error" }];
+                }
+
+                fs.currentPath = path;
+                updatePrompt();
+                return [];
+            },
+
+            mkdir: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "mkdir: missing operand", class: "error" }];
+                }
+
+                const createParents = args.includes('-p');
+                const dirs = args.filter(arg => !arg.startsWith('-'));
+
+                const results = [];
+                dirs.forEach(dir => {
+                    const path = fs.resolvePath(dir);
+                    
+                    if (fs.exists(path)) {
+                        results.push({ text: `mkdir: cannot create directory '${dir}': File exists`, class: "error" });
+                        return;
+                    }
+
+                    if (createParents) {
+                        const parts = path.split('/').filter(p => p);
+                        let currentPath = '';
+                        parts.forEach(part => {
+                            currentPath += '/' + part;
+                            if (!fs.exists(currentPath)) {
+                                fs.createDirectory(currentPath);
+                            }
+                        });
+                    } else {
+                        const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
+                        if (!fs.exists(parentPath)) {
+                            results.push({ text: `mkdir: cannot create directory '${dir}': No such file or directory`, class: "error" });
+                            return;
+                        }
+                        fs.createDirectory(path);
+                    }
+                });
+
+                return results;
+            },
+
+            rmdir: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "rmdir: missing operand", class: "error" }];
+                }
+
+                const results = [];
+                args.forEach(dir => {
+                    const path = fs.resolvePath(dir);
+                    
+                    if (!fs.exists(path)) {
+                        results.push({ text: `rmdir: failed to remove '${dir}': No such file or directory`, class: "error" });
+                        return;
+                    }
+
+                    if (!fs.isDirectory(path)) {
+                        results.push({ text: `rmdir: failed to remove '${dir}': Not a directory`, class: "error" });
+                        return;
+                    }
+
+                    const contents = fs.getContents(path);
+                    if (contents.length > 0) {
+                        results.push({ text: `rmdir: failed to remove '${dir}': Directory not empty`, class: "error" });
+                        return;
+                    }
+
+                    fs.remove(path);
+                });
+
+                return results;
+            },
+
+            touch: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "touch: missing file operand", class: "error" }];
+                }
+
+                args.forEach(file => {
+                    const path = fs.resolvePath(file);
+                    if (!fs.exists(path)) {
+                        fs.createFile(path, '');
+                    }
+                });
+
+                return [];
+            },
+
+            cp: (args) => {
+                if (args.length < 2) {
+                    return [{ text: "cp: missing file operand", class: "error" }];
+                }
+
+                const recursive = args.includes('-r');
+                const files = args.filter(arg => !arg.startsWith('-'));
+                const source = fs.resolvePath(files[0]);
+                const dest = fs.resolvePath(files[1]);
+
+                if (!fs.exists(source)) {
+                    return [{ text: `cp: cannot stat '${files[0]}': No such file or directory`, class: "error" }];
+                }
+
+                if (fs.isDirectory(source) && !recursive) {
+                    return [{ text: `cp: -r not specified; omitting directory '${files[0]}'`, class: "error" }];
+                }
+
+                fs.copy(source, dest);
+                return [];
+            },
+
+            mv: (args) => {
+                if (args.length < 2) {
+                    return [{ text: "mv: missing file operand", class: "error" }];
+                }
+
+                const source = fs.resolvePath(args[0]);
+                const dest = fs.resolvePath(args[1]);
+
+                if (!fs.exists(source)) {
+                    return [{ text: `mv: cannot stat '${args[0]}': No such file or directory`, class: "error" }];
+                }
+
+                fs.copy(source, dest);
+                fs.remove(source);
+                return [];
+            },
+
+            rm: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "rm: missing operand", class: "error" }];
+                }
+
+                const recursive = args.includes('-r');
+                const files = args.filter(arg => !arg.startsWith('-'));
+
+                const results = [];
+                files.forEach(file => {
+                    const path = fs.resolvePath(file);
+                    
+                    if (!fs.exists(path)) {
+                        results.push({ text: `rm: cannot remove '${file}': No such file or directory`, class: "error" });
+                        return;
+                    }
+
+                    if (fs.isDirectory(path) && !recursive) {
+                        results.push({ text: `rm: cannot remove '${file}': Is a directory`, class: "error" });
+                        return;
+                    }
+
+                    fs.remove(path);
+                });
+
+                return results;
+            },
+
+            cat: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "cat: missing file operand", class: "error" }];
+                }
+
+                const results = [];
+                args.forEach(file => {
+                    const path = fs.resolvePath(file);
+                    
+                    if (!fs.exists(path)) {
+                        results.push({ text: `cat: ${file}: No such file or directory`, class: "error" });
+                        return;
+                    }
+
+                    if (fs.isDirectory(path)) {
+                        results.push({ text: `cat: ${file}: Is a directory`, class: "error" });
+                        return;
+                    }
+
+                    const content = fs.getFileContent(path);
+                    content.split('\n').forEach(line => {
+                        results.push({ text: line, class: "" });
+                    });
+                });
+
+                return results;
+            },
+
+            head: (args) => {
+                let lines = 10;
+                let files = [];
+                
+                for (let i = 0; i < args.length; i++) {
+                    if (args[i] === '-n' && i + 1 < args.length) {
+                        lines = parseInt(args[i + 1]);
+                        i++;
+                    } else if (!args[i].startsWith('-')) {
+                        files.push(args[i]);
+                    }
+                }
+
+                if (files.length === 0) {
+                    return [{ text: "head: missing file operand", class: "error" }];
+                }
+
+                const results = [];
+                files.forEach(file => {
+                    const path = fs.resolvePath(file);
+                    
+                    if (!fs.exists(path)) {
+                        results.push({ text: `head: cannot open '${file}' for reading: No such file or directory`, class: "error" });
+                        return;
+                    }
+
+                    if (fs.isDirectory(path)) {
+                        results.push({ text: `head: error reading '${file}': Is a directory`, class: "error" });
+                        return;
+                    }
+
+                    const content = fs.getFileContent(path);
+                    const contentLines = content.split('\n');
+                    const displayLines = contentLines.slice(0, lines);
+                    
+                    displayLines.forEach(line => {
+                        results.push({ text: line, class: "" });
+                    });
+                });
+
+                return results;
+            },
+
+            tail: (args) => {
+                let lines = 10;
+                let files = [];
+                
+                for (let i = 0; i < args.length; i++) {
+                    if (args[i] === '-n' && i + 1 < args.length) {
+                        lines = parseInt(args[i + 1]);
+                        i++;
+                    } else if (!args[i].startsWith('-')) {
+                        files.push(args[i]);
+                    }
+                }
+
+                if (files.length === 0) {
+                    return [{ text: "tail: missing file operand", class: "error" }];
+                }
+
+                const results = [];
+                files.forEach(file => {
+                    const path = fs.resolvePath(file);
+                    
+                    if (!fs.exists(path)) {
+                        results.push({ text: `tail: cannot open '${file}' for reading: No such file or directory`, class: "error" });
+                        return;
+                    }
+
+                    if (fs.isDirectory(path)) {
+                        results.push({ text: `tail: error reading '${file}': Is a directory`, class: "error" });
+                        return;
+                    }
+
+                    const content = fs.getFileContent(path);
+                    const contentLines = content.split('\n');
+                    const displayLines = contentLines.slice(-lines);
+                    
+                    displayLines.forEach(line => {
+                        results.push({ text: line, class: "" });
+                    });
+                });
+
+                return results;
+            },
+
+            grep: (args) => {
+                if (args.length < 2) {
+                    return [{ text: "grep: missing pattern or file", class: "error" }];
+                }
+
+                let pattern = args[0];
+                let showLineNumbers = false;
+                let ignoreCase = false;
+                let files = [];
+
+                for (let i = 0; i < args.length; i++) {
+                    if (args[i] === '-n') {
+                        showLineNumbers = true;
+                    } else if (args[i] === '-i') {
+                        ignoreCase = true;
+                    } else if (i === 0) {
+                        pattern = args[i];
+                    } else if (i > 0 && !args[i].startsWith('-')) {
+                        files.push(args[i]);
+                    }
+                }
+
+                if (files.length === 0) {
+                    return [{ text: "grep: missing file operand", class: "error" }];
+                }
+
+                const results = [];
+                files.forEach(file => {
+                    const path = fs.resolvePath(file);
+                    
+                    if (!fs.exists(path)) {
+                        results.push({ text: `grep: ${file}: No such file or directory`, class: "error" });
+                        return;
+                    }
+
+                    if (fs.isDirectory(path)) {
+                        results.push({ text: `grep: ${file}: Is a directory`, class: "error" });
+                        return;
+                    }
+
+                    const content = fs.getFileContent(path);
+                    const lines = content.split('\n');
+                    
+                    lines.forEach((line, index) => {
+                        const searchLine = ignoreCase ? line.toLowerCase() : line;
+                        const searchPattern = ignoreCase ? pattern.toLowerCase() : pattern;
+                        
+                        if (searchLine.includes(searchPattern)) {
+                            const prefix = showLineNumbers ? `${index + 1}:` : '';
+                            results.push({ text: `${prefix}${line}`, class: "success" });
+                        }
+                    });
+                });
+
+                return results;
+            },
+
+            nano: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "nano: missing file operand", class: "error" }];
+                }
+
+                const file = args[0];
+                const path = fs.resolvePath(file);
+                
+                return [
+                    { text: `GNU nano 4.8                    ${file}`, class: "info" },
+                    { text: "", class: "" },
+                    { text: "[ Nano editor simulation ]", class: "warning" },
+                    { text: "In a real terminal, you would edit the file here.", class: "" },
+                    { text: "For this simulation, the file is created/updated automatically.", class: "" },
+                    { text: "", class: "" },
+                    { text: "^G Get Help    ^O WriteOut    ^R Read File   ^Y Prev Page", class: "info" },
+                    { text: "^X Exit        ^J Justify     ^W Where Is    ^V Next Page", class: "info" }
+                ];
+            },
+
+            echo: (args) => {
+                const text = args.join(' ');
+                
+                // Handle output redirection
+                if (text.includes('>')) {
+                    const parts = text.split('>');
+                    const content = parts[0].trim().replace(/^['"]|['"]$/g, '');
+                    const fileName = parts[1].trim();
+                    const path = fs.resolvePath(fileName);
+                    
+                    if (text.includes('>>')) {
+                        // Append mode
+                        const existingContent = fs.exists(path) ? fs.getFileContent(path) : '';
+                        fs.createFile(path, existingContent + content + '\n');
+                    } else {
+                        // Write mode
+                        fs.createFile(path, content + '\n');
+                    }
+                    
+                    return [];
+                }
+                
+                return [{ text: text.replace(/^['"]|['"]$/g, ''), class: "" }];
+            },
+
+            wc: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "wc: missing file operand", class: "error" }];
+                }
+
+                const results = [];
+                args.forEach(file => {
+                    const path = fs.resolvePath(file);
+                    
+                    if (!fs.exists(path)) {
+                        results.push({ text: `wc: ${file}: No such file or directory`, class: "error" });
+                        return;
+                    }
+
+                    if (fs.isDirectory(path)) {
+                        results.push({ text: `wc: ${file}: Is a directory`, class: "error" });
+                        return;
+                    }
+
+                    const content = fs.getFileContent(path);
+                    const lines = content.split('\n').length - 1;
+                    const words = content.trim().split(/\s+/).length;
+                    const chars = content.length;
+                    
+                    results.push({ text: `  ${lines}  ${words}  ${chars} ${file}`, class: "" });
+                });
+
+                return results;
+            },
+
+            whoami: () => {
+                return [{ text: "user", class: "" }];
+            },
+
+            uname: (args) => {
+                if (args.includes('-a')) {
+                    return [{ text: "Linux simulator 5.15.0 #1 SMP Ubuntu x86_64 x86_64 x86_64 GNU/Linux", class: "" }];
+                }
+                return [{ text: "Linux", class: "" }];
+            },
+
+            df: (args) => {
+                const human = args.includes('-h');
+                
+                if (human) {
+                    return [
+                        { text: "Filesystem      Size  Used Avail Use% Mounted on", class: "info" },
+                        { text: "/dev/sda1        20G  8.5G   11G  45% /", class: "" },
+                        { text: "/dev/sda2       100G   45G   50G  48% /home", class: "" },
+                        { text: "tmpfs           2.0G     0  2.0G   0% /tmp", class: "" }
+                    ];
+                }
+                
+                return [
+                    { text: "Filesystem     1K-blocks     Used Available Use% Mounted on", class: "info" },
+                    { text: "/dev/sda1       20971520  8912896  11534336  45% /", class: "" },
+                    { text: "/dev/sda2      104857600 47185920  52428800  48% /home", class: "" },
+                    { text: "tmpfs            2097152        0   2097152   0% /tmp", class: "" }
+                ];
+            },
+
+            du: (args) => {
+                const human = args.includes('-h');
+                let path = fs.currentPath;
+                
+                args.forEach(arg => {
+                    if (!arg.startsWith('-')) {
+                        path = fs.resolvePath(arg);
+                    }
+                });
+
+                if (!fs.exists(path)) {
+                    return [{ text: `du: cannot access '${path}': No such file or directory`, class: "error" }];
+                }
+
+                if (human) {
+                    return [
+                        { text: "4.0K\t./documents/project/src", class: "" },
+                        { text: "8.0K\t./documents/project", class: "" },
+                        { text: "12K\t./documents", class: "" },
+                        { text: "4.0K\t./downloads", class: "" },
+                        { text: "20K\t.", class: "" }
+                    ];
+                }
+                
+                return [
+                    { text: "4\t./documents/project/src", class: "" },
+                    { text: "8\t./documents/project", class: "" },
+                    { text: "12\t./documents", class: "" },
+                    { text: "4\t./downloads", class: "" },
+                    { text: "20\t.", class: "" }
+                ];
+            },
+
+            ps: (args) => {
+                if (args.includes('aux')) {
+                    return [
+                        { text: "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND", class: "info" },
+                        ...fs.processes.map(p => ({ 
+                            text: `user      ${p.pid.toString().padStart(4)} ${p.cpu.toString().padStart(4)} ${p.memory.toString().padStart(4)} 123456  8912 pts/0    S+   10:00   0:00 ${p.name}`, 
+                            class: "" 
+                        }))
+                    ];
+                }
+                
+                return [
+                    { text: "  PID TTY          TIME CMD", class: "info" },
+                    ...fs.processes.slice(0, 3).map(p => ({ 
+                        text: `${p.pid.toString().padStart(5)} pts/0    00:00:00 ${p.name}`, 
+                        class: "" 
+                    }))
+                ];
+            },
+
+            top: () => {
+                return [
+                    { text: "top - 10:30:45 up 1 day,  2:15,  1 user,  load average: 0.85, 0.95, 1.02", class: "info" },
+                    { text: "Tasks: 156 total,   2 running, 154 sleeping,   0 stopped,   0 zombie", class: "" },
+                    { text: "%Cpu(s):  8.2 us,  2.1 sy,  0.0 ni, 89.5 id,  0.2 wa,  0.0 hi,  0.0 si,  0.0 st", class: "" },
+                    { text: "MiB Mem :   8192.0 total,   2048.5 free,   4096.2 used,   2047.3 buff/cache", class: "" },
+                    { text: "MiB Swap:   2048.0 total,   2048.0 free,      0.0 used.   3584.8 avail Mem", class: "" },
+                    { text: "", class: "" },
+                    { text: "  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND", class: "info" },
+                    ...fs.processes.map(p => ({ 
+                        text: `${p.pid.toString().padStart(5)} user      20   0  ${(Math.random() * 1000000 + 100000).toFixed(0).padStart(7)}  ${(Math.random() * 100000 + 10000).toFixed(0).padStart(6)}  ${(Math.random() * 10000 + 1000).toFixed(0).padStart(6)} S  ${p.cpu.toString().padStart(4)} ${p.memory.toString().padStart(4)}   0:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}.${Math.floor(Math.random() * 100).toString().padStart(2, '0')} ${p.name}`, 
+                        class: "" 
+                    }))
+                ];
+            },
+
+            kill: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]", class: "error" }];
+                }
+
+                const pid = parseInt(args[0]);
+                const processIndex = fs.processes.findIndex(p => p.pid === pid);
+                
+                if (processIndex === -1) {
+                    return [{ text: `kill: (${pid}) - No such process`, class: "error" }];
+                }
+
+                const processName = fs.processes[processIndex].name;
+                fs.processes.splice(processIndex, 1);
+                
+                return [{ text: `Process ${processName} (${pid}) terminated`, class: "success" }];
+            },
+
+            ping: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "ping: usage error: Destination address required", class: "error" }];
+                }
+
+                const host = args[0];
+                return [
+                    { text: `PING ${host} (${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}) 56(84) bytes of data.`, class: "info" },
+                    { text: `64 bytes from ${host}: icmp_seq=1 ttl=64 time=${(Math.random() * 50 + 1).toFixed(1)}ms`, class: "success" },
+                    { text: `64 bytes from ${host}: icmp_seq=2 ttl=64 time=${(Math.random() * 50 + 1).toFixed(1)}ms`, class: "success" },
+                    { text: `64 bytes from ${host}: icmp_seq=3 ttl=64 time=${(Math.random() * 50 + 1).toFixed(1)}ms`, class: "success" },
+                    { text: "^C", class: "warning" },
+                    { text: `--- ${host} ping statistics ---`, class: "info" },
+                    { text: "3 packets transmitted, 3 received, 0% packet loss", class: "success" }
+                ];
+            },
+
+            wget: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "wget: missing URL", class: "error" }];
+                }
+
+                const url = args[0];
+                const filename = url.split('/').pop() || 'index.html';
+                const path = fs.resolvePath(filename);
+                
+                fs.createFile(path, `Downloaded content from ${url}`);
+                
+                return [
+                    { text: `--${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')} ${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}:${String(new Date().getSeconds()).padStart(2, '0')}--  ${url}`, class: "info" },
+                    { text: `Resolving ${url.split('/')[2]}... ${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}`, class: "" },
+                    { text: `Connecting to ${url.split('/')[2]}... connected.`, class: "success" },
+                    { text: "HTTP request sent, awaiting response... 200 OK", class: "success" },
+                    { text: `Length: ${Math.floor(Math.random() * 50000 + 1000)} (${Math.floor(Math.random() * 50 + 1)}K) [text/html]`, class: "" },
+                    { text: `Saving to: '${filename}'`, class: "" },
+                    { text: `'${filename}' saved [${Math.floor(Math.random() * 50000 + 1000)}/${Math.floor(Math.random() * 50000 + 1000)}]`, class: "success" }
+                ];
+            },
+
+            curl: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "curl: try 'curl --help' for more information", class: "error" }];
+                }
+
+                const url = args[0];
+                return [
+                    { text: `<!DOCTYPE html>`, class: "" },
+                    { text: `<html>`, class: "" },
+                    { text: `<head><title>Example Domain</title></head>`, class: "" },
+                    { text: `<body>`, class: "" },
+                    { text: `<h1>Example Domain</h1>`, class: "" },
+                    { text: `<p>This domain is for use in illustrative examples.</p>`, class: "" },
+                    { text: `</body>`, class: "" },
+                    { text: `</html>`, class: "" }
+                ];
+            },
+
+            ssh: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "usage: ssh [-1246AaCfGgKkMNnqsTtVvXxYy] destination [command]", class: "error" }];
+                }
+
+                const destination = args[0];
+                return [
+                    { text: `ssh: connect to host ${destination} port 22: Connection timed out`, class: "error" },
+                    { text: "(In a real environment, this would establish a secure connection)", class: "info" }
+                ];
+            },
+
+            scp: (args) => {
+                if (args.length < 2) {
+                    return [{ text: "usage: scp [-12346BCpqrv] [-c cipher] [-F ssh_config] source target", class: "error" }];
+                }
+
+                const source = args[0];
+                const target = args[1];
+                
+                return [
+                    { text: `${source}                         100%  ${Math.floor(Math.random() * 10000 + 1000)}     ${(Math.random() * 10 + 1).toFixed(1)}KB/s   00:0${Math.floor(Math.random() * 9 + 1)}`, class: "success" },
+                    { text: "(In a real environment, this would securely copy files)", class: "info" }
+                ];
+            },
+
+            netstat: (args) => {
+                if (args.includes('-an')) {
+                    return [
+                        { text: "Active Internet connections (servers and established)", class: "info" },
+                        { text: "Proto Recv-Q Send-Q Local Address           Foreign Address         State", class: "info" },
+                        { text: "tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN", class: "" },
+                        { text: "tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN", class: "" },
+                        { text: "tcp        0      0 192.168.1.100:80       192.168.1.1:3389        ESTABLISHED", class: "" },
+                        { text: "udp        0      0 0.0.0.0:68              0.0.0.0:*", class: "" },
+                        { text: "udp        0      0 127.0.0.1:53            0.0.0.0:*", class: "" }
+                    ];
+                }
+                
+                return [
+                    { text: "Active Internet connections (w/o servers)", class: "info" },
+                    { text: "Proto Recv-Q Send-Q Local Address           Foreign Address         State", class: "info" },
+                    { text: "tcp        0      0 192.168.1.100:80       192.168.1.1:3389        ESTABLISHED", class: "" }
+                ];
+            },
+
+            man: (args) => {
+                if (args.length === 0) {
+                    return [{ text: "What manual page do you want?", class: "error" }];
+                }
+
+                const command = args[0];
+                const manPages = {
+                    ls: [
+                        { text: "LS(1)                     User Commands                     LS(1)", class: "info" },
+                        { text: "", class: "" },
+                        { text: "NAME", class: "warning" },
+                        { text: "       ls - list directory contents", class: "" },
+                        { text: "", class: "" },
+                        { text: "SYNOPSIS", class: "warning" },
+                        { text: "       ls [OPTION]... [FILE]...", class: "" },
+                        { text: "", class: "" },
+                        { text: "DESCRIPTION", class: "warning" },
+                        { text: "       List information about the FILEs (the current directory by", class: "" },
+                        { text: "       default). Sort entries alphabetically if none of -cftuvSUX", class: "" },
+                        { text: "       nor --sort is specified.", class: "" },
+                        { text: "", class: "" },
+                        { text: "       -a, --all", class: "success" },
+                        { text: "              do not ignore entries starting with .", class: "" },
+                        { text: "", class: "" },
+                        { text: "       -l     use a long listing format", class: "success" },
+                        { text: "", class: "" },
+                        { text: "       -h, --human-readable", class: "success" },
+                        { text: "              with -l, print sizes in human readable format", class: "" }
+                    ],
+                    cd: [
+                        { text: "CD(1)                     User Commands                     CD(1)", class: "info" },
+                        { text: "", class: "" },
+                        { text: "NAME", class: "warning" },
+                        { text: "       cd - change the working directory", class: "" },
+                        { text: "", class: "" },
+                        { text: "SYNOPSIS", class: "warning" },
+                        { text: "       cd [dir]", class: "" },
+                        { text: "", class: "" },
+                        { text: "DESCRIPTION", class: "warning" },
+                        { text: "       Change the current directory to DIR. The default DIR is the", class: "" },
+                        { text: "       value of the HOME shell variable.", class: "" }
+                    ]
+                };
+
+                if (manPages[command]) {
+                    return manPages[command];
+                }
+
+                return [
+                    { text: `No manual entry for ${command}`, class: "error" },
+                    { text: "See 'man man' for help on using the manual.", class: "info" }
+                ];
+            },
+
+            clear: () => {
+                const terminal = document.getElementById('terminal');
+                terminal.innerHTML = '';
+                return [];
+            },
+
+            history: () => {
+                return commandHistory.map((cmd, index) => ({ 
+                    text: `${index + 1}  ${cmd}`, 
+                    class: "" 
+                }));
+            }
+        };
+
+        // Terminal functions
+        function appendToTerminal(lines) {
+            const terminal = document.getElementById('terminal');
+            lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = `output-line ${line.class}`;
+                div.textContent = line.text;
+                terminal.appendChild(div);
+            });
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function updatePrompt() {
+            const prompt = document.getElementById('prompt');
+            prompt.textContent = `user@simulator:${fs.getPromptPath()}$`;
+        }
+
+        function updateStats() {
+            document.getElementById('commandCount').textContent = stats.commands;
+            document.getElementById('lessonsCompleted').textContent = stats.lessons;
+            const accuracy = stats.commands > 0 ? Math.round((stats.correct / stats.commands) * 100) : 100;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+        }
+
+        function executeCommand(input) {
+            const trimmedInput = input.trim();
+            if (!trimmedInput) return;
+
+            // Add to history
+            commandHistory.push(trimmedInput);
+            historyIndex = commandHistory.length;
+
+            // Display command
+            appendToTerminal([{ text: `user@simulator:${fs.getPromptPath()}$ ${trimmedInput}`, class: "command-line" }]);
+
+            // Parse command
+            const parts = trimmedInput.split(' ').filter(part => part.length > 0);
+            const command = parts[0];
+            const args = parts.slice(1);
+
+            // Update stats
+            stats.commands++;
+
+            // Execute command
+            if (commands[command]) {
+                try {
+                    const output = commands[command](args);
+                    if (output && output.length > 0) {
+                        appendToTerminal(output);
+                    }
+                    stats.correct++;
+                    
+                    // Check lesson progress
+                    if (currentLesson >= 0) {
+                        updateLessonProgress(command);
+                    }
+                } catch (error) {
+                    appendToTerminal([{ text: `Error executing ${command}: ${error.message}`, class: "error" }]);
+                }
+            } else {
+                appendToTerminal([{ text: `${command}: command not found`, class: "error" }]);
+            }
+
+            updateStats();
+        }
+
+        // Lesson system
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Update mode buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide panels
+            const lessonsPanel = document.getElementById('lessonsPanel');
+            const currentLessonPanel = document.getElementById('currentLessonPanel');
+            
+            if (mode === 'lessons') {
+                lessonsPanel.classList.add('active');
+                if (currentLesson >= 0) {
+                    currentLessonPanel.classList.add('active');
+                }
+            } else {
+                lessonsPanel.classList.remove('active');
+                currentLessonPanel.classList.remove('active');
+                currentLesson = -1;
+            }
+        }
+
+        function startLesson(lessonIndex) {
+            currentLesson = lessonIndex;
+            const lesson = lessons[lessonIndex];
+            
+            // Update lesson panel
+            document.getElementById('lessonTitle').textContent = lesson.title;
+            document.getElementById('lessonObjective').textContent = lesson.objective;
+            
+            const commandsList = document.getElementById('lessonCommands');
+            commandsList.innerHTML = '';
+            lesson.commands.forEach(cmd => {
+                const li = document.createElement('li');
+                li.innerHTML = `<code>${cmd}</code>`;
+                commandsList.appendChild(li);
+            });
+            
+            // Show lesson panel
+            document.getElementById('currentLessonPanel').classList.add('active');
+            
+            // Update lesson visual state
+            document.querySelectorAll('.lesson').forEach((el, index) => {
+                el.classList.remove('active');
+                if (index === lessonIndex) {
+                    el.classList.add('active');
+                }
+            });
+            
+            // Show first hint
+            showHint(lessonIndex, 0);
+            
+            appendToTerminal([
+                { text: `=== ${lesson.title} ===`, class: "info" },
+                { text: lesson.objective, class: "" },
+                { text: "", class: "" }
+            ]);
+        }
+
+        function updateLessonProgress(command) {
+            if (currentLesson < 0) return;
+            
+            const lesson = lessons[currentLesson];
+            if (lesson.requiredCommands.includes(command)) {
+                lessonProgress[currentLesson]++;
+                
+                const progressBar = document.querySelectorAll('.lesson')[currentLesson].querySelector('.progress-bar');
+                const progressPercent = Math.min(100, (lessonProgress[currentLesson] / lesson.requiredCommands.length) * 100);
+                progressBar.style.width = progressPercent + '%';
+                
+                if (lessonProgress[currentLesson] >= lesson.requiredCommands.length) {
+                    completLesson(currentLesson);
+                } else {
+                    const hintIndex = Math.min(lessonProgress[currentLesson], lesson.hints.length - 1);
+                    showHint(currentLesson, hintIndex);
+                }
+            }
+        }
+
+        function completLesson(lessonIndex) {
+            const lessonElement = document.querySelectorAll('.lesson')[lessonIndex];
+            lessonElement.classList.add('completed');
+            lessonElement.classList.remove('active');
+            
+            stats.lessons++;
+            updateStats();
+            
+            appendToTerminal([
+                { text: "", class: "" },
+                { text: `🎉 Lesson ${lessonIndex + 1} completed!`, class: "success" },
+                { text: "Great job! You can continue practicing or start the next lesson.", class: "info" },
+                { text: "", class: "" }
+            ]);
+            
+            document.getElementById('lessonHint').style.display = 'none';
+            
+            // Auto-start next lesson after a delay
+            setTimeout(() => {
+                if (lessonIndex + 1 < lessons.length) {
+                    startLesson(lessonIndex + 1);
+                }
+            }, 2000);
+        }
+
+        function showHint(lessonIndex, hintIndex) {
+            const lesson = lessons[lessonIndex];
+            if (hintIndex < lesson.hints.length) {
+                const hintElement = document.getElementById('lessonHint');
+                hintElement.textContent = `💡 Hint: ${lesson.hints[hintIndex]}`;
+                hintElement.style.display = 'block';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('commandInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const input = e.target.value;
+                executeCommand(input);
+                e.target.value = '';
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    e.target.value = commandHistory[historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    e.target.value = commandHistory[historyIndex];
+                } else if (historyIndex === commandHistory.length - 1) {
+                    historyIndex++;
+                    e.target.value = '';
+                }
+            }
+        });
+
+        // Auto-focus input
+        document.addEventListener('click', () => {
+            document.getElementById('commandInput').focus();
+        });
+
+        // Initialize
+        updatePrompt();
+        updateStats();
+        document.getElementById('commandInput').focus();
+    </script>
+</body>
+</html>
