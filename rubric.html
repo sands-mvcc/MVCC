@@ -3,161 +3,1357 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Grading Rubric Builder</title>
+    <title>Interactive Rubric Creator</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-color: #334155;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --error-color: #dc2626;
+            --bg-color: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #3b82f6;
+            --secondary-color: #1e293b;
+            --border-color: #475569;
+            --text-color: #e2e8f0;
+            --bg-color: #0f172a;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            transition: all 0.3s ease;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        h1 {
-            text-align: center;
-            color: black;
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #047857;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 1.5rem;
         }
 
-        label {
+        .form-group label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .config-panel {
+            background: var(--secondary-color);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .rubric-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        [data-theme="dark"] .rubric-container {
+            background: var(--secondary-color);
+        }
+
+        .rubric-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .rubric-table th,
+        .rubric-table td {
+            padding: 1rem;
+            text-align: left;
+            border: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        .rubric-table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .rubric-table .criterion-header {
+            background: var(--secondary-color);
+            font-weight: 600;
+            width: 200px;
+        }
+
+        .rubric-cell {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 80px;
+        }
+
+        .rubric-cell:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .rubric-cell.selected {
+            background: rgba(37, 99, 235, 0.1);
+            border: 2px solid var(--primary-color);
+        }
+
+        .rubric-cell .points {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--primary-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
             font-weight: bold;
         }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        .criterion-row {
+            position: relative;
         }
 
-        button {
-            background-color: red;
-            color: white;
-            padding: 10px 15px;
+        .criterion-controls {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .criterion-row:hover .criterion-controls {
+            opacity: 1;
+        }
+
+        .control-btn {
+            background: none;
             border: none;
-            border-radius: 4px;
             cursor: pointer;
+            padding: 4px;
+            margin-left: 4px;
+            border-radius: 4px;
+            color: var(--text-color);
         }
 
-        button:hover {
-            background-color: darkred;
+        .control-btn:hover {
+            background: var(--border-color);
         }
 
-        #rubricContainer {
-            margin-top: 20px;
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
         }
 
-        .rubricTable {
+        .template-card {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        [data-theme="dark"] .template-card {
+            background: var(--secondary-color);
+        }
+
+        .template-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .template-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
         }
 
-        .rubricTable, .rubricTable th, .rubricTable td {
-            border: 1px solid black;
+        .modal-content {
+            background: var(--bg-color);
+            margin: 5% auto;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 12px;
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
-        .rubricTable th, .rubricTable td {
-            padding: 10px;
-            text-align: left;
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
         }
 
-        .rubricTable th {
-            background-color: grey;
+        .textarea-large {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .scoring-mode {
+            background: linear-gradient(135deg, var(--success-color), #047857);
             color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .total-score {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .help-tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+        }
+
+        .help-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .help-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .rubric-table {
+                font-size: 0.8rem;
+            }
+            
+            .rubric-table th,
+            .rubric-table td {
+                padding: 0.5rem;
+            }
+        }
+
+        @media print {
+            .toolbar, .theme-toggle, .scoring-mode {
+                display: none !important;
+            }
+            
+            .rubric-container {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
         }
     </style>
 </head>
 <body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+    
     <div class="container">
-        <h1>Custom Grading Rubric Builder</h1>
-        <form id="rubricForm">
-            <div id="questionsContainer">
-                <div class="questionBlock">
-                    <label for="category1">Category 1:</label>
-                    <input type="text" id="category1" name="category1" required>
+        <div class="header">
+            <h1>Interactive Rubric Creator</h1>
+            <p>Design professional assessment rubrics for your college courses</p>
+        </div>
+
+        <div class="toolbar">
+            <button class="btn btn-primary" onclick="showConfigModal()">
+                ⚙️ Configure Rubric
+            </button>
+            <button class="btn btn-secondary" onclick="showTemplatesModal()">
+                📋 Use Template
+            </button>
+            <button class="btn btn-secondary" onclick="addCriterion()">
+                ➕ Add Criterion
+            </button>
+            <button class="btn btn-secondary" onclick="toggleScoringMode()">
+                🎯 Scoring Mode
+            </button>
+            <button class="btn btn-success" onclick="exportRubric()">
+                💾 Export PDF
+            </button>
+            <button class="btn btn-secondary" onclick="saveRubric()">
+                💾 Save
+            </button>
+            <button class="btn btn-secondary" onclick="loadRubric()">
+                📁 Load
+            </button>
+        </div>
+
+        <div id="scoringMode" class="scoring-mode" style="display: none;">
+            <h3>📊 Scoring Mode Active</h3>
+            <p>Click on cells to assign grades. Current student: <input type="text" id="studentName" placeholder="Student Name" style="margin-left: 10px; padding: 5px; border-radius: 4px; border: 1px solid #ccc;"></p>
+        </div>
+
+        <div class="config-panel">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="assignmentTitle">Assignment Title</label>
+                    <input type="text" id="assignmentTitle" class="form-control" placeholder="Enter assignment title" value="Research Paper Assessment">
                 </div>
-                <div class="questionBlock">
-                    <label for="category2">Category 2:</label>
-                    <input type="text" id="category2" name="category2" required>
-                </div>
-                <div class="questionBlock">
-                    <label for="category3">Category 3:</label>
-                    <input type="text" id="category3" name="category3" required>
-                </div>
-                <div class="questionBlock">
-                    <label for="category4">Category 4:</label>
-                    <input type="text" id="category4" name="category4" required>
+                <div class="form-group">
+                    <label for="assignmentDescription">Assignment Description</label>
+                    <textarea id="assignmentDescription" class="form-control" placeholder="Brief description of the assignment">Comprehensive research paper evaluating student's ability to conduct research, analyze sources, and present findings effectively.</textarea>
                 </div>
             </div>
-            <button type="button" onclick="generateRubric()">Generate Rubric</button>
-        </form>
-        <div id="rubricContainer"></div>
+        </div>
+
+        <div class="rubric-container">
+            <table class="rubric-table" id="rubricTable">
+                <!-- Rubric content will be generated here -->
+            </table>
+        </div>
+
+        <div id="totalScore" class="total-score" style="display: none;">
+            Total Score: <span id="scoreValue">0</span> / <span id="maxScore">0</span> points
+        </div>
     </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('configModal')">&times;</button>
+            <h2>Configure Rubric</h2>
+            
+            <div class="form-group">
+                <label for="performanceLevels">
+                    Number of Performance Levels
+                    <span class="help-tooltip">?
+                        <span class="tooltip-text">Choose 4 or 5 performance levels (columns) for your rubric</span>
+                    </span>
+                </label>
+                <select id="performanceLevels" class="form-control">
+                    <option value="4">4 Levels (Excellent, Good, Satisfactory, Needs Improvement)</option>
+                    <option value="5">5 Levels (Excellent, Good, Satisfactory, Developing, Inadequate)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="numCriteria">
+                    Number of Criteria
+                    <span class="help-tooltip">?
+                        <span class="tooltip-text">Choose how many criteria (rows) to evaluate</span>
+                    </span>
+                </label>
+                <select id="numCriteria" class="form-control">
+                    <option value="3">3 Criteria</option>
+                    <option value="4" selected>4 Criteria</option>
+                    <option value="5">5 Criteria</option>
+                    <option value="6">6 Criteria</option>
+                    <option value="7">7 Criteria</option>
+                    <option value="8">8 Criteria</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="pointValues">Point Values per Level</label>
+                <input type="text" id="pointValues" class="form-control" placeholder="e.g., 4,3,2,1" value="4,3,2,1">
+                <small>Enter comma-separated values (highest to lowest)</small>
+            </div>
+
+            <button class="btn btn-primary" onclick="applyConfiguration()">Apply Configuration</button>
+        </div>
+    </div>
+
+    <!-- Templates Modal -->
+    <div id="templatesModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('templatesModal')">&times;</button>
+            <h2>Choose a Template</h2>
+            
+            <div class="templates-grid">
+                <div class="template-card" onclick="loadTemplate('research-paper')">
+                    <h3>📄 Research Paper</h3>
+                    <p>Criteria for evaluating research papers including thesis, evidence, analysis, and writing quality.</p>
+                </div>
+                
+                <div class="template-card" onclick="loadTemplate('presentation')">
+                    <h3>🎤 Presentation</h3>
+                    <p>Assessment criteria for oral presentations covering content, delivery, and visual aids.</p>
+                </div>
+                
+                <div class="template-card" onclick="loadTemplate('group-project')">
+                    <h3>👥 Group Project</h3>
+                    <p>Rubric for collaborative projects including teamwork, contribution, and final product quality.</p>
+                </div>
+                
+                <div class="template-card" onclick="loadTemplate('lab-report')">
+                    <h3>🧪 Lab Report</h3>
+                    <p>Scientific lab report evaluation including methodology, data analysis, and conclusions.</p>
+                </div>
+
+                <div class="template-card" onclick="loadTemplate('discussion-post')">
+                    <h3>💬 Discussion Post</h3>
+                    <p>Online discussion participation including original post quality and peer responses.</p>
+                </div>
+
+                <div class="template-card" onclick="loadTemplate('creative-writing')">
+                    <h3>✍️ Creative Writing</h3>
+                    <p>Assessment for creative writing assignments including originality, style, and technique.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Cell Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+            <h2 id="editModalTitle">Edit Cell</h2>
+            
+            <div class="form-group">
+                <label for="cellContent">Description</label>
+                <textarea id="cellContent" class="form-control textarea-large" placeholder="Enter performance description"></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveCellEdit()">Save Changes</button>
+        </div>
+    </div>
+
     <script>
-        function generateRubric() {
-            const categories = [];
-            for (let i = 1; i <= 4; i++) {
-                const category = document.getElementById(`category${i}`).value;
-                categories.push(category);
+        // Global variables
+        let currentRubric = {
+            title: 'Research Paper Assessment',
+            description: 'Comprehensive research paper evaluating student\'s ability to conduct research, analyze sources, and present findings effectively.',
+            performanceLevels: 4,
+            criteria: [],
+            pointValues: [4, 3, 2, 1],
+            levelNames: ['Excellent', 'Good', 'Satisfactory', 'Needs Improvement']
+        };
+
+        let isInScoringMode = false;
+        let selectedScores = {};
+        let currentEditCell = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDefaultRubric();
+            autoSave();
+        });
+
+        // Auto-save functionality
+        function autoSave() {
+            setInterval(() => {
+                const rubricData = {
+                    rubric: currentRubric,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem('rubric_autosave', JSON.stringify(rubricData));
+            }, 30000); // Save every 30 seconds
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            const themeBtn = document.querySelector('.theme-toggle');
+            themeBtn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // Load saved theme
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                const themeBtn = document.querySelector('.theme-toggle');
+                themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
             }
+        }
 
-            const rubricContainer = document.getElementById('rubricContainer');
-            rubricContainer.innerHTML = '';
+        // Load default rubric
+        function loadDefaultRubric() {
+            currentRubric.criteria = [
+                {
+                    name: 'Thesis & Argument',
+                    descriptions: [
+                        'Clear, compelling thesis with sophisticated argument development and exceptional logical flow',
+                        'Well-defined thesis with good argument development and logical structure',
+                        'Adequate thesis with basic argument development and some logical progression',
+                        'Unclear thesis with weak argument development and limited logical flow'
+                    ]
+                },
+                {
+                    name: 'Research & Evidence',
+                    descriptions: [
+                        'Extensive use of high-quality, relevant sources with excellent integration and analysis',
+                        'Good use of relevant sources with effective integration and solid analysis',
+                        'Adequate sources with basic integration and some analysis',
+                        'Limited sources with poor integration and minimal analysis'
+                    ]
+                },
+                {
+                    name: 'Writing Quality',
+                    descriptions: [
+                        'Exceptional clarity, style, and organization with error-free grammar and mechanics',
+                        'Clear writing with good organization and minimal errors in grammar and mechanics',
+                        'Generally clear writing with adequate organization and some errors',
+                        'Unclear writing with poor organization and frequent errors'
+                    ]
+                },
+                {
+                    name: 'Critical Analysis',
+                    descriptions: [
+                        'Demonstrates sophisticated critical thinking with original insights and complex analysis',
+                        'Shows good critical thinking with clear insights and solid analysis',
+                        'Displays basic critical thinking with some insights and adequate analysis',
+                        'Limited critical thinking with few insights and superficial analysis'
+                    ]
+                }
+            ];
+            
+            loadSavedTheme();
+            generateRubricTable();
+            updateFormFields();
+        }
 
-            const table = document.createElement('table');
-            table.className = 'rubricTable';
+        // Update form fields
+        function updateFormFields() {
+            document.getElementById('assignmentTitle').value = currentRubric.title;
+            document.getElementById('assignmentDescription').value = currentRubric.description;
+        }
 
+        // Generate rubric table
+        function generateRubricTable() {
+            const table = document.getElementById('rubricTable');
+            table.innerHTML = '';
+
+            // Create header row
             const headerRow = document.createElement('tr');
-            const headers = ['Category', 'Beginning', 'Developing', 'Accomplished', 'Exemplary', 'Score'];
-            headers.forEach(headerText => {
+            headerRow.innerHTML = '<th class="criterion-header">Criteria</th>';
+            
+            for (let i = 0; i < currentRubric.performanceLevels; i++) {
                 const th = document.createElement('th');
-                th.textContent = headerText;
+                th.textContent = `${currentRubric.levelNames[i]} (${currentRubric.pointValues[i]} pts)`;
                 headerRow.appendChild(th);
-            });
+            }
             table.appendChild(headerRow);
 
-            categories.forEach((category, index) => {
+            // Create criterion rows
+            currentRubric.criteria.forEach((criterion, criterionIndex) => {
                 const row = document.createElement('tr');
+                row.className = 'criterion-row';
+                
+                // Criterion name cell
+                const criterionCell = document.createElement('td');
+                criterionCell.className = 'criterion-header';
+                criterionCell.innerHTML = `
+                    <div contenteditable="true" onblur="updateCriterionName(${criterionIndex}, this.textContent)">${criterion.name}</div>
+                    <div class="criterion-controls">
+                        <button class="control-btn" onclick="deleteCriterion(${criterionIndex})" title="Delete">🗑️</button>
+                        <button class="control-btn" onclick="duplicateCriterion(${criterionIndex})" title="Duplicate">📋</button>
+                    </div>
+                `;
+                row.appendChild(criterionCell);
 
-                const categoryCell = document.createElement('td');
-                categoryCell.textContent = category;
-                row.appendChild(categoryCell);
-
-                const performanceLevels = [
-                    { level: 'Beginning', term: 'basic', description: `The student demonstrated basic abilities in ${category.toLowerCase()}.` },
-                    { level: 'Developing', term: 'good', description: `The student demonstrated good skills in ${category.toLowerCase()}.` },
-                    { level: 'Accomplished', term: 'advanced', description: `The student demonstrated advanced skills in ${category.toLowerCase()}.` },
-                    { level: 'Exemplary', term: 'expert', description: `The student demonstrated expert skills in ${category.toLowerCase()}.` }
-                ];
-
-                performanceLevels.forEach(performance => {
+                // Performance level cells
+                for (let levelIndex = 0; levelIndex < currentRubric.performanceLevels; levelIndex++) {
                     const cell = document.createElement('td');
-                    cell.textContent = performance.description;
+                    cell.className = 'rubric-cell';
+                    cell.innerHTML = `
+                        <div class="points">${currentRubric.pointValues[levelIndex]}</div>
+                        <div class="description">${criterion.descriptions[levelIndex] || 'Click to edit'}</div>
+                    `;
+                    
+                    cell.onclick = () => {
+                        if (isInScoringMode) {
+                            selectScore(criterionIndex, levelIndex, cell);
+                        } else {
+                            editCell(criterionIndex, levelIndex, cell);
+                        }
+                    };
+                    
                     row.appendChild(cell);
-                });
-
-                const scoreCell = document.createElement('td');
-                scoreCell.textContent = 'Score';
-                row.appendChild(scoreCell);
-
+                }
+                
                 table.appendChild(row);
             });
 
-            rubricContainer.appendChild(table);
+            updateMaxScore();
         }
+
+        // Edit cell content
+        function editCell(criterionIndex, levelIndex, cellElement) {
+            currentEditCell = { criterionIndex, levelIndex, cellElement };
+            const currentDescription = currentRubric.criteria[criterionIndex].descriptions[levelIndex] || '';
+            
+            document.getElementById('cellContent').value = currentDescription;
+            document.getElementById('editModalTitle').textContent = `Edit: ${currentRubric.criteria[criterionIndex].name} - ${currentRubric.levelNames[levelIndex]}`;
+            showModal('editModal');
+        }
+
+        // Save cell edit
+        function saveCellEdit() {
+            if (!currentEditCell) return;
+            
+            const newContent = document.getElementById('cellContent').value;
+            const { criterionIndex, levelIndex, cellElement } = currentEditCell;
+            
+            // Update the data
+            currentRubric.criteria[criterionIndex].descriptions[levelIndex] = newContent;
+            
+            // Update the display
+            const descriptionDiv = cellElement.querySelector('.description');
+            descriptionDiv.textContent = newContent || 'Click to edit';
+            
+            closeModal('editModal');
+            currentEditCell = null;
+        }
+
+        // Scoring mode functions
+        function toggleScoringMode() {
+            isInScoringMode = !isInScoringMode;
+            const scoringModeDiv = document.getElementById('scoringMode');
+            const totalScoreDiv = document.getElementById('totalScore');
+            
+            if (isInScoringMode) {
+                scoringModeDiv.style.display = 'block';
+                totalScoreDiv.style.display = 'block';
+                updateTotalScore();
+            } else {
+                scoringModeDiv.style.display = 'none';
+                totalScoreDiv.style.display = 'none';
+                clearSelectedScores();
+            }
+        }
+
+        function selectScore(criterionIndex, levelIndex, cellElement) {
+            // Clear previous selection for this criterion
+            const row = cellElement.parentElement;
+            const cells = row.querySelectorAll('.rubric-cell');
+            cells.forEach(cell => cell.classList.remove('selected'));
+            
+            // Select new cell
+            cellElement.classList.add('selected');
+            selectedScores[criterionIndex] = {
+                levelIndex: levelIndex,
+                points: currentRubric.pointValues[levelIndex]
+            };
+            
+            updateTotalScore();
+        }
+
+        function clearSelectedScores() {
+            selectedScores = {};
+            document.querySelectorAll('.rubric-cell').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+        }
+
+        function updateTotalScore() {
+            let totalScore = 0;
+            Object.values(selectedScores).forEach(score => {
+                totalScore += score.points;
+            });
+            
+            document.getElementById('scoreValue').textContent = totalScore;
+            updateMaxScore();
+        }
+
+        function updateMaxScore() {
+            const maxScore = currentRubric.criteria.length * Math.max(...currentRubric.pointValues);
+            document.getElementById('maxScore').textContent = maxScore;
+        }
+
+        // Criterion management
+        function addCriterion() {
+            const newCriterion = {
+                name: `New Criterion ${currentRubric.criteria.length + 1}`,
+                descriptions: Array(currentRubric.performanceLevels).fill('Click to edit')
+            };
+            
+            currentRubric.criteria.push(newCriterion);
+            generateRubricTable();
+        }
+
+        function deleteCriterion(index) {
+            if (currentRubric.criteria.length <= 1) {
+                alert('Cannot delete the last criterion. You must have at least one criterion.');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to delete this criterion?')) {
+                currentRubric.criteria.splice(index, 1);
+                generateRubricTable();
+            }
+        }
+
+        function duplicateCriterion(index) {
+            const criterionToCopy = currentRubric.criteria[index];
+            const newCriterion = {
+                name: criterionToCopy.name + ' (Copy)',
+                descriptions: [...criterionToCopy.descriptions]
+            };
+            
+            currentRubric.criteria.splice(index + 1, 0, newCriterion);
+            generateRubricTable();
+        }
+
+        function updateCriterionName(index, newName) {
+            currentRubric.criteria[index].name = newName.trim() || `Criterion ${index + 1}`;
+        }
+
+        // Configuration modal
+        function showConfigModal() {
+            document.getElementById('performanceLevels').value = currentRubric.performanceLevels;
+            document.getElementById('numCriteria').value = currentRubric.criteria.length;
+            document.getElementById('pointValues').value = currentRubric.pointValues.join(',');
+            showModal('configModal');
+        }
+
+        function applyConfiguration() {
+            const performanceLevels = parseInt(document.getElementById('performanceLevels').value);
+            const numCriteria = parseInt(document.getElementById('numCriteria').value);
+            const pointValues = document.getElementById('pointValues').value.split(',').map(v => parseInt(v.trim()));
+            
+            // Update level names based on selection
+            if (performanceLevels === 4) {
+                currentRubric.levelNames = ['Excellent', 'Good', 'Satisfactory', 'Needs Improvement'];
+            } else {
+                currentRubric.levelNames = ['Excellent', 'Good', 'Satisfactory', 'Developing', 'Inadequate'];
+            }
+            
+            currentRubric.performanceLevels = performanceLevels;
+            currentRubric.pointValues = pointValues.slice(0, performanceLevels);
+            
+            // Adjust criteria count
+            while (currentRubric.criteria.length < numCriteria) {
+                currentRubric.criteria.push({
+                    name: `Criterion ${currentRubric.criteria.length + 1}`,
+                    descriptions: Array(performanceLevels).fill('Click to edit')
+                });
+            }
+            
+            if (currentRubric.criteria.length > numCriteria) {
+                currentRubric.criteria = currentRubric.criteria.slice(0, numCriteria);
+            }
+            
+            // Adjust descriptions for existing criteria
+            currentRubric.criteria.forEach(criterion => {
+                while (criterion.descriptions.length < performanceLevels) {
+                    criterion.descriptions.push('Click to edit');
+                }
+                if (criterion.descriptions.length > performanceLevels) {
+                    criterion.descriptions = criterion.descriptions.slice(0, performanceLevels);
+                }
+            });
+            
+            generateRubricTable();
+            closeModal('configModal');
+        }
+
+        // Templates
+        function showTemplatesModal() {
+            showModal('templatesModal');
+        }
+
+        function loadTemplate(templateType) {
+            const templates = {
+                'research-paper': {
+                    title: 'Research Paper Assessment',
+                    description: 'Comprehensive research paper evaluating student\'s ability to conduct research, analyze sources, and present findings effectively.',
+                    criteria: [
+                        {
+                            name: 'Thesis & Argument',
+                            descriptions: [
+                                'Clear, compelling thesis with sophisticated argument development and exceptional logical flow',
+                                'Well-defined thesis with good argument development and logical structure',
+                                'Adequate thesis with basic argument development and some logical progression',
+                                'Unclear thesis with weak argument development and limited logical flow'
+                            ]
+                        },
+                        {
+                            name: 'Research & Evidence',
+                            descriptions: [
+                                'Extensive use of high-quality, relevant sources with excellent integration and analysis',
+                                'Good use of relevant sources with effective integration and solid analysis',
+                                'Adequate sources with basic integration and some analysis',
+                                'Limited sources with poor integration and minimal analysis'
+                            ]
+                        },
+                        {
+                            name: 'Writing Quality',
+                            descriptions: [
+                                'Exceptional clarity, style, and organization with error-free grammar and mechanics',
+                                'Clear writing with good organization and minimal errors in grammar and mechanics',
+                                'Generally clear writing with adequate organization and some errors',
+                                'Unclear writing with poor organization and frequent errors'
+                            ]
+                        },
+                        {
+                            name: 'Critical Analysis',
+                            descriptions: [
+                                'Demonstrates sophisticated critical thinking with original insights and complex analysis',
+                                'Shows good critical thinking with clear insights and solid analysis',
+                                'Displays basic critical thinking with some insights and adequate analysis',
+                                'Limited critical thinking with few insights and superficial analysis'
+                            ]
+                        }
+                    ]
+                },
+                'presentation': {
+                    title: 'Oral Presentation Assessment',
+                    description: 'Evaluation of student presentations including content delivery, visual aids, and audience engagement.',
+                    criteria: [
+                        {
+                            name: 'Content Knowledge',
+                            descriptions: [
+                                'Demonstrates comprehensive understanding with accurate, detailed information and clear expertise',
+                                'Shows good understanding with mostly accurate information and solid knowledge base',
+                                'Displays adequate understanding with generally accurate information',
+                                'Limited understanding with some inaccuracies and gaps in knowledge'
+                            ]
+                        },
+                        {
+                            name: 'Delivery & Speaking',
+                            descriptions: [
+                                'Confident, engaging delivery with excellent voice projection, pace, and eye contact',
+                                'Good delivery with clear voice, appropriate pace, and regular eye contact',
+                                'Adequate delivery with understandable voice and some eye contact',
+                                'Poor delivery with unclear voice, inappropriate pace, or limited eye contact'
+                            ]
+                        },
+                        {
+                            name: 'Visual Aids',
+                            descriptions: [
+                                'Professional, visually appealing slides that enhance understanding and support content perfectly',
+                                'Well-designed slides that support content effectively with good visual elements',
+                                'Basic slides that adequately support content with some visual elements',
+                                'Poor slide design that distracts from or fails to support content'
+                            ]
+                        },
+                        {
+                            name: 'Audience Engagement',
+                            descriptions: [
+                                'Exceptional interaction with audience, handles questions expertly, maintains strong engagement',
+                                'Good audience interaction, answers questions well, maintains engagement',
+                                'Some audience interaction, handles basic questions, adequate engagement',
+                                'Limited audience interaction, struggles with questions, low engagement'
+                            ]
+                        }
+                    ]
+                },
+                'group-project': {
+                    title: 'Group Project Assessment',
+                    description: 'Evaluation of collaborative work including individual contribution, teamwork, and final product quality.',
+                    criteria: [
+                        {
+                            name: 'Individual Contribution',
+                            descriptions: [
+                                'Exceptional individual contribution with leadership, initiative, and high-quality work',
+                                'Strong individual contribution with good participation and quality work',
+                                'Adequate individual contribution with basic participation and acceptable work',
+                                'Limited individual contribution with minimal participation and poor work quality'
+                            ]
+                        },
+                        {
+                            name: 'Collaboration & Teamwork',
+                            descriptions: [
+                                'Excellent collaboration skills, facilitates team success, resolves conflicts effectively',
+                                'Good collaboration skills, contributes positively to team dynamics',
+                                'Basic collaboration skills, generally works well with others',
+                                'Poor collaboration skills, creates team conflicts or works in isolation'
+                            ]
+                        },
+                        {
+                            name: 'Final Product Quality',
+                            descriptions: [
+                                'Outstanding final product that exceeds expectations in all areas',
+                                'High-quality final product that meets expectations in most areas',
+                                'Adequate final product that meets basic expectations',
+                                'Poor final product that fails to meet expectations'
+                            ]
+                        },
+                        {
+                            name: 'Process & Planning',
+                            descriptions: [
+                                'Excellent project management with clear planning, timeline adherence, and documentation',
+                                'Good project management with adequate planning and mostly on-time completion',
+                                'Basic project management with some planning and generally on-time completion',
+                                'Poor project management with little planning and missed deadlines'
+                            ]
+                        }
+                    ]
+                },
+                'lab-report': {
+                    title: 'Laboratory Report Assessment',
+                    description: 'Scientific lab report evaluation including methodology, data analysis, and conclusions.',
+                    criteria: [
+                        {
+                            name: 'Methodology & Procedure',
+                            descriptions: [
+                                'Clear, detailed methodology with proper procedures and excellent experimental design',
+                                'Good methodology with adequate procedures and solid experimental design',
+                                'Basic methodology with generally correct procedures and acceptable design',
+                                'Poor methodology with unclear procedures and flawed experimental design'
+                            ]
+                        },
+                        {
+                            name: 'Data Collection & Analysis',
+                            descriptions: [
+                                'Comprehensive data collection with sophisticated analysis and appropriate statistical methods',
+                                'Good data collection with solid analysis and correct statistical approaches',
+                                'Adequate data collection with basic analysis and some statistical understanding',
+                                'Poor data collection with limited analysis and incorrect statistical methods'
+                            ]
+                        },
+                        {
+                            name: 'Results & Discussion',
+                            descriptions: [
+                                'Clear presentation of results with insightful discussion and excellent interpretation',
+                                'Good presentation of results with solid discussion and correct interpretation',
+                                'Adequate presentation of results with basic discussion and general interpretation',
+                                'Poor presentation of results with limited discussion and incorrect interpretation'
+                            ]
+                        },
+                        {
+                            name: 'Scientific Writing',
+                            descriptions: [
+                                'Excellent scientific writing style with proper format, citations, and professional presentation',
+                                'Good scientific writing with correct format, adequate citations, and clear presentation',
+                                'Basic scientific writing with generally correct format and acceptable presentation',
+                                'Poor scientific writing with incorrect format, missing citations, and unclear presentation'
+                            ]
+                        }
+                    ]
+                },
+                'discussion-post': {
+                    title: 'Online Discussion Assessment',
+                    description: 'Evaluation of online discussion participation including original posts and peer responses.',
+                    criteria: [
+                        {
+                            name: 'Original Post Quality',
+                            descriptions: [
+                                'Thoughtful, well-developed post with original insights and strong connection to course materials',
+                                'Good post with clear ideas and adequate connection to course materials',
+                                'Basic post with some development and general connection to course materials',
+                                'Poor post with limited development and weak connection to course materials'
+                            ]
+                        },
+                        {
+                            name: 'Peer Response Quality',
+                            descriptions: [
+                                'Engaging, substantive responses that advance discussion and demonstrate critical thinking',
+                                'Good responses that contribute meaningfully to discussion with some critical thinking',
+                                'Adequate responses that participate in discussion with basic engagement',
+                                'Poor responses that add little value or show minimal engagement'
+                            ]
+                        },
+                        {
+                            name: 'Timeliness & Participation',
+                            descriptions: [
+                                'Consistently timely participation throughout discussion period with excellent engagement',
+                                'Generally timely participation with good engagement throughout most of period',
+                                'Adequate timeliness with basic participation during discussion period',
+                                'Poor timeliness with limited participation and minimal engagement'
+                            ]
+                        }
+                    ]
+                },
+                'creative-writing': {
+                    title: 'Creative Writing Assessment',
+                    description: 'Evaluation of creative writing assignments including originality, style, and technique.',
+                    criteria: [
+                        {
+                            name: 'Creativity & Originality',
+                            descriptions: [
+                                'Highly original work with innovative ideas, unique voice, and creative risk-taking',
+                                'Good originality with interesting ideas, developing voice, and some creative elements',
+                                'Some originality with basic creative elements and emerging voice',
+                                'Limited originality with conventional approach and underdeveloped voice'
+                            ]
+                        },
+                        {
+                            name: 'Writing Technique',
+                            descriptions: [
+                                'Masterful use of literary devices, excellent style, and sophisticated writing techniques',
+                                'Good use of literary devices with developing style and solid writing techniques',
+                                'Basic use of literary devices with adequate style and acceptable techniques',
+                                'Poor use of literary devices with weak style and limited writing techniques'
+                            ]
+                        },
+                        {
+                            name: 'Structure & Organization',
+                            descriptions: [
+                                'Excellent structure with compelling narrative flow and sophisticated organization',
+                                'Good structure with clear narrative development and solid organization',
+                                'Adequate structure with basic narrative progression and acceptable organization',
+                                'Poor structure with weak narrative development and unclear organization'
+                            ]
+                        },
+                        {
+                            name: 'Language & Style',
+                            descriptions: [
+                                'Exceptional use of language with vivid imagery, precise word choice, and polished style',
+                                'Good use of language with effective imagery, appropriate word choice, and developing style',
+                                'Adequate use of language with some imagery, generally appropriate word choice',
+                                'Poor use of language with limited imagery, inappropriate word choice, and weak style'
+                            ]
+                        }
+                    ]
+                }
+            };
+
+            const template = templates[templateType];
+            if (template) {
+                currentRubric.title = template.title;
+                currentRubric.description = template.description;
+                currentRubric.criteria = template.criteria;
+                
+                updateFormFields();
+                generateRubricTable();
+                closeModal('templatesModal');
+            }
+        }
+
+        // Save and Load functionality
+        function saveRubric() {
+            // Update rubric with current form values
+            currentRubric.title = document.getElementById('assignmentTitle').value;
+            currentRubric.description = document.getElementById('assignmentDescription').value;
+            
+            const rubricData = {
+                rubric: currentRubric,
+                scores: selectedScores,
+                timestamp: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            // Create download
+            const dataStr = JSON.stringify(rubricData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `rubric_${currentRubric.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            // Also save to localStorage
+            localStorage.setItem('rubric_saved', JSON.stringify(rubricData));
+            
+            alert('Rubric saved successfully!');
+        }
+
+        function loadRubric() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const rubricData = JSON.parse(e.target.result);
+                            currentRubric = rubricData.rubric;
+                            selectedScores = rubricData.scores || {};
+                            
+                            updateFormFields();
+                            generateRubricTable();
+                            
+                            // Restore selected scores if in scoring mode
+                            if (isInScoringMode) {
+                                restoreSelectedScores();
+                            }
+                            
+                            alert('Rubric loaded successfully!');
+                        } catch (error) {
+                            alert('Error loading rubric: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function restoreSelectedScores() {
+            Object.keys(selectedScores).forEach(criterionIndex => {
+                const score = selectedScores[criterionIndex];
+                const row = document.querySelectorAll('.criterion-row')[parseInt(criterionIndex) + 1]; // +1 for header
+                if (row) {
+                    const cells = row.querySelectorAll('.rubric-cell');
+                    if (cells[score.levelIndex]) {
+                        cells[score.levelIndex].classList.add('selected');
+                    }
+                }
+            });
+            updateTotalScore();
+        }
+
+        // Export functionality
+        function exportRubric() {
+            // Update rubric with current form values
+            currentRubric.title = document.getElementById('assignmentTitle').value;
+            currentRubric.description = document.getElementById('assignmentDescription').value;
+            
+            // Simple PDF export using print functionality
+            const originalTitle = document.title;
+            document.title = currentRubric.title;
+            
+            // Hide non-printable elements
+            const toolbar = document.querySelector('.toolbar');
+            const themeToggle = document.querySelector('.theme-toggle');
+            const scoringMode = document.querySelector('#scoringMode');
+            
+            const originalDisplay = {
+                toolbar: toolbar.style.display,
+                themeToggle: themeToggle.style.display,
+                scoringMode: scoringMode.style.display
+            };
+            
+            toolbar.style.display = 'none';
+            themeToggle.style.display = 'none';
+            scoringMode.style.display = 'none';
+            
+            // Print
+            window.print();
+            
+            // Restore elements
+            toolbar.style.display = originalDisplay.toolbar;
+            themeToggle.style.display = originalDisplay.themeToggle;
+            scoringMode.style.display = originalDisplay.scoringMode;
+            
+            document.title = originalTitle;
+        }
+
+        // Modal functions
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        };
+
+        // Update rubric title and description when form fields change
+        document.getElementById('assignmentTitle').onchange = function() {
+            currentRubric.title = this.value;
+        };
+
+        document.getElementById('assignmentDescription').onchange = function() {
+            currentRubric.description = this.value;
+        };
+
+        // Load autosaved data on startup
+        window.addEventListener('load', function() {
+            const autosaved = localStorage.getItem('rubric_autosave');
+            if (autosaved) {
+                try {
+                    const data = JSON.parse(autosaved);
+                    const savedTime = new Date(data.timestamp);
+                    const timeDiff = (new Date() - savedTime) / (1000 * 60); // minutes
+                    
+                    if (timeDiff < 60) { // If saved within last hour
+                        if (confirm('Found autosaved work from ' + savedTime.toLocaleString() + '. Would you like to restore it?')) {
+                            currentRubric = data.rubric;
+                            updateFormFields();
+                            generateRubricTable();
+                        }
+                    }
+                } catch (error) {
+                    console.log('Error loading autosaved data:', error);
+                }
+            }
+        });
     </script>
 </body>
 </html>
