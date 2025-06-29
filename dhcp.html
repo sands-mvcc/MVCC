@@ -3,200 +3,782 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DHCP Header Illustration</title>
+    <title>Interactive DHCP Protocol Learning Tool</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            color: #333;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
         }
-        h1 {
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2196F3, #21CBF3);
+            color: white;
+            padding: 30px;
             text-align: center;
-            color: #d9534f;
         }
-        .description-box {
-            background-color: #f8f9fa;
-            border: 2px solid #333;
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .nav-tab {
+            flex: 1;
             padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        h2 {
-            color: #d9534f;
-            border-bottom: 2px solid #333;
-            padding-bottom: 5px;
-            margin-top: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            border: 1px solid #000;
-            padding: 12px;
-            text-align: left;
-            background-color: #ffffff;
-        }
-        th {
-            background-color: #333;
-            color: #ffffff;
-        }
-        tr:nth-child(even) td {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(odd) td {
-            background-color: #ffffff;
-        }
-        a {
-            color: #d9534f;
-            text-decoration: none;
+            text-align: center;
+            background: none;
+            border: none;
             cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
-        a:hover {
-            text-decoration: underline;
+
+        .nav-tab.active {
+            background: white;
+            color: #2196F3;
+            border-bottom: 3px solid #2196F3;
         }
-        .description {
-            margin-top: 20px;
-            background-color: #f8f9fa;
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .network-diagram {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .device {
+            width: 120px;
+            height: 100px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            position: relative;
+        }
+
+        .client {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
+        }
+
+        .server {
+            background: linear-gradient(135deg, #4ECDC4, #44A08D);
+        }
+
+        .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%);
+            background: #FFF;
+            padding: 8px 12px;
+            border-radius: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .message.show {
+            opacity: 1;
+        }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%);
+            width: 200px;
+            height: 2px;
+            background: #333;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -5px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid #333;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+
+        .arrow.show {
+            opacity: 1;
+        }
+
+        .arrow.reverse {
+            transform: translateX(-50%) translateY(-50%) rotate(180deg);
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #2196F3, #21CBF3);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .step-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .step-info h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .packet-structure {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .packet-header {
+            background: #f8f9fa;
             padding: 15px;
-            border: 2px solid #333;
-            border-radius: 5px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+            color: #495057;
         }
-        .description a {
-            color: #d9534f;
-            text-decoration: none;
+
+        .packet-field {
+            display: flex;
+            border-bottom: 1px solid #f1f1f1;
+            transition: background 0.3s ease;
         }
-        .description a:hover {
-            text-decoration: underline;
+
+        .packet-field:hover {
+            background: #f8f9fa;
+        }
+
+        .field-name {
+            width: 30%;
+            padding: 12px 15px;
+            font-weight: 500;
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+        }
+
+        .field-size {
+            width: 15%;
+            padding: 12px 15px;
+            text-align: center;
+            border-right: 1px solid #ddd;
+            color: #666;
+        }
+
+        .field-description {
+            width: 55%;
+            padding: 12px 15px;
+        }
+
+        .quiz-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .question {
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .options {
+            display: grid;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .option {
+            padding: 12px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover {
+            border-color: #2196F3;
+        }
+
+        .option.selected {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+
+        .option.correct {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .option.incorrect {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #2196F3, #21CBF3);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
         }
     </style>
-    <script>
-        function showDescription(id) {
-            const descriptions = document.querySelectorAll('.description');
-            descriptions.forEach(description => {
-                description.style.display = 'none';
-            });
-            document.getElementById(id).style.display = 'block';
-        }
-    </script>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <h1>DHCP Protocol Interactive Learning Tool</h1>
+            <p>Master Dynamic Host Configuration Protocol through hands-on exploration</p>
+        </div>
 
-<h1>DHCP Header Illustration</h1>
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('overview')">Protocol Overview</button>
+            <button class="nav-tab" onclick="showTab('simulation')">DHCP Simulation</button>
+            <button class="nav-tab" onclick="showTab('headers')">Packet Headers</button>
+            <button class="nav-tab" onclick="showTab('quiz')">Knowledge Check</button>
+        </div>
 
-<div class="description-box">
-    <p>The Dynamic Host Configuration Protocol (DHCP) is a network management protocol used on Internet Protocol (IP) networks for automatically assigning IP addresses and other communication parameters to devices connected to the network. DHCP automates and centrally manages these configurations, allowing devices to join the network with no manual configuration.</p>
-</div>
+        <div id="overview" class="tab-content active">
+            <h2>What is DHCP?</h2>
+            <p>Dynamic Host Configuration Protocol (DHCP) is a network management protocol used to automatically assign IP addresses and other network configuration parameters to devices on a network. This eliminates the need for manual configuration and prevents IP address conflicts.</p>
 
-<h2>DHCP Header</h2>
-<table>
-    <tr>
-        <th colspan="8"><a onclick="showDescription('desc-op')">Operation Code</a> (8 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-htype')">Hardware Type</a> (8 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-hlen')">Hardware Length</a> (8 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-hops')">Hops</a> (8 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-xid')">Transaction ID</a> (32 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="16"><a onclick="showDescription('desc-secs')">Seconds</a> (16 bits)</th>
-        <th colspan="16"><a onclick="showDescription('desc-flags')">Flags</a> (16 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-ciaddr')">Client IP Address</a> (32 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-yiaddr')">Your (Client) IP Address</a> (32 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-siaddr')">Next Server IP Address</a> (32 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-giaddr')">Relay Agent IP Address</a> (32 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="48"><a onclick="showDescription('desc-chaddr')">Client Hardware Address</a> (48 bits)</th>
-        <th colspan="16"><a onclick="showDescription('desc-chaddrpad')">Client Hardware Address (Padding)</a> (64 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="128"><a onclick="showDescription('desc-sname')">Server Name</a> (128 bytes)</th>
-    </tr>
-    <tr>
-        <th colspan="256"><a onclick="showDescription('desc-file')">Boot Filename</a> (128 bytes)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-options')">Options</a> (Variable length)</th>
-    </tr>
-</table>
+            <h3 style="margin-top: 30px;">Why is DHCP Important?</h3>
+            <ul style="margin: 15px 0 15px 30px; line-height: 1.6;">
+                <li><strong>Automatic Configuration:</strong> Devices receive network settings automatically</li>
+                <li><strong>Efficient IP Management:</strong> IP addresses are allocated dynamically and reused</li>
+                <li><strong>Centralized Administration:</strong> Network administrators can manage settings from one location</li>
+                <li><strong>Reduced Errors:</strong> Eliminates manual configuration mistakes</li>
+                <li><strong>Scalability:</strong> Easily supports large networks with many devices</li>
+            </ul>
 
-<div class="description" id="desc-op">
-    <h2>Operation Code (8 bits)</h2>
-    <p>Indicates the message type: 1 for request, 2 for reply. <a href="#desc-op">Back to header</a></p>
-</div>
-<div class="description" id="desc-htype">
-    <h2>Hardware Type (8 bits)</h2>
-    <p>Specifies the type of hardware used for the local network. For Ethernet, this is 1. <a href="#desc-htype">Back to header</a></p>
-</div>
-<div class="description" id="desc-hlen">
-    <h2>Hardware Length (8 bits)</h2>
-    <p>Specifies the length of the hardware address. For Ethernet, this is 6. <a href="#desc-hlen">Back to header</a></p>
-</div>
-<div class="description" id="desc-hops">
-    <h2>Hops (8 bits)</h2>
-    <p>Set to 0 by a client before transmitting a request and used by relay agents to control the forwarding of messages. <a href="#desc-hops">Back to header</a></p>
-</div>
-<div class="description" id="desc-xid">
-    <h2>Transaction ID (32 bits)</h2>
-    <p>A randomly chosen number used by the client and server to associate messages and responses between a client and a server. <a href="#desc-xid">Back to header</a></p>
-</div>
-<div class="description" id="desc-secs">
-    <h2>Seconds (16 bits)</h2>
-    <p>Elapsed time in seconds since the client began the address acquisition or renewal process. <a href="#desc-secs">Back to header</a></p>
-</div>
-<div class="description" id="desc-flags">
-    <h2>Flags (16 bits)</h2>
-    <p>Used to control the interpretation of the "broadcast" bit in the DHCP message. <a href="#desc-flags">Back to header</a></p>
-</div>
-<div class="description" id="desc-ciaddr">
-    <h2>Client IP Address (32 bits)</h2>
-    <p>The client’s IP address, if it has one, otherwise 0. <a href="#desc-ciaddr">Back to header</a></p>
-</div>
-<div class="description" id="desc-yiaddr">
-    <h2>Your (Client) IP Address (32 bits)</h2>
-    <p>The IP address that the server is assigning to the client. <a href="#desc-yiaddr">Back to header</a></p>
-</div>
-<div class="description" id="desc-siaddr">
-    <h2>Next Server IP Address (32 bits)</h2>
-    <p>The IP address of the next server to use in the bootstrap process. <a href="#desc-siaddr">Back to header</a></p>
-</div>
-<div class="description" id="desc-giaddr">
-    <h2>Relay Agent IP Address (32 bits)</h2>
-    <p>The IP address of the relay agent, if any, used by the client. <a href="#desc-giaddr">Back to header</a></p>
-</div>
-<div class="description" id="desc-chaddr">
-    <h2>Client Hardware Address (48 bits)</h2>
-    <p>The hardware address of the client. <a href="#desc-chaddr">Back to header</a></p>
-</div>
-<div class="description" id="desc-chaddrpad">
-    <h2>Client Hardware Address (Padding) (64 bits)</h2>
-    <p>Padding for the client hardware address to ensure alignment. <a href="#desc-chaddrpad">Back to header</a></p>
-</div>
-<div class="description" id="desc-sname">
-    <h2>Server Name (128 bytes)</h2>
-    <p>An optional server host name, null-terminated string. <a href="#desc-sname">Back to header</a></p>
-</div>
-<div class="description" id="desc-file">
-    <h2>Boot Filename (128 bytes)</h2>
-    <p>An optional null-terminated string, used by the client to request a particular boot file. <a href="#desc-file">Back to header</a></p>
-</div>
-<div class="description" id="desc-options">
-    <h2>Options (Variable length)</h2>
-    <p>Optional parameters field containing options and padding. <a href="#desc-options">Back to header</a></p>
-</div>
+            <h3 style="margin-top: 30px;">The DHCP Process (DORA)</h3>
+            <div class="step-info">
+                <h3>1. DISCOVER</h3>
+                <p>Client broadcasts a DHCP Discover message to find available DHCP servers on the network.</p>
+            </div>
+            <div class="step-info">
+                <h3>2. OFFER</h3>
+                <p>DHCP server responds with a DHCP Offer message containing an available IP address and configuration parameters.</p>
+            </div>
+            <div class="step-info">
+                <h3>3. REQUEST</h3>
+                <p>Client sends a DHCP Request message to accept the offered configuration.</p>
+            </div>
+            <div class="step-info">
+                <h3>4. ACKNOWLEDGE</h3>
+                <p>Server confirms the assignment with a DHCP Acknowledge message, completing the process.</p>
+            </div>
 
+            <h3 style="margin-top: 30px;">Key DHCP Components</h3>
+            <p><strong>DHCP Server:</strong> Manages IP address pools and configuration parameters</p>
+            <p><strong>DHCP Client:</strong> Requests and uses assigned network configuration</p>
+            <p><strong>DHCP Relay Agent:</strong> Forwards DHCP messages between clients and servers across different subnets</p>
+            <p><strong>IP Address Pool:</strong> Range of available IP addresses for assignment</p>
+            <p><strong>Lease Time:</strong> Duration for which an IP address is assigned to a client</p>
+        </div>
+
+        <div id="simulation" class="tab-content">
+            <h2>DHCP Process Simulation</h2>
+            <p>Watch the step-by-step DHCP process as a client obtains an IP address from a server.</p>
+
+            <div class="network-diagram">
+                <div class="device client">
+                    <div>DHCP Client</div>
+                    <div style="font-size: 12px; margin-top: 5px;">No IP Address</div>
+                </div>
+                
+                <div class="arrow" id="arrow"></div>
+                <div class="message" id="message">Ready to start</div>
+                
+                <div class="device server">
+                    <div>DHCP Server</div>
+                    <div style="font-size: 12px; margin-top: 5px;">192.168.1.1</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" id="startBtn" onclick="startSimulation()">Start DHCP Process</button>
+                <button class="btn" id="nextBtn" onclick="nextStep()" disabled>Next Step</button>
+                <button class="btn" id="resetBtn" onclick="resetSimulation()">Reset</button>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="step-info" id="stepInfo">
+                <h3>Ready to Begin</h3>
+                <p>Click "Start DHCP Process" to begin the simulation. You'll see each step of the DHCP process in action.</p>
+            </div>
+        </div>
+
+        <div id="headers" class="tab-content">
+            <h2>DHCP Packet Structure</h2>
+            <p>Understanding the DHCP packet headers is crucial for network administrators and developers. DHCP messages are sent over UDP, typically using ports 67 (server) and 68 (client).</p>
+
+            <div class="packet-structure">
+                <div class="packet-header">DHCP Message Header (240 bytes minimum)</div>
+                <div class="packet-field">
+                    <div class="field-name">Message Type (op)</div>
+                    <div class="field-size">1 byte</div>
+                    <div class="field-description">1 = BOOTREQUEST (client to server), 2 = BOOTREPLY (server to client)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Hardware Type (htype)</div>
+                    <div class="field-size">1 byte</div>
+                    <div class="field-description">Hardware address type (1 = Ethernet)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Hardware Length (hlen)</div>
+                    <div class="field-size">1 byte</div>
+                    <div class="field-description">Length of hardware address (6 for Ethernet MAC)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Hops</div>
+                    <div class="field-size">1 byte</div>
+                    <div class="field-description">Number of relay agents the message has passed through</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Transaction ID (xid)</div>
+                    <div class="field-size">4 bytes</div>
+                    <div class="field-description">Random number chosen by client to match requests and replies</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Seconds (secs)</div>
+                    <div class="field-size">2 bytes</div>
+                    <div class="field-description">Seconds since client began address acquisition process</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Flags</div>
+                    <div class="field-size">2 bytes</div>
+                    <div class="field-description">Bit flags (broadcast flag indicates if client can receive unicast)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Client IP (ciaddr)</div>
+                    <div class="field-size">4 bytes</div>
+                    <div class="field-description">Client's current IP address (if client is bound to IP)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Your IP (yiaddr)</div>
+                    <div class="field-size">4 bytes</div>
+                    <div class="field-description">IP address being offered/assigned to client</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Server IP (siaddr)</div>
+                    <div class="field-size">4 bytes</div>
+                    <div class="field-description">IP address of next server in bootstrap process</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Relay Agent IP (giaddr)</div>
+                    <div class="field-size">4 bytes</div>
+                    <div class="field-description">IP address of relay agent (if used)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Client Hardware Address</div>
+                    <div class="field-size">16 bytes</div>
+                    <div class="field-description">Client's hardware address (MAC address)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Server Name</div>
+                    <div class="field-size">64 bytes</div>
+                    <div class="field-description">Optional server host name (null-terminated string)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Boot File Name</div>
+                    <div class="field-size">128 bytes</div>
+                    <div class="field-description">Boot file name for network booting</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Options</div>
+                    <div class="field-size">Variable</div>
+                    <div class="field-description">DHCP options field containing additional configuration parameters</div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px;">Important DHCP Options</h3>
+            <div class="packet-structure">
+                <div class="packet-header">Common DHCP Options</div>
+                <div class="packet-field">
+                    <div class="field-name">Option 53</div>
+                    <div class="field-size">1 byte</div>
+                    <div class="field-description">DHCP Message Type (1=Discover, 2=Offer, 3=Request, 5=Ack, 6=Nak)</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Option 1</div>
+                    <div class="field-size">4 bytes</div>
+                    <div class="field-description">Subnet Mask</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Option 3</div>
+                    <div class="field-size">Variable</div>
+                    <div class="field-description">Router/Default Gateway</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Option 6</div>
+                    <div class="field-size">Variable</div>
+                    <div class="field-description">DNS Servers</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Option 51</div>
+                    <div class="field-size">4 bytes</div>
+                    <div class="field-description">IP Address Lease Time</div>
+                </div>
+                <div class="packet-field">
+                    <div class="field-name">Option 54</div>
+                    <div class="field-size">4 bytes</div>
+                    <div class="field-description">DHCP Server Identifier</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="quiz" class="tab-content">
+            <h2>Test Your DHCP Knowledge</h2>
+            <p>Answer these questions to check your understanding of the DHCP protocol.</p>
+
+            <div class="quiz-container" id="quiz1">
+                <div class="question">1. What does DHCP stand for?</div>
+                <div class="options">
+                    <div class="option" onclick="selectOption(this, false)">Dynamic Host Control Protocol</div>
+                    <div class="option" onclick="selectOption(this, true)">Dynamic Host Configuration Protocol</div>
+                    <div class="option" onclick="selectOption(this, false)">Direct Host Configuration Protocol</div>
+                    <div class="option" onclick="selectOption(this, false)">Dynamic Hardware Configuration Protocol</div>
+                </div>
+                <div class="feedback">
+                    <p><strong>Correct!</strong> DHCP stands for Dynamic Host Configuration Protocol.</p>
+                </div>
+            </div>
+
+            <div class="quiz-container" id="quiz2">
+                <div class="question">2. What are the four steps of the DHCP process in order?</div>
+                <div class="options">
+                    <div class="option" onclick="selectOption(this, false)">Offer, Discover, Request, Acknowledge</div>
+                    <div class="option" onclick="selectOption(this, true)">Discover, Offer, Request, Acknowledge</div>
+                    <div class="option" onclick="selectOption(this, false)">Request, Discover, Offer, Acknowledge</div>
+                    <div class="option" onclick="selectOption(this, false)">Discover, Request, Offer, Acknowledge</div>
+                </div>
+                <div class="feedback">
+                    <p><strong>Correct!</strong> The DHCP process follows DORA: Discover, Offer, Request, Acknowledge.</p>
+                </div>
+            </div>
+
+            <div class="quiz-container" id="quiz3">
+                <div class="question">3. Which UDP ports does DHCP typically use?</div>
+                <div class="options">
+                    <div class="option" onclick="selectOption(this, false)">80 and 443</div>
+                    <div class="option" onclick="selectOption(this, true)">67 and 68</div>
+                    <div class="option" onclick="selectOption(this, false)">53 and 54</div>
+                    <div class="option" onclick="selectOption(this, false)">21 and 22</div>
+                </div>
+                <div class="feedback">
+                    <p><strong>Correct!</strong> DHCP uses UDP ports 67 (server) and 68 (client).</p>
+                </div>
+            </div>
+
+            <div class="quiz-container" id="quiz4">
+                <div class="question">4. What is the purpose of the Transaction ID (xid) field?</div>
+                <div class="options">
+                    <div class="option" onclick="selectOption(this, false)">To identify the client's MAC address</div>
+                    <div class="option" onclick="selectOption(this, true)">To match DHCP requests with their corresponding replies</div>
+                    <div class="option" onclick="selectOption(this, false)">To specify the lease time</div>
+                    <div class="option" onclick="selectOption(this, false)">To indicate the server's IP address</div>
+                </div>
+                <div class="feedback">
+                    <p><strong>Correct!</strong> The Transaction ID helps match DHCP requests with their corresponding replies.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        const steps = [
+            {
+                title: "1. DHCP DISCOVER",
+                description: "Client broadcasts a DHCP Discover message to locate DHCP servers. The message is sent to 255.255.255.255 (broadcast) since the client doesn't know any server addresses.",
+                message: "DHCP DISCOVER",
+                direction: "right",
+                progress: 25
+            },
+            {
+                title: "2. DHCP OFFER", 
+                description: "DHCP server responds with an offer containing an available IP address (192.168.1.100), subnet mask, default gateway, DNS servers, and lease time.",
+                message: "DHCP OFFER",
+                direction: "left",
+                progress: 50
+            },
+            {
+                title: "3. DHCP REQUEST",
+                description: "Client formally requests the offered IP address by sending a DHCP Request message. This message is also broadcast to inform other DHCP servers.",
+                message: "DHCP REQUEST", 
+                direction: "right",
+                progress: 75
+            },
+            {
+                title: "4. DHCP ACKNOWLEDGE",
+                description: "Server confirms the IP address assignment with a DHCP Acknowledge message. The client now has a valid IP configuration and can communicate on the network.",
+                message: "DHCP ACK",
+                direction: "left", 
+                progress: 100
+            }
+        ];
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function startSimulation() {
+            currentStep = 0;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = false;
+            nextStep();
+        }
+
+        function nextStep() {
+            if (currentStep >= steps.length) return;
+
+            const step = steps[currentStep];
+            const arrow = document.getElementById('arrow');
+            const message = document.getElementById('message');
+            const stepInfo = document.getElementById('stepInfo');
+            const progressFill = document.getElementById('progressFill');
+
+            // Update arrow direction
+            arrow.className = 'arrow show';
+            if (step.direction === 'left') {
+                arrow.classList.add('reverse');
+            } else {
+                arrow.classList.remove('reverse');
+            }
+
+            // Update message
+            message.textContent = step.message;
+            message.classList.add('show');
+
+            // Update step info
+            stepInfo.innerHTML = `
+                <h3>${step.title}</h3>
+                <p>${step.description}</p>
+            `;
+
+            // Update progress
+            progressFill.style.width = step.progress + '%';
+
+            // Update client IP when acknowledged
+            if (currentStep === 3) {
+                document.querySelector('.client div:last-child').textContent = '192.168.1.100';
+            }
+
+            currentStep++;
+
+            if (currentStep >= steps.length) {
+                document.getElementById('nextBtn').disabled = true;
+                setTimeout(() => {
+                    stepInfo.innerHTML = `
+                        <h3>Process Complete!</h3>
+                        <p>The DHCP client has successfully obtained an IP address and network configuration. The client can now communicate on the network using IP address 192.168.1.100.</p>
+                    `;
+                }, 2000);
+            }
+        }
+
+        function resetSimulation() {
+            currentStep = 0;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('nextBtn').disabled = true;
+            
+            const arrow = document.getElementById('arrow');
+            const message = document.getElementById('message');
+            const stepInfo = document.getElementById('stepInfo');
+            const progressFill = document.getElementById('progressFill');
+
+            arrow.classList.remove('show');
+            message.classList.remove('show');
+            message.textContent = 'Ready to start';
+            
+            stepInfo.innerHTML = `
+                <h3>Ready to Begin</h3>
+                <p>Click "Start DHCP Process" to begin the simulation. You'll see each step of the DHCP process in action.</p>
+            `;
+
+            progressFill.style.width = '0%';
+            document.querySelector('.client div:last-child').textContent = 'No IP Address';
+        }
+
+        function selectOption(option, isCorrect) {
+            const container = option.closest('.quiz-container');
+            const options = container.querySelectorAll('.option');
+            const feedback = container.querySelector('.feedback');
+
+            // Disable all options
+            options.forEach(opt => {
+                opt.style.pointerEvents = 'none';
+                if (opt === option) {
+                    opt.classList.add('selected');
+                }
+            });
+
+            // Show results after a brief delay
+            setTimeout(() => {
+                options.forEach(opt => {
+                    if (opt.onclick.toString().includes('true')) {
+                        opt.classList.add('correct');
+                    } else if (opt === option && !isCorrect) {
+                        opt.classList.add('incorrect');
+                    }
+                });
+
+                feedback.classList.add('show');
+                if (isCorrect) {
+                    feedback.classList.add('correct');
+                } else {
+                    feedback.classList.add('incorrect');
+                    feedback.innerHTML = `
+                        <p><strong>Incorrect.</strong> The correct answer is highlighted in green.</p>
+                    `;
+                }
+            }, 500);
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Any initialization code can go here
+        });
+    </script>
 </body>
 </html>
