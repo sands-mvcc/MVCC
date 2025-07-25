@@ -1,0 +1,703 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPNC Interactive Impact Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .card {
+            background-color: white;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1);
+        }
+        .kpi-card {
+            cursor: pointer;
+        }
+        #map-tooltip {
+            position: absolute;
+            background-color: rgba(15, 23, 42, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 10;
+            max-width: 250px;
+        }
+        #modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #modal-backdrop.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 600px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        #modal-backdrop.visible #modal-content {
+            transform: scale(1);
+        }
+        .growth-bar-fill, .pillar-bar-fill {
+            transform-origin: left;
+            transform: scaleX(0);
+            transition: transform 1s ease-out 0.3s;
+        }
+        .tab-button {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #475569;
+        }
+        .tab-button.active {
+            font-weight: 700;
+            color: #1e40af;
+            border-color: #1e40af;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .lesson-card {
+            background-color: #f8fafc;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            height: 100%;
+            cursor: pointer;
+        }
+        .lesson-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, margin-top 0.5s ease-in-out;
+        }
+        .lesson-card.open .lesson-content {
+            max-height: 200px; /* Adjust as needed */
+            margin-top: 0.75rem;
+        }
+        .lesson-card .click-prompt {
+            transition: opacity 0.3s ease;
+        }
+        .lesson-card.open .click-prompt {
+            opacity: 0;
+        }
+
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">EPNC National Impact Dashboard</h1>
+            <p class="mt-3 text-lg text-slate-600">Visualizing Our Growth and Reach (2022-2024)</p>
+        </header>
+
+        <!-- Purpose and Scope Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div class="card p-8 rounded-2xl">
+                <div class="flex items-center mb-4">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <h2 class="text-2xl font-bold text-slate-800">Our Purpose</h2>
+                </div>
+                <p class="text-slate-600 leading-relaxed">
+                   To build a sustainable, inclusive pipeline of cybersecurity talent by creating robust pathways that link high school programs directly to National Centers of Academic Excellence (NCAE-C).
+                </p>
+            </div>
+            <div class="card p-8 rounded-2xl">
+                <div class="flex items-center mb-4">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9V3m0 9a9 9 0 019-9" />
+                    </svg>
+                    <h2 class="text-2xl font-bold text-slate-800">Our Scope</h2>
+                </div>
+                <p class="text-slate-600 leading-relaxed">
+                   We deliver an integrated strategy blending open-source curriculum, comprehensive faculty development, and a state-of-the-art national virtual cyber range to empower educators and students nationwide.
+                </p>
+            </div>
+        </div>
+
+        <!-- KPI Section -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+            <div class="card kpi-card p-6 rounded-2xl flex flex-col justify-center items-center text-center" data-metric="Student Completions" data-values='[{"year": 2023, "value": 42}, {"year": 2024, "value": 193}]' data-color="#3b82f6">
+                <h3 class="font-semibold text-slate-500 uppercase text-sm mb-2">Student Completions</h3>
+                <div class="flex items-baseline justify-center gap-2">
+                    <p class="kpi-value text-5xl font-extrabold text-blue-600" data-target="193">0</p>
+                    <p class="text-green-500 font-semibold text-lg">+360%</p>
+                </div>
+            </div>
+            <div class="card kpi-card p-6 rounded-2xl flex flex-col justify-center items-center text-center" data-metric="K-12 Schools Adoptions" data-values='[{"year": 2023, "value": 210}, {"year": 2024, "value": 291}]' data-color="#10b981">
+                 <h3 class="font-semibold text-slate-500 uppercase text-sm mb-2">K-12 Schools Adoptions</h3>
+                 <div class="flex items-baseline justify-center gap-2">
+                    <p class="kpi-value text-5xl font-extrabold text-teal-600" data-target="291">0</p>
+                    <p class="text-green-500 font-semibold text-lg">+39%</p>
+                </div>
+            </div>
+            <div class="card kpi-card p-6 rounded-2xl flex flex-col justify-center items-center text-center" data-metric="Virtual Labs Completion" data-values='[{"year": 2023, "value": 1780}, {"year": 2024, "value": 3080}]' data-color="#8b5cf6">
+                 <h3 class="font-semibold text-slate-500 uppercase text-sm mb-2">Virtual Labs Completion</h3>
+                 <div class="flex items-baseline justify-center gap-2">
+                    <p class="kpi-value text-5xl font-extrabold text-purple-600" data-target="3080">0</p>
+                    <p class="text-green-500 font-semibold text-lg">+73%</p>
+                </div>
+            </div>
+            <div class="card kpi-card p-6 rounded-2xl flex flex-col justify-center items-center text-center" data-metric="Strategic Employers Partners" data-values='[{"year": 2023, "value": 19}, {"year": 2024, "value": 31}]' data-color="#f59e0b">
+                 <h3 class="font-semibold text-slate-500 uppercase text-sm mb-2">Strategic Employers Partners</h3>
+                 <div class="flex items-baseline justify-center gap-2">
+                    <p class="kpi-value text-5xl font-extrabold text-amber-500" data-target="31">0</p>
+                    <p class="text-green-500 font-semibold text-lg">+63%</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map & Growth Highlights -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-12">
+            <div class="lg:col-span-3 card p-6 rounded-2xl relative">
+                <h2 class="text-2xl font-bold text-center mb-4 text-slate-900">National Program Reach</h2>
+                <div id="map-container" class="h-96"></div>
+                <div id="map-tooltip"></div>
+            </div>
+            <div class="lg:col-span-2 card p-6 rounded-2xl">
+                <h2 class="text-2xl font-bold text-center mb-6 text-slate-900">Top Growth Areas</h2>
+                <div id="growth-chart-container" class="space-y-5"></div>
+            </div>
+        </div>
+
+        <!-- Detailed Pillars with Tabs -->
+        <div class="card p-6 md:p-8 rounded-2xl">
+            <h2 class="text-3xl font-bold text-center mb-8 text-slate-900">EPNC Core Pillars</h2>
+            <div id="tabs-container" class="border-b border-slate-200">
+                <nav class="-mb-px flex flex-wrap justify-center" aria-label="Tabs">
+                    <button data-tab="1" class="tab-button active">Curriculum & Learning</button>
+                    <button data-tab="2" class="tab-button">Educator Impact</button>
+                    <button data-tab="3" class="tab-button">Collaboration & Reach</button>
+                    <button data-tab="4" class="tab-button">Work-Based Learning</button>
+                    <button data-tab="5" class="tab-button">Lessons Learned</button>
+                </nav>
+            </div>
+            <div id="tabs-content" class="pt-8">
+                <!-- Tab 1: Curriculum & Learning -->
+                <div id="tab-1-content" class="tab-content active">
+                     <p class="text-center text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">The foundation of our impact is a flexible, open-source curriculum aligned with NCAE-C standards. This is enhanced by a rich library of gamified, interactive modules that personalize learning and boost engagement. Our national virtual learning environment provides scalable, cloud-based labs, eliminating barriers and ensuring every student has access to hands-on, real-world cybersecurity scenarios.</p>
+                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                        <div class="bg-blue-50 p-6 rounded-xl">
+                            <p class="text-4xl font-extrabold text-blue-600 pillar-counter" data-target="1300">0</p>
+                            <p class="font-semibold text-blue-800 mt-1">Educators w/ Access</p>
+                            <p class="text-sm font-bold text-green-600">(+44%)</p>
+                        </div>
+                        <div class="bg-emerald-50 p-6 rounded-xl">
+                            <p class="text-4xl font-extrabold text-emerald-600 pillar-counter" data-target="1000000">0</p>
+                            <p class="font-semibold text-emerald-800 mt-1">Student Engagements</p>
+                            <p class="text-sm font-bold text-green-600">(+300%)</p>
+                        </div>
+                        <div class="bg-purple-50 p-6 rounded-xl">
+                            <p class="text-4xl font-extrabold text-purple-600 pillar-counter" data-target="3080">0</p>
+                            <p class="font-semibold text-purple-800 mt-1">Virtual Lab Instances</p>
+                            <p class="text-sm font-bold text-green-600">(+73%)</p>
+                        </div>
+                        <div class="bg-rose-50 p-6 rounded-xl">
+                            <p class="text-4xl font-extrabold text-rose-600 pillar-counter" data-target="193">0</p>
+                            <p class="font-semibold text-rose-800 mt-1">Student Completions</p>
+                            <p class="text-sm font-bold text-green-600">(+360%)</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab 2: Educator Impact -->
+                <div id="tab-2-content" class="tab-content">
+                    <p class="text-center text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">We empower the people who guide students. Our comprehensive professional development has equipped over 3,500 educators with skills in everything from network defense to ethical hacking, delivered through flexible in-person and online formats. We also strategically engage career counselors and advisors, providing them with the toolkits and knowledge to confidently guide students into cybersecurity careers.</p>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-4 text-slate-900">Empowering Educators & Advisors</h3>
+                            <p class="text-slate-600 mb-6 leading-relaxed">Through dedicated workshops and digital toolkits, we've trained over <span class="font-bold">3,500 educators</span> and engaged over <span class="font-bold">2,000 career counselors</span>, dramatically increasing their confidence in guiding students toward cybersecurity pathways.</p>
+                             <div class="space-y-4">
+                                <div>
+                                    <p class="font-semibold text-slate-700">Educators Trained Nationally</p>
+                                    <div class="w-full bg-slate-200 rounded-full h-6 pillar-bar" data-value="100">
+                                        <div class="h-6 rounded-full pillar-bar-fill bg-indigo-500 flex items-center justify-end pr-2">
+                                            <span class="text-white font-bold text-sm pillar-counter" data-target="3500">0+</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                 <div>
+                                    <p class="font-semibold text-slate-700">Professional Development Participants</p>
+                                    <div class="w-full bg-slate-200 rounded-full h-6 pillar-bar" data-value="122">
+                                        <div class="h-6 rounded-full pillar-bar-fill bg-sky-500 flex items-center justify-end pr-2">
+                                            <span class="text-white font-bold text-sm">400+ (+122%)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-center mb-4 text-slate-800">Advisor Confidence Growth</h3>
+                            <div id="advisor-chart"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab 3: Collaboration & Reach -->
+                <div id="tab-3-content" class="tab-content">
+                    <p class="text-center text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">Our impact is amplified through a powerful network of state education agencies, local districts, and NCAE-C institutions. Through hundreds of stakeholder engagements and state summits, we foster cross-sector collaboration to build sustainable pathways. A core focus on equity ensures we are increasing participation in rural and under-resourced communities, making high-tech career pipelines accessible to all students.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div class="bg-gray-50 p-6 rounded-xl">
+                            <h3 class="font-bold text-lg text-slate-800 mb-2">Rural Participation</h3>
+                            <p class="text-slate-600 mb-4">Increased outreach has grown participation in rural districts from 54% to 61%.</p>
+                            <div id="rural-chart"></div>
+                        </div>
+                        <div class="bg-gray-50 p-6 rounded-xl">
+                            <h3 class="font-bold text-lg text-slate-800 mb-2">Female Participation</h3>
+                            <p class="text-slate-600 mb-4">Targeted programs are closing the gender gap, growing participation from 28% to 38%.</p>
+                            <div id="female-chart"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab 4: Work-Based Learning -->
+                 <div id="tab-4-content" class="tab-content">
+                    <p class="text-center text-slate-600 max-w-3xl mx-auto mb-8 leading-relaxed">We bridge the gap between education and employment by translating classroom learning into real-world experience. Through a growing network of strategic employer partners, we facilitate internships and apprenticeships that accelerate workforce readiness. These opportunities build direct pipelines into cybersecurity roles, exposing students to mission-oriented work and long-term career pathways.</p>
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                        <div class="bg-amber-50 p-6 rounded-xl">
+                            <p class="text-4xl font-extrabold text-amber-600 pillar-counter" data-target="31">0</p>
+                            <p class="font-semibold text-amber-800 mt-1">Employer Partners</p>
+                            <p class="text-sm font-bold text-green-600">(+63%)</p>
+                        </div>
+                        <div class="bg-lime-50 p-6 rounded-xl">
+                            <p class="text-4xl font-extrabold text-lime-600 pillar-counter" data-target="61">0</p>
+                            <p class="font-semibold text-lime-800 mt-1">Students Placed</p>
+                            <p class="text-sm font-bold text-green-600">(+85%)</p>
+                        </div>
+                        <div class="bg-green-50 p-6 rounded-xl">
+                            <p class="text-4xl font-extrabold text-green-600 pillar-counter" data-target="1700">0</p>
+                            <p class="font-semibold text-green-800 mt-1">Workforce-Ready</p>
+                            <p class="text-sm font-bold text-green-600">(+62%)</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab 5: Lessons Learned -->
+                <div id="tab-5-content" class="tab-content">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="lessons-grid">
+                        <div class="lesson-card">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-xl text-green-600">Lessons Learned</h3>
+                                <span class="text-xs text-slate-400 click-prompt">Click to reveal</span>
+                            </div>
+                            <div class="lesson-content">
+                                <ol class="space-y-2 list-decimal list-inside text-slate-600">
+                                    <li>Flexibility is key for curriculum adoption.</li>
+                                    <li>Early counselor engagement is highly effective.</li>
+                                    <li>Gamified learning boosts student interest.</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div class="lesson-card">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-xl text-amber-600">Challenges</h3>
+                                <span class="text-xs text-slate-400 click-prompt">Click to reveal</span>
+                            </div>
+                             <div class="lesson-content">
+                                <ol class="space-y-2 list-decimal list-inside text-slate-600">
+                                    <li>Infrastructure disparities limit some districts.</li>
+                                    <li>Sustaining momentum in an evolving landscape.</li>
+                                    <li>Scaling industry partnerships is resource-intensive.</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div class="lesson-card">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-xl text-blue-600">Recommendations</h3>
+                                <span class="text-xs text-slate-400 click-prompt">Click to reveal</span>
+                            </div>
+                            <div class="lesson-content">
+                                <ol class="space-y-2 list-decimal list-inside text-slate-600">
+                                    <li>Renew and extend funding for sustainability.</li>
+                                    <li>Develop recognition programs for schools.</li>
+                                    <li>Expand virtual lab access for engagement.</li>
+                                    <li>Invest in industry onboarding for internships.</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for displaying detailed charts -->
+    <div id="modal-backdrop">
+        <div id="modal-content">
+            <h2 id="modal-title" class="text-2xl font-bold mb-6 text-center"></h2>
+            <div id="modal-chart" class="h-64"></div>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const growthData = [
+            { metric: "Student Completions", growth: "+360%", value: 360, color: "#ef4444" },
+            { metric: "Student Engagements", growth: "+300%", value: 300, color: "#f97316" },
+            { metric: "Students in Work-Based Learning", growth: "+85%", value: 85, color: "#84cc16" },
+            { metric: "Virtual Labs Completion", growth: "+73%", value: 73, color: "#0ea5e9" },
+        ];
+        
+        // --- Animate elements in the top section on load ---
+        const topObserver = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting){
+                    if (entry.target.classList.contains('kpi-value')) animateCounter(entry.target);
+                    if (entry.target.classList.contains('growth-bar')) animateGrowthBar(entry.target, 360);
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('.kpi-value').forEach(c => topObserver.observe(c));
+
+        // --- Counter Animation ---
+        const animateCounter = (el) => {
+            if (el.animated) return;
+            el.animated = true;
+            const target = +el.dataset.target;
+            if (isNaN(target)) return;
+            let current = 0;
+            const duration = 2000, stepTime = 15;
+            const increment = target / (duration / stepTime);
+            const update = () => {
+                current += increment;
+                if (current < target) {
+                    el.innerText = Math.ceil(current).toLocaleString() + (el.innerText.includes('+') ? '+' : '');
+                    setTimeout(update, stepTime);
+                } else {
+                    el.innerText = target.toLocaleString() + (el.innerText.includes('+') ? '+' : '');
+                }
+            };
+            update();
+        };
+        
+        // --- Bar Chart Animations ---
+        const growthChartContainer = document.getElementById('growth-chart-container');
+        growthData.forEach(item => {
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-medium text-slate-700">${item.metric}</span>
+                    <span class="text-sm font-bold" style="color: ${item.color};">${item.growth}</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-4 growth-bar" data-value="${item.value}">
+                    <div class="h-4 rounded-full growth-bar-fill" style="background-color: ${item.color};"></div>
+                </div>`;
+            growthChartContainer.appendChild(div);
+            topObserver.observe(div.querySelector('.growth-bar'));
+        });
+
+        const animateGrowthBar = (bar, max_val = 100) => {
+            if (bar.animated) return;
+            bar.animated = true;
+            const fill = bar.querySelector('.pillar-bar-fill, .growth-bar-fill');
+            const value = bar.dataset.value;
+            const maxWidth = (value / max_val) * 100;
+            fill.style.width = `${maxWidth}%`;
+            fill.style.transform = 'scaleX(1)';
+        };
+
+        // --- KPI Modal Logic ---
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalTitle = document.getElementById('modal-title');
+        const modalChartContainer = document.getElementById('modal-chart');
+        
+        document.querySelectorAll('.kpi-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const metric = card.dataset.metric;
+                const values = JSON.parse(card.dataset.values);
+                const color = card.dataset.color;
+                modalTitle.innerText = `${metric} Growth (2023 vs 2024)`;
+                modalBackdrop.classList.add('visible');
+                createBarChart(values, color, modalChartContainer);
+            });
+        });
+
+        modalBackdrop.addEventListener('click', (e) => {
+            if (e.target === modalBackdrop || e.target.closest('#modal-content')) {
+                // Allow clicking inside modal
+            } else {
+                 modalBackdrop.classList.remove('visible');
+                 modalChartContainer.innerHTML = '';
+            }
+        });
+        
+        // --- Close Modal on content click ---
+        document.getElementById('modal-content').addEventListener('click', (e) => {
+            e.stopPropagation(); // prevent backdrop click event from firing
+        });
+         modalBackdrop.addEventListener('click', () => {
+            modalBackdrop.classList.remove('visible');
+            modalChartContainer.innerHTML = '';
+        });
+
+
+        const createBarChart = (data, color, container) => {
+            container.innerHTML = '';
+            const margin = {top: 20, right: 30, bottom: 40, left: 60},
+                  width = container.clientWidth - margin.left - margin.right,
+                  height = container.clientHeight - margin.top - margin.bottom;
+
+            const svg = d3.select(container).append("svg")
+                .attr("width", width + margin.left + margin.right).attr("height", height + margin.top + margin.bottom)
+                .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand().range([0, width]).domain(data.map(d => d.year)).padding(0.4);
+            svg.append("g").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x));
+
+            const y = d3.scaleLinear().domain([0, d3.max(data, d => d.value) * 1.1]).range([height, 0]);
+            svg.append("g").call(d3.axisLeft(y).ticks(5));
+
+            svg.selectAll("mybar").data(data).join("rect")
+                .attr("x", d => x(d.year)).attr("width", x.bandwidth()).attr("fill", color)
+                .attr("y", d => y(0)).attr("height", d => height - y(0))
+                .transition().duration(800)
+                .attr("y", d => y(d.value)).attr("height", d => height - y(d.value));
+        };
+
+        // --- Tabs Logic ---
+        const tabsContainer = document.getElementById('tabs-container');
+        tabsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab-button')) {
+                const tabNum = e.target.dataset.tab;
+                tabsContainer.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `tab-${tabNum}-content`) {
+                        content.classList.add('active');
+                        // Trigger animations for the now-visible tab
+                        triggerTabAnimations(content);
+                    }
+                });
+            }
+        });
+        
+        // --- Trigger animations for a specific tab ---
+        const triggerTabAnimations = (tabContentElement) => {
+             // Reset animation state for counters so they can run again
+            tabContentElement.querySelectorAll('.pillar-counter').forEach(el => { el.animated = false; animateCounter(el); });
+            // Reset and run bar animations
+            tabContentElement.querySelectorAll('.pillar-bar').forEach(el => { 
+                el.animated = false;
+                const fill = el.querySelector('.pillar-bar-fill');
+                fill.style.transform = 'scaleX(0)'; // Reset before animating
+                setTimeout(() => animateGrowthBar(el, el.dataset.metric === 'Educators Trained Nationally' ? 4000: 150), 100);
+            });
+            // Create charts if they exist in this tab
+            if (tabContentElement.querySelector('#advisor-chart')) createAdvisorChart();
+            if (tabContentElement.querySelector('#rural-chart')) createEquityChart('rural-chart', 54, 61, '#16a34a');
+            if (tabContentElement.querySelector('#female-chart')) createEquityChart('female-chart', 28, 38, '#db2777');
+        }
+
+        // --- Lessons Learned Card Interactivity ---
+        document.getElementById('lessons-grid').addEventListener('click', (e) => {
+            const clickedCard = e.target.closest('.lesson-card');
+            if (!clickedCard) return;
+
+            const allCards = document.querySelectorAll('#lessons-grid .lesson-card');
+            
+            allCards.forEach(card => {
+                if (card !== clickedCard) {
+                    card.classList.remove('open');
+                }
+            });
+
+            clickedCard.classList.toggle('open');
+        });
+
+
+        // --- Pillar-Specific Chart Creation ---
+        const createAdvisorChart = () => {
+            const container = document.getElementById('advisor-chart');
+            if(container.hasChildNodes()) return; // Don't redraw
+            const data = [
+                {group: 'Academic Pathways', low: -32.1, high: 21.4},
+                {group: 'Cybersecurity Careers', low: -33.3, high: 22.2},
+                {group: 'Required KTSs', low: -31.8, high: 21.2}
+            ];
+            const margin = {top: 10, right: 10, bottom: 70, left: 40},
+                width = container.clientWidth - margin.left - margin.right,
+                height = 220 - margin.top - margin.bottom;
+
+            const svg = d3.select(container).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+            
+            const groups = data.map(d => d.group);
+            const x0 = d3.scaleBand().domain(groups).range([0, width]).padding(0.2);
+            svg.append("g").attr("transform", `translate(0, ${height})`).call(d3.axisBottom(x0))
+                .selectAll("text").attr("transform", "translate(-10,0)rotate(-25)").style("text-anchor", "end");
+
+            const y = d3.scaleLinear().domain([-40, 40]).range([height, 0]);
+            svg.append("g").call(d3.axisLeft(y).tickFormat(d => `${d}%`));
+            
+            svg.append("g").selectAll("rect").data(data).join("rect")
+                .attr("x", d => x0(d.group)).attr("y", y(0)).attr("height", 0)
+                .attr("width", x0.bandwidth() / 2).attr("fill", "#ef4444")
+                .transition().duration(1000).delay(200)
+                .attr("y", d => y(0)).attr("height", d => y(d.low) - y(0));
+                
+            svg.append("g").selectAll("rect").data(data).join("rect")
+                .attr("x", d => x0(d.group) + x0.bandwidth() / 2).attr("y", y(0)).attr("height", 0)
+                .attr("width", x0.bandwidth() / 2).attr("fill", "#22c55e")
+                .transition().duration(1000).delay(200)
+                .attr("y", d => y(d.high)).attr("height", d => y(0) - y(d.high));
+        };
+
+        const createEquityChart = (containerId, val1, val2, color) => {
+            const container = document.getElementById(containerId);
+            if(container.hasChildNodes()) return; // Don't redraw
+
+            const data = [{year: '2023', value: val1}, {year: '2024', value: val2}];
+            const margin = {top: 20, right: 20, bottom: 30, left: 40},
+                width = container.clientWidth - margin.left - margin.right,
+                height = 200 - margin.top - margin.bottom;
+
+            const svg = d3.select(container).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const x = d3.scaleBand().domain(data.map(d => d.year)).range([0, width]).padding(0.4);
+            svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
+
+            const y = d3.scaleLinear().domain([0, 100]).range([height, 0]);
+            svg.append("g").call(d3.axisLeft(y).tickFormat(d => `${d}%`));
+
+            svg.selectAll("rect").data(data).join("rect")
+                .attr("x", d => x(d.year)).attr("width", x.bandwidth())
+                .attr("fill", color).attr("y", y(0)).attr("height", 0)
+                .transition().duration(1000).delay(200)
+                .attr("y", d => y(d.value)).attr("height", d => height - y(d.value));
+
+            svg.selectAll(".text").data(data).join("text")
+                .attr("class","value-label").text(d => `${d.value}%`)
+                .attr("x", d => x(d.year) + x.bandwidth() / 2).attr("y", d => y(d.value) - 5)
+                .attr("text-anchor", "middle").style("font-weight", "bold").style("fill", color)
+                .style("opacity", 0).transition().duration(500).delay(1200).style("opacity", 1);
+        };
+        
+        // --- Trigger initial tab animations ---
+        triggerTabAnimations(document.querySelector('.tab-content.active'));
+
+
+        // --- Interactive Map Data & Drawing ---
+        const mapContainer = document.getElementById('map-container');
+        const tooltip = document.getElementById('map-tooltip');
+        const majorPartnerStates = new Set(['HI', 'TX', 'CO', 'PR', 'FL', 'NC', 'OH', 'NJ']);
+        const activeStates = new Set(['AL', 'AZ', 'CA', 'CO', 'FL', 'GA', 'IL', 'IN', 'KY', 'LA', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'NJ', 'NM', 'NY', 'NC', 'OH', 'PA', 'PR', 'SC', 'TN', 'TX', 'UT', 'VA', 'WA', 'WI', 'HI', 'ND', 'SD']);
+        
+        const partnerData = {
+            'HI': 'EPI: University of Hawaii, Maui', 'CA': 'WASTC', 'AZ': 'University of Arizona',
+            'NM': 'Eastern New Mexico University - Ruidoso', 'TX': 'EPI: El Paso Community College, Alamo College District',
+            'CO': 'University of Colorado, Colorado Springs', 'LA': 'Bossier Parish Community College',
+            'AL': 'University of Alabama, Huntsville', 'TN': 'Tennessee Tech University',
+            'FL': 'Florida Career Pathways Network, St. Pete Community College', 'NC': 'Fayetteville Technical Community College',
+            'KY': 'Southcentral Kentucky Community and Technical College', 'KS': 'Wichita State University, EnterpriseKC',
+            'MO': 'St. Louis Community College', 'IN': 'Ivy Tech Community College, Purdue Northwest University',
+            'MN': 'Metro State University', 'OH': 'Sinclair Community College',
+            'NJ': 'Brookdale Community College', 'WA': 'Whatcom Community College',
+            'ND': 'Minot State University', 'SD': 'Dakota State University',
+            'PR': 'EPI: Polytechnic University of Puerto Rico'
+        };
+        
+        const stateNameMap = {"Alabama":{"abbr":"AL"},"Alaska":{"abbr":"AK"},"Arizona":{"abbr":"AZ"},"Arkansas":{"abbr":"AR"},"California":{"abbr":"CA"},"Colorado":{"abbr":"CO"},"Connecticut":{"abbr":"CT"},"Delaware":{"abbr":"DE"},"District of Columbia":{"abbr":"DC"},"Florida":{"abbr":"FL"},"Georgia":{"abbr":"GA"},"Hawaii":{"abbr":"HI"},"Idaho":{"abbr":"ID"},"Illinois":{"abbr":"IL"},"Indiana":{"abbr":"IN"},"Iowa":{"abbr":"IA"},"Kansas":{"abbr":"KS"},"Kentucky":{"abbr":"KY"},"Louisiana":{"abbr":"LA"},"Maine":{"abbr":"ME"},"Maryland":{"abbr":"MD"},"Massachusetts":{"abbr":"MA"},"Michigan":{"abbr":"MI"},"Minnesota":{"abbr":"MN"},"Mississippi":{"abbr":"MS"},"Missouri":{"abbr":"MO"},"Montana":{"abbr":"MT"},"Nebraska":{"abbr":"NE"},"Nevada":{"abbr":"NV"},"New Hampshire":{"abbr":"NH"},"New Jersey":{"abbr":"NJ"},"New Mexico":{"abbr":"NM"},"New York":{"abbr":"NY"},"North Carolina":{"abbr":"NC"},"North Dakota":{"abbr":"ND"},"Ohio":{"abbr":"OH"},"Oklahoma":{"abbr":"OK"},"Oregon":{"abbr":"OR"},"Pennsylvania":{"abbr":"PA"},"Puerto Rico":{"abbr":"PR"},"Rhode Island":{"abbr":"RI"},"South Carolina":{"abbr":"SC"},"South Dakota":{"abbr":"SD"},"Tennessee":{"abbr":"TN"},"Texas":{"abbr":"TX"},"Utah":{"abbr":"UT"},"Vermont":{"abbr":"VT"},"Virginia":{"abbr":"VA"},"Washington":{"abbr":"WA"},"West Virginia":{"abbr":"WV"},"Wisconsin":{"abbr":"WI"},"Wyoming":{"abbr":"WY"}};
+        
+        fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json')
+        .then(response => response.json())
+        .then(us => {
+            const projection = d3.geoAlbersUsa().fitSize([mapContainer.clientWidth, mapContainer.clientHeight], topojson.feature(us, us.objects.states));
+            const path = d3.geoPath().projection(projection);
+
+            const mapSvg = d3.select("#map-container").append("svg")
+                .attr("viewBox", `0 0 ${mapContainer.clientWidth} ${mapContainer.clientHeight}`);
+
+            const getColor = (stateAbbr) => {
+                if (majorPartnerStates.has(stateAbbr)) return '#facc15'; // yellow-400
+                if (activeStates.has(stateAbbr)) return '#3b82f6'; // blue-500
+                return '#cbd5e1'; // slate-300
+            }
+
+            mapSvg.append("g").selectAll("path")
+                .data(topojson.feature(us, us.objects.states).features).join("path")
+                .attr("d", path).attr("class", "state").style("cursor", "pointer")
+                .attr("fill", d => {
+                    const stateName = d.properties.name;
+                    return getColor(stateNameMap[stateName]?.abbr)
+                })
+                .on("mousemove", function(event, d) {
+                    const stateName = d.properties.name;
+                    const stateAbbr = stateNameMap[stateName]?.abbr;
+
+                    d3.select(this).attr('fill', '#60a5fa');
+                    tooltip.style.opacity = 1;
+                    tooltip.style.left = `${event.pageX + 10}px`;
+                    tooltip.style.top = `${event.pageY - 28}px`;
+                    
+                    let status = "Not Engaged";
+                    if (majorPartnerStates.has(stateAbbr)) status = "Major Partner";
+                    else if (activeStates.has(stateAbbr)) status = "Active Partner";
+
+                    let partnerInfo = partnerData[stateAbbr] ? `<br><span class="font-bold text-amber-300">Partner:</span> <span class="text-xs">${partnerData[stateAbbr]}</span>` : '';
+                    
+                    tooltip.innerHTML = `${stateName}<br><span class="text-xs text-slate-300">${status}</span>${partnerInfo}`;
+                })
+                .on("mouseout", function(event, d) {
+                    const stateName = d.properties.name;
+                    const stateAbbr = stateNameMap[stateName]?.abbr;
+                    d3.select(this).attr("fill", getColor(stateAbbr));
+                    tooltip.style.opacity = 0;
+                });
+        }).catch(error => {
+            console.error("Map Error:", error);
+            mapContainer.innerHTML = `<p class="text-center text-red-500">Could not load map data.</p>`;
+        });
+    });
+    </script>
+</body>
+</html>
