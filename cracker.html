@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Cracking Educational Demonstration Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: white;
+            color: black;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .navigation {
+            width: 250px;
+            background-color: #1a1a1a;
+            color: white;
+            padding: 20px;
+            border-right: 3px solid #00ff00;
+        }
+
+        .nav-title {
+            color: #00ff00;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+        }
+
+        .nav-item {
+            background-color: #2a2a2a;
+            color: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 1px solid #444;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: #00ff00;
+            color: black;
+            border-color: #00ff00;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background-color: white;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-title {
+            color: #00ff00;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background-color: black;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .tool-container {
+            background-color: #f8f8f8;
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            color: black;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .crack-button {
+            background-color: #00ff00;
+            color: black;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .crack-button:hover {
+            background-color: #00cc00;
+            transform: translateY(-2px);
+        }
+
+        .crack-button:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output-terminal {
+            background-color: black;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            border: 2px solid #00ff00;
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+            border: 1px solid #00ff00;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #00ff00;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .educational-note {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .hash-display {
+            background-color: #000;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            margin: 10px 0;
+            border: 1px solid #00ff00;
+        }
+
+        .method-explanation {
+            background-color: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .attack-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .method-card {
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+
+        .method-card h3 {
+            color: #00ff00;
+            background-color: black;
+            padding: 8px;
+            margin: -15px -15px 10px -15px;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .stats-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background-color: black;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border: 2px solid #00ff00;
+        }
+
+        .warning {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .cursor::after {
+            content: '_';
+            animation: blink 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navigation">
+            <div class="nav-title">CYBERSECURITY LAB</div>
+            <div class="nav-item active" onclick="showSection('overview')">Overview</div>
+            <div class="nav-item" onclick="showSection('linux-cracking')">Linux Password Cracking</div>
+            <div class="nav-item" onclick="showSection('windows-cracking')">Windows Password Cracking</div>
+            <div class="nav-item" onclick="showSection('methods')">Attack Methods</div>
+            <div class="nav-item" onclick="showSection('defense')">Defense Strategies</div>
+        </div>
+
+        <div class="main-content">
+            <div id="overview" class="content-section active">
+                <div class="section-title">Password Cracking Educational Laboratory</div>
+                
+                <div class="educational-note">
+                    <strong>EDUCATIONAL PURPOSE ONLY:</strong> This tool is designed for cybersecurity education and demonstration purposes. It shows how passwords can be vulnerable to various attack methods. All simulations are limited to 4-character passwords for educational efficiency.
+                </div>
+
+                <div class="warning">
+                    <strong>ETHICAL USE DISCLAIMER:</strong> This tool should only be used for educational purposes, authorized penetration testing, and security research. Unauthorized password cracking is illegal and unethical.
+                </div>
+
+                <h3>Learning Objectives:</h3>
+                <ul style="margin: 20px 0; line-height: 1.6;">
+                    <li>Understand how Linux and Windows store password hashes</li>
+                    <li>Learn about different password cracking attack methods</li>
+                    <li>Recognize the importance of strong password policies</li>
+                    <li>Explore defense mechanisms against password attacks</li>
+                </ul>
+
+                <div class="method-explanation">
+                    <h4>How Password Cracking Works:</h4>
+                    <p>Password cracking involves recovering plaintext passwords from their hashed counterparts. Operating systems don't store passwords in plain text but instead store cryptographic hashes. Attackers try to reverse this process through various methods.</p>
+                </div>
+            </div>
+
+            <div id="linux-cracking" class="content-section">
+                <div class="section-title">Linux Password Cracking Simulation</div>
+                
+                <div class="educational-note">
+                    Linux systems store password hashes in /etc/shadow using algorithms like MD5, SHA-256, SHA-512, or yescrypt. The format is typically $algorithm$salt$hash.
+                </div>
+
+                <div class="tool-container">
+                    <h3>Linux Hash Generator & Cracker</h3>
+                    
+                    <div class="input-group">
+                        <label for="linux-password">Enter Password (max 4 characters):</label>
+                        <input type="password" id="linux-password" maxlength="4" placeholder="e.g., abc1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="linux-algorithm">Hash Algorithm:</label>
+                        <select id="linux-algorithm">
+                            <option value="md5">MD5 ($1$)</option>
+                            <option value="sha256">SHA-256 ($5$)</option>
+                            <option value="sha512" selected>SHA-512 ($6$)</option>
+                        </select>
+                    </div>
+
+                    <button class="crack-button" onclick="generateLinuxHash()">Generate Hash</button>
+                    <button class="crack-button" onclick="crackLinuxPassword()" id="linux-crack-btn" disabled>Start Cracking</button>
+
+                    <div id="linux-hash-display" class="hash-display" style="display: none;"></div>
+                    
+                    <div id="linux-progress" class="progress-bar" style="display: none;">
+                        <div id="linux-progress-fill" class="progress-fill"></div>
+                    </div>
+
+                    <div id="linux-output" class="output-terminal"></div>
+                </div>
+
+                <div class="method-explanation">
+                    <h4>Linux Password Storage:</h4>
+                    <p>Linux stores password hashes in /etc/shadow with salt to prevent rainbow table attacks. The hash format includes the algorithm identifier, salt, and the actual hash value.</p>
+                </div>
+            </div>
+
+            <div id="windows-cracking" class="content-section">
+                <div class="section-title">Windows Password Cracking Simulation</div>
+                
+                <div class="educational-note">
+                    Windows systems store password hashes in the SAM database using NTLM (NT) hashing. These hashes are typically extracted using tools like Mimikatz or pwdump.
+                </div>
+
+                <div class="tool-container">
+                    <h3>Windows NTLM Hash Generator & Cracker</h3>
+                    
+                    <div class="input-group">
+                        <label for="windows-password">Enter Password (max 4 characters):</label>
+                        <input type="password" id="windows-password" maxlength="4" placeholder="e.g., pass">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="windows-algorithm">Hash Type:</label>
+                        <select id="windows-algorithm">
+                            <option value="ntlm" selected>NTLM (NT Hash)</option>
+                            <option value="lm">LM Hash (Legacy)</option>
+                        </select>
+                    </div>
+
+                    <button class="crack-button" onclick="generateWindowsHash()">Generate Hash</button>
+                    <button class="crack-button" onclick="crackWindowsPassword()" id="windows-crack-btn" disabled>Start Cracking</button>
+
+                    <div id="windows-hash-display" class="hash-display" style="display: none;"></div>
+                    
+                    <div id="windows-progress" class="progress-bar" style="display: none;">
+                        <div id="windows-progress-fill" class="progress-fill"></div>
+                    </div>
+
+                    <div id="windows-output" class="output-terminal"></div>
+                </div>
+
+                <div class="method-explanation">
+                    <h4>Windows Password Storage:</h4>
+                    <p>Windows stores NTLM hashes in the SAM database. Unlike Linux, Windows NTLM hashes are not salted, making them more vulnerable to rainbow table attacks.</p>
+                </div>
+            </div>
+
+            <div id="methods" class="content-section">
+                <div class="section-title">Password Cracking Attack Methods</div>
+
+                <div class="attack-methods">
+                    <div class="method-card">
+                        <h3>Dictionary Attack</h3>
+                        <p>Uses a predefined list of common passwords and words. Fast but limited to known passwords.</p>
+                        <br>
+                        <strong>Effectiveness:</strong> High for weak passwords<br>
+                        <strong>Speed:</strong> Very Fast<br>
+                        <strong>Resource Usage:</strong> Low
+                    </div>
+
+                    <div class="method-card">
+                        <h3>Brute Force Attack</h3>
+                        <p>Tries every possible combination of characters systematically. Guaranteed to work but can be extremely slow.</p>
+                        <br>
+                        <strong>Effectiveness:</strong> 100% (given time)<br>
+                        <strong>Speed:</strong> Very Slow<br>
+                        <strong>Resource Usage:</strong> High
+                    </div>
+
+                    <div class="method-card">
+                        <h3>Hybrid Attack</h3>
+                        <p>Combines dictionary words with common variations (numbers, symbols). Balances speed and coverage.</p>
+                        <br>
+                        <strong>Effectiveness:</strong> High<br>
+                        <strong>Speed:</strong> Moderate<br>
+                        <strong>Resource Usage:</strong> Moderate
+                    </div>
+
+                    <div class="method-card">
+                        <h3>Rainbow Table Attack</h3>
+                        <p>Uses precomputed hash tables to instantly look up password hashes. Fast but requires storage space.</p>
+                        <br>
+                        <strong>Effectiveness:</strong> High for unsalted hashes<br>
+                        <strong>Speed:</strong> Very Fast<br>
+                        <strong>Resource Usage:</strong> High Storage
+                    </div>
+                </div>
+
+                <div class="educational-note">
+                    <strong>Performance Note:</strong> This simulation demonstrates these methods on 4-character passwords. Real-world attacks on longer passwords can take exponentially longer times.
+                </div>
+            </div>
+
+            <div id="defense" class="content-section">
+                <div class="section-title">Defense Strategies</div>
+
+                <div class="method-explanation">
+                    <h4>Password Policy Recommendations:</h4>
+                    <ul style="line-height: 1.8; margin: 15px 0;">
+                        <li><strong>Length:</strong> Minimum 12-14 characters</li>
+                        <li><strong>Complexity:</strong> Mix of uppercase, lowercase, numbers, and symbols</li>
+                        <li><strong>Uniqueness:</strong> Different passwords for different systems</li>
+                        <li><strong>Expiration:</strong> Regular password changes for sensitive accounts</li>
+                    </ul>
+                </div>
+
+                <div class="attack-methods">
+                    <div class="method-card">
+                        <h3>Strong Hashing Algorithms</h3>
+                        <p>Use modern algorithms like bcrypt, scrypt, or Argon2 that are designed to be slow and memory-intensive.</p>
+                    </div>
+
+                    <div class="method-card">
+                        <h3>Salt Implementation</h3>
+                        <p>Always use unique salts for each password to prevent rainbow table attacks.</p>
+                    </div>
+
+                    <div class="method-card">
+                        <h3>Multi-Factor Authentication</h3>
+                        <p>Implement 2FA/MFA to add additional security layers beyond passwords.</p>
+                    </div>
+
+                    <div class="method-card">
+                        <h3>Account Lockout Policies</h3>
+                        <p>Implement lockout mechanisms after failed login attempts to prevent brute force attacks.</p>
+                    </div>
+                </div>
+
+                <div class="warning">
+                    <strong>Key Takeaway:</strong> The best defense against password cracking is a combination of strong passwords, proper hashing algorithms, and additional security measures like multi-factor authentication.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple hash functions for demonstration
+        function simpleHash(str, algorithm) {
+            let hash = 0;
+            if (str.length === 0) return hash;
+            
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            
+            // Make it appear more realistic based on algorithm
+            let result = Math.abs(hash).toString(16);
+            
+            switch(algorithm) {
+                case 'md5':
+                    return result.padStart(32, '0').substring(0, 32);
+                case 'sha256':
+                    return result.padStart(64, '0').substring(0, 64);
+                case 'sha512':
+                    return result.padStart(128, '0').substring(0, 128);
+                case 'ntlm':
+                    return result.padStart(32, '0').substring(0, 32).toUpperCase();
+                case 'lm':
+                    return result.padStart(32, '0').substring(0, 32).toUpperCase();
+                default:
+                    return result;
+            }
+        }
+
+        function generateSalt() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./';
+            let salt = '';
+            for (let i = 0; i < 8; i++) {
+                salt += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return salt;
+        }
+
+        let currentLinuxPassword = '';
+        let currentWindowsPassword = '';
+        let currentLinuxHash = '';
+        let currentWindowsHash = '';
+
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => section.classList.remove('active'));
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Update navigation
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function generateLinuxHash() {
+            const password = document.getElementById('linux-password').value;
+            const algorithm = document.getElementById('linux-algorithm').value;
+            
+            if (password.length === 0) {
+                alert('Please enter a password');
+                return;
+            }
+            
+            if (password.length > 4) {
+                alert('Password must be 4 characters or less for this demonstration');
+                return;
+            }
+            
+            currentLinuxPassword = password;
+            const salt = generateSalt();
+            const hash = simpleHash(password + salt, algorithm);
+            
+            let algorithmId;
+            switch(algorithm) {
+                case 'md5': algorithmId = '1'; break;
+                case 'sha256': algorithmId = '5'; break;
+                case 'sha512': algorithmId = '6'; break;
+            }
+            
+            currentLinuxHash = `$${algorithmId}$${salt}$${hash}`;
+            
+            document.getElementById('linux-hash-display').textContent = `Generated Linux Hash:\n${currentLinuxHash}`;
+            document.getElementById('linux-hash-display').style.display = 'block';
+            document.getElementById('linux-crack-btn').disabled = false;
+            
+            document.getElementById('linux-output').textContent = `[INFO] Linux ${algorithm.toUpperCase()} hash generated successfully\n[INFO] Salt: ${salt}\n[INFO] Ready for cracking simulation\n`;
+        }
+
+        function generateWindowsHash() {
+            const password = document.getElementById('windows-password').value;
+            const algorithm = document.getElementById('windows-algorithm').value;
+            
+            if (password.length === 0) {
+                alert('Please enter a password');
+                return;
+            }
+            
+            if (password.length > 4) {
+                alert('Password must be 4 characters or less for this demonstration');
+                return;
+            }
+            
+            currentWindowsPassword = password;
+            const hash = simpleHash(password, algorithm);
+            currentWindowsHash = hash;
+            
+            document.getElementById('windows-hash-display').textContent = `Generated Windows ${algorithm.toUpperCase()} Hash:\n${hash}`;
+            document.getElementById('windows-hash-display').style.display = 'block';
+            document.getElementById('windows-crack-btn').disabled = false;
+            
+            document.getElementById('windows-output').textContent = `[INFO] Windows ${algorithm.toUpperCase()} hash generated successfully\n[INFO] Hash: ${hash}\n[INFO] Ready for cracking simulation\n`;
+        }
+
+        function simulateCracking(password, outputElementId, progressElementId, progressFillId, hashType) {
+            const outputElement = document.getElementById(outputElementId);
+            const progressElement = document.getElementById(progressElementId);
+            const progressFill = document.getElementById(progressFillId);
+            
+            outputElement.textContent = '';
+            progressElement.style.display = 'block';
+            progressFill.style.width = '0%';
+            
+            // Simulate different attack methods
+            const attacks = ['Dictionary Attack', 'Brute Force Attack', 'Hybrid Attack'];
+            let currentAttack = 0;
+            let progress = 0;
+            
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*';
+            let attempts = 0;
+            const maxAttempts = Math.pow(chars.length, password.length);
+            
+            function updateProgress() {
+                attempts++;
+                progress = (attempts / Math.min(maxAttempts, 1000)) * 100;
+                progressFill.style.width = Math.min(progress, 100) + '%';
+                
+                if (attempts % 50 === 0) {
+                    const randomAttempt = generateRandomString(password.length);
+                    outputElement.textContent += `[${attacks[currentAttack]}] Trying: ${randomAttempt}\n`;
+                    outputElement.scrollTop = outputElement.scrollHeight;
+                }
+                
+                // Simulate finding the password
+                if (attempts >= Math.random() * 500 + 200 || progress >= 100) {
+                    progressFill.style.width = '100%';
+                    outputElement.textContent += `\n[SUCCESS] Password cracked: ${password}\n`;
+                    outputElement.textContent += `[INFO] Attack method: ${attacks[currentAttack]}\n`;
+                    outputElement.textContent += `[INFO] Attempts made: ${attempts}\n`;
+                    outputElement.textContent += `[INFO] Hash type: ${hashType}\n`;
+                    outputElement.textContent += `[WARNING] This demonstrates why strong passwords are essential!\n`;
+                    return;
+                }
+                
+                if (attempts % 200 === 0 && currentAttack < attacks.length - 1) {
+                    currentAttack++;
+                    outputElement.textContent += `\n[INFO] Switching to ${attacks[currentAttack]}...\n`;
+                }
+                
+                setTimeout(updateProgress, 20);
+            }
+            
+            outputElement.textContent += `[INFO] Starting password cracking simulation...\n`;
+            outputElement.textContent += `[INFO] Target hash type: ${hashType}\n`;
+            outputElement.textContent += `[INFO] Beginning with ${attacks[currentAttack]}...\n\n`;
+            
+            setTimeout(updateProgress, 100);
+        }
+
+        function generateRandomString(length) {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function crackLinuxPassword() {
+            if (!currentLinuxPassword) {
+                alert('Please generate a hash first');
+                return;
+            }
+            
+            const algorithm = document.getElementById('linux-algorithm').value;
+            simulateCracking(currentLinuxPassword, 'linux-output', 'linux-progress', 'linux-progress-fill', `Linux ${algorithm.toUpperCase()}`);
+        }
+
+        function crackWindowsPassword() {
+            if (!currentWindowsPassword) {
+                alert('Please generate a hash first');
+                return;
+            }
+            
+            const algorithm = document.getElementById('windows-algorithm').value;
+            simulateCracking(currentWindowsPassword, 'windows-output', 'windows-progress', 'windows-progress-fill', `Windows ${algorithm.toUpperCase()}`);
+        }
+
+        // Initialize the tool
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('linux-output').textContent = '[INFO] Linux Password Cracking Tool Ready\n[INFO] Generate a hash to begin simulation\n';
+            document.getElementById('windows-output').textContent = '[INFO] Windows Password Cracking Tool Ready\n[INFO] Generate a hash to begin simulation\n';
+        });
+    </script>
+</body>
+</html>
