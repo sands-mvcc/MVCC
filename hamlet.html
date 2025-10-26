@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>An Interactive Lesson: Hamlet</title>
+    <!-- Chosen Palette: Scholarly Parchment -->
+    <!-- Application Structure Plan: A tab-based single-page application (SPA). A fixed header with navigation tabs ("Welcome", "Characters", "Themes", "Relationships", "Quiz"). The user lands on "Welcome". Clicking any tab instantly shows that section and hides others using JavaScript. This structure was chosen because it's thematic and non-linear, mirroring how a student would study: focusing on characters, then themes, etc., in any order. It's an intuitive, common, and user-friendly information architecture for this type of educational content, keeping the user on a single page for a seamless experience. -->
+    <!-- Visualization & Content Choices:
+        - Info: Major Characters. Goal: Inform, Organize. Viz/Method: Interactive HTML/CSS "card" list. JS onClick updates a detail panel. Interaction: Click-to-reveal. Justification: Familiar UI, clean, isolates information until needed.
+        - Info: Key Themes. Goal: Inform, Compare. Viz/Method: Tabbed content area. Buttons for each theme update a central `div` with text (analysis, analogies). Interaction: Click-to-update content. Justification: Allows easy comparison and focused reading.
+        - Info: Thematic Prominence. Goal: Visualize qualitative assessment. Viz/Method: Radar Chart via Chart.js (Canvas). Interaction: Tooltips on hover. Justification: Satisfies Chart.js requirement by quantifying the *importance* of qualitative themes.
+        - Info: Character Relationships. Goal: Organize, Show Relationships. Viz/Method: A static diagram built with HTML `div`s and Tailwind (flexbox/grid) to create a visual "map." Interaction: Part of the interactive tab system. Justification: Visually represents complex connections better than text. Adheres to NO SVG rule.
+        - Info: Student Knowledge Check. Goal: Engage, Assess. Viz/Method: Simple HTML form (radio buttons) with JS for checking answers and displaying feedback. Interaction: Click-to-select, click-to-submit. Justification: Provides active engagement and self-assessment.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfaf6;
+            color: #333;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-active {
+            border-bottom-color: #b45309;
+            color: #b45309;
+            font-weight: 500;
+        }
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .content-active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .btn {
+            @apply px-4 py-2 rounded-md font-medium transition-all duration-200;
+        }
+        .btn-primary {
+            @apply bg-amber-700 text-white hover:bg-amber-800;
+        }
+        .btn-secondary {
+            @apply bg-stone-200 text-stone-700 hover:bg-stone-300;
+        }
+        .list-btn {
+            @apply w-full text-left p-3 rounded-md transition-all duration-150 hover:bg-amber-100;
+        }
+        .list-btn-active {
+            @apply bg-amber-100 text-amber-800 font-medium;
+        }
+        .relationship-box {
+            @apply border-2 border-stone-300 bg-white p-3 rounded-lg shadow-sm text-center font-medium;
+        }
+        .relationship-line {
+            @apply bg-stone-300;
+            content: '';
+        }
+    </style>
+</head>
+<body class="bg-amber-50 text-stone-900">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-amber-900 mb-2">An Interactive Lesson on Hamlet</h1>
+            <p class="text-lg text-stone-700">Explore the characters, themes, and tragic depth of Shakespeare's masterpiece.</p>
+        </header>
+
+        <nav class="flex flex-wrap justify-center border-b-2 border-stone-200 mb-8">
+            <button class="nav-link p-4 font-medium text-stone-500 border-b-4 border-transparent hover:text-amber-700" data-target="welcome">Welcome</button>
+            <button class="nav-link p-4 font-medium text-stone-500 border-b-4 border-transparent hover:text-amber-700" data-target="characters">Characters</button>
+            <button class="nav-link p-4 font-medium text-stone-500 border-b-4 border-transparent hover:text-amber-700" data-target="themes">Themes</button>
+            <button class="nav-link p-4 font-medium text-stone-500 border-b-4 border-transparent hover:text-amber-700" data-target="relationships">Relationships</button>
+            <button class="nav-link p-4 font-medium text-stone-500 border-b-4 border-transparent hover:text-amber-700" data-target="quiz">Test Your Knowledge</button>
+        </nav>
+
+        <main id="content-container">
+
+            <section id="welcome" class="content-section space-y-6">
+                <h2 class="text-3xl font-bold text-amber-800 mb-4">"To be, or not to be..."</h2>
+                <div class="bg-white p-6 rounded-lg shadow-lg space-y-4 text-lg">
+                    <p>Welcome to this interactive guide to *Hamlet*. This lesson is designed to help you navigate the complex world of Elsinore, from its corrupt court to the minds of its tragic figures. Written around 1600, *Hamlet* is not just a simple revenge story; it's a profound exploration of madness, morality, and the human condition.</p>
+                    <p>Use the navigation tabs above to dive into the key components of the play:</p>
+                    <ul class="list-disc list-inside ml-4 space-y-2">
+                        <li><strong class="font-medium text-amber-800">Characters:</strong> Meet the play's major figures and analyze their motivations.</li>
+                        <li><strong class="font-medium text-amber-800">Themes:</strong> Explore the central ideas and learn how they connect to modern life.</li>
+                        <li><strong class="font-medium text-amber-800">Relationships:</strong> Visualize the web of family, love, and conflict.</li>
+                        <li><strong class="font-medium text-amber-800">Test Your Knowledge:</strong> Check your understanding with a short quiz.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="characters" class="content-section">
+                <h2 class="text-3xl font-bold text-amber-800 mb-4">The Cast of the Tragedy</h2>
+                <p class="text-lg text-stone-700 mb-6">The tragedy of *Hamlet* is driven by its deeply flawed and complex characters. Click on a name to explore their role, motivations, and fatal flaws. The first character is loaded for you as a starting point.</p>
+                <div class="flex flex-col md:flex-row gap-6 md:gap-8">
+                    <div class="md:w-1/3 lg:w-1/4">
+                        <div id="character-list" class="flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 space-x-2 md:space-x-0 md:space-y-2">
+                            <button class="character-btn list-btn" data-char="hamlet">Prince Hamlet</button>
+                            <button class="character-btn list-btn" data-char="claudius">King Claudius</button>
+                            <button class="character-btn list-btn" data-char="gertrude">Queen Gertrude</button>
+                            <button class="character-btn list-btn" data-char="ophelia">Ophelia</button>
+                            <button class="character-btn list-btn" data-char="polonius">Polonius</button>
+                            <button class="character-btn list-btn" data-char="laertes">Laertes</button>
+                            <button class="character-btn list-btn" data-char="ghost">The Ghost</button>
+                        </div>
+                    </div>
+                    <div id="character-detail" class="md:w-2/3 lg:w-3/4 bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                    </div>
+                </div>
+            </section>
+
+            <section id="themes" class="content-section">
+                <h2 class="text-3xl font-bold text-amber-800 mb-4">The "Rotten State" of Denmark</h2>
+                <p class="text-lg text-stone-700 mb-6">Beyond the plot, *Hamlet* is famous for its timeless themes. This section explores the play's central ideas. Click a theme to see its analysis and a modern analogy. Below the analysis, a chart visualizes the conceptual prominence of these themes throughout the play.</p>
+                <div class="flex flex-col lg:flex-row gap-6 md:gap-8">
+                    <div class="lg:w-2/5">
+                        <div id="theme-list" class="flex flex-row flex-wrap lg:flex-col gap-2">
+                            <button class="theme-btn btn btn-secondary flex-grow lg:flex-grow-0" data-theme="revenge">Revenge</button>
+                            <button class="theme-btn btn btn-secondary flex-grow lg:flex-grow-0" data-theme="madness">Madness (Feigned vs. Real)</button>
+                            <button class="theme-btn btn btn-secondary flex-grow lg:flex-grow-0" data-theme="corruption">Corruption & Decay</button>
+                            <button class="theme-btn btn btn-secondary flex-grow lg:flex-grow-0" data-theme="mortality">Mortality & Existentialism</button>
+                            <button class="theme-btn btn btn-secondary flex-grow lg:flex-grow-0" data-theme="inaction">Action vs. Inaction</button>
+                        </div>
+                        <div class="chart-container mt-8">
+                            <canvas id="themeChart"></canvas>
+                        </div>
+                    </div>
+                    <div id="theme-content" class="lg:w-3/5 bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                    </div>
+                </div>
+            </section>
+
+            <section id="relationships" class="content-section">
+                <h2 class="text-3xl font-bold text-amber-800 mb-4">A Tangled Web</h2>
+                <p class="text-lg text-stone-700 mb-6">Understanding *Hamlet* requires mapping the complex web of relationships. The diagram below outlines the key family, romantic, and adversarial connections that drive the plot. Note how family and conflict are deeply intertwined.</p>
+                <div class="bg-white p-4 md:p-8 rounded-lg shadow-lg overflow-x-auto">
+                    <div class="flex flex-col items-center space-y-4 min-w-[600px]">
+                        
+                        <div class="flex justify-center items-center space-x-2">
+                            <div class="relationship-box w-48">Ghost (King Hamlet)</div>
+                            <div class="relationship-box w-48 bg-red-100 border-red-300">King Claudius</div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-24 h-1 relationship-line"></div>
+                            <div class="text-sm px-2">Killed</div>
+                            <div class="w-24 h-1 relationship-line"></div>
+                        </div>
+
+                        <div class="flex justify-center items-center space-x-2">
+                            <div class="w-48 text-center">(Brother to)</div>
+                            <div class="w-48 text-center">(Married to)</div>
+                        </div>
+
+                        <div class="flex justify-center items-center">
+                            <div class="w-48 h-12 border-l-2 border-r-2 border-b-2 border-stone-300 rounded-b-lg"></div>
+                            <div class="relationship-box w-48 z-10">Queen Gertrude</div>
+                            <div class="w-48 h-12 border-l-2 border-r-2 border-b-2 border-stone-300 rounded-b-lg"></div>
+                        </div>
+                        
+                        <div class="w-1 h-8 relationship-line"></div>
+                        
+                        <div class="relationship-box w-48 bg-blue-100 border-blue-300">Prince Hamlet</div>
+                        
+                        <div class="flex w-full max-w-2xl justify-between items-center h-8">
+                            <div class="text-red-600 font-medium text-center w-1/2">CONFLICT</div>
+                            <div class="w-1 h-8 relationship-line"></div>
+                            <div class="text-purple-600 font-medium text-center w-1/2">LOVE</div>
+                        </div>
+
+                        <div class="flex w-full max-w-2xl justify-between items-center">
+                            <div class="w-1/2 h-16 border-l-2 border-t-2 border-stone-300 rounded-tl-lg"></div>
+                            <div class="w-1 h-16 relationship-line"></div>
+                            <div class="w-1/2 h-16 border-r-2 border-t-2 border-stone-300 rounded-tr-lg"></div>
+                        </div>
+
+                        <div class="flex w-full max-w-4xl justify-around">
+                            <div class="relationship-box w-48 bg-green-100 border-green-300">Laertes</div>
+                            <div class="relationship-box w-48">Polonius</div>
+                            <div class="relationship-box w-48 bg-purple-100 border-purple-300">Ophelia</div>
+                        </div>
+
+                        <div class="flex w-full max-w-4xl justify-around items-center">
+                            <div class="w-48 h-8 border-l-2 border-r-2 border-t-2 border-stone-300 rounded-t-lg"></div>
+                            <div class="w-1 h-8 relationship-line"></div>
+                            <div class="w-48 h-8 border-l-2 border-r-2 border-t-2 border-stone-300 rounded-t-lg"></div>
+                        </div>
+
+                        <div class="flex w-full max-w-4xl justify-around text-sm">
+                            <div class="w-48 text-center">(Son of)</div>
+                            <div class="w-48 text-center">(Father to)</div>
+                            <div class="w-48 text-center">(Daughter of)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="quiz" class="content-section">
+                <h2 class="text-3xl font-bold text-amber-800 mb-4">Test Your Knowledge</h2>
+                <p class="text-lg text-stone-700 mb-6">You've explored the characters, themes, and relationships. Now, let's see what you've retained with a quick quiz. Select the best answer for each question and submit your results at the bottom.</p>
+                <div class="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                    <div id="quiz-container" class="space-y-6"></div>
+                    <div class="mt-8">
+                        <button id="submit-quiz" class="btn btn-primary">Submit Answers</button>
+                    </div>
+                    <div id="quiz-results" class="mt-6 text-lg font-medium"></div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const characterData = {
+                hamlet: {
+                    name: "Prince Hamlet",
+                    desc: "The protagonist and Prince of Denmark. He is a philosophical and contemplative student whose life is upended by his father's murder.",
+                    analysis: "Hamlet is one of the most complex characters in literature. He is defined by his profound melancholy and his paralyzing indecision. Tasked by his father's ghost to seek revenge, he spends the play wrestling with the morality of the act, the nature of existence, and the authenticity of the world around him. His 'antic disposition' (feigned madness) is a brilliant tool for investigation, but it also blurs the line between his true self and the mask he wears, ultimately contributing to the tragedy.",
+                    quote: "To be, or not to be: that is the question..."
+                },
+                claudius: {
+                    name: "King Claudius",
+                    desc: "The antagonist, Hamlet's uncle and stepfather. He murders his brother to seize the throne and marry Queen Gertrude.",
+                    analysis: "Claudius is a shrewd and decisive politician. Unlike Hamlet, he is a man of action, but his actions are rooted in ambition and corruption. He is the poison that infects the 'state of Denmark.' While he shows a flicker of guilt in a prayer scene, he ultimately prioritizes his power and position above all else, making him a compelling and pragmatic villain.",
+                    quote: "O, my offence is rank, it smells to heaven..."
+                },
+                gertrude: {
+                    name: "Queen Gertrude",
+                    desc: "Hamlet's mother, the Queen of Denmark. Her hasty marriage to Claudius is a primary source of Hamlet's distress.",
+                    analysis: "Gertrude's defining trait is her desire for affection and stability, which makes her morally weak and dependent on the men in her life. It's ambiguous whether she was complicit in her husband's murder, but her real crime in Hamlet's eyes is her seeming lack of grief and her 'incestuous' marriage. She is a figure of flawed motherhood, unable to understand the depth of her son's pain.",
+                    quote: "The lady doth protest too much, methinks."
+                },
+                ophelia: {
+                    name: "Ophelia",
+                    desc: "Daughter of Polonius and sister of Laertes. She is Hamlet's love interest and a tragic pawn in the games of the court.",
+                    analysis: "Ophelia is a symbol of innocence betrayed. She is obedient to her father and brother, who instruct her to reject Hamlet, leaving her isolated. Buffeted by the cruelties of Hamlet (who feigns madness toward her) and the death of her father (at Hamlet's hands), her mind fractures. Unlike Hamlet's strategic 'madness,' Ophelia's descent is genuine and tragic, leading to her death by drowning.",
+                    quote: "I was the more deceived."
+                },
+                polonius: {
+                    name: "Polonius",
+                    desc: "The Lord Chamberlain, father to Laertes and Ophelia. A pompous and meddling advisor to the King.",
+                    analysis: "Polonius represents the oblivious corruption of the court. He is a windbag, full of long-winded but hollow advice ('To thine own self be true'). His desire to spy and meddle, first on his son and then on Hamlet, directly leads to his death when Hamlet mistakes him for Claudius behind a curtain. His death is the play's turning point, a catalyst for Ophelia's madness and Laertes' quest for revenge.",
+                    quote: "Brevity is the soul of wit."
+                },
+                laertes: {
+                    name: "Laertes",
+                    desc: "Son of Polonius and brother of Ophelia. A man of action who serves as a direct foil to Hamlet.",
+                    analysis: "Where Hamlet is philosophical and hesitant, Laertes is passionate and quick to act. When he learns of his father's death, he immediately returns to Denmark and raises a mob to storm the castle. Claudius easily manipulates Laertes's thirst for vengeance, turning him into a tool for Hamlet's destruction. The duel between Hamlet and Laertes highlights two different-but-equally-destructive-paths of revenge.",
+                    quote: "I am justly kill'd with mine own treachery."
+                },
+                ghost: {
+                    name: "The Ghost",
+                    desc: "The specter of Hamlet's recently deceased father, King Hamlet. He appears to demand that Hamlet avenge his 'foul and most unnatural murder.'",
+                    analysis: "The Ghost is the catalyst for the entire plot. His revelation sets Hamlet on his path of revenge. However, the Ghost also raises critical questions: Is it a 'spirit of health or goblin damned'? Is it a true representation of his father or a demon sent to tempt Hamlet to commit a mortal sin? This ambiguity is a source of Hamlet's initial delay.",
+                    quote: "Revenge his foul and most unnatural murder."
+                }
+            };
+
+            const themeData = {
+                revenge: {
+                    name: "The Corrosive Nature of Revenge",
+                    desc: "The central driver of the plot is the Ghost's command for Hamlet to 'Revenge his foul... murder.' The play contrasts Hamlet's slow, philosophical quest for revenge with the rash, passionate revenge of Laertes. Ultimately, the play argues that the pursuit of personal vengeance is a corrupting force that consumes the avenger and destroys everyone around them. By the end, the entire royal family is dead, a direct result of the cycle of revenge.",
+                    analogy: "Modern Analogy: Think of revenge as a kind of high-interest loan. You get a moment of satisfaction (the 'payback'), but the interest (the consequences) compounds exponentially until it bankrupts you morally and emotionally, often taking others down with you. It's the difference between seeking justice (a balanced, societal process) and seeking vengeance (a personal, chaotic act)."
+                },
+                madness: {
+                    name: "Madness (Feigned vs. Real)",
+                    desc: "The play presents two starkly different forms of madness. Hamlet adopts an 'antic disposition'—a feigned madness—to disguise his true intentions and investigate Claudius. It's a strategic mask. In contrast, Ophelia's madness is tragically real. Driven by her father's death and Hamlet's brutal rejection, her mind shatters, leading to her death. Hamlet's 'madness' is a tool of an active mind, while Ophelia's is the tragic collapse of a passive one.",
+                    analogy: "Modern Analogy: Hamlet's feigned madness is like an undercover agent meticulously playing a role. They have a goal and their strange behavior is a calculated part of their strategy. Ophelia's real madness is like a computer's operating system suffering a catastrophic crash. The core files are corrupted, and the system can no longer process input or function."
+                },
+                corruption: {
+                    name: "Corruption, Poison, and Decay",
+                    desc: "Marcellus famously says, 'Something is rotten in the state of Denmark.' This is the play's core metaphor. Claudius's secret murder of his brother is a poison that has infected the entire kingdom. The play is filled with imagery of disease, decay, and poison: the poison in the King's ear, the poison on the dueling foil, the poisoned wine. This symbolizes how a single act of moral corruption at the top can rot a nation from the inside out.",
+                    analogy: "Modern Analogy: This is like a corporate fraud scandal. A secret, illegal act by a CEO (the 'poison') may seem contained at first, but it slowly spreads. It corrupts the company's financials, poisons the workplace culture, and ultimately leads to the company's collapse, ruining the lives of innocent employees (the Ophelias and Laertes) in the process."
+                },
+                mortality: {
+                    name: "Mortality & Existentialism",
+                    desc: "From his first soliloquy ('O, that this too too solid flesh would melt'), Hamlet is obsessed with the meaning of life and the finality of death. This culminates in the famous 'To be, or not to be' speech, where he contemplates suicide. The gravedigger scene, where Hamlet holds the skull of Yorick, the court jester, is a profound meditation on the fact that all life, from kings to clowns, ends in dust. He is questioning what it means to be alive if all actions are ultimately meaningless.",
+                    analogy: "Modern Analogy: This is the feeling of a 'quarter-life' or 'mid-life' crisis. It's that moment you stop just *living* and ask, *'Why?'* Why am I on this career path? What is the purpose of all this effort? Hamlet is having the ultimate existential crisis, triggered by grief, forcing him to question the very foundations of his reality and purpose."
+                },
+                inaction: {
+                    name: "Action vs. Inaction",
+                    desc: "The play is structured around Hamlet's profound delay. Why does he wait so long to kill Claudius? He is a man of thought, not action. He struggles with the evidence ('Is the ghost real?'), the morality ('Is revenge a sin?'), and the consequences ('What happens after death?'). He is contrasted with Laertes and Fortinbras, two men who act decisively (and rashly). The play asks: is it better to be a reflective, moral person who struggles to act, or a decisive, passionate person who acts without thinking?",
+                    analogy: "Modern Analogy: It's the difference between 'analysis paralysis' and 'ready, fire, aim.' Hamlet is the student who researches a paper for weeks, finding so many conflicting sources that he can't decide on a thesis and hands it in late. Laertes is the student who hears the prompt, writes the entire paper in one night based on his first instinct, and gets a C+."
+                }
+            };
+
+            const quizData = [
+                {
+                    question: "What is the 'foul and most unnatural murder' the Ghost commands Hamlet to avenge?",
+                    options: [
+                        "Polonius being stabbed through a curtain.",
+                        "King Hamlet being poisoned by his brother, Claudius.",
+                        "Ophelia drowning in the river.",
+                        "Hamlet's father dying in battle with Norway."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "Why does Hamlet feign madness (his 'antic disposition')?",
+                    options: [
+                        "He is truly driven mad by grief.",
+                        "To disguise his true intentions and investigate the King.",
+                        "To make Ophelia fall in love with him.",
+                        "To avoid his royal duties."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "Who is the character that serves as a 'foil' to Hamlet, being passionate and quick to act?",
+                    options: [
+                        "Horatio",
+                        "Polonius",
+                        "Laertes",
+                        "Rosencrantz"
+                    ],
+                    answer: 2
+                },
+                {
+                    question: "The famous 'To be, or not to be' soliloquy is a meditation on what?",
+                    options: [
+                        "Whether to kill Claudius in the chapel.",
+                        "Whether to flee Denmark with Ophelia.",
+                        "The meaning of life, death, and suicide.",
+                        "The honesty of his friends, Rosencrantz and Guildenstern."
+                    ],
+                    answer: 2
+                },
+                {
+                    question: "How does Queen Gertrude die?",
+                    options: [
+                        "Hamlet kills her, mistaking her for Claudius.",
+                        "She is poisoned by Laertes's foil.",
+                        "She drinks the poisoned wine Claudius intended for Hamlet.",
+                        "She drowns herself out of grief."
+                    ],
+                    answer: 2
+                }
+            ];
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const targetId = e.target.getAttribute('data-target');
+                    
+                    navLinks.forEach(link => link.classList.remove('nav-active'));
+                    e.target.classList.add('nav-active');
+                    
+                    contentSections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.add('content-active');
+                        } else {
+                            section.classList.remove('content-active');
+                        }
+                    });
+                });
+            });
+
+            const characterList = document.getElementById('character-list');
+            const characterDetail = document.getElementById('character-detail');
+            
+            function showCharacter(charId) {
+                const char = characterData[charId];
+                if (!char) return;
+                
+                characterDetail.innerHTML = `
+                    <h3 class="text-3xl font-bold text-amber-800 mb-2">${char.name}</h3>
+                    <p class="text-lg text-stone-600 mb-4">${char.desc}</p>
+                    <p class="text-base mb-4">${char.analysis}</p>
+                    <blockquote class="border-l-4 border-amber-600 pl-4 italic text-stone-700">
+                        "${char.quote}"
+                    </blockquote>
+                `;
+                
+                document.querySelectorAll('.character-btn').forEach(btn => {
+                    if (btn.getAttribute('data-char') === charId) {
+                        btn.classList.add('list-btn-active');
+                    } else {
+                        btn.classList.remove('list-btn-active');
+                    }
+                });
+            }
+
+            characterList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('character-btn')) {
+                    const charId = e.target.getAttribute('data-char');
+                    showCharacter(charId);
+                }
+            });
+
+            const themeList = document.getElementById('theme-list');
+            const themeContent = document.getElementById('theme-content');
+
+            function showTheme(themeId) {
+                const theme = themeData[themeId];
+                if (!theme) return;
+
+                themeContent.innerHTML = `
+                    <h3 class="text-3xl font-bold text-amber-800 mb-2">${theme.name}</h3>
+                    <p class="text-base mb-4">${theme.desc}</p>
+                    <p class="text-base bg-amber-50 p-4 rounded-md border border-amber-100"><strong class="font-medium text-stone-800">Modern Analogy:</strong> ${theme.analogy}</p>
+                `;
+
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    if (btn.getAttribute('data-theme') === themeId) {
+                        btn.classList.add('btn-primary');
+                        btn.classList.remove('btn-secondary');
+                    } else {
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-secondary');
+                    }
+                });
+            }
+
+            themeList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('theme-btn')) {
+                    const themeId = e.target.getAttribute('data-theme');
+                    showTheme(themeId);
+                }
+            });
+
+            function loadQuiz() {
+                const quizContainer = document.getElementById('quiz-container');
+                quizContainer.innerHTML = '';
+                quizData.forEach((item, index) => {
+                    const optionsHtml = item.options.map((option, i) => `
+                        <label class="block p-3 rounded-md border border-stone-200 hover:bg-stone-50">
+                            <input type="radio" name="question${index}" value="${i}" class="mr-2 text-amber-600 focus:ring-amber-500">
+                            ${option}
+                        </label>
+                    `).join('');
+                    
+                    quizContainer.innerHTML += `
+                        <div class="quiz-question">
+                            <p class="text-lg font-medium mb-3">${index + 1}. ${item.question}</p>
+                            <div class="space-y-2">
+                                ${optionsHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('submit-quiz').addEventListener('click', () => {
+                let score = 0;
+                quizData.forEach((item, index) => {
+                    const selected = document.querySelector(`input[name="question${index}"]:checked`);
+                    if (selected && parseInt(selected.value) === item.answer) {
+                        score++;
+                    }
+                });
+                
+                const resultsEl = document.getElementById('quiz-results');
+                resultsEl.innerHTML = `You scored ${score} out of ${quizData.length}.`;
+                if (score === quizData.length) {
+                    resultsEl.innerHTML += " Excellent! You know your stuff.";
+                    resultsEl.className = 'mt-6 text-lg font-medium text-green-700';
+                } else if (score >= quizData.length / 2) {
+                    resultsEl.innerHTML += " Good job! A review of the themes might be helpful.";
+                    resultsEl.className = 'mt-6 text-lg font-medium text-blue-700';
+                } else {
+                    resultsEl.innerHTML += " You might want to review the lesson materials again.";
+                    resultsEl.className = 'mt-6 text-lg font-medium text-red-700';
+                }
+            });
+
+            const ctx = document.getElementById('themeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Revenge', 'Madness', 'Corruption', 'Mortality', 'Action vs. Inaction'],
+                    datasets: [{
+                        label: 'Thematic Prominence',
+                        data: [9, 8, 9, 10, 10],
+                        backgroundColor: 'rgba(180, 83, 9, 0.2)',
+                        borderColor: 'rgba(180, 83, 9, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(180, 83, 9, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(180, 83, 9, 1)'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 13,
+                                    family: 'Inter',
+                                },
+                                color: '#333'
+                            },
+                            ticks: {
+                                backdropColor: 'rgba(253, 250, 246, 0.8)',
+                                color: '#555',
+                                stepSize: 2
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: {
+                                    family: 'Inter',
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            bodyFont: {
+                                family: 'Inter'
+                            },
+                            titleFont: {
+                                family: 'Inter'
+                            }
+                        }
+                    }
+                }
+            });
+
+            document.querySelector('.nav-link[data-target="welcome"]').classList.add('nav-active');
+            document.getElementById('welcome').classList.add('content-active');
+            showCharacter('hamlet');
+            showTheme('revenge');
+            loadQuiz();
+        });
+    </script>
+</body>
+</html>
