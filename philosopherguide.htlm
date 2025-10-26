@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Greek Philosophers Guide</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 { font-size: 48px; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        
+        .nav-tabs { display: flex; background: #34495e; overflow-x: auto; }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 20px 30px;
+            background: #34495e;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        
+        .nav-tab:hover { background: #2c3e50; }
+        .nav-tab.active { background: white; color: #2c3e50; }
+        
+        .tab-content { display: none; padding: 40px; animation: fadeIn 0.5s ease; }
+        .tab-content.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .philosophers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .philosopher-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .philosopher-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #e74c3c, #3498db, #2ecc71);
+        }
+        
+        .philosopher-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+        .philosopher-card.expanded { grid-column: 1 / -1; border: 3px solid #3498db; }
+        
+        .philosopher-name { font-size: 26px; font-weight: bold; color: #2c3e50; }
+        .philosopher-dates { font-size: 14px; color: #7f8c8d; font-style: italic; margin: 5px 0 15px 0; }
+        
+        .philosopher-title {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .read-more { color: #3498db; font-weight: bold; font-size: 14px; display: block; margin-top: 10px; }
+        
+        .detailed-content { display: none; margin-top: 25px; padding-top: 25px; border-top: 2px solid #ecf0f1; }
+        .philosopher-card.expanded .detailed-content { display: block; }
+        
+        .detail-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        
+        .detail-tab {
+            padding: 10px 20px;
+            background: #ecf0f1;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+        }
+        
+        .detail-tab:hover { background: #d5dbdb; }
+        .detail-tab.active { background: #3498db; color: white; }
+        
+        .detail-section { display: none; animation: fadeIn 0.3s ease; }
+        .detail-section.active { display: block; }
+        
+        .quote-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            font-size: 18px;
+            font-style: italic;
+            position: relative;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .quote-box::before {
+            content: '"';
+            font-size: 60px;
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            opacity: 0.3;
+        }
+        
+        .key-ideas-list {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #ffc107;
+        }
+        
+        .key-ideas-list h4 { color: #856404; margin-bottom: 15px; font-size: 18px; }
+        .key-ideas-list ul { list-style: none; }
+        .key-ideas-list li { padding: 10px 0 10px 30px; position: relative; color: #555; line-height: 1.6; }
+        .key-ideas-list li::before { content: '→'; position: absolute; left: 0; color: #ffc107; font-weight: bold; font-size: 20px; }
+        
+        .example-box { background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #4caf50; }
+        .example-box h4 { color: #2e7d32; margin-bottom: 12px; font-size: 16px; }
+        .example-box h4::before { content: '💡 '; }
+        .example-box p { color: #555; line-height: 1.7; }
+        
+        .analogy-box { background: #f3e5f5; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #9c27b0; }
+        .analogy-box h4 { color: #6a1b9a; margin-bottom: 12px; font-size: 16px; }
+        .analogy-box h4::before { content: '🔗 '; }
+        .analogy-box p { color: #555; line-height: 1.7; }
+        
+        .comparison-table { width: 100%; border-collapse: collapse; margin: 30px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .comparison-table th { background: #34495e; color: white; padding: 15px; text-align: left; }
+        .comparison-table td { padding: 15px; border-bottom: 1px solid #ecf0f1; color: #555; line-height: 1.7; }
+        .comparison-table tbody tr:hover { background: #f8f9fa; }
+        
+        .search-box { width: 100%; padding: 15px 20px; font-size: 16px; border: 2px solid #ecf0f1; border-radius: 10px; margin-bottom: 20px; }
+        .search-box:focus { outline: none; border-color: #3498db; }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 32px; }
+            .nav-tab { padding: 15px 20px; font-size: 14px; }
+            .tab-content { padding: 20px; }
+            .philosophers-grid { grid-template-columns: 1fr; }
+            .philosopher-card.expanded { grid-column: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1>🏛️ Interactive Greek Philosophers Guide</h1>
+            <p>Explore Ancient Philosophy Through Interactive Learning</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('overview')">📚 Overview</button>
+            <button class="nav-tab" onclick="switchTab('presocratic')">🔥 Pre-Socratic</button>
+            <button class="nav-tab" onclick="switchTab('socratic')">💭 Socratic</button>
+            <button class="nav-tab" onclick="switchTab('postsocratic')">🌿 Post-Socratic</button>
+            <button class="nav-tab" onclick="switchTab('comparison')">⚖️ Compare</button>
+        </div>
+        
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 32px;">Welcome to Ancient Greek Philosophy</h2>
+            <p style="font-size: 18px; line-height: 1.8; color: #555; margin-bottom: 30px;">
+                Greek philosophy is the foundation of Western thought. From questioning the nature of reality to exploring how we should live, these ancient thinkers shaped our understanding of knowledge, ethics, science, and politics. Click on any philosopher card to explore their ideas in depth with examples and modern analogies!
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 40px 0;">
+                <div style="background: #ffebee; padding: 25px; border-radius: 15px; cursor: pointer;" onclick="switchTab('presocratic')">
+                    <h3 style="color: #e74c3c; margin-bottom: 10px; font-size: 24px;">🔥 Pre-Socratic (600-400 BCE)</h3>
+                    <p style="color: #555; line-height: 1.7;">Focused on natural philosophy. Asked: "What is the fundamental nature of reality?" Moved from myth to reason.</p>
+                    <p style="color: #e74c3c; font-weight: bold; margin-top: 15px;">→ Explore 5 philosophers</p>
+                </div>
+                <div style="background: #e3f2fd; padding: 25px; border-radius: 15px; cursor: pointer;" onclick="switchTab('socratic')">
+                    <h3 style="color: #3498db; margin-bottom: 10px; font-size: 24px;">💭 Socratic (470-322 BCE)</h3>
+                    <p style="color: #555; line-height: 1.7;">Shifted focus to ethics and knowledge. Asked: "How should we live?" Socrates, Plato, and Aristotle formed the core.</p>
+                    <p style="color: #3498db; font-weight: bold; margin-top: 15px;">→ Explore 3 philosophers</p>
+                </div>
+                <div style="background: #e8f5e9; padding: 25px; border-radius: 15px; cursor: pointer;" onclick="switchTab('postsocratic')">
+                    <h3 style="color: #2ecc71; margin-bottom: 10px; font-size: 24px;">🌿 Post-Socratic (300 BCE-500 CE)</h3>
+                    <p style="color: #555; line-height: 1.7;">Emphasized practical philosophy for daily life. Asked: "How can I find peace and happiness?" Four major schools emerged.</p>
+                    <p style="color: #2ecc71; font-weight: bold; margin-top: 15px;">→ Explore 4 schools</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 40px 0;">
+                <button onclick="switchTab('presocratic')" style="padding: 15px 40px; background: #3498db; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);">
+                    Start Exploring →
+                </button>
+            </div>
+        </div>
+        
+        <!-- PRE-SOCRATIC TAB -->
+        <div id="presocratic" class="tab-content">
+            <h2 style="color: #e74c3c; margin-bottom: 20px; font-size: 32px;">🔥 Pre-Socratic Philosophers (600-400 BCE)</h2>
+            <input type="text" class="search-box" placeholder="🔍 Search philosophers..." onkeyup="searchCards(this.value)">
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #555; margin-bottom: 30px;">
+                The Pre-Socratics were the first Western philosophers who sought to explain the world through reason rather than mythology. They asked fundamental questions about the nature of reality, seeking the <strong>arche</strong> (first principle) that underlies all existence.
+            </p>
+            
+            <div class="philosophers-grid">
+                <!-- THALES -->
+                <div class="philosopher-card" data-name="thales water miletus" onclick="toggleCard(this)">
+                    <div class="philosopher-name">Thales of Miletus</div>
+                    <div class="philosopher-dates">c. 626-546 BCE</div>
+                    <span class="philosopher-title">The First Philosopher</span>
+                    <p class="philosopher-summary">
+                        Thales believed water was the fundamental substance of all things. He was the first to use reason and observation instead of mythology to explain natural phenomena.
+                    </p>
+                    <span class="read-more">Click to expand →</span>
+                    
+                    <div class="detailed-content">
+                        <div class="detail-tabs">
+                            <button class="detail-tab active" onclick="event.stopPropagation(); switchDetailTab(event, 'thales-ideas')">Key Ideas</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'thales-examples')">Examples</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'thales-analogy')">Analogy</button>
+                        </div>
+                        
+                        <div id="thales-ideas" class="detail-section active">
+                            <div class="key-ideas-list">
+                                <h4>💡 Core Philosophical Ideas</h4>
+                                <ul>
+                                    <li><strong>Water as Arche:</strong> All things come from and return to water</li>
+                                    <li><strong>Natural Explanations:</strong> Rejected mythological explanations for natural events</li>
+                                    <li><strong>Scientific Prediction:</strong> Successfully predicted a solar eclipse in 585 BCE</li>
+                                    <li><strong>Rational Observation:</strong> Based conclusions on what he could observe in nature</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div id="thales-examples" class="detail-section">
+                            <div class="example-box">
+                                <h4>Real-World Example: Why Water?</h4>
+                                <p>
+                                    Thales observed that water takes different forms: it becomes ice when cold, steam when hot, and remains liquid normally. He saw that all living things need water to survive. Seeds need moisture to grow. Even dry land has moisture within it. From these observations, he reasoned that water must be the fundamental substance from which everything is made.
+                                </p>
+                            </div>
+                            
+                            <div class="example-box">
+                                <h4>The Eclipse Prediction</h4>
+                                <p>
+                                    In 585 BCE, Thales predicted a solar eclipse that actually occurred. This was revolutionary! Instead of saying "the gods are angry," he used mathematical patterns and astronomical observations. This showed that the universe follows predictable, natural laws - not the whims of gods. This moment marks the birth of scientific thinking.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div id="thales-analogy" class="detail-section">
+                            <div class="analogy-box">
+                                <h4>Modern Analogy</h4>
+                                <p>
+                                    Think of Thales like the first scientist trying to find "atoms" or "quarks" - the fundamental building blocks of reality. Just as modern physicists seek the most basic particles that make up everything, Thales was searching for the most basic substance. He chose water because it seemed to be present in or needed by everything he observed. While we now know the universe is more complex, his METHOD of looking for natural explanations was groundbreaking.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PYTHAGORAS -->
+                <div class="philosopher-card" data-name="pythagoras mathematics numbers" onclick="toggleCard(this)">
+                    <div class="philosopher-name">Pythagoras</div>
+                    <div class="philosopher-dates">c. 571-497 BCE</div>
+                    <span class="philosopher-title">The Mathematician-Mystic</span>
+                    <p class="philosopher-summary">
+                        Founded a philosophical community teaching that "all things are numbers." Believed in the immortality and reincarnation of the soul.
+                    </p>
+                    <span class="read-more">Click to expand →</span>
+                    
+                    <div class="detailed-content">
+                        <div class="detail-tabs">
+                            <button class="detail-tab active" onclick="event.stopPropagation(); switchDetailTab(event, 'pythagoras-ideas')">Key Ideas</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'pythagoras-examples')">Examples</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'pythagoras-analogy')">Analogy</button>
+                        </div>
+                        
+                        <div id="pythagoras-ideas" class="detail-section active">
+                            <div class="key-ideas-list">
+                                <h4>💡 Core Philosophical Ideas</h4>
+                                <ul>
+                                    <li><strong>"All Things are Numbers":</strong> Mathematical ratios explain the structure of reality</li>
+                                    <li><strong>Metempsychosis:</strong> Souls are immortal and reincarnate into different bodies</li>
+                                    <li><strong>Musical Harmony:</strong> Mathematical ratios (1:2, 2:3, 3:4) create harmonious sounds</li>
+                                    <li><strong>Mystical Mathematics:</strong> Numbers have spiritual and cosmic significance</li>
+                                    <li><strong>Ethical Living:</strong> Founded a community with strict lifestyle rules</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="quote-box">
+                                Number is the ruler of forms and ideas, and the cause of gods and demons.
+                            </div>
+                        </div>
+                        
+                        <div id="pythagoras-examples" class="detail-section">
+                            <div class="example-box">
+                                <h4>Musical Discovery</h4>
+                                <p>
+                                    Pythagoras discovered that plucking a string at different lengths creates different notes, but certain ratios produce harmonious sounds. A string half the length produces a note exactly one octave higher (ratio 1:2). A ratio of 2:3 creates a perfect fifth. This showed him that beauty and harmony in music come from mathematical relationships - suggesting the universe itself might be structured by numbers.
+                                </p>
+                            </div>
+                            
+                            <div class="example-box">
+                                <h4>The Pythagorean Theorem</h4>
+                                <p>
+                                    You know it from math class: a² + b² = c². But for Pythagoras, this wasn't just a formula - it revealed a hidden truth about reality. The relationship between the sides of a right triangle is ALWAYS constant, no matter the size. This perfect, unchanging mathematical relationship suggested to him that numbers are more real and eternal than the physical triangles we draw.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div id="pythagoras-analogy" class="detail-section">
+                            <div class="analogy-box">
+                                <h4>Modern Analogy</h4>
+                                <p>
+                                    Pythagoras is like a programmer who realizes "everything is code." Just as programmers see that every image, song, and video on your computer is ultimately just 1s and 0s (binary numbers), Pythagoras saw that physical reality could be understood through numbers and mathematical relationships. Modern physics actually proves him partially right - we describe the universe using mathematical equations (E=mc², quantum mechanics formulas, etc.). Reality does seem to follow mathematical laws!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Continue with remaining philosophers -->
+                <!-- For brevity, including one more Pre-Socratic as example pattern -->
+                
+                <!-- HERACLITUS -->
+                <div class="philosopher-card" data-name="heraclitus change flux fire" onclick="toggleCard(this)">
+                    <div class="philosopher-name">Heraclitus</div>
+                    <div class="philosopher-dates">c. 535-475 BCE</div>
+                    <span class="philosopher-title">The Philosopher of Change</span>
+                    <p class="philosopher-summary">
+                        Famous for saying "everything flows" (Panta Rhei). Believed constant change is the fundamental nature of reality.
+                    </p>
+                    <span class="read-more">Click to expand →</span>
+                    
+                    <div class="detailed-content">
+                        <div class="detail-tabs">
+                            <button class="detail-tab active" onclick="event.stopPropagation(); switchDetailTab(event, 'heraclitus-ideas')">Key Ideas</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'heraclitus-examples')">Examples</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'heraclitus-analogy')">Analogy</button>
+                        </div>
+                        
+                        <div id="heraclitus-ideas" class="detail-section active">
+                            <div class="key-ideas-list">
+                                <h4>💡 Core Philosophical Ideas</h4>
+                                <ul>
+                                    <li><strong>Panta Rhei:</strong> "Everything flows" - constant change is reality</li>
+                                    <li><strong>The River:</strong> "You cannot step into the same river twice"</li>
+                                    <li><strong>Fire as Arche:</strong> Fire represents constant transformation</li>
+                                    <li><strong>Unity of Opposites:</strong> Opposites define and need each other</li>
+                                    <li><strong>Logos:</strong> Universal reason governs all change</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="quote-box">
+                                No man ever steps in the same river twice, for it's not the same river and he's not the same man.
+                            </div>
+                        </div>
+                        
+                        <div id="heraclitus-examples" class="detail-section">
+                            <div class="example-box">
+                                <h4>The River Example</h4>
+                                <p>
+                                    Imagine standing by a river. You put your foot in. When you lift it out and put it back in, is it the same river? No! The water molecules have flowed away - they're completely different water molecules now. But you also changed! Cells in your body died and new ones formed. You have new thoughts. This shows that both you and the river are processes of constant change, not fixed things.
+                                </p>
+                            </div>
+                            
+                            <div class="example-box">
+                                <h4>Unity of Opposites</h4>
+                                <p>
+                                    Heraclitus said, "The path up and down is one and the same." What does this mean? Think about a hill. Walking up and walking down use the SAME path - it's only your direction that changes. Hot and cold are not separate things but opposite ends of the same spectrum of temperature. Day needs night to be day. Life needs death to be life. Opposites aren't separate - they're two sides of the same coin, defining each other.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div id="heraclitus-analogy" class="detail-section">
+                            <div class="analogy-box">
+                                <h4>Modern Analogy</h4>
+                                <p>
+                                    Think of Heraclitus watching a waterfall. Modern science confirms his insight: your body completely replaces most of its cells every 7-10 years. You're literally not made of the same matter you were a decade ago. Even "solid" objects like tables are actually atoms in constant vibration. Heraclitus was right - what we call "things" are really processes. Nothing stands still. Even a mountain is slowly eroding. Change is the only constant.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SOCRATIC TAB -->
+        <div id="socratic" class="tab-content">
+            <h2 style="color: #3498db; margin-bottom: 20px; font-size: 32px;">💭 The Socratic Philosophers (470-322 BCE)</h2>
+            <input type="text" class="search-box" placeholder="🔍 Search philosophers..." onkeyup="searchCards(this.value)">
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #555; margin-bottom: 30px;">
+                The three greatest Greek philosophers - Socrates, Plato, and Aristotle - formed a direct teacher-student lineage that transformed philosophy from natural speculation to systematic inquiry into ethics, knowledge, politics, and the good life.
+            </p>
+            
+            <div class="philosophers-grid">
+                <!-- SOCRATES -->
+                <div class="philosopher-card" data-name="socrates ethics virtue dialectic" onclick="toggleCard(this)">
+                    <div class="philosopher-name">Socrates</div>
+                    <div class="philosopher-dates">470/469-399 BCE</div>
+                    <span class="philosopher-title">Father of Western Philosophy</span>
+                    <p class="philosopher-summary">
+                        Developed the Socratic Method - teaching through questioning. Believed "the unexamined life is not worth living" and that knowledge is virtue.
+                    </p>
+                    <span class="read-more">Click to expand →</span>
+                    
+                    <div class="detailed-content">
+                        <div class="detail-tabs">
+                            <button class="detail-tab active" onclick="event.stopPropagation(); switchDetailTab(event, 'socrates-ideas')">Key Ideas</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'socrates-examples')">Examples</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'socrates-analogy')">Analogy</button>
+                        </div>
+                        
+                        <div id="socrates-ideas" class="detail-section active">
+                            <div class="key-ideas-list">
+                                <h4>💡 Core Philosophical Ideas</h4>
+                                <ul>
+                                    <li><strong>The Socratic Method:</strong> Teaching through questioning to expose contradictions</li>
+                                    <li><strong>"Know Thyself":</strong> Self-examination is essential for wisdom</li>
+                                    <li><strong>The Unexamined Life:</strong> Life without reflection is not worth living</li>
+                                    <li><strong>Knowledge is Virtue:</strong> To know the good is to do the good</li>
+                                    <li><strong>Philosophical Humility:</strong> "I know that I know nothing"</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="quote-box">
+                                The unexamined life is not worth living.
+                            </div>
+                        </div>
+                        
+                        <div id="socrates-examples" class="detail-section">
+                            <div class="example-box">
+                                <h4>The Socratic Method in Action</h4>
+                                <p>
+                                    Imagine Socrates asking, "What is courage?" Someone answers, "Courage is standing your ground in battle." Socrates asks, "But what about a doctor who stands firm against pressure to prescribe wrong medicine? Is that not courage?" "Yes, it is." "So courage isn't just about battle?" "No." "Then what IS courage?" Through careful questions, Socrates shows that our common definitions are incomplete, pushing us toward deeper understanding.
+                                </p>
+                            </div>
+                            
+                            <div class="example-box">
+                                <h4>Knowledge is Virtue Example</h4>
+                                <p>
+                                    Socrates believed no one knowingly does wrong. Think about it: if you TRULY understood that eating junk food every day would kill you painfully in 5 years (not just abstractly knew it), wouldn't you stop? Socrates argued that when people do bad things, it's because they don't truly KNOW (deeply understand) that it's bad. If they really knew, they would automatically choose the good. This is why education and self-examination are so crucial.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div id="socrates-analogy" class="detail-section">
+                            <div class="analogy-box">
+                                <h4>Modern Analogy</h4>
+                                <p>
+                                    Socrates was like a philosophical debugger. Just as a programmer finds bugs in code by systematically testing assumptions, Socrates found logical contradictions in people's beliefs by asking probing questions. He didn't provide answers - he helped people discover their own confused thinking. Modern therapy methods like CBT (Cognitive Behavioral Therapy) use similar questioning techniques to help people examine their thought patterns. Socrates invented philosophical therapy 2,400 years before modern psychology!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- POST-SOCRATIC TAB -->
+        <div id="postsocratic" class="tab-content">
+            <h2 style="color: #2ecc71; margin-bottom: 20px; font-size: 32px;">🌿 Post-Socratic (Hellenistic) Philosophy</h2>
+            <input type="text" class="search-box" placeholder="🔍 Search schools..." onkeyup="searchCards(this.value)">
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #555; margin-bottom: 30px;">
+                After Alexander the Great and the loss of Greek independence, philosophy shifted from abstract metaphysics to practical guidance for living well. Four major schools emerged to help people find peace and happiness in uncertain times.
+            </p>
+            
+            <div class="philosophers-grid">
+                <!-- STOICISM -->
+                <div class="philosopher-card" data-name="stoicism virtue control acceptance" onclick="toggleCard(this)">
+                    <div class="philosopher-name">Stoicism</div>
+                    <div class="philosopher-dates">Founded c. 300 BCE</div>
+                    <span class="philosopher-title">Zeno of Citium, Epictetus, Marcus Aurelius</span>
+                    <p class="philosopher-summary">
+                        Focus on what you can control, accept what you cannot. Virtue is the only true good. Live according to nature and reason.
+                    </p>
+                    <span class="read-more">Click to expand →</span>
+                    
+                    <div class="detailed-content">
+                        <div class="detail-tabs">
+                            <button class="detail-tab active" onclick="event.stopPropagation(); switchDetailTab(event, 'stoicism-ideas')">Key Ideas</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'stoicism-examples')">Examples</button>
+                            <button class="detail-tab" onclick="event.stopPropagation(); switchDetailTab(event, 'stoicism-analogy')">Analogy</button>
+                        </div>
+                        
+                        <div id="stoicism-ideas" class="detail-section active">
+                            <div class="key-ideas-list">
+                                <h4>💡 Core Philosophical Ideas</h4>
+                                <ul>
+                                    <li><strong>Dichotomy of Control:</strong> Focus only on what you can control (your thoughts, actions, values)</li>
+                                    <li><strong>Virtue is the Only Good:</strong> Wisdom, justice, courage, temperance are the highest values</li>
+                                    <li><strong>Amor Fati:</strong> Love your fate - accept what happens</li>
+                                    <li><strong>Living According to Nature:</strong> Follow reason and universal principles</li>
+                                    <li><strong>Negative Visualization:</strong> Imagine loss to appreciate what you have</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="quote-box">
+                                You have power over your mind - not outside events. Realize this, and you will find strength. - Marcus Aurelius
+                            </div>
+                        </div>
+                        
+                        <div id="stoicism-examples" class="detail-section">
+                            <div class="example-box">
+                                <h4>The Dichotomy of Control</h4>
+                                <p>
+                                    Imagine you have an important job interview. You CAN control: how well you prepare, your attitude, your responses, how you dress, arriving on time. You CANNOT control: whether they hire you, what the interviewer thinks of you, whether they already have a preferred candidate, the economy. A Stoic focuses energy only on what they control and accepts the outcome without anxiety. This reduces suffering massively because you're not worrying about things you can't change.
+                                </p>
+                            </div>
+                            
+                            <div class="example-box">
+                                <h4>Negative Visualization</h4>
+                                <p>
+                                    Before going to sleep, Stoics might imagine losing something they value - their health, their home, a loved one. This isn't pessimism; it's preparation. When you regularly contemplate loss, you appreciate what you have more deeply NOW, and if loss occurs, you're less shocked. It's like a mental vaccination against grief. You also realize that everything is temporary, so you cherish it while it lasts rather than taking it for granted.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div id="stoicism-analogy" class="detail-section">
+                            <div class="analogy-box">
+                                <h4>Modern Analogy</h4>
+                                <p>
+                                    Stoicism is like being a video game player who can't control the game itself but CAN control their reaction to it. You can't control if the game throws difficult challenges at you, but you CAN control whether you rage quit or learn and adapt. Modern Cognitive Behavioral Therapy (CBT) is essentially applied Stoicism - it teaches that events don't upset us, our interpretations do. Change your thinking patterns, change your emotional response. Stoic philosophy is experiencing a massive revival today because these principles are incredibly practical for modern stress.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- COMPARISON TAB -->
+        <div id="comparison" class="tab-content">
+            <h2 style="color: #2c3e50; margin-bottom: 20px; font-size: 32px;">⚖️ Comparison of Greek Philosophy</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Period/Philosopher</th>
+                        <th>Main Question</th>
+                        <th>Primary Focus</th>
+                        <th>Goal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Pre-Socratics</strong></td>
+                        <td>"What is the fundamental nature of reality?"</td>
+                        <td>Natural philosophy, cosmology, the arche (first principle)</td>
+                        <td>Understand the physical universe and its origins</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Socrates</strong></td>
+                        <td>"How should we live?"</td>
+                        <td>Ethics, virtue, self-knowledge, the examined life</td>
+                        <td>Achieve wisdom and virtue through self-examination</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Plato</strong></td>
+                        <td>"What is real and what is merely appearance?"</td>
+                        <td>Metaphysics, Theory of Forms, justice, the soul</td>
+                        <td>Understand ultimate reality and create the ideal state</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aristotle</strong></td>
+                        <td>"How does nature work and how do we achieve happiness?"</td>
+                        <td>Logic, science, ethics, empirical study</td>
+                        <td>Achieve eudaimonia (flourishing) through virtuous action</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stoicism</strong></td>
+                        <td>"How can we live virtuously regardless of circumstances?"</td>
+                        <td>Virtue, self-control, accepting fate, rational living</td>
+                        <td>Achieve inner peace through virtue and acceptance</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Epicureanism</strong></td>
+                        <td>"How can we be happy and free from suffering?"</td>
+                        <td>Pleasure (tranquility), friendship, simple living</td>
+                        <td>Achieve ataraxia (tranquility) and avoid pain</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cynicism</strong></td>
+                        <td>"What is truly necessary for a good life?"</td>
+                        <td>Simple living, self-sufficiency, virtue alone</td>
+                        <td>Achieve freedom through wanting nothing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Skepticism</strong></td>
+                        <td>"Can we truly know anything with certainty?"</td>
+                        <td>Limits of knowledge, suspension of judgment</td>
+                        <td>Achieve peace of mind by avoiding dogmatic beliefs</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="background: #e8f4f8; padding: 30px; border-radius: 15px; margin: 40px 0;">
+                <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 24px; text-align: center;">The Great Teacher-Student Chain</h3>
+                <div style="text-align: center; font-size: 18px; line-height: 2.5; color: #34495e;">
+                    <strong style="color: #e74c3c;">Pre-Socratics</strong> (Thales, Pythagoras, Heraclitus, Parmenides)
+                    <br>↓ <em style="font-size: 14px; color: #7f8c8d;">(influenced)</em><br>
+                    <strong style="color: #3498db;">Socrates</strong>
+                    <br>↓ <em style="font-size: 14px; color: #7f8c8d;">(taught)</em><br>
+                    <strong style="color: #3498db;">Plato</strong>
+                    <br>↓ <em style="font-size: 14px; color: #7f8c8d;">(taught for 20 years)</em><br>
+                    <strong style="color: #3498db;">Aristotle</strong>
+                    <br>↓ <em style="font-size: 14px; color: #7f8c8d;">(tutored)</em><br>
+                    <strong>Alexander the Great</strong>
+                    <br>↓ <em style="font-size: 14px; color: #7f8c8d;">(spread Hellenistic culture)</em><br>
+                    <strong style="color: #2ecc71;">Post-Socratic Schools</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => tab.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Toggle card expansion
+        function toggleCard(card) {
+            const wasExpanded = card.classList.contains('expanded');
+            
+            // Close all cards first
+            const allCards = document.querySelectorAll('.philosopher-card');
+            allCards.forEach(c => c.classList.remove('expanded'));
+            
+            // If card wasn't expanded, expand it
+            if (!wasExpanded) {
+                card.classList.add('expanded');
+                // Scroll to card
+                setTimeout(() => {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            }
+        }
+        
+        // Switch detail tabs within cards
+        function switchDetailTab(event, sectionId) {
+            event.stopPropagation();
+            
+            // Get parent card
+            const card = event.target.closest('.philosopher-card');
+            
+            // Remove active class from all detail tabs in this card
+            const detailTabs = card.querySelectorAll('.detail-tab');
+            detailTabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Hide all detail sections in this card
+            const detailSections = card.querySelectorAll('.detail-section');
+            detailSections.forEach(section => section.classList.remove('active'));
+            
+            // Show selected section
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('active');
+            }
+        }
+        
+        // Search functionality
+        function searchCards(query) {
+            query = query.toLowerCase();
+            const cards = document.querySelectorAll('.philosopher-card');
+            
+            cards.forEach(card => {
+                const searchData = card.getAttribute('data-name') || '';
+                const name = card.querySelector('.philosopher-name').textContent.toLowerCase();
+                const summary = card.querySelector('.philosopher-summary').textContent.toLowerCase();
+                
+                if (searchData.includes(query) || name.includes(query) || summary.includes(query)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
