@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamlet: Chronological Relationship Analysis</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the theme */
+        :root {
+            --color-primary: #000000; /* Black for text/main elements */
+            --color-accent: #047857; /* Dark Green for interactive elements (emerald-700) */
+            --color-background: #ffffff; /* White */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-primary);
+            line-height: 1.6;
+        }
+        /* Custom scrollbar for better visual appeal */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-accent);
+            border-radius: 4px;
+        }
+        .act-header {
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .act-header:hover {
+            background-color: #f3f4f6;
+        }
+        .relationship-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .relationship-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .active-filter {
+            background-color: var(--color-accent);
+            color: white;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+
+        <!-- Header -->
+        <header class="text-center mb-10 py-4 border-b-2 border-gray-200">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900">
+                <span style="color: var(--color-accent);">Hamlet</span>: The Web of Betrayal
+            </h1>
+            <p class="mt-2 text-xl text-gray-600">
+                A Chronological Analysis of Character Relationships in Elsinore
+            </p>
+        </header>
+
+        <!-- Character Filter (Interactive Element) -->
+        <section class="mb-8 p-4 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-semibold mb-3">Filter by Character</h2>
+            <div id="character-filter" class="flex flex-wrap gap-2">
+                <!-- Filter buttons rendered here -->
+            </div>
+            <p id="filter-status" class="mt-3 text-sm italic text-gray-500 hidden">
+                Showing interactions involving <span class="font-bold text-gray-800" id="current-char"></span>. <button onclick="resetFilter()" class="text-red-600 font-medium hover:text-red-800">Clear Filter</button>
+            </p>
+        </section>
+
+        <!-- Main Timeline (Interactive Accordion) -->
+        <main id="timeline-container" class="space-y-6">
+            <!-- Act and Relationship content will be rendered here by JavaScript -->
+        </main>
+        
+        <!-- Footer -->
+        <footer class="mt-12 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+            <p>&copy; 2024 Educational Content. Based on Shakespeare's *The Tragedy of Hamlet*.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const relationshipsData = [
+            {
+                act: "Act I",
+                title: "Fractured Foundations & The Ghost's Mandate",
+                events: [
+                    {
+                        name: "Hamlet vs. Claudius & Gertrude",
+                        summary: "Claudius marries Gertrude (incestuous speed). Claudius attempts to adopt a fatherly role, which Hamlet rejects contemptuously. Hamlet is denied return to Wittenberg, placing him under hostile observation.",
+                        impact: "Establishes political antagonism and familial betrayal.",
+                        chars: ["Hamlet", "Claudius", "Gertrude"]
+                    },
+                    {
+                        name: "Polonius vs. Ophelia & Laertes",
+                        summary: "Laertes and Polonius warn Ophelia about Hamlet's 'fleeting' love, explicitly forbidding association to protect the family's political/economic virtue. Polonius exerts rigid, controlling patriarchal authority.",
+                        impact: "Establishes Ophelia's lack of agency and the court's moral pathology.",
+                        chars: ["Polonius", "Ophelia", "Laertes"]
+                    },
+                    {
+                        name: "Hamlet & The Ghost",
+                        summary: "The Ghost reveals Claudius's fratricide and commands Hamlet to revenge. Horatio's witness validates the claim. Hamlet swears to adopt an 'antic disposition' (feigned madness).",
+                        impact: "Catalyst for the tragedy; transforms Hamlet’s despair into deadly duty.",
+                        chars: ["Hamlet", "Ghost", "Horatio"]
+                    }
+                ]
+            },
+            {
+                act: "Act II",
+                title: "The Expansion of Espionage and Strategic Alienation",
+                events: [
+                    {
+                        name: "Claudius & His Spies (R&G)",
+                        summary: "Claudius and Gertrude summon Rosencrantz and Guildenstern, Hamlet’s friends, turning them into 'passive instruments' to spy on him. Hamlet quickly perceives their corrupted loyalty.",
+                        impact: "Corrupts friendship; reveals Claudius’s commitment to surveillance.",
+                        chars: ["Claudius", "Gertrude", "Hamlet", "Rosencrantz", "Guildenstern"]
+                    },
+                    {
+                        name: "Polonius, Ophelia & The Misdiagnosis",
+                        summary: "Ophelia reports Hamlet's theatrical, dishevelled visit after having rejected him. Polonius confidently misdiagnoses Hamlet's disorder as madness caused by 'love', redirecting the court’s scrutiny.",
+                        impact: "Misdirection aids Hamlet's strategy; sets up the Nunnery Scene trap.",
+                        chars: ["Polonius", "Ophelia", "Hamlet"]
+                    }
+                ]
+            },
+            {
+                act: "Act III",
+                title: "The Crisis of Confrontation and Fatal Action",
+                events: [
+                    {
+                        name: "Hamlet & Ophelia: The Nunnery Scene (III.1)",
+                        summary: "Monitored by Claudius and Polonius, Hamlet brutally rejects Ophelia, projecting his rage against Gertrude’s betrayal onto her. He demands she go 'to a nunnery'.",
+                        impact: "Irrevocably shatters their bond; confirms Claudius’s fear of Hamlet's danger.",
+                        chars: ["Hamlet", "Ophelia", "Claudius", "Polonius"]
+                    },
+                    {
+                        name: "Hamlet vs. Claudius: The Mousetrap (III.2)",
+                        summary: "Hamlet stages *The Murder of Gonzago*. Claudius’s frantic, visceral reaction (storming out) provides definitive, empirical proof of his guilt to Hamlet and Horatio.",
+                        impact: "Transforms the conflict into an overt, lethal struggle.",
+                        chars: ["Hamlet", "Claudius", "Horatio"]
+                    },
+                    {
+                        name: "Hamlet & Gertrude: The Closet Scene (III.4)",
+                        summary: "Hamlet fatally stabs Polonius through the arras, mistaking him for Claudius. Hamlet brutally confronts Gertrude over her immorality. The Ghost reappears, urging focus on Claudius.",
+                        impact: "Polonius’s death shifts conflict from political to personal blood feud; Gertrude becomes a crucial, tentative ally.",
+                        chars: ["Hamlet", "Gertrude", "Polonius", "Ghost"]
+                    }
+                ]
+            },
+            {
+                act: "Act IV",
+                title: "The Ripple Effect of Retribution and Madness",
+                events: [
+                    {
+                        name: "Claudius & Laertes: The Machiavellian Alliance",
+                        summary: "Laertes returns for vengeance after Polonius’s murder. Claudius skillfully exploits his grief and rage, forging an alliance based on treachery (poisoned sword and drink).",
+                        impact: "Solidifies the final plot for Hamlet's death; morally corrupts Laertes.",
+                        chars: ["Claudius", "Laertes", "Hamlet"]
+                    },
+                    {
+                        name: "Ophelia’s Madness and Death",
+                        summary: "Ophelia descends into genuine madness after her father’s death and Hamlet’s cruelty, articulating her moral outrage through symbolic songs and flowers before drowning.",
+                        impact: "The tragic relational consequence of the court's corruption; her death fuels Laertes's revenge.",
+                        chars: ["Ophelia", "Gertrude", "Claudius", "Laertes"]
+                    },
+                    {
+                        name: "Hamlet vs. Rosencrantz & Guildenstern (Execution)",
+                        summary: "Hamlet discovers Claudius’s execution order and ruthlessly forges a new letter ordering the immediate execution of his former friends.",
+                        impact: "Confirms Hamlet’s transformation into a calculating figure of action.",
+                        chars: ["Hamlet", "Rosencrantz", "Guildenstern", "Claudius"]
+                    }
+                ]
+            },
+            {
+                act: "Act V",
+                title: "Annihilation and the Legacy of Loyalty",
+                events: [
+                    {
+                        name: "Hamlet vs. Laertes: The Graveyard Confrontation",
+                        summary: "Ophelia’s funeral forces a volatile clash. Hamlet leaps into the grave, dramatically asserting his love. Laertes views this grief as insulting, positioning them as mutual antagonists.",
+                        impact: "Final, physical expression of their shared, yet antagonistic, trauma.",
+                        chars: ["Hamlet", "Laertes", "Ophelia"]
+                    },
+                    {
+                        name: "The Final Duel and Mass Execution",
+                        summary: "Gertrude drinks the poisoned cup. Laertes wounds Hamlet with the poisoned rapier but is then wounded by it himself, confessing the plot and implicating Claudius. Hamlet executes Claudius and dies.",
+                        impact: "Resolves all conflicts in a simultaneous, self-consuming destruction of the royal family.",
+                        chars: ["Hamlet", "Claudius", "Gertrude", "Laertes"]
+                    },
+                    {
+                        name: "Hamlet and Horatio: The Survivor’s Mandate",
+                        summary: "The sole enduring bond. Horatio attempts suicide, but Hamlet stops him, entrusting his friend with the vital task of surviving to tell the full, true story.",
+                        impact: "Ensures the truth of the tragedy is preserved; provides narrative closure.",
+                        chars: ["Hamlet", "Horatio", "Fortinbras"]
+                    }
+                ]
+            }
+        ];
+
+        let activeCharacter = null;
+
+        // --- Core Functions ---
+
+        function toggleAct(actId) {
+            const content = document.getElementById(actId + '-content');
+            const icon = document.getElementById(actId + '-icon');
+            const isExpanded = content.classList.contains('active');
+
+            // Collapse all
+            document.querySelectorAll('.act-content').forEach(c => c.classList.remove('active', 'max-h-96'));
+            document.querySelectorAll('.act-icon').forEach(i => i.innerHTML = '&#9660;'); // Down Arrow
+
+            if (!isExpanded) {
+                // Expand current
+                content.classList.add('active', 'max-h-96');
+                icon.innerHTML = '&#9650;'; // Up Arrow
+            }
+            // Re-apply the filter after a toggle to ensure visibility
+            applyFilter(activeCharacter);
+        }
+
+        function filterByCharacter(character) {
+            // Update active filter state
+            if (activeCharacter === character) {
+                // Clicking the active filter button clears it
+                resetFilter();
+                return;
+            }
+
+            activeCharacter = character;
+            applyFilter(character);
+
+            // Update UI buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active-filter');
+                if (btn.dataset.char === character) {
+                    btn.classList.add('active-filter');
+                }
+            });
+
+            // Update status text
+            document.getElementById('current-char').textContent = character;
+            document.getElementById('filter-status').classList.remove('hidden');
+        }
+
+        function resetFilter() {
+            activeCharacter = null;
+            applyFilter(null);
+
+            // Update UI buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active-filter'));
+
+            // Update status text
+            document.getElementById('filter-status').classList.add('hidden');
+        }
+
+        function applyFilter(character) {
+            const cards = document.querySelectorAll('.relationship-card');
+
+            cards.forEach(card => {
+                const chars = card.dataset.chars.split(',');
+
+                // If no filter or if the card includes the filtered character
+                if (!character || chars.includes(character)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            // Ensure the Act is visible/open if one of its cards is visible
+            relationshipsData.forEach(act => {
+                const actId = act.act.toLowerCase().replace(' ', '-');
+                const content = document.getElementById(actId + '-content');
+
+                if (character) {
+                    const visibleCardsInAct = Array.from(content.querySelectorAll('.relationship-card')).filter(card => !card.classList.contains('hidden'));
+                    
+                    if (visibleCardsInAct.length > 0) {
+                        // Open the act if it has visible cards, and a character is filtered
+                        content.classList.add('active', 'max-h-96');
+                        document.getElementById(actId + '-icon').innerHTML = '&#9650;';
+                    } else {
+                         // Close the act if it has no visible cards
+                        content.classList.remove('active', 'max-h-96');
+                        document.getElementById(actId + '-icon').innerHTML = '&#9660;';
+                    }
+                } else {
+                    // When filter is cleared, maintain current open/closed state
+                }
+            });
+        }
+
+        // --- DOM Generation ---
+
+        function generateFilterButtons() {
+            const allChars = new Set();
+            relationshipsData.forEach(act => {
+                act.events.forEach(event => {
+                    event.chars.forEach(char => allChars.add(char));
+                });
+            });
+
+            const sortedChars = Array.from(allChars).sort();
+            const filterContainer = document.getElementById('character-filter');
+
+            sortedChars.forEach(char => {
+                const button = document.createElement('button');
+                button.textContent = char;
+                button.dataset.char = char;
+                button.className = 'filter-btn px-4 py-2 text-sm font-medium rounded-full border border-gray-300 hover:bg-gray-200 transition duration-150';
+                // FIX: CSS variables must be inside quotes when assigned to JavaScript style properties.
+                button.style.color = 'var(--color-primary)';
+                button.style.borderColor = 'var(--color-accent)';
+                button.style.fontWeight = 600;
+                button.onclick = () => filterByCharacter(char);
+                filterContainer.appendChild(button);
+            });
+        }
+
+        function generateTimeline() {
+            const container = document.getElementById('timeline-container');
+
+            relationshipsData.forEach(actData => {
+                const actId = actData.act.toLowerCase().replace(' ', '-');
+                
+                // 1. Act Header (Accordion Title)
+                const header = document.createElement('div');
+                header.id = actId + '-header';
+                header.className = 'act-header p-4 bg-gray-100 rounded-t-lg border-l-4 border-emerald-700 flex justify-between items-center';
+                header.onclick = () => toggleAct(actId);
+                header.innerHTML = `
+                    <h2 class="text-2xl font-bold">
+                        ${actData.act}: ${actData.title}
+                    </h2>
+                    <span id="${actId}-icon" class="act-icon text-2xl" style="color: var(--color-accent);">&#9660;</span>
+                `;
+                container.appendChild(header);
+
+                // 2. Act Content (Accordion Body)
+                const content = document.createElement('div');
+                content.id = actId + '-content';
+                content.className = 'act-content transition-all duration-500 overflow-hidden max-h-0 bg-white border-x border-b rounded-b-lg p-4 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+                container.appendChild(content);
+
+                actData.events.forEach(event => {
+                    // 3. Relationship Card
+                    const card = document.createElement('div');
+                    card.className = 'relationship-card p-4 rounded-xl border border-gray-100 flex flex-col justify-between';
+                    card.dataset.chars = event.chars.join(',');
+                    card.innerHTML = `
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2" style="color: var(--color-accent);">${event.name}</h3>
+                            <p class="text-gray-700 text-sm mb-3">${event.summary}</p>
+                        </div>
+                        <div>
+                            <strong class="text-sm block mb-1">Impact:</strong>
+                            <p class="text-xs italic text-gray-500">${event.impact}</p>
+                            <div class="mt-3">
+                                ${event.chars.map(char => `<span class="inline-block bg-gray-200 text-xs px-2 py-0.5 rounded-full font-medium" style="color: var(--color-primary);">${char}</span>`).join(' ')}
+                            </div>
+                        </div>
+                    `;
+                    content.appendChild(card);
+                });
+            });
+            
+            // Open the first act by default on load
+            toggleAct(relationshipsData[0].act.toLowerCase().replace(' ', '-'));
+        }
+
+        // Initialize the page on load
+        window.onload = function() {
+            generateFilterButtons();
+            generateTimeline();
+        }
+    </script>
+</body>
+</html>
