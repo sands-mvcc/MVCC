@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastering X-Y Coordinate Plotting</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #4e54c8;
+        }
+
+        .section h2 {
+            color: #4e54c8;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .section h3 {
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+
+        .key-concept {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #17a2b8;
+            margin: 20px 0;
+        }
+
+        .coordinate-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4e54c8;
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        canvas {
+            border: 2px solid #4e54c8;
+            border-radius: 8px;
+            display: block;
+            margin: 20px auto;
+            cursor: crosshair;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            color: #4e54c8;
+        }
+
+        .input-group input {
+            padding: 10px;
+            border: 2px solid #4e54c8;
+            border-radius: 8px;
+            width: 80px;
+            font-size: 1em;
+            text-align: center;
+        }
+
+        .quiz-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .point-list {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .point-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #e7e7ff;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .remove-btn {
+            background: #dc3545;
+            padding: 5px 15px;
+            font-size: 0.9em;
+        }
+
+        .quadrant-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .quadrant-box {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .q1 { background: #28a745; }
+        .q2 { background: #17a2b8; }
+        .q3 { background: #ffc107; color: #333; }
+        .q4 { background: #dc3545; }
+
+        .score {
+            font-size: 1.5em;
+            color: #28a745;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            header h1 {
+                font-size: 1.8em;
+            }
+            
+            .quadrant-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Mastering X-Y Coordinate Plotting</h1>
+            <p>An Interactive Journey Through the Cartesian Plane</p>
+        </header>
+
+        <div class="content">
+            <!-- Introduction Section -->
+            <div class="section">
+                <h2>🎯 What Are Coordinates?</h2>
+                <p>Coordinates are like addresses for points on a graph. Just like a street address tells you where a house is located, coordinates tell you exactly where a point is on a plane.</p>
+                
+                <div class="key-concept">
+                    <strong>Key Concept:</strong> Every point on a graph is described by two numbers: an <strong>x-coordinate</strong> (horizontal position) and a <strong>y-coordinate</strong> (vertical position), written as <strong>(x, y)</strong>.
+                </div>
+
+                <h3>The Coordinate System</h3>
+                <p>The coordinate system consists of:</p>
+                <ul style="margin-left: 30px; margin-top: 10px;">
+                    <li><strong>X-axis:</strong> The horizontal line (left and right)</li>
+                    <li><strong>Y-axis:</strong> The vertical line (up and down)</li>
+                    <li><strong>Origin:</strong> The point where both axes meet, labeled (0, 0)</li>
+                </ul>
+
+                <div class="quadrant-info">
+                    <div class="quadrant-box q1">
+                        Quadrant I<br>(+, +)
+                    </div>
+                    <div class="quadrant-box q2">
+                        Quadrant II<br>(-, +)
+                    </div>
+                    <div class="quadrant-box q3">
+                        Quadrant III<br>(-, -)
+                    </div>
+                    <div class="quadrant-box q4">
+                        Quadrant IV<br>(+, -)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Demo Section -->
+            <div class="section">
+                <h2>🖱️ Interactive Demonstration</h2>
+                <p>Move your mouse over the graph below to see how coordinates change in real-time!</p>
+                
+                <div class="coordinate-display" id="demo-coords">
+                    Hover over the graph to see coordinates
+                </div>
+                
+                <canvas id="demoCanvas" width="600" height="600"></canvas>
+                
+                <div class="highlight">
+                    <strong>💡 Notice:</strong> 
+                    <ul style="margin-left: 30px; margin-top: 10px;">
+                        <li>The X-coordinate increases as you move right</li>
+                        <li>The Y-coordinate increases as you move up</li>
+                        <li>Negative values appear to the left (X) and below (Y) the origin</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Plotting Practice Section -->
+            <div class="section">
+                <h2>✏️ Practice Plotting Points</h2>
+                <p>Enter coordinates below and click "Plot Point" to place it on the graph. Try plotting points in different quadrants!</p>
+                
+                <div class="input-group">
+                    <label>X:</label>
+                    <input type="number" id="plotX" value="0" min="-10" max="10">
+                    <label>Y:</label>
+                    <input type="number" id="plotY" value="0" min="-10" max="10">
+                    <button onclick="plotUserPoint()">Plot Point</button>
+                </div>
+
+                <canvas id="plotCanvas" width="600" height="600"></canvas>
+
+                <div class="controls">
+                    <button onclick="clearPlot()">Clear All Points</button>
+                    <button onclick="plotRandomPoint()">Plot Random Point</button>
+                    <button onclick="showExamples()">Show Examples</button>
+                </div>
+
+                <div class="point-list" id="pointList"></div>
+            </div>
+
+            <!-- Challenge Section -->
+            <div class="section">
+                <h2>🎮 Challenge Mode</h2>
+                <p>Can you click on the correct location for the given coordinate? Test your skills!</p>
+                
+                <div class="coordinate-display" id="challenge-target">
+                    Click "New Challenge" to start
+                </div>
+
+                <div class="score" id="score">
+                    Score: 0 / 0
+                </div>
+
+                <canvas id="challengeCanvas" width="600" height="600"></canvas>
+
+                <div class="controls">
+                    <button onclick="newChallenge()">New Challenge</button>
+                    <button onclick="resetScore()">Reset Score</button>
+                </div>
+
+                <div id="feedback" style="text-align: center; font-size: 1.2em; margin-top: 20px; min-height: 30px;"></div>
+            </div>
+
+            <!-- Tips Section -->
+            <div class="section">
+                <h2>💎 Pro Tips for Plotting</h2>
+                <div class="highlight">
+                    <h3>Remember the Order!</h3>
+                    <p><strong>(x, y)</strong> - Always X first, then Y!</p>
+                    <p>Think: "Walk before you fly" - go horizontal (x) before vertical (y)</p>
+                </div>
+
+                <h3>Common Mistakes to Avoid:</h3>
+                <ul style="margin-left: 30px; margin-top: 10px;">
+                    <li>Mixing up X and Y coordinates</li>
+                    <li>Forgetting that negative values go left (X) or down (Y)</li>
+                    <li>Not starting from the origin (0,0)</li>
+                    <li>Miscounting grid squares</li>
+                </ul>
+
+                <div class="key-concept">
+                    <strong>Quick Reference:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>X-axis = horizontal = left/right</li>
+                        <li>Y-axis = vertical = up/down</li>
+                        <li>Origin = (0, 0) = center point</li>
+                        <li>Quadrant I = both positive (+, +)</li>
+                        <li>Quadrant II = negative X, positive Y (-, +)</li>
+                        <li>Quadrant III = both negative (-, -)</li>
+                        <li>Quadrant IV = positive X, negative Y (+, -)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const GRID_SIZE = 20;
+        const CANVAS_SIZE = 600;
+        const CENTER = CANVAS_SIZE / 2;
+        const SCALE = GRID_SIZE;
+
+        // Challenge game state
+        let targetX = 0;
+        let targetY = 0;
+        let attempts = 0;
+        let correct = 0;
+        let currentChallenge = false;
+
+        // Plotted points storage
+        let plottedPoints = [];
+
+        // Initialize all canvases
+        window.onload = function() {
+            drawGrid('demoCanvas');
+            drawGrid('plotCanvas');
+            drawGrid('challengeCanvas');
+            setupDemoCanvas();
+        };
+
+        // Draw grid on canvas
+        function drawGrid(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i <= CANVAS_SIZE; i += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, CANVAS_SIZE);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(CANVAS_SIZE, i);
+                ctx.stroke();
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(0, CENTER);
+            ctx.lineTo(CANVAS_SIZE, CENTER);
+            ctx.stroke();
+            
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(CENTER, 0);
+            ctx.lineTo(CENTER, CANVAS_SIZE);
+            ctx.stroke();
+            
+            // Draw axis labels
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            
+            // X-axis numbers
+            for (let i = -10; i <= 10; i += 2) {
+                if (i !== 0) {
+                    const x = CENTER + (i * SCALE);
+                    ctx.fillText(i, x, CENTER + 20);
+                }
+            }
+            
+            // Y-axis numbers
+            ctx.textAlign = 'right';
+            for (let i = -10; i <= 10; i += 2) {
+                if (i !== 0) {
+                    const y = CENTER - (i * SCALE);
+                    ctx.fillText(i, CENTER - 10, y + 5);
+                }
+            }
+            
+            // Origin label
+            ctx.textAlign = 'right';
+            ctx.fillText('0', CENTER - 10, CENTER + 20);
+            
+            // Axis labels
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText('X', CANVAS_SIZE - 20, CENTER + 25);
+            ctx.textAlign = 'center';
+            ctx.fillText('Y', CENTER + 15, 20);
+        }
+
+        // Draw a point on canvas
+        function drawPoint(canvasId, x, y, color = '#ff0000', size = 8) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            const pixelX = CENTER + (x * SCALE);
+            const pixelY = CENTER - (y * SCALE);
+            
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(pixelX, pixelY, size, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw outline
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw label
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(`(${x}, ${y})`, pixelX + 15, pixelY - 10);
+        }
+
+        // Setup demo canvas with mouse tracking
+        function setupDemoCanvas() {
+            const canvas = document.getElementById('demoCanvas');
+            const display = document.getElementById('demo-coords');
+            
+            canvas.addEventListener('mousemove', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const pixelX = e.clientX - rect.left;
+                const pixelY = e.clientY - rect.top;
+                
+                const x = Math.round((pixelX - CENTER) / SCALE);
+                const y = Math.round((CENTER - pixelY) / SCALE);
+                
+                display.textContent = `Current Position: (${x}, ${y})`;
+                
+                // Redraw grid and point
+                drawGrid('demoCanvas');
+                drawPoint('demoCanvas', x, y, '#4e54c8', 6);
+            });
+            
+            canvas.addEventListener('mouseleave', function() {
+                display.textContent = 'Hover over the graph to see coordinates';
+                drawGrid('demoCanvas');
+            });
+        }
+
+        // Plot user-entered point
+        function plotUserPoint() {
+            const x = parseInt(document.getElementById('plotX').value);
+            const y = parseInt(document.getElementById('plotY').value);
+            
+            if (isNaN(x) || isNaN(y)) {
+                alert('Please enter valid numbers for both X and Y coordinates.');
+                return;
+            }
+            
+            if (x < -10 || x > 10 || y < -10 || y > 10) {
+                alert('Please keep coordinates between -10 and 10.');
+                return;
+            }
+            
+            // Add to plotted points
+            plottedPoints.push({x, y, color: getRandomColor()});
+            updatePlot();
+        }
+
+        // Update plot canvas with all points
+        function updatePlot() {
+            drawGrid('plotCanvas');
+            
+            plottedPoints.forEach((point, index) => {
+                drawPoint('plotCanvas', point.x, point.y, point.color, 7);
+            });
+            
+            updatePointList();
+        }
+
+        // Update point list display
+        function updatePointList() {
+            const listDiv = document.getElementById('pointList');
+            
+            if (plottedPoints.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #999;">No points plotted yet</p>';
+                return;
+            }
+            
+            listDiv.innerHTML = '<strong>Plotted Points:</strong><br>';
+            plottedPoints.forEach((point, index) => {
+                const div = document.createElement('div');
+                div.className = 'point-item';
+                div.innerHTML = `
+                    <span style="color: ${point.color}">● (${point.x}, ${point.y})</span>
+                    <button class="remove-btn" onclick="removePoint(${index})">Remove</button>
+                `;
+                listDiv.appendChild(div);
+            });
+        }
+
+        // Remove a specific point
+        function removePoint(index) {
+            plottedPoints.splice(index, 1);
+            updatePlot();
+        }
+
+        // Clear all plotted points
+        function clearPlot() {
+            plottedPoints = [];
+            updatePlot();
+        }
+
+        // Plot a random point
+        function plotRandomPoint() {
+            const x = Math.floor(Math.random() * 21) - 10;
+            const y = Math.floor(Math.random() * 21) - 10;
+            
+            document.getElementById('plotX').value = x;
+            document.getElementById('plotY').value = y;
+            plotUserPoint();
+        }
+
+        // Show example points
+        function showExamples() {
+            clearPlot();
+            
+            const examples = [
+                {x: 5, y: 5, color: '#28a745'},
+                {x: -5, y: 5, color: '#17a2b8'},
+                {x: -5, y: -5, color: '#ffc107'},
+                {x: 5, y: -5, color: '#dc3545'},
+                {x: 0, y: 0, color: '#000000'}
+            ];
+            
+            plottedPoints = examples;
+            updatePlot();
+        }
+
+        // Get random color
+        function getRandomColor() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#00ffff', '#ff8800', '#8800ff'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // Challenge Mode Functions
+        function newChallenge() {
+            targetX = Math.floor(Math.random() * 17) - 8;
+            targetY = Math.floor(Math.random() * 17) - 8;
+            
+            document.getElementById('challenge-target').textContent = `Click on point: (${targetX}, ${targetY})`;
+            document.getElementById('feedback').textContent = '';
+            currentChallenge = true;
+            
+            drawGrid('challengeCanvas');
+            
+            // Setup click handler
+            const canvas = document.getElementById('challengeCanvas');
+            canvas.onclick = checkChallenge;
+        }
+
+        function checkChallenge(e) {
+            if (!currentChallenge) return;
+            
+            const canvas = document.getElementById('challengeCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const pixelX = e.clientX - rect.left;
+            const pixelY = e.clientY - rect.top;
+            
+            const clickedX = Math.round((pixelX - CENTER) / SCALE);
+            const clickedY = Math.round((CENTER - pixelY) / SCALE);
+            
+            attempts++;
+            
+            const feedback = document.getElementById('feedback');
+            
+            if (clickedX === targetX && clickedY === targetY) {
+                correct++;
+                feedback.style.color = '#28a745';
+                feedback.textContent = '✓ Correct! Great job!';
+                drawPoint('challengeCanvas', targetX, targetY, '#28a745', 8);
+                currentChallenge = false;
+            } else {
+                feedback.style.color = '#dc3545';
+                feedback.textContent = `✗ Not quite. You clicked (${clickedX}, ${clickedY}). Try again!`;
+                drawPoint('challengeCanvas', clickedX, clickedY, '#dc3545', 6);
+            }
+            
+            updateScore();
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `Score: ${correct} / ${attempts}`;
+        }
+
+        function resetScore() {
+            attempts = 0;
+            correct = 0;
+            currentChallenge = false;
+            updateScore();
+            drawGrid('challengeCanvas');
+            document.getElementById('challenge-target').textContent = 'Click "New Challenge" to start';
+            document.getElementById('feedback').textContent = '';
+        }
+    </script>
+</body>
+</html>
