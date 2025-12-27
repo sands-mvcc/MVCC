@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Asteroid Miner: Descriptive Statistics</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #f1c40f;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #ecf0f1;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0; color: var(--primary); }
+        .subtitle { color: #7f8c8d; font-style: italic; }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Panel Styling */
+        .panel {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            color: var(--secondary);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 5px;
+        }
+
+        /* Data Display */
+        #data-display {
+            font-family: 'Courier New', monospace;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .sample-rock {
+            display: inline-block;
+            margin: 2px;
+            padding: 2px 6px;
+            background: #555;
+            border-radius: 3px;
+        }
+
+        /* Input Forms */
+        .stat-input {
+            margin-bottom: 15px;
+        }
+        
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; 
+        }
+
+        button {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        
+        button:hover { background-color: #2980b9; }
+        
+        button.reset {
+            background-color: var(--primary);
+            margin-top: 10px;
+        }
+
+        /* Chart Container */
+        #chart-container {
+            width: 100%;
+            height: 250px;
+            background: #fafafa;
+            border: 1px solid #eee;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding-bottom: 20px;
+        }
+
+        .bar {
+            background-color: var(--secondary);
+            width: 8%;
+            text-align: center;
+            color: white;
+            font-size: 10px;
+            transition: height 0.5s ease;
+            position: relative;
+        }
+
+        .bar span {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #333;
+        }
+
+        /* Feedback Area */
+        #feedback {
+            grid-column: 1 / -1;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 5px solid #ccc;
+            min-height: 50px;
+        }
+
+        .correct { border-left-color: var(--success) !important; color: var(--success); }
+        .incorrect { border-left-color: var(--error) !important; color: var(--error); }
+
+        /* Guide / Reference */
+        .reference {
+            grid-column: 1 / -1;
+            font-size: 0.9em;
+            background: #fff8e1;
+            padding: 10px;
+            border: 1px solid #ffe0b2;
+        }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>The Asteroid Miner</h1>
+        <div class="subtitle">Mission: Analyze Mineral Sample Distribution</div>
+    </header>
+
+    <div class="container">
+        <div class="panel">
+            <h2>1. Collection Phase</h2>
+            <p>Scan the sector to collect 10 mineral samples (mass in kg).</p>
+            <button onclick="generateData()">Scan & Collect Samples</button>
+            <div id="data-display" style="margin-top:15px;">
+                <span style="color:#aaa;">No data collected...</span>
+            </div>
+            <p id="sorted-data-display" style="font-size: 0.9em; color: #666;"></p>
+        </div>
+
+        <div class="panel">
+            <h2>2. Analysis Phase</h2>
+            <p>Calculate the descriptive statistics for the samples.</p>
+            
+            <div class="stat-input">
+                <label>Mean ($\bar{x}$)</label>
+                <input type="number" id="input-mean" placeholder="Average mass..." step="0.1">
+            </div>
+
+            <div class="stat-input">
+                <label>Median</label>
+                <input type="number" id="input-median" placeholder="Middle value..." step="0.1">
+            </div>
+
+            <div class="stat-input">
+                <label>Range</label>
+                <input type="number" id="input-range" placeholder="Max - Min..." step="0.1">
+            </div>
+
+            <button onclick="checkAnswers()">Submit Analysis</button>
+        </div>
+
+        <div class="panel" style="grid-column: 1 / -1;">
+            <h2>3. Visualization Phase</h2>
+            <p>Visualize the frequency of mass values (Histogram Preview).</p>
+            <div id="chart-container">
+                <div style="align-self:center; color:#999;">Chart will appear after data collection</div>
+            </div>
+        </div>
+
+        <div id="feedback" class="panel">
+            <strong>Mission Status:</strong> Awaiting data...
+        </div>
+
+        <div class="reference">
+            <strong>Field Guide:</strong>
+            <ul>
+                <li><strong>Mean:</strong> Sum of all values / Number of values.</li>
+                <li><strong>Median:</strong> The middle value when sorted. (If even number of items, average the two middle ones).</li>
+                <li><strong>Range:</strong> Largest value - Smallest value.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script>
+        // Global State
+        let currentData = [];
+        let solution = {
+            mean: 0,
+            median: 0,
+            range: 0
+        };
+
+        /**
+         * Generates random integer data for the game
+         */
+        function generateData() {
+            currentData = [];
+            const display = document.getElementById('data-display');
+            const sortedDisplay = document.getElementById('sorted-data-display');
+            
+            // Generate 10 random numbers between 10 and 50
+            for(let i=0; i<10; i++) {
+                currentData.push(Math.floor(Math.random() * 41) + 10);
+            }
+
+            // Clear previous inputs
+            document.getElementById('input-mean').value = '';
+            document.getElementById('input-median').value = '';
+            document.getElementById('input-range').value = '';
+            document.getElementById('feedback').className = 'panel';
+            document.getElementById('feedback').innerHTML = '<strong>Mission Status:</strong> Data received. Analysis required.';
+
+            // Visualize raw data
+            display.innerHTML = currentData.map(n => `<span class="sample-rock">${n}kg</span>`).join(' ');
+
+            // Sort for calculation logic, but show users the sorted list to help them
+            const sorted = [...currentData].sort((a,b) => a - b);
+            sortedDisplay.innerHTML = "<strong>Sorted Helper:</strong> [" + sorted.join(', ') + "]";
+
+            calculateSolutions(sorted);
+            drawChart(sorted);
+        }
+
+        /**
+         * Calculates the correct stats based on current data
+         */
+        function calculateSolutions(sortedArr) {
+            // Mean
+            const sum = sortedArr.reduce((a, b) => a + b, 0);
+            solution.mean = parseFloat((sum / sortedArr.length).toFixed(2));
+
+            // Median
+            const mid = Math.floor(sortedArr.length / 2);
+            if (sortedArr.length % 2 === 0) {
+                solution.median = (sortedArr[mid-1] + sortedArr[mid]) / 2;
+            } else {
+                solution.median = sortedArr[mid];
+            }
+
+            // Range
+            solution.range = sortedArr[sortedArr.length - 1] - sortedArr[0];
+        }
+
+        /**
+         * Draws a simple CSS/HTML Bar Chart
+         */
+        function drawChart(sortedArr) {
+            const container = document.getElementById('chart-container');
+            container.innerHTML = ''; // Clear existing
+
+            // Create bins (Frequency of 10-19, 20-29, 30-39, 40-50)
+            const bins = { '10-19':0, '20-29':0, '30-39':0, '40-50':0 };
+            
+            sortedArr.forEach(num => {
+                if(num < 20) bins['10-19']++;
+                else if(num < 30) bins['20-29']++;
+                else if(num < 40) bins['30-39']++;
+                else bins['40-50']++;
+            });
+
+            const maxFreq = Math.max(...Object.values(bins));
+
+            for (const [range, count] of Object.entries(bins)) {
+                // Bar Wrapper
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                
+                // Calculate height percentage (max height 90% of container)
+                const heightPct = count > 0 ? (count / maxFreq) * 80 : 0;
+                bar.style.height = `${heightPct}%`;
+                
+                // If height is 0, give it a tiny line so label still sits right
+                if(heightPct === 0) bar.style.height = '1px';
+
+                bar.innerHTML = `<span>${range}</span><div style="margin-top:-20px;">${count}</div>`;
+                container.appendChild(bar);
+            }
+        }
+
+        /**
+         * Validates user input against solution
+         */
+        function checkAnswers() {
+            if(currentData.length === 0) {
+                alert("Please collect samples first!");
+                return;
+            }
+
+            const userMean = parseFloat(document.getElementById('input-mean').value);
+            const userMedian = parseFloat(document.getElementById('input-median').value);
+            const userRange = parseFloat(document.getElementById('input-range').value);
+
+            const feedback = document.getElementById('feedback');
+            let errors = [];
+
+            // Tolerance for floating point math
+            if (Math.abs(userMean - solution.mean) > 0.1) errors.push(`Mean is incorrect. (Hint: Sum is ${Math.round(solution.mean * 10)})`);
+            if (userMedian !== solution.median) errors.push("Median is incorrect.");
+            if (userRange !== solution.range) errors.push("Range is incorrect.");
+
+            if (errors.length === 0) {
+                feedback.innerHTML = "<strong>Mission Status:</strong> SUCCESS! <br>Analysis confirmed. Data uploaded to mining fleet.";
+                feedback.className = "panel correct";
+            } else {
+                feedback.innerHTML = "<strong>Mission Status:</strong> ERROR IN ANALYSIS. <br>" + errors.join("<br>");
+                feedback.className = "panel incorrect";
+            }
+        }
+
+        // Initialize with prompt
+        window.onload = function() {
+            document.getElementById('data-display').innerHTML = '<span style="color:#aaa;">Ready to scan...</span>';
+        }
+    </script>
+</body>
+</html>
