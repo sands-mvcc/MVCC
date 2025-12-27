@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineering Notation Workshop</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Card Styling */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid var(--primary);
+        }
+
+        h1, h2, h3 { color: var(--secondary); margin-top: 0; }
+        
+        /* Interactive Explorer Styling */
+        .explorer-interface {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        input[type="number"], input[type="text"], select {
+            padding: 0.8rem;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+            width: 100%;
+            transition: 0.2s;
+        }
+        
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.8rem 0;
+        }
+        .data-val { font-family: monospace; font-weight: bold; color: var(--primary); font-size: 1.1rem; }
+
+        /* Game Zone Styling */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: var(--secondary);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .mode-selector {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .mode-btn {
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            margin: 0 0.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .mode-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .challenge-display {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 2rem 0;
+            color: var(--text-main);
+        }
+
+        .answer-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            min-height: 80px;
+        }
+
+        .feedback {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            min-height: 2rem;
+        }
+
+        .btn-action {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .btn-action:hover { filter: brightness(1.1); }
+        
+        /* Utility classes to toggle game inputs */
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .explorer-interface { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <header style="text-align: center; margin-bottom: 3rem;">
+        <h1>Engineering Notation Workshop</h1>
+        <p>Master the language of electronics and physics.</p>
+    </header>
+
+    <div class="card">
+        <h2>1. The Pattern Explorer</h2>
+        <p>Engineering notation organizes numbers into groups of thousands ($10^3, 10^6, 10^{-3}$, etc.). Use this tool to see how standard numbers transform.</p>
+        
+        <div class="explorer-interface">
+            <div>
+                <label><strong>Enter a Standard Number:</strong></label>
+                <input type="number" id="expInput" value="47000" oninput="updateExplorer()" placeholder="e.g. 0.005 or 45000">
+                <p style="font-size: 0.9rem; color: #64748b; margin-top: 0.5rem;">Try typing: 0.0047, 2500000, or 470.</p>
+            </div>
+            <div>
+                <div class="data-row">
+                    <span>Standard Scientific:</span>
+                    <span class="data-val" id="dispSci">4.7 × 10⁴</span>
+                </div>
+                <div class="data-row" style="background: #e0f2fe; padding-left:0.5rem; border-radius:4px;">
+                    <span>Engineering Notation:</span>
+                    <span class="data-val" id="dispEng">47 × 10³</span>
+                </div>
+                <div class="data-row">
+                    <span>Metric Prefix:</span>
+                    <span class="data-val" id="dispPre">47 k (Kilo)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="game-header">
+            <div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">CURRENT SCORE</div>
+                <div style="font-size: 1.5rem; font-weight: bold;" id="scoreDisplay">0</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.9rem; opacity: 0.8;">STREAK</div>
+                <div style="font-size: 1.5rem; font-weight: bold;" id="streakDisplay">0</div>
+            </div>
+        </div>
+
+        <div class="mode-selector">
+            <p style="margin-bottom: 10px;"><strong>Select Training Mode:</strong></p>
+            <button class="mode-btn active" onclick="setMode('builder')" id="btnBuilder">Mode A: Builder</button>
+            <button class="mode-btn" onclick="setMode('decoder')" id="btnDecoder">Mode B: Decoder</button>
+            <button class="mode-btn" onclick="setMode('matcher')" id="btnMatcher">Mode C: Prefixes</button>
+        </div>
+
+        <h3 style="text-align:center; color: var(--primary);" id="instructionText">Convert the Standard Number to Engineering Notation</h3>
+
+        <div class="challenge-display" id="challengeText">Loading...</div>
+
+        <div class="answer-area">
+            
+            <div id="inputsBuilder" class="inputs-group">
+                <input type="number" id="inMantissa" placeholder="Number (1-999)" style="width: 160px; text-align: center;">
+                <span style="font-weight: bold; font-size: 1.2rem;">× 10</span>
+                <select id="inExponent" style="width: 140px;">
+                    <option value="12">12 (Tera)</option>
+                    <option value="9">9 (Giga)</option>
+                    <option value="6">6 (Mega)</option>
+                    <option value="3">3 (Kilo)</option>
+                    <option value="0">0 (Base)</option>
+                    <option value="-3">-3 (Milli)</option>
+                    <option value="-6">-6 (Micro)</option>
+                    <option value="-9">-9 (Nano)</option>
+                    <option value="-12">-12 (Pico)</option>
+                </select>
+            </div>
+
+            <div id="inputsDecoder" class="inputs-group hidden">
+                <input type="text" id="inStandard" placeholder="e.g. 45000 or 0.004" style="width: 250px; text-align: center;">
+            </div>
+
+            <div id="inputsMatcher" class="inputs-group hidden">
+                <select id="inPrefix" style="width: 250px;">
+                    <option value="">Select Prefix...</option>
+                    <option value="T">Tera (T)</option>
+                    <option value="G">Giga (G)</option>
+                    <option value="M">Mega (M)</option>
+                    <option value="k">Kilo (k)</option>
+                    <option value="m">Milli (m)</option>
+                    <option value="u">Micro (µ)</option>
+                    <option value="n">Nano (n)</option>
+                    <option value="p">Pico (p)</option>
+                </select>
+            </div>
+
+            <button class="btn-action" onclick="checkAnswer()">Submit</button>
+            <button class="mode-btn" style="border:none; color: #94a3b8;" onclick="generateQuestion()">Skip</button>
+        </div>
+
+        <div class="feedback" id="feedbackMsg"></div>
+    </div>
+</div>
+
+<script>
+    // --- UTILITIES ---
+    const getEng = (num) => {
+        if(num === 0) return { m:0, e:0 };
+        let e = Math.floor(Math.log10(Math.abs(num)));
+        let engE = Math.floor(e / 3) * 3;
+        let engM = num / Math.pow(10, engE);
+        engM = Math.round(engM * 100000) / 100000; // clean decimals
+        return { m: engM, e: engE };
+    };
+
+    const prefixes = {
+        12: {name:'Tera', sym:'T'}, 9: {name:'Giga', sym:'G'}, 6: {name:'Mega', sym:'M'}, 
+        3: {name:'Kilo', sym:'k'}, 0: {name:'', sym:''}, 
+        '-3': {name:'Milli', sym:'m'}, '-6': {name:'Micro', sym:'u'}, '-9': {name:'Nano', sym:'n'}, '-12': {name:'Pico', sym:'p'}
+    };
+
+    // --- EXPLORER LOGIC ---
+    function updateExplorer() {
+        const val = parseFloat(document.getElementById('expInput').value);
+        if(isNaN(val)) return;
+
+        // Sci
+        let sciExp = Math.floor(Math.log10(Math.abs(val)));
+        if(val===0) sciExp=0;
+        let sciMan = val / Math.pow(10, sciExp);
+        document.getElementById('dispSci').innerHTML = `${sciMan.toFixed(2)} × 10<sup>${sciExp}</sup>`;
+
+        // Eng
+        let eng = getEng(val);
+        document.getElementById('dispEng').innerHTML = `${eng.m} × 10<sup>${eng.e}</sup>`;
+
+        // Prefix
+        let p = prefixes[eng.e];
+        let pText = p ? `${p.sym} (${p.name})` : `(10^${eng.e})`;
+        document.getElementById('dispPre').innerText = `${eng.m} ${pText}`;
+    }
+
+    // --- GAME ENGINE ---
+    let currentMode = 'builder';
+    let currentData = {};
+    let score = 0;
+    let streak = 0;
+
+    function setMode(mode) {
+        currentMode = mode;
+        // Update UI Tabs
+        ['builder','decoder','matcher'].forEach(m => {
+            document.getElementById('btn'+m.charAt(0).toUpperCase()+m.slice(1)).className = (m===mode ? 'mode-btn active' : 'mode-btn');
+            document.getElementById('inputs'+m.charAt(0).toUpperCase()+m.slice(1)).classList.add('hidden');
+        });
+        document.getElementById('inputs'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.remove('hidden');
+
+        // Update Instruction Text
+        const textMap = {
+            'builder': 'Convert Standard Number → Engineering Notation',
+            'decoder': 'Convert Engineering Notation → Standard Number',
+            'matcher': 'Select the Prefix that matches the Notation'
+        };
+        document.getElementById('instructionText').innerText = textMap[mode];
+        
+        generateQuestion();
+    }
+
+    function generateQuestion() {
+        document.getElementById('feedbackMsg').innerText = "";
+        
+        // Random Eng Number generator
+        let expOpts = [9, 6, 3, 0, -3, -6, -9];
+        let rExp = expOpts[Math.floor(Math.random() * expOpts.length)];
+        let rMan = Math.floor(Math.random() * 900) + 1; // 1 to 900
+        
+        // Create variations based on mode
+        let standardVal = rMan * Math.pow(10, rExp);
+
+        currentData = {
+            man: rMan,
+            exp: rExp,
+            val: standardVal
+        };
+
+        const display = document.getElementById('challengeText');
+
+        if(currentMode === 'builder') {
+            // Show standard (e.g. 0.045), ask for Eng
+            // Avoid huge strings, use locale for readability
+            if(Math.abs(standardVal) < 0.001 || Math.abs(standardVal) > 1000000) {
+                 display.innerText = standardVal.toExponential(); // Fallback for very large/small
+            } else {
+                 display.innerText = standardVal.toLocaleString(undefined, { maximumFractionDigits: 10 });
+            }
+            document.getElementById('inMantissa').value = "";
+        } 
+        else if (currentMode === 'decoder') {
+            // Show Eng (e.g. 45 x 10^3), ask for Standard
+            display.innerHTML = `${rMan} × 10<sup>${rExp}</sup>`;
+            document.getElementById('inStandard').value = "";
+        }
+        else if (currentMode === 'matcher') {
+            // Show Eng (e.g. 50 x 10^-6), ask for prefix
+            // Ensure we don't ask for Base (10^0) as it has no prefix usually
+            if(rExp === 0) { generateQuestion(); return; } 
+            display.innerHTML = `... × 10<sup>${rExp}</sup>`;
+            document.getElementById('inPrefix').value = "";
+        }
+    }
+
+    function checkAnswer() {
+        let correct = false;
+        let msg = "";
+
+        if (currentMode === 'builder') {
+            let uMan = parseFloat(document.getElementById('inMantissa').value);
+            let uExp = parseInt(document.getElementById('inExponent').value);
+            let uVal = uMan * Math.pow(10, uExp);
+            
+            // Check Value match
+            let valMatch = Math.abs((uVal - currentData.val)/currentData.val) < 0.01;
+            // Check Range match (1 <= m < 1000)
+            let rangeMatch = Math.abs(uMan) >= 1 && Math.abs(uMan) < 1000;
+
+            if(valMatch && rangeMatch) correct = true;
+            else if(valMatch) msg = "Mathematically equal, but not proper Engineering Notation (1-999).";
+            else msg = `Incorrect. Target was ${currentData.man} × 10^${currentData.exp}`;
+        }
+        else if (currentMode === 'decoder') {
+            let uStr = document.getElementById('inStandard').value.replace(/,/g, ''); // remove commas
+            let uVal = parseFloat(uStr);
+            if(Math.abs((uVal - currentData.val)/currentData.val) < 0.01) correct = true;
+            else msg = `Incorrect. The value is ${currentData.val.toLocaleString(undefined, { maximumFractionDigits: 10 })}`;
+        }
+        else if (currentMode === 'matcher') {
+            let uPre = document.getElementById('inPrefix').value;
+            let targetPre = prefixes[currentData.exp].sym;
+            // Map 'u' to 'u' or 'µ' just in case
+            if(targetPre === 'µ' && uPre === 'u') correct = true; // handle variations if any
+            else if(uPre === targetPre) correct = true;
+            else msg = `Incorrect. 10^${currentData.exp} is ${prefixes[currentData.exp].name}`;
+        }
+
+        const fb = document.getElementById('feedbackMsg');
+        if(correct) {
+            fb.style.color = "var(--success)";
+            fb.innerText = "Correct! +10 Points";
+            score += 10 + streak;
+            streak++;
+            updateScore();
+            setTimeout(generateQuestion, 1200);
+        } else {
+            fb.style.color = "var(--error)";
+            fb.innerText = msg;
+            streak = 0;
+            updateScore();
+        }
+    }
+
+    function updateScore() {
+        document.getElementById('scoreDisplay').innerText = score;
+        document.getElementById('streakDisplay').innerText = streak;
+    }
+
+    // Init
+    updateExplorer();
+    generateQuestion();
+
+</script>
+
+</body>
+</html>
