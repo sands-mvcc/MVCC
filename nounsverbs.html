@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammar Master: Nouns & Verbs</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #50E3C2;
+            --accent: #F5A623;
+            --danger: #E74C3C;
+            --success: #2ECC71;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Header & Layout */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            width: 100%;
+            padding: 1.5rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 2.2rem; }
+        p.subtitle { margin: 0.5rem 0 0; opacity: 0.9; }
+
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin-top: 2rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Screens */
+        .screen {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            text-align: center;
+            display: none; /* Hidden by default */
+            transition: opacity 0.3s ease;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        /* Setup Screen Controls */
+        .control-group {
+            margin: 2rem 0;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        input[type="range"] {
+            width: 80%;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        .time-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* Game Screen Layout */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .timer-box { color: var(--danger); }
+        .score-box { color: var(--success); }
+
+        .question-card {
+            background: #f8f9fa;
+            border-left: 5px solid var(--primary);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+        }
+
+        .word-prompt {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
+
+        button {
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            font-weight: bold;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 0 #2980b9;
+        }
+        
+        .btn-option {
+            background-color: white;
+            border: 2px solid var(--light);
+            color: var(--dark);
+            box-shadow: 0 4px 0 #bdc3c7;
+        }
+
+        .btn-option:hover {
+            border-color: var(--secondary);
+            background-color: #fafffe;
+        }
+
+        /* Feedback States */
+        .btn-option.correct {
+            background-color: var(--success) !important;
+            color: white !important;
+            border-color: var(--success) !important;
+            box-shadow: 0 4px 0 #27ae60 !important;
+        }
+
+        .btn-option.wrong {
+            background-color: var(--danger) !important;
+            color: white !important;
+            border-color: var(--danger) !important;
+            box-shadow: 0 4px 0 #c0392b !important;
+        }
+
+        /* End Screen */
+        .final-score {
+            font-size: 4rem;
+            color: var(--primary);
+            margin: 1rem 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .word-prompt { font-size: 2rem; }
+            .options-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Grammar Master</h1>
+    <p class="subtitle">Identify Nouns and Verbs before time runs out!</p>
+</header>
+
+<div class="container">
+    <div id="start-screen" class="screen active">
+        <h2>Game Settings</h2>
+        <p>You will be shown a word. Select the correct grammatical category to earn points.</p>
+        
+        <div class="control-group">
+            <label for="time-slider">Timer Duration: <span id="time-val" class="time-display">45</span> seconds</label>
+            <input type="range" id="time-slider" min="30" max="60" value="45" step="5">
+        </div>
+
+        <button class="btn-primary" onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="hud">
+            <div class="timer-box">Time: <span id="timer">00</span>s</div>
+            <div class="score-box">Score: <span id="score">0</span></div>
+        </div>
+
+        <div class="question-card">
+            <p style="margin-top:0; color:#7f8c8d; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Classify this Word</p>
+            <h2 id="word-display" class="word-prompt">Word</h2>
+        </div>
+
+        <div id="options-container" class="options-grid">
+            </div>
+    </div>
+
+    <div id="end-screen" class="screen">
+        <h2>Time's Up!</h2>
+        <p>Your grammatical prowess resulted in:</p>
+        <div class="final-score" id="final-score">0</div>
+        <p>points</p>
+        <button class="btn-primary" onclick="resetGame()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    // --- DATA ---
+    // Based on the specific categories visible in the uploaded images
+    const gameData = [
+        // --- NOUNS ---
+        { word: "Team", type: "Collective Noun" },
+        { word: "Family", type: "Collective Noun" },
+        { word: "Flock", type: "Collective Noun" },
+        { word: "Swimming pool", type: "Compound Noun" },
+        { word: "Sunflower", type: "Compound Noun" },
+        { word: "Toothbrush", type: "Compound Noun" },
+        { word: "Dog", type: "Common Noun" },
+        { word: "City", type: "Common Noun" },
+        { word: "John", type: "Proper Noun" },
+        { word: "London", type: "Proper Noun" },
+        { word: "Paris", type: "Proper Noun" },
+        { word: "Love", type: "Abstract Noun" },
+        { word: "Freedom", type: "Abstract Noun" },
+        { word: "Courage", type: "Abstract Noun" },
+        { word: "Table", type: "Concrete Noun" },
+        { word: "Flower", type: "Concrete Noun" },
+        { word: "Apple", type: "Countable Noun" },
+        { word: "Car", type: "Countable Noun" },
+        { word: "Water", type: "Uncountable Noun" },
+        { word: "Sand", type: "Uncountable Noun" },
+        { word: "Music", type: "Uncountable Noun" },
+
+        // --- VERBS ---
+        { word: "Jump", type: "Action Verb" },
+        { word: "Think", type: "Action Verb" },
+        { word: "Become", type: "Linking Verb" },
+        { word: "Seem", type: "Linking Verb" },
+        { word: "Is/Are", type: "Linking Verb" },
+        { word: "Can", type: "Modal Verb" },
+        { word: "Must", type: "Modal Verb" },
+        { word: "Should", type: "Modal Verb" },
+        { word: "Have (seen)", type: "Auxiliary Verb" },
+        { word: "Do (not)", type: "Auxiliary Verb" },
+        { word: "Give up", type: "Phrasal Verb" },
+        { word: "Look after", type: "Phrasal Verb" },
+        { word: "Break down", type: "Phrasal Verb" }
+    ];
+
+    const allCategories = [
+        "Collective Noun", "Compound Noun", "Common Noun", "Proper Noun", 
+        "Abstract Noun", "Concrete Noun", "Countable Noun", "Uncountable Noun",
+        "Action Verb", "Linking Verb", "Modal Verb", "Auxiliary Verb", "Phrasal Verb"
+    ];
+
+    // --- STATE ---
+    let score = 0;
+    let timeLeft = 0;
+    let timerInterval;
+    let currentQuestion = {};
+    let isAnswering = false;
+
+    // --- DOM ELEMENTS ---
+    const screens = {
+        start: document.getElementById('start-screen'),
+        game: document.getElementById('game-screen'),
+        end: document.getElementById('end-screen')
+    };
+    
+    const timeSlider = document.getElementById('time-slider');
+    const timeValDisplay = document.getElementById('time-val');
+    const timerDisplay = document.getElementById('timer');
+    const scoreDisplay = document.getElementById('score');
+    const wordDisplay = document.getElementById('word-display');
+    const optionsContainer = document.getElementById('options-container');
+    const finalScoreDisplay = document.getElementById('final-score');
+
+    // --- SETUP LISTENERS ---
+    timeSlider.addEventListener('input', (e) => {
+        timeValDisplay.textContent = e.target.value;
+    });
+
+    // --- GAME FUNCTIONS ---
+
+    function switchScreen(screenName) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[screenName].classList.add('active');
+    }
+
+    function startGame() {
+        score = 0;
+        scoreDisplay.textContent = score;
+        timeLeft = parseInt(timeSlider.value);
+        timerDisplay.textContent = timeLeft;
+        
+        switchScreen('game');
+        nextQuestion();
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function generateDistractors(correctType) {
+        // Create a pool of wrong answers
+        let distractors = allCategories.filter(cat => cat !== correctType);
+        // Shuffle and pick 3
+        distractors.sort(() => 0.5 - Math.random());
+        return distractors.slice(0, 3);
+    }
+
+    function nextQuestion() {
+        isAnswering = false;
+        optionsContainer.innerHTML = ''; // Clear previous buttons
+
+        // 1. Pick random word object
+        const randomIndex = Math.floor(Math.random() * gameData.length);
+        currentQuestion = gameData[randomIndex];
+
+        // 2. Prepare options (Correct + 3 Distractors)
+        const distractors = generateDistractors(currentQuestion.type);
+        let options = [...distractors, currentQuestion.type];
+        
+        // 3. Shuffle options
+        options.sort(() => 0.5 - Math.random());
+
+        // 4. Render
+        wordDisplay.textContent = currentQuestion.word;
+
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-option';
+            btn.textContent = opt;
+            btn.onclick = () => handleAnswer(opt, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function handleAnswer(selectedType, btnElement) {
+        if (isAnswering) return; // Prevent double clicks
+        isAnswering = true;
+
+        const isCorrect = selectedType === currentQuestion.type;
+
+        // Visual Feedback
+        if (isCorrect) {
+            btnElement.classList.add('correct');
+            score += 10;
+        } else {
+            btnElement.classList.add('wrong');
+            // Highlight the correct one
+            Array.from(optionsContainer.children).forEach(child => {
+                if (child.textContent === currentQuestion.type) {
+                    child.classList.add('correct');
+                }
+            });
+            score = Math.max(0, score - 5); // No negative scores
+        }
+
+        scoreDisplay.textContent = score;
+
+        // Delay before next question
+        setTimeout(() => {
+            if (timeLeft > 0) nextQuestion();
+        }, 1000);
+    }
+
+    function endGame() {
+        clearInterval(timerInterval);
+        finalScoreDisplay.textContent = score;
+        switchScreen('end');
+    }
+
+    function resetGame() {
+        switchScreen('start');
+    }
+
+</script>
+
+</body>
+</html>
