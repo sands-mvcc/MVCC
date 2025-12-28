@@ -3,35 +3,571 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mitre CVE Database Lookup</title>
-    <script>
-        async function fetchVulnerabilities() {
-            const manufacturer = document.getElementById('manufacturer').value;
-            const product = document.getElementById('product').value;
-
-            const response = await fetch(`https://services.nvd.nist.gov/rest/json/cves/1.0?keyword=${manufacturer} ${product}`);
-            const data = await response.json();
-
-            let output = `<h3>Vulnerabilities for ${manufacturer} ${product}:</h3><ul>`;
-            if (data.result.CVE_Items.length > 0) {
-                data.result.CVE_Items.forEach(item => {
-                    output += `<li>${item.cve.CVE_data_meta.ID}: ${item.cve.description.description_data[0].value}</li>`;
-                });
-            } else {
-                output += `<li>No vulnerabilities found.</li>`;
-            }
-            output += '</ul>';
-            document.getElementById('results').innerHTML = output;
+    <title>CVE Database: Instructional Module</title>
+    <style>
+        :root {
+            --primary-green: #2e7d32; /* Academic Green */
+            --light-green: #e8f5e9;
+            --dark-green: #1b5e20;
+            --text-black: #1a1a1a;
+            --white: #ffffff;
+            --border-color: #ddd;
+            --error-red: #d32f2f;
         }
-    </script>
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--white);
+            color: var(--text-black);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--white);
+            border-bottom: 4px solid var(--primary-green);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--text-black);
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: var(--primary-green);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Stats Banner */
+        .stats-banner {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--text-black);
+            color: var(--white);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            margin: 5px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4caf50;
+        }
+
+        /* Search Section (New) */
+        .search-section {
+            background-color: var(--light-green);
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid var(--primary-green);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .results-area {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .cve-result-card {
+            background: white;
+            padding: 15px;
+            border-left: 5px solid var(--primary-green);
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .cve-id {
+            font-weight: bold;
+            color: var(--dark-green);
+            font-size: 1.1rem;
+        }
+
+        .cve-meta {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        /* Accordion Section */
+        .accordion-item {
+            border: 1px solid var(--border-color);
+            margin-bottom: 10px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background-color: #f5f5f5;
+            color: var(--text-black);
+            padding: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+
+        .accordion-header:hover {
+            background-color: #e0e0e0;
+        }
+
+        .accordion-content {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease;
+            background-color: var(--white);
+        }
+
+        .accordion-content.active {
+            padding: 20px;
+            max-height: 1000px;
+        }
+
+        /* Interactive Activity Section */
+        .activity-area {
+            border: 2px solid var(--primary-green);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 40px;
+            background-color: #fafafa;
+        }
+
+        .game-interface {
+            display: none;
+            text-align: center;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 600px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            margin: 5px;
+            transition: 0.2s;
+        }
+
+        .btn-start, .btn-search {
+            background-color: var(--primary-green);
+            color: white;
+        }
+
+        .btn-yes {
+            background-color: var(--primary-green);
+            color: white;
+        }
+
+        .btn-no {
+            background-color: var(--text-black);
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .feedback {
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 1.5em;
+        }
+
+        .feedback.correct { color: var(--primary-green); }
+        .feedback.incorrect { color: var(--error-red); }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #ddd;
+            height: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-green);
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+        }
+        .badge-sim { background-color: #ffcc80; color: #333; }
+        .badge-live { background-color: #a5d6a7; color: #000; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            font-size: 0.9rem;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+
+        .tag {
+            background-color: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+    </style>
 </head>
 <body>
-    <h1>Mitre CVE Database Lookup</h1>
-    <label for="manufacturer">1) Name a Manufacturer or a Product to Evaluate:</label><br>
-    <input type="text" id="manufacturer" name="manufacturer"><br><br>
-    <label for="product">2) Name the Product to Evaluate:</label><br>
-    <input type="text" id="product" name="product"><br><br>
-    <button onclick="fetchVulnerabilities()">Submit</button>
-    <div id="results"></div>
+
+    <header>
+        <h1>CVE Database Overview</h1>
+        <div class="subtitle">Common Vulnerabilities and Exposures</div>
+    </header>
+
+    <div class="container">
+        <div class="stats-banner">
+            <div class="stat-item">
+                <div class="stat-number">MITRE</div>
+                <div>Maintainer</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">240,000+</div>
+                <div>Total Records</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">Live</div>
+                <div>Search Enabled</div>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <h2 style="margin-top:0;">Search the Database</h2>
+            <p>Use the tool below to search for real vulnerabilities. Try keywords like <strong>"Java"</strong>, <strong>"Windows"</strong>, <strong>"Chrome"</strong>, or a specific ID like <strong>"CVE-2021-44228"</strong>.</p>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Enter keyword or CVE ID (e.g., CVE-2023-1234)..." onkeypress="handleEnter(event)">
+                <button class="btn btn-search" onclick="performSearch()">Search</button>
+            </div>
+            <div id="searchStatus" style="margin-top: 10px; font-style: italic; color: #666;"></div>
+            <div id="resultsArea" class="results-area"></div>
+        </div>
+
+        <p>Welcome to this interactive learning module. We will explore the purpose, structure, and application of the CVE database. Click the sections below to review the core concepts before testing your skills.</p>
+
+        <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                1. Purpose & Application <span class="icon">+</span>
+            </div>
+            <div class="accordion-content">
+                <h3>What is CVE?</h3>
+                <p><strong>CVE (Common Vulnerabilities and Exposures)</strong> is a list of publicly disclosed cybersecurity vulnerabilities. It is free to use and maintained by the MITRE Corporation.</p>
+                <p>The main purpose is to provide a <strong>standardized identifier</strong> for a given vulnerability. This ensures that when two people talk about "that critical Java bug," they know exactly which one is being discussed (e.g., <span class="tag">CVE-2021-44228</span>).</p>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                2. The CVE ID Format <span class="icon">+</span>
+            </div>
+            <div class="accordion-content">
+                <h3>Decoding the ID</h3>
+                <p>Every CVE entry follows a specific format: <span class="tag">CVE-YYYY-NNNNN...</span></p>
+                <ul>
+                    <li><strong>CVE:</strong> The prefix.</li>
+                    <li><strong>YYYY:</strong> The year the ID was assigned or the vulnerability was made public.</li>
+                    <li><strong>NNNNN:</strong> A sequence number of at least 4 digits (but can be 5, 6, or more).</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                3. The Lifecycle <span class="icon">+</span>
+            </div>
+            <div class="accordion-content">
+                <h3>How a CVE is Born</h3>
+                <ol>
+                    <li><strong>Discovery:</strong> A researcher or vendor finds a flaw.</li>
+                    <li><strong>Reservation:</strong> A CVE ID is "Reserved" by a CNA (CVE Numbering Authority).</li>
+                    <li><strong>Submission:</strong> Details are gathered.</li>
+                    <li><strong>Publication:</strong> The CVE is published to the main list.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="activity-area">
+            <div id="start-screen" style="text-align: center;">
+                <h2>Activity: CNA Dashboard</h2>
+                <p><strong>Role:</strong> You are a CVE Numbering Authority (CNA) analyst.</p>
+                <p><strong>Goal:</strong> Review incoming vulnerability reports. Decide if they meet the criteria to be assigned a CVE ID.</p>
+                <p><em>Criteria for a CVE:</em><br>1. Can it be fixed independently?<br>2. Is it acknowledged by the vendor?<br>3. Does it affect only one codebase?<br>4. Is the software public?</p>
+                <button class="btn btn-start" onclick="startGame()">Start Analysis</button>
+            </div>
+
+            <div id="game-interface" class="game-interface">
+                <div class="card">
+                    <h3 id="scenario-title">Report #1</h3>
+                    <p id="scenario-desc" style="font-size: 1.1em; margin: 20px 0;">Loading...</p>
+                    
+                    <div class="controls">
+                        <button class="btn btn-yes" onclick="submitAnswer(true)">Assign CVE</button>
+                        <button class="btn btn-no" onclick="submitAnswer(false)">Reject</button>
+                    </div>
+                </div>
+                <div id="feedback-display" class="feedback"></div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div id="end-screen" style="display: none; text-align: center;">
+                <h2>Analysis Complete!</h2>
+                <p>You have processed all the reports.</p>
+                <p id="final-score" style="font-size: 1.5em; font-weight: bold; color: var(--primary-green);"></p>
+                <button class="btn btn-start" onclick="location.reload()">Reset Module</button>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>Instructional Design Prototype for Cybersecurity Education.</p>
+        <p>&copy; 2025 Instructional Designer Module.</p>
+    </footer>
+
+    <script>
+        // --- SEARCH LOGIC ---
+
+        // Local Fallback Database (used if API fails or for offline use)
+        const localCVEDatabase = [
+            { id: "CVE-2021-44228", desc: "Log4j 2 - Apache Log4j2 JNDI features used in configuration, log messages, and parameters do not protect against attacker controlled LDAP and other JNDI related endpoints." },
+            { id: "CVE-2017-0144", desc: "EternalBlue - The SMBv1 server in Microsoft Windows Vista SP2; Windows Server 2008 SP2 and R2 SP1; Windows 7 SP1; Windows 8.1; Windows Server 2012 Gold and R2; Windows RT 8.1; and Windows 10 Gold, 1511, and 1607 allows remote attackers to execute arbitrary code via crafted packets." },
+            { id: "CVE-2014-0160", desc: "Heartbleed - The (1) TLS and (2) DTLS implementations in OpenSSL 1.0.1 before 1.0.1g do not properly handle Heartbeat Extension packets, which allows remote attackers to obtain sensitive information from process memory." },
+            { id: "CVE-2023-4863", desc: "Heap buffer overflow in libwebp in Google Chrome prior to 116.0.5845.187 allowed a remote attacker to perform an out of bounds memory write via a crafted HTML page." },
+            { id: "CVE-2024-21413", desc: "Microsoft Outlook Remote Code Execution Vulnerability. An attacker could send a malicious link that bypasses the Protected View and opens the file in editing mode." },
+            { id: "CVE-2025-0001", desc: "(Simulated Future Entry) Hypothetical buffer overflow in QuantumCrypto library version 1.0." }
+        ];
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') performSearch();
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const resultsArea = document.getElementById('resultsArea');
+            const statusArea = document.getElementById('searchStatus');
+
+            if (!query) return;
+
+            resultsArea.innerHTML = '';
+            statusArea.innerText = "Connecting to NVD API...";
+
+            // Strategy: Try NVD API first. If it fails (CORS/RateLimit), fall back to local DB.
+            try {
+                // NVD API 2.0 Endpoint
+                const apiUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=${encodeURIComponent(query)}&resultsPerPage=5`;
+                
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) throw new Error("API Limit or Error");
+
+                const data = await response.json();
+                statusArea.innerHTML = `<span class="badge badge-live">Live Data</span> Found ${data.totalResults} results (showing top 5)`;
+
+                if (data.vulnerabilities.length === 0) {
+                    resultsArea.innerHTML = "<p>No results found via API.</p>";
+                    return;
+                }
+
+                data.vulnerabilities.forEach(item => {
+                    const cve = item.cve;
+                    const desc = cve.descriptions.find(d => d.lang === 'en')?.value || "No description available.";
+                    createResultCard(cve.id, desc, cve.published);
+                });
+
+            } catch (error) {
+                console.log("API failed, switching to fallback:", error);
+                statusArea.innerHTML = `<span class="badge badge-sim">Simulation Mode</span> API unavailable. Searching offline training database.`;
+                
+                // Fallback Logic
+                const filtered = localCVEDatabase.filter(item => 
+                    item.id.toLowerCase().includes(query.toLowerCase()) || 
+                    item.desc.toLowerCase().includes(query.toLowerCase())
+                );
+
+                if (filtered.length === 0) {
+                    resultsArea.innerHTML = "<p>No matches found in offline database.</p>";
+                } else {
+                    filtered.forEach(item => {
+                        createResultCard(item.id, item.desc, "Training Example");
+                    });
+                }
+            }
+        }
+
+        function createResultCard(id, desc, date) {
+            const div = document.createElement('div');
+            div.className = 'cve-result-card';
+            // Clean up date if it's a full ISO string
+            const dateStr = date.includes('T') ? date.split('T')[0] : date;
+            
+            div.innerHTML = `
+                <div class="cve-id">${id}</div>
+                <div class="cve-meta">Published: ${dateStr}</div>
+                <div>${desc}</div>
+            `;
+            document.getElementById('resultsArea').appendChild(div);
+        }
+
+        // --- ACCORDION LOGIC ---
+        function toggleAccordion(element) {
+            const content = element.nextElementSibling;
+            const isActive = content.classList.contains('active');
+            
+            document.querySelectorAll('.accordion-content').forEach(c => {
+                c.classList.remove('active');
+                c.style.maxHeight = null;
+                c.previousElementSibling.querySelector('.icon').textContent = '+';
+            });
+
+            if (!isActive) {
+                content.classList.add('active');
+                content.style.maxHeight = content.scrollHeight + "px";
+                element.querySelector('.icon').textContent = '-';
+            }
+        }
+
+        // --- GAME LOGIC ---
+        const scenarios = [
+            {
+                desc: "A researcher reports a bug in 'BetaSoft', a customized internal tool used ONLY by one specific company and never distributed to the public.",
+                valid: false,
+                reason: "Reject: CVEs are only for publicly released software. Internal custom tools do not qualify."
+            },
+            {
+                desc: "A flaw is found in the popular open-source library 'Log4j' that allows remote code execution. It affects millions of devices.",
+                valid: true,
+                reason: "Assign CVE: This is a publicly available software with a critical security flaw."
+            },
+            {
+                desc: "A user reports they forgot their password to their email account.",
+                valid: false,
+                reason: "Reject: This is a user error/configuration issue, not a vulnerability in the software code."
+            },
+            {
+                desc: "Microsoft discovers a flaw in Windows 11 updates that causes a security bypass. They are ready to release a patch.",
+                valid: true,
+                reason: "Assign CVE: Windows is public software, and this is a distinct vulnerability."
+            },
+            {
+                desc: "A hacker claims they can hack a site, but refuses to provide proof, code, or explanation of how it works.",
+                valid: false,
+                reason: "Reject: Without validation or acknowledgement from the vendor, a CVE cannot be assigned based on hearsay."
+            }
+        ];
+
+        let currentScenario = 0;
+        let score = 0;
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-interface').style.display = 'block';
+            loadScenario();
+        }
+
+        function loadScenario() {
+            document.getElementById('scenario-title').innerText = `Report #${currentScenario + 1}`;
+            document.getElementById('scenario-desc').innerText = scenarios[currentScenario].desc;
+            document.getElementById('feedback-display').innerText = "";
+            document.getElementById('feedback-display').className = "feedback";
+            
+            const buttons = document.querySelectorAll('.game-interface .btn');
+            buttons.forEach(b => b.disabled = false);
+        }
+
+        function submitAnswer(userChoice) {
+            const correct = scenarios[currentScenario].valid === userChoice;
+            const feedbackEl = document.getElementById('feedback-display');
+            
+            const buttons = document.querySelectorAll('.game-interface .btn');
+            buttons.forEach(b => b.disabled = true);
+
+            if (correct) {
+                score++;
+                feedbackEl.innerText = "Correct! " + scenarios[currentScenario].reason;
+                feedbackEl.classList.add("correct");
+            } else {
+                feedbackEl.innerText = "Incorrect. " + scenarios[currentScenario].reason;
+                feedbackEl.classList.add("incorrect");
+            }
+
+            const percent = ((currentScenario + 1) / scenarios.length) * 100;
+            document.getElementById('progress-fill').style.width = percent + "%";
+
+            setTimeout(() => {
+                currentScenario++;
+                if (currentScenario < scenarios.length) {
+                    loadScenario();
+                } else {
+                    endGame();
+                }
+            }, 2500);
+        }
+
+        function endGame() {
+            document.getElementById('game-interface').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'block';
+            document.getElementById('final-score').innerText = `You scored ${score} out of ${scenarios.length}`;
+        }
+    </script>
 </body>
 </html>
