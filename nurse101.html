@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nursing 101: Foundations & Clinical Reasoning</title>
+    <style>
+        :root {
+            --primary: #00695c; /* Medical Teal */
+            --secondary: #b2dfdb;
+            --accent: #d32f2f; /* Alert Red */
+            --text: #333;
+            --light: #f4f6f8;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            background-color: var(--light);
+            color: var(--text);
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        header h1 { margin: 0; font-size: 1.8rem; }
+        header p { margin: 0.5rem 0 0; font-weight: 300; }
+
+        /* Container */
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Concept Cards */
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--primary);
+            transition: transform 0.2s;
+        }
+
+        .card:hover { transform: translateY(-3px); }
+        .card h3 { margin-top: 0; color: var(--primary); }
+
+        /* Simulation Area */
+        #simulation-container {
+            background: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            overflow: hidden;
+            display: none; /* Hidden until start */
+        }
+
+        .sim-header {
+            background: #263238;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sim-body {
+            padding: 2rem;
+        }
+
+        .ehr-panel {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+            transition: background 0.3s;
+        }
+
+        .btn:hover { background-color: #004d40; }
+        
+        .btn-choice {
+            display: block;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 0.8rem;
+            background-color: var(--white);
+            color: var(--text);
+            border: 2px solid var(--secondary);
+        }
+
+        .btn-choice:hover {
+            background-color: var(--secondary);
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .feedback {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            display: none;
+        }
+        .feedback.correct { background-color: #c8e6c9; border: 1px solid #2e7d32; }
+        .feedback.incorrect { background-color: #ffcdd2; border: 1px solid #c62828; }
+
+        /* Progress Bar */
+        .progress-container {
+            background-color: #e0e0e0;
+            height: 10px;
+            width: 100%;
+        }
+        .progress-bar {
+            background-color: var(--primary);
+            height: 10px;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        /* Intro Section */
+        #intro-section { text-align: center; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Nursing 101: Clinical Reasoning Lab</h1>
+    <p>Apply the Nursing Process, Safety Protocols, and Ethics in a Virtual Environment</p>
+</header>
+
+<div class="container">
+
+    <div id="intro-section">
+        <h2>Core Concept Review</h2>
+        <p>Before entering the patient room, review the fundamental principles.</p>
+        
+        <div class="concept-grid">
+            <div class="card">
+                <h3>The Nursing Process</h3>
+                <p><strong>ADPIE:</strong> Assessment, Diagnosis, Planning, Implementation, Evaluation. The systematic framework for all care.</p>
+            </div>
+            <div class="card">
+                <h3>Safety & Infection Control</h3>
+                <p>Prioritizing patient wellbeing, PPE usage, and preventing errors (falls, meds).</p>
+            </div>
+            <div class="card">
+                <h3>Ethics & Professionalism</h3>
+                <p>Accountability, scope of practice, and balancing patient autonomy with safety.</p>
+            </div>
+            <div class="card">
+                <h3>Evidence-Based Practice</h3>
+                <p>Using clinical data (vitals, labs, research) to make informed decisions rather than guessing.</p>
+            </div>
+        </div>
+
+        <button class="btn" onclick="startSimulation()">Enter Simulation</button>
+    </div>
+
+    <div id="simulation-container">
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="sim-header">
+            <span>Room: 304</span>
+            <span>Patient: Mrs. Higgins (78y/F)</span>
+        </div>
+        
+        <div class="sim-body" id="scenario-content">
+            </div>
+    </div>
+
+</div>
+
+<script>
+    // State Management
+    let currentStage = 0;
+    let score = 0;
+
+    // Scenario Data
+    const scenario = [
+        {
+            stage: "Assessment",
+            text: "You are assigned to Mrs. Higgins, admitted 4 hours ago for pneumonia. She is 78 years old. <br><br><strong>Observation:</strong> You enter the room. The bed is in high position. Mrs. Higgins is attempting to swing her legs over the side of the bed. She appears slightly confused and short of breath.",
+            ehr: "<strong>Chart Data:</strong><br>History: Hypertension, Previous hip fracture (2022).<br>Meds: Furosemide (Diuretic), Antibiotics.<br>Morse Fall Scale Score: 65 (High Risk).",
+            question: "According to the Nursing Process (Assessment), what is your IMMEDIATE priority action?",
+            options: [
+                { text: "A. Go to the nurses' station to read her full chart history.", correct: false, feedback: "Incorrect. While history is important, the patient is currently in immediate danger. Assessment of the immediate environment and safety comes first." },
+                { text: "B. Immediately approach the patient, assess her stability, and assist her to a safe position.", correct: true, feedback: "Correct! Safety is the priority. You observed a fall risk (bed high, confused patient). Immediate intervention prevents harm." },
+                { text: "C. Administer her scheduled antibiotic.", correct: false, feedback: "Incorrect. Medication administration is important, but physical safety (Fall Risk) takes precedence right now." }
+            ]
+        },
+        {
+            stage: "Diagnosis & EBP",
+            text: "You have helped Mrs. Higgins sit safely on the side of the bed. You take her vitals.<br><br><strong>Vital Signs:</strong> BP: 108/62 | HR: 98 | RR: 24 | O2 Sat: 91% on RA | Temp: 99.1°F",
+            ehr: "<strong>Evidence Analysis:</strong><br>BP is lower than her baseline (130/80). Heart rate is elevated. She is taking a diuretic (water pill).",
+            question: "Analyze the data. What is the primary Nursing Diagnosis/Priority Problem?",
+            options: [
+                { text: "A. Risk for Infection related to pneumonia.", correct: false, feedback: "Infection is present, but given her attempt to get up, low BP, and history, there is a more immediate physical safety risk." },
+                { text: "B. Risk for Falls related to orthostatic hypotension, confusion, and history of hip fracture.", correct: true, feedback: "Correct. The Evidence (Low BP + Diuretic + Confusion + History) strongly suggests she is dizzy and at high risk for falling." },
+                { text: "C. Impaired Skin Integrity related to bed rest.", correct: false, feedback: "Not the priority based on the current data." }
+            ]
+        },
+        {
+            stage: "Planning & Ethics",
+            text: " Mrs. Higgins insists: <em>'I need to use the bathroom right now! I don't need help, I've been walking for 77 years!'</em><br><br>You know she is a high fall risk, but she is legally competent and refusing help. The hospital protocol requires a gait belt and assist for High Risk patients.",
+            ehr: "<strong>Ethical Conflict:</strong><br>Autonomy (Patient wants to go alone) vs. Non-maleficence (Duty to do no harm/prevent falls).",
+            question: "How do you communicate and implement care?",
+            options: [
+                { text: "A. Tell her 'No,' raise all four bed rails to trap her in bed, and leave to get an order for restraints.", correct: false, feedback: "Major Ethical Violation. This is false imprisonment and battery. Restraints are a last resort." },
+                { text: "B. Say 'Okay, go ahead,' and let her walk alone to respect her independence.", correct: false, feedback: "Negligence. Knowing the risk (Evidence-Based Practice) and failing to act makes you liable if she falls." },
+                { text: "C. Use therapeutic communication: 'I know you value your independence, Mrs. Higgins. However, your blood pressure is low, which causes dizziness. For your safety, I will walk with you using this belt.'", correct: true, feedback: "Correct! This respects the patient (explanation) while adhering to safety standards and ethical duty." }
+            ]
+        },
+        {
+            stage: "Evaluation",
+            text: "You assisted Mrs. Higgins to the bathroom. She became dizzy upon standing but you were there to support her with the gait belt. She returned to bed safely.",
+            ehr: "<strong>Outcome:</strong><br>Patient Safety: Maintained.<br>Patient Satisfaction: Maintained (she thanked you for catching her).",
+            question: "The scenario is complete. What is the final step of the Nursing Process?",
+            options: [
+                { text: "A. Documentation.", correct: true, feedback: "Correct. 'If it isn't documented, it didn't happen.' You must document the vitals, the intervention, and the patient's response." },
+                { text: "B. Diagnosis.", correct: false, feedback: "Diagnosis happened earlier." },
+                { text: "C. Assessment.", correct: false, feedback: "Assessment is continuous, but the formal completion of the cycle requires documentation/evaluation." }
+            ]
+        }
+    ];
+
+    function startSimulation() {
+        document.getElementById('intro-section').style.display = 'none';
+        document.getElementById('simulation-container').style.display = 'block';
+        loadStage();
+    }
+
+    function loadStage() {
+        if (currentStage >= scenario.length) {
+            showResults();
+            return;
+        }
+
+        const data = scenario[currentStage];
+        const progress = ((currentStage) / scenario.length) * 100;
+        document.getElementById('progressBar').style.width = progress + "%";
+
+        let html = `
+            <h3>Stage: ${data.stage}</h3>
+            <p>${data.text}</p>
+            <div class="ehr-panel">${data.ehr}</div>
+            <p><strong>${data.question}</strong></p>
+            <div id="options-area"></div>
+            <div id="feedback-area" class="feedback"></div>
+            <button id="next-btn" class="btn" style="display:none;" onclick="nextStage()">Next Stage</button>
+        `;
+
+        document.getElementById('scenario-content').innerHTML = html;
+
+        const optionsDiv = document.getElementById('options-area');
+        data.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-choice';
+            btn.innerText = opt.text;
+            btn.onclick = () => checkAnswer(index, opt.correct, opt.feedback);
+            optionsDiv.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(index, isCorrect, feedbackText) {
+        const feedbackDiv = document.getElementById('feedback-area');
+        const nextBtn = document.getElementById('next-btn');
+        const optionsDiv = document.getElementById('options-area');
+
+        // Disable all buttons
+        const buttons = optionsDiv.getElementsByTagName('button');
+        for (let btn of buttons) {
+            btn.disabled = true;
+            btn.style.opacity = "0.6";
+        }
+
+        feedbackDiv.style.display = 'block';
+        feedbackDiv.innerText = feedbackText;
+
+        if (isCorrect) {
+            feedbackDiv.className = 'feedback correct';
+            score++;
+        } else {
+            feedbackDiv.className = 'feedback incorrect';
+            // Highlight the fact it was wrong
+        }
+
+        nextBtn.style.display = 'inline-block';
+    }
+
+    function nextStage() {
+        currentStage++;
+        loadStage();
+    }
+
+    function showResults() {
+        document.getElementById('progressBar').style.width = "100%";
+        let finalMsg = "";
+        let color = "";
+        
+        if (score === scenario.length) {
+            finalMsg = "Excellent! You demonstrated competence in Safety, ADPIE, and Ethics.";
+            color = "#2e7d32";
+        } else if (score >= scenario.length - 1) {
+            finalMsg = "Good job. You grasped most concepts, but review the feedback on missed questions.";
+            color = "#f57f17";
+        } else {
+            finalMsg = "Review Required. Please revisit the Core Theoretical Concepts regarding Safety and the Nursing Process.";
+            color = "#c62828";
+        }
+
+        document.getElementById('scenario-content').innerHTML = `
+            <div style="text-align:center;">
+                <h2 style="color:${color}">Simulation Complete</h2>
+                <p style="font-size: 1.2rem;">${finalMsg}</p>
+                <p>Final Score: ${score} / ${scenario.length}</p>
+                <button class="btn" onclick="location.reload()">Restart Lesson</button>
+            </div>
+        `;
+    }
+</script>
+
+</body>
+</html>
