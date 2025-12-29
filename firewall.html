@@ -41,7 +41,7 @@
         header h2 { margin: 0; font-size: 1.2rem; color: var(--primary-color); }
 
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -69,12 +69,12 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
-            font-size: 0.95rem;
+            font-size: 0.90rem;
         }
 
         th, td {
             border: 1px solid #ddd;
-            padding: 12px;
+            padding: 10px;
             text-align: left;
         }
 
@@ -93,7 +93,7 @@
             border-radius: 8px;
             margin-bottom: 20px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
             align-items: end;
         }
@@ -103,15 +103,16 @@
             margin-bottom: 5px;
             font-weight: bold;
             color: var(--primary-color);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         input, select {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 0.9rem;
         }
 
         button {
@@ -130,28 +131,13 @@
 
         /* --- Activity Specific: Action Buttons in Table --- */
         .btn-action {
-            padding: 6px 12px;
-            font-size: 0.85rem;
+            padding: 4px 10px;
+            font-size: 0.8rem;
             margin-right: 5px;
         }
         .btn-permit { background-color: var(--success-color); }
         .btn-deny { background-color: var(--fail-color); }
-        .btn-permit:hover { background-color: #218838; }
-        .btn-deny:hover { background-color: #c82333; }
-
-        /* --- Visual Indicators --- */
-        .firewall-status {
-            text-align: center;
-            font-size: 2rem;
-            margin: 20px;
-            padding: 10px;
-            border-radius: 8px;
-            background-color: #f8f9fa;
-            border: 2px dashed #ccc;
-        }
-        .status-open { color: var(--success-color); border-color: var(--success-color); }
-        .status-closed { color: var(--fail-color); border-color: var(--fail-color); }
-
+        
         /* --- Concept Grid --- */
         .concept-grid {
             display: grid;
@@ -163,6 +149,19 @@
             padding: 15px;
             border-radius: 4px;
         }
+
+        /* --- Firewall Status --- */
+        .firewall-status {
+            text-align: center;
+            font-size: 2rem;
+            margin: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border: 2px dashed #ccc;
+        }
+        .status-open { color: var(--success-color); border-color: var(--success-color); }
+        .status-closed { color: var(--fail-color); border-color: var(--fail-color); }
     </style>
 </head>
 <body>
@@ -170,7 +169,7 @@
 <header>
     <div>
         <h1>CS 405: Cybersecurity</h1>
-        <h2>Module: Stateful Firewall Inspection</h2>
+        <h2>Module: Subnet Masks & Firewall Logic</h2>
     </div>
     <div>
         <span>Prof. Instructor</span>
@@ -180,22 +179,23 @@
 <div class="container">
 
     <section>
-        <h3>1. Concept Review: Understanding State</h3>
+        <h3>1. Concept Review: Understanding Masks</h3>
+        <p>Firewalls use <strong>Masks</strong> to determine the "scope" of a rule. A mask defines how many bits of the IP address must match exactly.</p>
         <div class="concept-grid">
             <div class="concept-card">
-                <h4 style="margin-top:0;">Stateless</h4>
-                <p>Packets are isolated. Rules must be written for both directions explicitly.</p>
+                <h4 style="margin-top:0;">Single Host (Scope: 1 Device)</h4>
+                <p><strong>IP:</strong> 192.168.1.10<br><strong>Mask:</strong> 255.255.255.255 (/32)<br><em>Matches only this specific computer.</em></p>
             </div>
             <div class="concept-card">
-                <h4 style="margin-top:0;">Stateful</h4>
-                <p>The firewall remembers the connection (State Table). Return traffic for established connections is <strong>automatically permitted</strong>.</p>
+                <h4 style="margin-top:0;">Entire Subnet (Scope: ~254 Devices)</h4>
+                <p><strong>IP:</strong> 192.168.1.0<br><strong>Mask:</strong> 255.255.255.0 (/24)<br><em>Matches any device starting with 192.168.1.x</em></p>
             </div>
         </div>
     </section>
 
     <section>
         <h3>2. Activity: Traffic Simulation</h3>
-        <p>Before manually building the table, visualize how the firewall automatically handles "Established" traffic.</p>
+        <p>Visualize how the firewall automatically handles "Established" traffic.</p>
         
         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; margin-bottom: 15px;">
             <div id="sim-viz" style="font-weight: bold; font-size: 1.2rem; color: #555;">Waiting for traffic...</div>
@@ -213,61 +213,68 @@
                 <button onclick="runAutoSim()">Send Packet</button>
             </div>
         </div>
-        <p style="font-size: 0.9rem; color: #666;">
-            <em>Note: "New" packets require an ACL Allow rule (simulated here as always allow for demo). "Established" packets bypass ACLs if they match the State Table.</em>
-        </p>
     </section>
 
     <section id="manual-lab">
-        <h3>3. Lab: Manual State Inspection</h3>
-        <p>In this activity, you will act as the firewall kernel. Manually input connection details to populate the State Table, then decide whether to Permit or Deny the traffic flow.</p>
+        <h3>3. Lab: Manual Inspection with Masks</h3>
+        <p>Define the source and destination details below. Note the new <strong>Mask</strong> fields, which determine if the rule applies to a specific host (/32) or a whole network (/24).</p>
 
         <div class="control-panel">
-            <div>
+            <div style="border-right: 1px solid #ccc; padding-right:10px;">
                 <label for="source-ip">Source IP</label>
-                <input type="text" id="source-ip" placeholder="e.g. 192.168.1.5">
+                <input type="text" id="source-ip" placeholder="192.168.1.10">
             </div>
-            <div>
-                <label for="destination-ip">Destination IP</label>
-                <input type="text" id="destination-ip" placeholder="e.g. 10.0.0.8">
+            <div style="border-right: 1px solid #ccc; padding-right:10px;">
+                <label for="source-mask">Source Mask</label>
+                <select id="source-mask">
+                    <option value="255.255.255.255">/32 (Single Host)</option>
+                    <option value="255.255.255.0">/24 (Subnet)</option>
+                    <option value="255.255.0.0">/16 (Large Net)</option>
+                    <option value="0.0.0.0">/0 (Any)</option>
+                </select>
             </div>
-            <div>
-                <label for="source-port">Src Port</label>
-                <input type="text" id="source-port" placeholder="Any">
+
+            <div style="border-right: 1px solid #ccc; padding-right:10px;">
+                <label for="destination-ip">Dest IP</label>
+                <input type="text" id="destination-ip" placeholder="10.0.0.5">
             </div>
-            <div>
-                <label for="destination-port">Dst Port</label>
-                <input type="text" id="destination-port" placeholder="80">
+            <div style="border-right: 1px solid #ccc; padding-right:10px;">
+                <label for="destination-mask">Dest Mask</label>
+                <select id="destination-mask">
+                    <option value="255.255.255.255">/32 (Single Host)</option>
+                    <option value="255.255.255.0">/24 (Subnet)</option>
+                    <option value="255.255.0.0">/16 (Large Net)</option>
+                </select>
             </div>
+
             <div>
                 <label for="protocol">Protocol</label>
                 <select id="protocol">
                     <option value="TCP">TCP</option>
                     <option value="UDP">UDP</option>
-                    <option value="ICMP">ICMP</option>
                 </select>
             </div>
             <div>
                 <label for="state">State</label>
                 <select id="state">
-                    <option value="ESTABLISHED">ESTABLISHED</option>
                     <option value="NEW">NEW</option>
-                    <option value="WAITING">WAITING</option>
+                    <option value="ESTABLISHED">ESTABLISHED</option>
                 </select>
             </div>
-            <div style="grid-column: 1 / -1;">
-                <button onclick="addManualConnection()" style="width: 100%;">+ Add to State Table</button>
+            
+            <div style="grid-column: 1 / -1; margin-top:10px;">
+                <button onclick="addManualConnection()" style="width: 100%;">+ Add Rule / Connection</button>
             </div>
         </div>
 
-        <h4>Current State Table</h4>
+        <h4>Connection State Table</h4>
         <table>
             <thead>
                 <tr>
-                    <th>Source IP</th>
-                    <th>Dest IP</th>
-                    <th>Src Port</th>
-                    <th>Dst Port</th>
+                    <th style="width:15%">Source IP</th>
+                    <th style="width:15%">Src Mask</th>
+                    <th style="width:15%">Dest IP</th>
+                    <th style="width:15%">Dst Mask</th>
                     <th>Proto</th>
                     <th>State</th>
                     <th>Action</th>
@@ -285,31 +292,30 @@
 </div>
 
 <script>
-    // --- SECTION 2 LOGIC (Simple Auto Sim) ---
+    // --- SECTION 2 LOGIC ---
     function runAutoSim() {
         const type = document.getElementById('autoSimType').value;
         const viz = document.getElementById('sim-viz');
-        
         if(type === 'NEW') {
-            viz.innerHTML = `<span style="color:blue">New Connection Detected.</span> Checked ACL -> <span style="color:green">ALLOWED</span>. Added to State Table.`;
+            viz.innerHTML = `<span style="color:blue">New Connection Detected.</span> Checking ACLs...`;
         } else {
-            viz.innerHTML = `<span style="color:purple">Packet has ESTABLISHED flag.</span> Checked State Table -> <span style="color:green">MATCH FOUND</span>. Auto-Permitted (Bypassed ACL).`;
+            viz.innerHTML = `<span style="color:purple">ESTABLISHED Packet.</span> State Table Match -> <span style="color:green">AUTO-PERMIT</span>.`;
         }
     }
 
-    // --- SECTION 3 LOGIC (Your Activity) ---
+    // --- SECTION 3 LOGIC (UPDATED) ---
     function addManualConnection() {
         // 1. Get Values
-        const sourceIp = document.getElementById('source-ip').value;
-        const destinationIp = document.getElementById('destination-ip').value;
-        const sourcePort = document.getElementById('source-port').value;
-        const destinationPort = document.getElementById('destination-port').value;
-        const protocol = document.getElementById('protocol').value;
+        const srcIp = document.getElementById('source-ip').value;
+        const srcMask = document.getElementById('source-mask').value;
+        const dstIp = document.getElementById('destination-ip').value;
+        const dstMask = document.getElementById('destination-mask').value;
+        const proto = document.getElementById('protocol').value;
         const state = document.getElementById('state').value;
 
-        // 2. Validation (Improvement)
-        if(!sourceIp || !destinationIp) {
-            alert("Please enter at least Source and Destination IPs.");
+        // 2. Validation
+        if(!srcIp || !dstIp) {
+            alert("Please enter Source and Destination IPs.");
             return;
         }
 
@@ -317,12 +323,11 @@
         const table = document.getElementById('manual-state-table');
         const row = table.insertRow();
         
-        // Insert Cells
-        row.insertCell(0).innerText = sourceIp;
-        row.insertCell(1).innerText = destinationIp;
-        row.insertCell(2).innerText = sourcePort || "Random";
-        row.insertCell(3).innerText = destinationPort;
-        row.insertCell(4).innerText = protocol;
+        row.insertCell(0).innerText = srcIp;
+        row.insertCell(1).innerText = srcMask; // New Column
+        row.insertCell(2).innerText = dstIp;
+        row.insertCell(3).innerText = dstMask; // New Column
+        row.insertCell(4).innerText = proto;
         row.insertCell(5).innerHTML = `<strong>${state}</strong>`;
 
         // 4. Action Buttons
@@ -339,46 +344,34 @@
         denyButton.className = 'btn-action btn-deny';
         denyButton.onclick = () => denyConnection(row);
         actionCell.appendChild(denyButton);
-        
-        // Clear inputs after adding
+
+        // Clear IPs but leave Masks (common workflow)
         document.getElementById('source-ip').value = '';
         document.getElementById('destination-ip').value = '';
-        document.getElementById('source-port').value = '';
-        document.getElementById('destination-port').value = '';
     }
 
     function permitConnection(row) {
-        // Reset all rows to standard first (optional, or keep multiple green)
-        // row.parentNode.childNodes.forEach(r => r.style.backgroundColor = '');
-        
-        row.style.backgroundColor = '#d4edda'; // Bootstrap light green
-        row.style.transition = 'background-color 0.3s';
+        row.style.backgroundColor = '#d4edda'; 
         updateFirewallIcon();
     }
 
     function denyConnection(row) {
-        row.style.backgroundColor = '#f8d7da'; // Bootstrap light red
-        row.style.transition = 'background-color 0.3s';
+        row.style.backgroundColor = '#f8d7da'; 
         updateFirewallIcon();
     }
 
     function updateFirewallIcon() {
         const table = document.getElementById('manual-state-table');
         let permittedCount = 0;
-
-        // Count how many green rows exist
         for (let i = 0; i < table.rows.length; i++) {
-            // Check computed style or inline style
             if (table.rows[i].style.backgroundColor === 'rgb(212, 237, 218)' || table.rows[i].style.backgroundColor === '#d4edda') {
                 permittedCount++;
             }
         }
-
         const firewallIcon = document.getElementById('firewall-icon');
-        
         if (permittedCount > 0) {
             firewallIcon.className = 'firewall-status status-open';
-            firewallIcon.innerHTML = `🔓 TRAFFIC FLOWING (${permittedCount} Active Streams)`;
+            firewallIcon.innerHTML = `🔓 TRAFFIC FLOWING (${permittedCount} Rules Active)`;
         } else {
             firewallIcon.className = 'firewall-status status-closed';
             firewallIcon.innerHTML = '🔒 FIREWALL LOCKED';
