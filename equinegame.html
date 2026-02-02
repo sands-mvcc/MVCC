@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equine Science Terminology Scramble</title>
+    <style>
+        :root {
+            --primary-green: #2e7d32; /* Forest Green */
+            --dark-black: #1a1a1a;
+            --light-gray: #f5f5f5;
+            --white: #ffffff;
+            --error-red: #d32f2f;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--white);
+            color: var(--dark-black);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .game-container {
+            background-color: var(--white);
+            width: 90%;
+            max-width: 600px;
+            border: 3px solid var(--primary-green);
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            overflow: hidden;
+            text-align: center;
+        }
+
+        header {
+            background-color: var(--primary-green);
+            color: var(--white);
+            padding: 1rem;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .game-board {
+            padding: 2rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-green);
+            font-size: 1.1rem;
+        }
+
+        .scrambled-word {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 5px;
+            margin: 1rem 0;
+            color: var(--dark-black);
+            font-family: 'Courier New', monospace; /* Monospace helps visual unscrambling */
+        }
+
+        .hint-box {
+            background-color: var(--light-gray);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+            min-height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 12px;
+            font-size: 1.2rem;
+            border: 2px solid var(--dark-black);
+            border-radius: 6px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-green);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            transition: transform 0.1s;
+            font-weight: bold;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-check {
+            background-color: var(--primary-green);
+            color: var(--white);
+        }
+
+        .btn-skip {
+            background-color: var(--dark-black);
+            color: var(--white);
+        }
+
+        .btn-reset {
+            background-color: transparent;
+            border: 2px solid var(--dark-black);
+            color: var(--dark-black);
+            margin-top: 1rem;
+        }
+
+        .message {
+            margin-top: 1rem;
+            font-weight: bold;
+            height: 1.5rem;
+        }
+
+        .correct { color: var(--primary-green); }
+        .incorrect { color: var(--error-red); }
+
+        /* Animation for wrong answer */
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <header>
+        <h1>Equine Science Scramble</h1>
+    </header>
+    
+    <div class="game-board">
+        <div class="stats-bar">
+            <span id="score">Score: 0</span>
+            <span id="progress">Word: 1 / 25</span>
+        </div>
+
+        <div class="hint-box" id="hint-text">
+            Hint: Definition will appear here...
+        </div>
+
+        <div class="scrambled-word" id="scrambled-text">
+            LOADING
+        </div>
+
+        <input type="text" id="user-input" placeholder="TYPE ANSWER HERE" autocomplete="off">
+
+        <div class="buttons">
+            <button class="btn-check" onclick="checkAnswer()">CHECK ANSWER</button>
+            <button class="btn-skip" onclick="nextWord()">SKIP</button>
+        </div>
+
+        <div class="message" id="message-area"></div>
+
+        <button class="btn-reset" onclick="initGame()" style="display:none;" id="play-again">Play Again</button>
+    </div>
+</div>
+
+<script>
+    // Data Source: The 25 Terms from the Lesson Plan
+    const termData = [
+        { word: "TAXONOMY", hint: "The branch of science concerned with classification of organisms." },
+        { word: "EQUUS", hint: "The genus name for horses." },
+        { word: "DOMESTICATION", hint: "The process of changing a population of organisms to benefit humans." },
+        { word: "BREED", hint: "A specific group of domestic animals with homogeneous appearance." },
+        { word: "STUDBOOK", hint: "An official registry list of animals ensuring genetic purity." },
+        { word: "HOTBLOOD", hint: "Classification of horse known for speed, thin skin, and high reactivity." },
+        { word: "COLDBLOOD", hint: "Classification originating from northern Europe; heavy bone and calm." },
+        { word: "WARMBLOOD", hint: "A cross between Hot and Cold bloods; used for Olympic sport." },
+        { word: "TEMPERAMENT", hint: "The general nature or personality of the horse." },
+        { word: "METABOLISM", hint: "Chemical processes maintaining life; varies between blood types." },
+        { word: "CONFORMATION", hint: "Physical appearance defined by bone and muscle; form follows function." },
+        { word: "FEATHERING", hint: "Long, thick hair found on the lower legs of draft breeds." },
+        { word: "DISHED", hint: "Concave profile of the face; characteristic of Arabians." },
+        { word: "WITHERS", hint: "The highest point of the back; used to measure height." },
+        { word: "DENSITY", hint: "Refers to bone mass; 'heavy' for drafts, 'fine' for racers." },
+        { word: "QUARTER", hint: "Most popular US breed; known for sprinting and cow sense." },
+        { word: "THOROUGHBRED", hint: "Hot blood breed developed for sustained speed; racing." },
+        { word: "ARABIAN", hint: "Oldest breed; known for endurance and high tail carriage." },
+        { word: "CLYDESDALE", hint: "Scottish draft breed with bay color and white markings." },
+        { word: "PERCHERON", hint: "French draft breed; usually gray/black; powerful but less feathering." },
+        { word: "HANOVERIAN", hint: "Prominent German warmblood; dressage and jumping specialist." },
+        { word: "PAINT", hint: "Stock horse conformation with white spotting patterns." },
+        { word: "STANDARDBRED", hint: "Developed for harness racing at a trot or pace." },
+        { word: "MORGAN", hint: "Early American breed; versatile with a high-stepping gait." },
+        { word: "DRAFT", hint: "Term referring to horses bred for hard labor/hauling." }
+    ];
+
+    let currentScore = 0;
+    let currentindex = 0;
+    let currentTermObj = {};
+    let shuffledQueue = [];
+
+    const ui = {
+        scrambled: document.getElementById('scrambled-text'),
+        hint: document.getElementById('hint-text'),
+        input: document.getElementById('user-input'),
+        score: document.getElementById('score'),
+        progress: document.getElementById('progress'),
+        message: document.getElementById('message-area'),
+        playAgainBtn: document.getElementById('play-again'),
+        checkBtn: document.querySelector('.btn-check'),
+        skipBtn: document.querySelector('.btn-skip')
+    };
+
+    function initGame() {
+        // Reset state
+        currentScore = 0;
+        currentindex = 0;
+        shuffledQueue = [...termData].sort(() => 0.5 - Math.random()); // Randomize order
+        
+        ui.score.innerText = `Score: 0`;
+        ui.playAgainBtn.style.display = 'none';
+        ui.checkBtn.disabled = false;
+        ui.skipBtn.disabled = false;
+        ui.input.disabled = false;
+        ui.input.value = '';
+        ui.message.innerText = '';
+        
+        loadTerm();
+    }
+
+    function scrambleWord(word) {
+        let arr = word.split('');
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        // If scramble accidentally matches original, scramble again
+        if (arr.join('') === word) return scrambleWord(word);
+        return arr.join('');
+    }
+
+    function loadTerm() {
+        if (currentindex >= shuffledQueue.length) {
+            endGame();
+            return;
+        }
+
+        currentTermObj = shuffledQueue[currentindex];
+        ui.scrambled.innerText = scrambleWord(currentTermObj.word);
+        ui.hint.innerText = `Hint: ${currentTermObj.hint}`;
+        ui.progress.innerText = `Word: ${currentindex + 1} / ${termData.length}`;
+        ui.input.value = '';
+        ui.message.innerText = '';
+        ui.message.className = 'message';
+        ui.input.focus();
+    }
+
+    function checkAnswer() {
+        const userGuess = ui.input.value.trim().toUpperCase();
+        
+        if (userGuess === currentTermObj.word) {
+            // Correct
+            currentScore += 10;
+            ui.score.innerText = `Score: ${currentScore}`;
+            ui.message.innerText = "CORRECT!";
+            ui.message.className = "message correct";
+            
+            // Short delay before next word
+            setTimeout(() => {
+                currentindex++;
+                loadTerm();
+            }, 1000);
+        } else {
+            // Incorrect
+            ui.message.innerText = "Try Again!";
+            ui.message.className = "message incorrect";
+            ui.input.classList.add('shake');
+            setTimeout(() => ui.input.classList.remove('shake'), 500);
+        }
+    }
+
+    function nextWord() {
+        ui.message.innerText = `Skipped! The word was ${currentTermObj.word}`;
+        ui.message.className = "message incorrect";
+        setTimeout(() => {
+            currentindex++;
+            loadTerm();
+        }, 1500);
+    }
+
+    function endGame() {
+        ui.scrambled.innerText = "COMPLETE";
+        ui.hint.innerText = `Final Score: ${currentScore} / ${termData.length * 10}`;
+        ui.checkBtn.disabled = true;
+        ui.skipBtn.disabled = true;
+        ui.input.disabled = true;
+        ui.playAgainBtn.style.display = 'inline-block';
+    }
+
+    // Event Listener for "Enter" key
+    ui.input.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            checkAnswer();
+        }
+    });
+
+    // Start game on load
+    initGame();
+
+</script>
+
+</body>
+</html>
