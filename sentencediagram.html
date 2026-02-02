@@ -2,213 +2,247 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Reed-Kellogg Master Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntax Sorcery: Interactive Grammar</title>
     <style>
-        :root { --green: #2e7d32; --black: #1a1a1a; --white: #ffffff; --gray: #f4f4f4; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: var(--white); color: var(--black); }
-        
-        header { background: var(--black); color: white; padding: 1rem; border-bottom: 5px solid var(--green); text-align: center; }
-        
-        /* Layout */
-        .app-wrapper { display: grid; grid-template-columns: 320px 1fr; height: 90vh; }
-        
-        /* Left Glossary Sidebar */
-        .sidebar { background: var(--gray); border-right: 2px solid var(--black); overflow-y: auto; padding: 1rem; }
-        .comp-item { background: white; border: 1px solid #ccc; margin-bottom: 10px; padding: 10px; border-radius: 4px; }
-        .comp-item h4 { margin: 0 0 5px 0; color: var(--green); font-size: 0.9rem; }
-        .symbol { font-family: monospace; font-weight: bold; background: #eee; padding: 2px 4px; }
-
-        /* Main Workspace */
-        .workspace { display: flex; flex-direction: column; padding: 1.5rem; position: relative; }
-        
-        /* Mode Switcher */
-        .mode-nav { display: flex; gap: 5px; margin-bottom: 1rem; }
-        .mode-btn { flex: 1; padding: 12px; border: 1px solid var(--black); cursor: pointer; font-weight: bold; background: white; }
-        .mode-btn.active { background: var(--green); color: white; border: none; }
-
-        #canvas-container { 
-            flex: 1; border: 2px solid var(--black); position: relative; background: white;
-            background-image: radial-gradient(#ccc 1px, transparent 1px); background-size: 30px 30px;
+        :root {
+            --primary-green: #27ae60;
+            --accent-black: #000000;
+            --bg-white: #ffffff;
+            --light-gray: #f4f4f4;
         }
-        
-        /* Diagram Elements */
-        .drop-target { position: absolute; border: 2px dashed #aaa; width: 120px; height: 40px; pointer-events: none; opacity: 0.5; display: none; }
-        .word-token { position: absolute; padding: 8px 15px; background: white; border: 2px solid var(--black); cursor: grab; font-weight: bold; z-index: 100; }
-        
-        /* Control Bar */
-        .controls { padding: 1rem; background: var(--gray); border-top: 1px solid #ccc; display: flex; justify-content: space-between; align-items: center; }
-        .msg { font-weight: bold; color: var(--green); }
-        .hidden { display: none; }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: var(--bg-white);
+            color: var(--accent-black);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        #game-wrapper {
+            width: 100%;
+            max-width: 900px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        /* Tutorial Overlay */
+        #tutorial-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-white);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+
+        .tutorial-content {
+            max-width: 700px;
+            text-align: left;
+            padding: 30px;
+            border: 4px solid var(--accent-black);
+        }
+
+        .tutorial-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .term-item {
+            font-size: 0.9rem;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .term-item b { color: var(--primary-green); }
+
+        /* Game Elements */
+        #sentence-box {
+            font-size: 2rem;
+            margin: 50px 0;
+            min-height: 100px;
+        }
+
+        .word {
+            display: inline-block;
+            padding: 5px 12px;
+            margin: 5px;
+            cursor: pointer;
+            border-bottom: 3px solid var(--light-gray);
+            transition: all 0.2s;
+        }
+
+        .word:hover { background: var(--light-gray); }
+        .word.selected { background: var(--primary-green); color: white; border-color: var(--accent-black); }
+        .word.correct { border-color: var(--primary-green); color: var(--primary-green); cursor: default; }
+
+        #tag-shelf {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .tag-btn {
+            padding: 12px 24px;
+            border: 2px solid var(--accent-black);
+            background: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tag-btn:hover { background: var(--accent-black); color: white; }
+
+        .btn-start {
+            margin-top: 20px;
+            padding: 15px 40px;
+            background: var(--primary-green);
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #stats { margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>The Syntax Architect: Reed-Kellogg Laboratory</h1>
-</header>
-
-<div class="app-wrapper">
-    <aside class="sidebar">
-        <h3>Glossary of Symbols</h3>
-        <div class="comp-item">
-            <h4>Main Baseline <span class="symbol">━</span></h4>
-            <p>Horizontal spine for Subject/Verb/Object.</p>
-        </div>
-        <div class="comp-item">
-            <h4>Subj/Pred Divider <span class="symbol">┼</span></h4>
-            <p>Full vertical line crossing the baseline.</p>
-        </div>
-        <div class="comp-item">
-            <h4>Direct Object <span class="symbol">┬</span></h4>
-            <p>Vertical line stopping at the baseline.</p>
-        </div>
-        <div class="comp-item">
-            <h4>Predicate Adj/Noun <span class="symbol">\</span></h4>
-            <p>Slanted line leaning toward the subject.</p>
-        </div>
-        <div class="comp-item">
-            <h4>Indirect Object <span class="symbol">└</span></h4>
-            <p>A "shelf" suspended below the verb.</p>
-        </div>
-        <div class="comp-item">
-            <h4>Gerund Structure <span class="symbol">⎴</span></h4>
-            <p>A pedestal "step" for -ing verbals.</p>
-        </div>
-        <div class="comp-item">
-            <h4>Infinitive <span class="symbol">/\</span></h4>
-            <p>A stilt structure for "to + verb".</p>
-        </div>
-    </aside>
-
-    <main class="workspace">
-        <div class="mode-nav">
-            <button class="mode-btn active" onclick="setMode('tutorial')">1. TUTORIAL</button>
-            <button class="mode-btn" onclick="setMode('build')">2. BUILD</button>
-            <button class="mode-btn" onclick="setMode('assess')">3. ASSESSMENT</button>
+<div id="tutorial-overlay">
+    <div class="tutorial-content">
+        <h1 style="text-align: center; border-bottom: 2px solid black; padding-bottom: 10px;">The Syntax Guide</h1>
+        <p>Before you begin <i>Syntax Sorcery</i>, review the building blocks of the English language:</p>
+        
+        <div class="tutorial-grid">
+            <div class="term-item"><b>Subject:</b> The person/thing performing the action. (e.g., <u>John</u> ran.)</div>
+            <div class="term-item"><b>Predicate:</b> The action or state of being. (e.g., He <u>ran</u>.)</div>
+            <div class="term-item"><b>Direct Object:</b> Receives the action. (e.g., He ate <u>pizza</u>.)</div>
+            <div class="term-item"><b>Modifier:</b> Describes a noun. (e.g., The <u>blue</u> sky.)</div>
+            <div class="term-item"><b>Adverb:</b> Describes a verb or adjective. (e.g., Ran <u>quickly</u>.)</div>
+            <div class="term-item"><b>Preposition:</b> Shows relationship. (e.g., <u>In</u> the house.)</div>
+            <div class="term-item"><b>Object:</b> Follows a preposition. (e.g., In the <u>house</u>.)</div>
+            <div class="term-item"><b>Sub. Conjunction:</b> Joins clauses. (e.g., <u>Because</u> it rained...)</div>
+            <div class="term-item"><b>Verbals:</b> Verbs acting as nouns/adjectives. (e.g., <u>Running</u> is fun.)</div>
         </div>
 
-        <div id="instruction-bar" style="background:#e8f5e9; padding:10px; border:1px solid var(--green); margin-bottom:10px;">
-            <strong>Guide:</strong> <span id="guide-text">Welcome! Click the modes above to begin.</span>
-        </div>
+        <p style="background: #f9f9f9; padding: 10px; border-left: 5px solid var(--primary-green);">
+            <strong>How to play:</strong> Select a word in the sentence first, then click the correct category tag below it.
+        </p>
+        
+        <center><button class="btn-start" onclick="startGame()">ENTER THE LABORATORY</button></center>
+    </div>
+</div>
 
-        <div id="canvas-container">
-            <svg id="svg-layer" style="position:absolute; width:100%; height:100%;">
-                <line x1="50" y1="250" x2="700" y2="250" stroke="black" stroke-width="3" /> <line id="div-full" x1="300" y1="210" x2="300" y2="290" stroke="black" stroke-width="2" />
-                <line id="div-half" x1="500" y1="210" x2="500" y2="250" stroke="black" stroke-width="2" class="hidden" />
-            </svg>
-            
-            <div id="zone-subj" class="drop-target" style="top:205px; left:120px;">SUBJECT</div>
-            <div id="zone-verb" class="drop-target" style="top:205px; left:350px;">VERB</div>
-            <div id="zone-obj" class="drop-target" style="top:205px; left:550px;">OBJECT</div>
-
-            <div id="word-bank"></div>
-        </div>
-
-        <div class="controls">
-            <div id="feedback-msg" class="msg"></div>
-            <div>
-                <button class="mode-btn" style="width:auto; padding:8px 20px;" onclick="checkDiagram()">Verify Structure</button>
-                <button class="mode-btn" style="width:auto; padding:8px 20px;" onclick="resetWords()">Reset Words</button>
-            </div>
-        </div>
-    </main>
+<div id="game-wrapper">
+    <div id="stats">Score: <span id="score">0</span> | Level: <span id="level">1</span></div>
+    <div id="sentence-box"></div>
+    <div id="tag-shelf"></div>
+    <p id="msg" style="margin-top: 30px; font-style: italic;"></p>
 </div>
 
 <script>
-    const state = {
-        mode: 'tutorial',
-        currentSentence: {
-            text: "Professor teaches AI.",
-            words: ["Professor", "teaches", "AI"],
-            targets: { "Professor": "zone-subj", "teaches": "zone-verb", "AI": "zone-obj" }
-        }
-    };
-
-    function setMode(m) {
-        state.mode = m;
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
-        
-        const targets = document.querySelectorAll('.drop-target');
-        const guide = document.getElementById('guide-text');
-        
-        if(m === 'tutorial') {
-            guide.innerText = "In Reed-Kellogg, the Subject is left of the divider, Verb is right. This sentence is SVO.";
-            targets.forEach(t => t.style.display = 'none');
-            document.getElementById('div-half').classList.remove('hidden');
-        } else if (m === 'build') {
-            guide.innerText = "Drag the words to the dashed boxes. Notice the Direct Object line stops at the baseline.";
-            targets.forEach(t => t.style.display = 'flex');
-            document.getElementById('div-half').classList.remove('hidden');
-        } else {
-            guide.innerText = "ASSESSMENT: The guide lines and boxes are now hidden. Place the words correctly!";
-            targets.forEach(t => t.style.display = 'none');
-            document.getElementById('div-half').classList.remove('hidden');
-        }
-        resetWords();
-    }
-
-    function resetWords() {
-        const bank = document.getElementById('word-bank');
-        bank.innerHTML = '';
-        state.currentSentence.words.forEach((w, i) => {
-            const div = document.createElement('div');
-            div.className = 'word-token';
-            div.innerText = w;
-            div.id = 'word-' + w;
-            div.style.top = (50 + (i * 50)) + 'px';
-            div.style.left = '50px';
-            makeDraggable(div);
-            bank.appendChild(div);
-        });
-        document.getElementById('feedback-msg').innerText = "";
-    }
-
-    function checkDiagram() {
-        let correctCount = 0;
-        const total = Object.keys(state.currentSentence.targets).length;
-        
-        for (let word in state.currentSentence.targets) {
-            const wordEl = document.getElementById('word-' + word);
-            const targetEl = document.getElementById(state.currentSentence.targets[word]);
-            
-            const wRect = wordEl.getBoundingClientRect();
-            const tRect = targetEl.getBoundingClientRect();
-            
-            // Check if center of word is within target area
-            if (wRect.left > tRect.left - 50 && wRect.left < tRect.left + 50 &&
-                wRect.top > tRect.top - 50 && wRect.top < tRect.top + 50) {
-                correctCount++;
+    const levels = [
+        {
+            text: "The professor teaches complex subjects because learning matters.",
+            mapping: {
+                "The": "Modifier", "professor": "Subject", "teaches": "Predicate",
+                "complex": "Modifier", "subjects": "Direct Object", 
+                "because": "Subordinate Conjunction", "learning": "Verbals", "matters": "Predicate"
+            }
+        },
+        {
+            text: "She quickly ran into the old building.",
+            mapping: {
+                "She": "Subject", "quickly": "Adverb", "ran": "Predicate",
+                "into": "Preposition", "the": "Modifier", "old": "Modifier", "building": "Object"
             }
         }
+    ];
 
-        const msg = document.getElementById('feedback-msg');
-        if(correctCount === total) {
-            msg.style.color = "green";
-            msg.innerText = "Structure Correct! You have mastered this pattern.";
+    const tags = ["Subject", "Predicate", "Direct Object", "Modifier", "Adverb", "Preposition", "Object", "Subordinate Conjunction", "Verbals"];
+    
+    let currentLevel = 0;
+    let score = 0;
+    let activeWord = null;
+
+    function startGame() {
+        document.getElementById('tutorial-overlay').style.display = 'none';
+        loadLevel();
+    }
+
+    function loadLevel() {
+        const box = document.getElementById('sentence-box');
+        const level = levels[currentLevel];
+        const words = level.text.split(" ");
+        
+        box.innerHTML = words.map(w => {
+            const clean = w.replace(/[^\w]/g, "");
+            return `<span class="word" onclick="handleWordClick(this)" data-answer="${level.mapping[clean]}">${w}</span>`;
+        }).join("");
+
+        const shelf = document.getElementById('tag-shelf');
+        shelf.innerHTML = tags.map(t => `<button class="tag-btn" onclick="handleTagClick('${t}')">${t}</button>`).join("");
+        
+        document.getElementById('level').innerText = currentLevel + 1;
+    }
+
+    function handleWordClick(el) {
+        if (el.classList.contains('correct')) return;
+        document.querySelectorAll('.word').forEach(w => w.classList.remove('selected'));
+        el.classList.add('selected');
+        activeWord = el;
+    }
+
+    function handleTagClick(tag) {
+        if (!activeWord) {
+            updateMsg("Please select a word from the sentence first.", "black");
+            return;
+        }
+
+        if (activeWord.dataset.answer === tag) {
+            activeWord.classList.remove('selected');
+            activeWord.classList.add('correct');
+            score += 10;
+            updateMsg("Correct! +10 points", "green");
+            activeWord = null;
+            checkProgress();
         } else {
-            msg.style.color = "red";
-            msg.innerText = "Structure Incomplete. Review the Glossary symbols.";
+            score -= 5;
+            updateMsg("Incorrect. Try analyzing the word's function again.", "red");
+        }
+        document.getElementById('score').innerText = score;
+    }
+
+    function updateMsg(txt, color) {
+        const m = document.getElementById('msg');
+        m.innerText = txt;
+        m.style.color = color;
+    }
+
+    function checkProgress() {
+        const remaining = document.querySelectorAll('.word:not(.correct)');
+        if (remaining.length === 0) {
+            updateMsg("Level Complete! Excellent analysis.", "green");
+            setTimeout(() => {
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                    loadLevel();
+                } else {
+                    document.getElementById('game-wrapper').innerHTML = `<h1>Master of Syntax!</h1><p>Final Score: ${score}</p><button class="btn-start" onclick="location.reload()">Play Again</button>`;
+                }
+            }, 2000);
         }
     }
-
-    function makeDraggable(el) {
-        let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
-        el.onmousedown = (e) => {
-            e.preventDefault();
-            p3 = e.clientX; p4 = e.clientY;
-            document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
-            document.onmousemove = (e) => {
-                p1 = p3 - e.clientX; p2 = p4 - e.clientY;
-                p3 = e.clientX; p4 = e.clientY;
-                el.style.top = (el.offsetTop - p2) + "px";
-                el.style.left = (el.offsetLeft - p1) + "px";
-            };
-        };
-    }
-
-    // Init
-    resetWords();
 </script>
 
 </body>
