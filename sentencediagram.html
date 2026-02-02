@@ -1,549 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Interactive Sentence Diagrammer</title>
-<style>
-  :root{
-    --bg:#ffffff;
-    --ink:#0b132b;
-    --accent:#1f7a8c;
-    --accent-2:#e0fbfc;
-    --muted:#f4f6f8;
-    --good:#2d7a46;
-    --warn:#b35c00;
-  }
-  html,body{height:100%;}
-  body{
-    margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-    color:var(--ink); background:var(--bg); display:grid; grid-template-columns: 280px 1fr; grid-template-rows: 56px 1fr; grid-template-areas: "header header" "sidebar main"; height:100vh;
-  }
-  header{
-    grid-area:header; display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid #e6e8eb; background:#fbfcfd;
-  }
-  header h1{font-size:18px; margin:0;}
-  header .sub{color:#5b6675; font-size:13px}
-  #sidebar{
-    grid-area:sidebar; border-right:1px solid #e6e8eb; background:#fafbfc; padding:14px; display:flex; flex-direction:column; gap:12px; overflow:auto;
-  }
-  .navbtn{appearance:none; display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border-radius:12px; border:1px solid #e6e8eb; background:white; cursor:pointer; font-weight:600}
-  .navbtn.active{border-color:var(--accent); box-shadow:0 0 0 3px rgba(31,122,140,.12)}
-  .card{background:white; border:1px solid #e6e8eb; border-radius:16px; padding:14px}
-  .muted{color:#5b6675}
-  #main{
-    grid-area:main; padding:16px; overflow:auto; display:grid; gap:16px; grid-template-columns: 360px 1fr;
-  }
-  #controls{display:flex; flex-direction:column; gap:12px}
-  label{font-weight:600; font-size:13px}
-  input[type=text], select, textarea{width:100%; padding:10px 12px; border-radius:10px; border:1px solid #d6d9de; font-size:14px}
-  .row{display:flex; gap:8px; align-items:center}
-  .row > *{flex:1}
-  .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; background:var(--accent-2); font-weight:600; font-size:12px}
-  .btn{appearance:none; border:1px solid #d6d9de; background:white; border-radius:12px; padding:10px 12px; font-weight:700; cursor:pointer}
-  .btn.primary{background:var(--accent); color:white; border-color:var(--accent)}
-  .btn.ghost{background:transparent}
-  .btn.icon{display:inline-flex; align-items:center; gap:8px}
-  .grid2{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
-  .tips{font-size:13px; line-height:1.5}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Syntax Architect</title>
+    <style>
+        :root {
+            --green: #2e7d32;
+            --black: #000000;
+            --white: #ffffff;
+            --gray: #eeeeee;
+        }
 
-  /* Token tagging list */
-  #tagger{display:flex; flex-wrap:wrap; gap:8px}
-  .token{
-    display:flex; align-items:center; gap:6px; border:1px solid #d6d9de; padding:6px 8px; border-radius:12px; background:#fff; box-shadow:0 1px 0 rgba(14,16,26,.04);
-  }
-  .token b{font-weight:750}
-  .token select{border:1px solid #e2e5ea; background:#fbfcfe; border-radius:8px; padding:4px 6px; font-size:12px}
+        body { font-family: 'Inter', sans-serif; background: var(--white); color: var(--black); margin: 0; }
+        header { border-bottom: 4px solid var(--green); padding: 1rem 2rem; text-align: center; }
+        
+        .main-layout { display: flex; min-height: 80vh; }
+        
+        /* Sidebar Navigation */
+        .sidebar { width: 250px; background: var(--gray); padding: 1rem; border-right: 1px solid #ccc; }
+        .pattern-btn { 
+            width: 100%; text-align: left; padding: 12px; margin-bottom: 8px; 
+            background: white; border: 1px solid #ddd; cursor: pointer; transition: 0.2s;
+        }
+        .pattern-btn:hover { border-left: 5px solid var(--green); }
+        .pattern-btn.active { background: var(--green); color: white; border: none; }
 
-  /* Diagram area */
-  #stage.card{padding:0}
-  #canvasWrap{position:relative; height:520px}
-  svg{width:100%; height:520px; display:block; background:linear-gradient(180deg,#ffffff, #fbfdff 60%, #f7fbfc);
-    border-radius:16px;}
-  .guide{stroke:#e6edf0; stroke-width:1}
-  .baseline{stroke:#111827; stroke-width:2}
-  .divider{stroke:#111827; stroke-width:2}
-  .slanted{stroke:#111827; stroke-width:2}
-  .label{font-size:14px; font-weight:700; fill:#0b132b}
-  .word{font-size:16px; fill:#0b132b}
-  .minor{font-size:12px; fill:#5b6675}
+        /* Canvas Area */
+        .work-area { flex-grow: 1; padding: 2rem; position: relative; }
+        #canvas { 
+            width: 100%; height: 450px; border: 2px solid var(--black); 
+            background: white; position: relative; overflow: hidden;
+        }
 
-  /* Sections/Pages */
-  .page{display:none}
-  .page.active{display:block}
-
-  /* Quiz table */
-  table{width:100%; border-collapse:collapse}
-  th, td{border-bottom:1px solid #eef0f3; padding:8px 6px; text-align:left}
-  tr:hover td{background:#f9fbfc}
-
-  @media (max-width: 1100px){ #main{grid-template-columns:1fr; } }
-</style>
+        /* Diagram Elements */
+        .baseline { position: absolute; height: 2px; background: black; top: 50%; left: 5%; right: 5%; }
+        .divider-full { position: absolute; width: 2px; height: 80px; background: black; top: calc(50% - 40px); }
+        .divider-half { position: absolute; width: 2px; height: 40px; background: black; top: calc(50% - 40px); }
+        .slant-line { position: absolute; width: 2px; height: 60px; background: black; transform: rotate(30deg); top: 50%; }
+        
+        .word-token { 
+            position: absolute; padding: 8px 15px; background: var(--white); 
+            border: 1px solid var(--green); cursor: grab; font-weight: bold; z-index: 10;
+        }
+        
+        .info-box { background: #f0fdf4; border: 1px solid var(--green); padding: 1rem; margin-top: 1rem; }
+    </style>
 </head>
 <body>
-  <header>
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M4 12h16M4 17h16" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/></svg>
-    <h1>Interactive Sentence Diagrammer</h1>
-    <span class="sub">Learn & practice classic Reed–Kellogg diagrams</span>
-  </header>
-  
-  <aside id="sidebar">
-    <button class="navbtn active" data-page="learn">📘 Learn</button>
-    <button class="navbtn" data-page="build">🧩 Practice & Build</button>
-    <button class="navbtn" data-page="quiz">📝 Quiz</button>
-    <button class="navbtn" data-page="saved">💾 Saved</button>
 
-    <div class="card tips">
-      <b>How this works</b>
-      <ul>
-        <li>Enter a sentence, tag parts (Subject, Verb, Object, etc.).</li>
-        <li>Choose a pattern (SV, SVO, S–LV–PN/PA, S–V–IO–DO, Prepositional phrase, Compound).</li>
-        <li>Generate the diagram → fine‑tune with tagger.</li>
-        <li>Export as SVG/PNG for your handouts.</li>
-      </ul>
+<header>
+    <h1>The Five Core Sentence Blueprints</h1>
+    <p>Select a pattern to build your Reed-Kellogg diagram.</p>
+</header>
+
+<div class="main-layout">
+    <div class="sidebar">
+        <h3>Patterns</h3>
+        <button class="pattern-btn active" onclick="loadPattern('SV')">1. SV (Intransitive)</button>
+        <button class="pattern-btn" onclick="loadPattern('SVO')">2. SVO (Transitive)</button>
+        <button class="pattern-btn" onclick="loadPattern('SLV')">3. S-LV-PN/PA</button>
+        <button class="pattern-btn" onclick="loadPattern('SVIO')">4. SV-IO-DO</button>
+        <button class="pattern-btn" onclick="loadPattern('SVOC')">5. SVOC (Object Comp)</button>
+        <button class="pattern-btn" onclick="loadPattern('SVA')">6. SVA (Adjunct)</button>
     </div>
-  </aside>
 
-  <main id="main">
-    <!-- LEFT: controls -->
-    <section id="controls" class="page card active" data-page="learn">
-      <h2>Crash Course</h2>
-      <p>Reed–Kellogg diagrams put <b>core clause elements</b> on a horizontal <span class="pill">baseline</span>:
-        <b>Subject</b> | <b>Verb</b> | <b>Object/Complement</b>. Modifiers and prepositional phrases branch below on slanted lines.</p>
-      <div class="grid2">
-        <div class="card">
-          <h3>Core patterns</h3>
-          <ul class="tips">
-            <li><b>SV</b> – Subject + intransitive Verb (e.g., <i>Birds</i> | <i>sing</i>).</li>
-            <li><b>SVO</b> – direct object after a vertical divider (e.g., <i>Students</i> | <i>solve</i> | <i>problems</i>).</li>
-            <li><b>S–LV–PN/PA</b> – linking verb + predicate noun/adjective (e.g., <i>John</i> | <i>is</i> | <i>a professor</i>).</li>
-            <li><b>S–V–IO–DO</b> – indirect object before direct object (e.g., <i>She</i> | <i>gave</i> | <i>me</i> | <i>notes</i>).</li>
-            <li><b>PP</b> – Prepositional phrase hangs under the word it modifies.</li>
-            <li><b>Compound</b> – Conjunction splits the role into two (subjects, verbs, or objects).</li>
-          </ul>
+    <div class="work-area">
+        <div id="canvas">
+            </div>
+        <div class="info-box" id="pattern-desc">
+            <strong>SV Pattern:</strong> The subject and verb are separated by a line that crosses the baseline.
         </div>
-        <div class="card">
-          <h3>Linking verbs & preps</h3>
-          <p class="tips"><b>Common linking verbs:</b> be, am, is, are, was, were, been, seem, become, appear, remain, feel, look, sound, taste, smell, grow, stay, turn.</p>
-          <p class="tips"><b>Common prepositions:</b> about, above, across, after, against, along, among, around, at, before, behind, below, beneath, beside, between, beyond, by, despite, down, during, except, for, from, in, inside, into, like, near, of, off, on, onto, out, outside, over, past, since, through, throughout, to, toward, under, until, up, upon, with, within, without.</p>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Try an example</h3>
-        <div class="row">
-          <select id="sampleSelect">
-            <option value="The students study.">SV – The students study.</option>
-            <option value="The students solve problems.">SVO – The students solve problems.</option>
-            <option value="John is a professor.">S–LV–PN – John is a professor.</option>
-            <option value="Maria gave me notes.">S–V–IO–DO – Maria gave me notes.</option>
-            <option value="The book on the table fell.">SV + PP – The book on the table fell.</option>
-            <option value="Cats and dogs chase and bark.">Compound S & V – Cats and dogs chase and bark.</option>
-          </select>
-          <button class="btn primary" id="loadSample">Load in Builder →</button>
-        </div>
-      </div>
-    </section>
-
-    <section id="controls-build" class="page card" data-page="build">
-      <h2>Practice & Build</h2>
-      <label for="sentence">Sentence</label>
-      <input id="sentence" type="text" placeholder="Type or paste a sentence…" />
-
-      <div class="grid2">
-        <div>
-          <label for="pattern">Pattern</label>
-          <select id="pattern">
-            <option value="SV">SV (intransitive)</option>
-            <option value="SVO">SVO (direct object)</option>
-            <option value="SLV">S–LV–PN/PA (linking verb)</option>
-            <option value="SVIODO">S–V–IO–DO (double object)</option>
-            <option value="PP">Add Prepositional Phrase</option>
-            <option value="COMPOUND">Compound (S or V or O)</option>
-          </select>
-        </div>
-        <div>
-          <label>&nbsp;</label>
-          <div class="row">
-            <button class="btn" id="tokenize">Tokenize & Tag</button>
-            <button class="btn primary" id="diagram">Generate Diagram</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Tag parts</h3>
-        <p class="muted">Adjust any tag if the guess is off.</p>
-        <div id="tagger"></div>
-      </div>
-
-      <div class="row">
-        <button class="btn icon" id="saveBtn">💾 Save</button>
-        <button class="btn icon" id="exportSVGBtn">⬇️ Export SVG</button>
-        <button class="btn icon" id="exportPNGBtn">⬇️ Export PNG</button>
-        <span class="pill" id="status">Ready</span>
-      </div>
-    </section>
-
-    <section id="controls-quiz" class="page card" data-page="quiz">
-      <h2>Quiz</h2>
-      <p>Identify the pattern for each sentence, then reveal the diagram.</p>
-      <table id="quizTable"></table>
-    </section>
-
-    <section id="controls-saved" class="page card" data-page="saved">
-      <h2>Saved Diagrams</h2>
-      <div id="savedList" class="tips"></div>
-    </section>
-
-    <!-- RIGHT: diagram stage (shared) -->
-    <section id="stage" class="card">
-      <div id="canvasWrap">
-        <svg id="diagramSVG" viewBox="0 0 1000 520" xmlns="http://www.w3.org/2000/svg" aria-label="Sentence diagram canvas">
-          <defs>
-            <marker id="dot" markerWidth="6" markerHeight="6" refX="3" refY="3">
-              <circle cx="3" cy="3" r="3" fill="#0b132b"/>
-            </marker>
-          </defs>
-          <!-- Grid guides -->
-          <g id="guides"></g>
-          <g id="diagram"></g>
-        </svg>
-      </div>
-    </section>
-  </main>
+    </div>
+</div>
 
 <script>
-// --- Utility data ---
-const LINKING = new Set(["be","am","is","are","was","were","been","seem","become","appear","remain","feel","look","sound","taste","smell","grow","stay","turn"]);
-const PREPS = new Set(["about","above","across","after","against","along","among","around","at","before","behind","below","beneath","beside","between","beyond","by","despite","down","during","except","for","from","in","inside","into","like","near","of","off","on","onto","out","outside","over","past","since","through","throughout","to","toward","under","until","up","upon","with","within","without"]);
-const PUNCT = new Set([",",".",";",":","?","!"]);
+    const patterns = {
+        'SV': {
+            desc: "The birds are chirping. (Subject | Verb)",
+            words: ["Birds", "The", "are chirping"],
+            lines: [{ type: 'full', left: '40%' }]
+        },
+        'SVO': {
+            desc: "Children love ice cream. (Subject | Verb | Object)",
+            words: ["Children", "love", "ice cream"],
+            lines: [{ type: 'full', left: '30%' }, { type: 'half', left: '60%' }]
+        },
+        'SLV': {
+            desc: "Jacob was tall. (Subject | Verb \\ Adjective)",
+            words: ["Jacob", "was", "tall"],
+            lines: [{ type: 'full', left: '30%' }, { type: 'slant', left: '60%' }]
+        },
+        'SVIO': {
+            desc: "Janice writes me a letter. (Indirect objects hang below the verb)",
+            words: ["Janice", "writes", "letter", "a", "me"],
+            lines: [{ type: 'full', left: '30%' }, { type: 'half', left: '60%' }]
+        },
+        'SVOC': {
+            desc: "They painted the house blue. (Subject | Verb | Object \\ Complement)",
+            words: ["They", "painted", "house", "the", "blue"],
+            lines: [{ type: 'full', left: '25%' }, { type: 'half', left: '50%' }, { type: 'slant', left: '75%' }]
+        },
+        'SVA': {
+            desc: "He went upstairs. (Adverbs hang on slanted lines below the verb)",
+            words: ["He", "went", "upstairs"],
+            lines: [{ type: 'full', left: '40%' }]
+        }
+    };
 
-const TAGS = ["Subject","Verb","Direct Object","Indirect Object","Complement (PN/PA)","Modifier","Preposition","Object of Prep","Conjunction"];
+    function loadPattern(key) {
+        const canvas = document.getElementById('canvas');
+        const desc = document.getElementById('pattern-desc');
+        const p = patterns[key];
+        
+        // Update Buttons
+        document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
 
-// --- Navigation ---
-const pages = Array.from(document.querySelectorAll('.page'));
-const navs = Array.from(document.querySelectorAll('.navbtn'));
-navs.forEach(btn=>btn.addEventListener('click',()=>{
-  navs.forEach(n=>n.classList.remove('active'));
-  btn.classList.add('active');
-  const id = btn.dataset.page;
-  pages.forEach(p=>{
-    p.classList.toggle('active', p.dataset.page===id);
-  });
-}));
+        // Clear and Redraw
+        canvas.innerHTML = '<div class="baseline"></div>';
+        desc.innerHTML = `<strong>${key} Pattern:</strong> ${p.desc}`;
 
-// --- Guides ---
-const guides = document.getElementById('guides');
-(function drawGuides(){
-  let g=""; for(let y=80; y<=480; y+=80){ g+=`<line x1="40" y1="${y}" x2="960" y2="${y}" class="guide"/>`; }
-  for(let x=100; x<=900; x+=100){ g+=`<line x1="${x}" y1="40" x2="${x}" y2="480" class="guide"/>`; }
-  guides.innerHTML=g;
-})();
+        // Draw Guide Lines
+        p.lines.forEach(line => {
+            const el = document.createElement('div');
+            el.className = line.type === 'full' ? 'divider-full' : (line.type === 'half' ? 'divider-half' : 'slant-line');
+            el.style.left = line.left;
+            canvas.appendChild(el);
+        });
 
-// --- Tokenize & naive tag guess ---
-const tagger = document.getElementById('tagger');
-let currentTokens=[];
-
-function tokenize(str){
-  return str
-    .replace(/\s+/g,' ')
-    .trim()
-    .split(' ')
-    .map(w=>w.replace(/[.,;:!?]$/,'$&'));
-}
-
-function guessTags(tokens){
-  // Very lightweight heuristic: find verb, detect linking, detect prepositional phrase, conjunctions
-  const lower = tokens.map(t=>t.toLowerCase().replace(/[.,;:!?]/g,''));
-  let verbIdx = lower.findIndex(w=>/\b\w+(ed|s|ing)?\b/.test(w) && !PREPS.has(w));
-  // Prefer a known linking verb if present
-  const linkIdx = lower.findIndex(w=>LINKING.has(w));
-  if(linkIdx!==-1) verbIdx = linkIdx;
-  if(verbIdx<0) verbIdx=1; // fallback
-
-  const tags = tokens.map(()=>"Modifier");
-  if(tokens.length){ tags[0] = "Subject"; tags[verbIdx] = "Verb"; }
-
-  // Object guess = first noun-like after verb not a preposition/conjunction
-  for(let i=verbIdx+1;i<tokens.length;i++){
-    const w=lower[i];
-    if(PREPS.has(w)){ tags[i] = "Preposition"; if(i+1<tokens.length) tags[i+1] = "Object of Prep"; }
-    else if(["and","or"].includes(w)){ tags[i] = "Conjunction"; }
-    else if(tags[i]!=="Object of Prep" && tags[i]!=="Preposition" && !PUNCT.has(tokens[i])){
-      tags[i] = (LINKING.has(lower[verbIdx])) ? "Complement (PN/PA)" : "Direct Object"; break;
+        // Add Words (Spread randomly for student to place)
+        p.words.forEach((word, i) => {
+            const token = document.createElement('div');
+            token.className = 'word-token';
+            token.innerText = word;
+            token.style.top = (20 + (i * 50)) + 'px';
+            token.style.left = '20px';
+            makeDraggable(token);
+            canvas.appendChild(token);
+        });
     }
-  }
-  return tags;
-}
 
-function renderTagger(tokens, tags){
-  tagger.innerHTML = tokens.map((t,i)=>{
-    const safe = t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    return `<span class="token"><b>${safe}</b>
-      <select data-idx="${i}">
-        ${TAGS.map(tag=>`<option ${tag===tags[i]?"selected":""}>${tag}</option>`).join('')}
-      </select></span>`;
-  }).join('');
-  tagger.querySelectorAll('select').forEach(sel=>{
-    sel.addEventListener('change',e=>{ const i=+sel.dataset.idx; currentTags[i]=sel.value; });
-  });
-}
+    function makeDraggable(el) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        el.onmousedown = dragMouseDown;
 
-let currentTags=[];
+        function dragMouseDown(e) {
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+        }
 
-// --- Diagram rendering (SVG) ---
-const dgroup = document.getElementById('diagram');
+        function elementDrag(e) {
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            el.style.top = (el.offsetTop - pos2) + "px";
+            el.style.left = (el.offsetLeft - pos1) + "px";
+        }
 
-function textEl(x,y,txt,cls='word', anchor='middle'){
-  const esc=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  return `<text class="${cls}" x="${x}" y="${y}" text-anchor="${anchor}">${esc}</text>`;
-}
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+        }
+    }
 
-function line(x1,y1,x2,y2,cls='baseline'){ return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="${cls}"/>`; }
-
-function renderSV(subject, verb){
-  const mid=500, y=180, len=520; const left=mid-len/2, right=mid+len/2;
-  let g="";
-  g+=line(left,y,right,y,'baseline');
-  // divider between S and V
-  const divX = mid-40; g+=line(divX,y,divX,y-60,'divider');
-  g+=textEl(divX-140,y-10,subject);
-  g+=textEl(divX+140,y-10,verb);
-  dgroup.innerHTML=g;
-}
-
-function renderSVO(subject, verb, object){
-  const mid=500, y=220, len=720; const left=mid-len/2, right=mid+len/2;
-  let g="";
-  g+=line(left,y,right,y,'baseline');
-  const div1 = mid-120, div2 = mid+120;
-  g+=line(div1,y,div1,y-70,'divider');
-  g+=line(div2,y,div2,y-70,'divider');
-  g+=textEl(div1-160,y-10,subject);
-  g+=textEl((div1+div2)/2,y-10,verb);
-  g+=textEl(div2+160,y-10,object);
-  dgroup.innerHTML=g;
-}
-
-function renderSLV(subject, verb, comp){
-  const mid=500, y=220, len=720; const left=mid-len/2, right=mid+len/2;
-  let g="";
-  g+=line(left,y,right,y,'baseline');
-  const div1 = mid-120, div2 = mid+120;
-  g+=line(div1,y,div1,y-70,'divider');
-  // slanted divider before complement
-  g+=line(div2,y,div2-40,y-70,'slanted');
-  g+=textEl(div1-160,y-10,subject);
-  g+=textEl((div1+div2)/2,y-10,verb);
-  g+=textEl(div2+160,y-10,comp);
-  dgroup.innerHTML=g;
-}
-
-function renderSVIODO(subject, verb, io, dobj){
-  const mid=500, y=240, len=760; const left=mid-len/2, right=mid+len/2;
-  let g="";
-  g+=line(left,y,right,y,'baseline');
-  const div1 = mid-160, div2 = mid+20, div3 = mid+200;
-  g+=line(div1,y,div1,y-70,'divider');
-  g+=line(div2,y,div2,y-70,'divider');
-  g+=line(div3,y,div3,y-70,'divider');
-  g+=textEl(div1-160,y-10,subject);
-  g+=textEl((div1+div2)/2,y-10,verb);
-  g+=textEl((div2+div3)/2,y-10,io);
-  g+=textEl(div3+160,y-10,dobj);
-  dgroup.innerHTML=g;
-}
-
-function attachPP(baseX, baseY, prep, obj){
-  // draw a slanted line down from base to small baseline for prep phrase
-  let g="";
-  const dropX=baseX, dropY=baseY;
-  g+=line(dropX,dropY,dropX-40,dropY+60,'slanted');
-  g+=line(dropX-220,dropY+60,dropX+60,dropY+60,'baseline');
-  g+=line(dropX-40,dropY+60,dropX-40,dropY+0,'minor');
-  g+=textEl(dropX-120,dropY+50,prep);
-  // tiny divider for object
-  g+=line(dropX-20,dropY+60,dropX-20,dropY-10,'divider');
-  g+=textEl(dropX+60,dropY+50,obj,'word','end');
-  return g;
-}
-
-function renderCompound(base, roleLeft, conj, roleRight){
-  // Draw baseline with a fork for compound element under a conjunction
-  const mid=500, y=200, len=680; const left=mid-len/2, right=mid+len/2;
-  let g="";
-  g+=line(left,y,right,y,'baseline');
-  const joinX = mid, joinY=y-60;
-  g+=textEl(joinX,joinY-10,conj,'minor');
-  // fork lines
-  g+=line(joinX,joinY,joinX-120,y-0,'slanted');
-  g+=line(joinX,joinY,joinX+120,y-0,'slanted');
-  g+=textEl(joinX-160,y-10,roleLeft,'word','end');
-  g+=textEl(joinX+160,y-10,roleRight,'word','start');
-  dgroup.innerHTML=g;
-}
-
-function currentByTag(tag){
-  const idx = currentTags.findIndex(t=>t===tag);
-  return idx>=0? currentTokens[idx] : '';
-}
-
-function buildFromTags(){
-  const subj = currentByTag('Subject');
-  const verb = currentByTag('Verb');
-  const dobj = currentByTag('Direct Object');
-  const io = currentByTag('Indirect Object');
-  const comp = currentByTag('Complement (PN/PA)');
-
-  const pattern = document.getElementById('pattern').value;
-  let g="";
-  if(pattern==='SV') renderSV(subj, verb);
-  else if(pattern==='SVO') renderSVO(subj, verb, dobj);
-  else if(pattern==='SLV') renderSLV(subj, verb, comp || dobj);
-  else if(pattern==='SVIODO') renderSVIODO(subj, verb, io, dobj);
-  else if(pattern==='COMPOUND'){
-    const left = currentTokens.find((w,i)=>currentTags[i]==='Subject');
-    const right = currentTokens.find((w,i)=>currentTags[i]==='Direct Object');
-    renderCompound('baseline', left||'Part A', 'and', right||'Part B');
-  }
-
-  // Prepositional phrase, if present tags
-  const prepIdx = currentTags.findIndex(t=>t==='Preposition');
-  if(prepIdx!==-1){
-    const objIdx = currentTags.findIndex((t,i)=>t==='Object of Prep' && i>prepIdx);
-    const attachTo = (dobj? 700 : 300); // heuristic attach position
-    g = dgroup.innerHTML + attachPP(attachTo, 220, currentTokens[prepIdx], currentTokens[objIdx]||'…');
-    dgroup.innerHTML = g;
-  }
-}
-
-// --- Export helpers ---
-function download(filename, text){
-  const a=document.createElement('a'); a.setAttribute('href','data:text/plain;charset=utf-8,'+encodeURIComponent(text));
-  a.setAttribute('download', filename); a.style.display='none'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-function exportSVG(){
-  const svg = document.getElementById('diagramSVG');
-  const ser = new XMLSerializer();
-  const data = ser.serializeToString(svg);
-  download('diagram.svg', data);
-}
-
-function exportPNG(){
-  const svg = document.getElementById('diagramSVG');
-  const ser = new XMLSerializer();
-  const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ser.serializeToString(svg));
-  const img = new Image();
-  img.onload=function(){
-    const canvas=document.createElement('canvas'); canvas.width=1000; canvas.height=520; const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#fff'; ctx.fillRect(0,0,1000,520); ctx.drawImage(img,0,0);
-    const a=document.createElement('a'); a.download='diagram.png'; a.href=canvas.toDataURL('image/png'); a.click();
-  };
-  img.src=data;
-}
-
-// --- Save/Load ---
-function saveCurrent(){
-  const name = prompt('Name this diagram:','My Diagram'); if(!name) return;
-  const item = { name, sentence: document.getElementById('sentence').value, tokens: currentTokens, tags: currentTags, svg: document.getElementById('diagram').innerHTML, pattern: document.getElementById('pattern').value };
-  const arr = JSON.parse(localStorage.getItem('diagrammer_saves')||'[]');
-  arr.push(item); localStorage.setItem('diagrammer_saves', JSON.stringify(arr));
-  renderSaved();
-  setStatus('Saved ✓', 'good');
-}
-
-function renderSaved(){
-  const wrap = document.getElementById('savedList');
-  const arr = JSON.parse(localStorage.getItem('diagrammer_saves')||'[]');
-  if(!arr.length){ wrap.innerHTML='<p class="muted">No saves yet.</p>'; return; }
-  wrap.innerHTML = arr.map((it,idx)=>`
-    <div class="card" style="margin-bottom:12px">
-      <div class="row"><b>${it.name}</b><span class="muted">${it.sentence}</span></div>
-      <div class="row">
-        <button class="btn" data-load="${idx}">Load</button>
-        <button class="btn" data-del="${idx}">Delete</button>
-      </div>
-    </div>
-  `).join('');
-  wrap.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>loadSaved(+b.dataset.load));
-  wrap.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delSaved(+b.dataset.del));
-}
-
-function loadSaved(i){
-  const arr = JSON.parse(localStorage.getItem('diagrammer_saves')||'[]');
-  const it = arr[i]; if(!it) return;
-  document.getElementById('sentence').value = it.sentence;
-  currentTokens = it.tokens; currentTags = it.tags; renderTagger(currentTokens,currentTags);
-  document.getElementById('pattern').value = it.pattern || 'SVO';
-  dgroup.innerHTML = it.svg; setStatus('Loaded ✓','good');
-}
-
-function delSaved(i){
-  const arr = JSON.parse(localStorage.getItem('diagrammer_saves')||'[]');
-  arr.splice(i,1); localStorage.setItem('diagrammer_saves', JSON.stringify(arr)); renderSaved(); setStatus('Deleted','warn');
-}
-
-// --- Quiz ---
-const QUIZ = [
-  { s:"The curtains fluttered.", a:"SV" },
-  { s:"The committee chose a chairperson.", a:"SVO" },
-  { s:"The sky is blue.", a:"SLV" },
-  { s:"She sent me an email.", a:"SVIODO" },
-  { s:"The cat slept on the rug.", a:"PP" },
-];
-function renderQuiz(){
-  const rows = QUIZ.map((q,i)=>{
-    return `<tr><td>${i+1}.</td><td>${q.s}</td><td>
-      <select id="qsel${i}">
-        <option>SV</option><option>SVO</option><option>SLV</option><option>SVIODO</option><option>PP</option>
-      </select>
-      </td><td><button class="btn" data-q="${i}">Check</button></td><td id="qres${i}"></td></tr>`
-  }).join('');
-  document.getElementById('quizTable').innerHTML = `<tr><th>#</th><th>Sentence</th><th>Your choice</th><th>Action</th><th>Result</th></tr>` + rows;
-  document.querySelectorAll('[data-q]').forEach(btn=>btn.onclick=()=>{
-    const i=+btn.dataset.q; const choice=document.getElementById('qsel'+i).value; const ok = choice===QUIZ[i].a;
-    const cell=document.getElementById('qres'+i); cell.textContent = ok? '✅ Correct' : '❌ It\'s ' + QUIZ[i].a;
-    if(ok){ setStatus('Nice! Try building it →','good'); }
-  });
-}
-
-// --- Status ---
-function setStatus(msg, tone){
-  const el=document.getElementById('status'); el.textContent=msg; el.style.background = tone==='good'? '#eaf7ef' : tone==='warn'? '#fff4e3' : '#e0fbfc';
-}
-
-// --- Event wiring ---
-const sentenceInput = document.getElementById('sentence');
-
-document.getElementById('tokenize').addEventListener('click',()=>{
-  const s = sentenceInput.value.trim(); if(!s) return; currentTokens = tokenize(s); currentTags = guessTags(currentTokens); renderTagger(currentTokens,currentTags); setStatus('Tagged – adjust if needed', '');
-});
-
-document.getElementById('diagram').addEventListener('click',()=>{
-  if(!currentTokens.length){
-    const s = sentenceInput.value.trim(); if(!s) return; currentTokens = tokenize(s); currentTags = guessTags(currentTokens);
-  }
-  renderTagger(currentTokens,currentTags); buildFromTags(); setStatus('Diagram generated', 'good');
-});
-
-document.getElementById('saveBtn').onclick = saveCurrent;
-
-document.getElementById('exportSVGBtn').onclick = exportSVG;
-
-document.getElementById('exportPNGBtn').onclick = exportPNG;
-
-// Samples
-const sampleSelect = document.getElementById('sampleSelect');
-document.getElementById('loadSample').onclick=()=>{
-  const v=sampleSelect.value; document.querySelector('[data-page="build"]').click();
-  sentenceInput.value=v; currentTokens = tokenize(v); currentTags = guessTags(currentTokens); renderTagger(currentTokens,currentTags); setStatus('Sample loaded', '');
-};
-
-renderSaved();
-renderQuiz();
-
+    // Initialize
+    loadPattern('SV');
 </script>
+
 </body>
 </html>
