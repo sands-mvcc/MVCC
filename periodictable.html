@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodic Table - 25% Smaller</title>
+    <style>
+        :root {
+            /* Main Theme Colors */
+            --bg-color: #1a1a2e; 
+            --text-color-main: #e0e0e0; 
+            --panel-bg: #232336;
+            --cell-hover-border: #ffffff;
+
+            /* --- PASTEL PALETTE (Dark text required for contrast) --- */
+            --cell-text-color: #222222; 
+
+            --col-hydrogen: #ffffff; /* Distinct White */
+            --col-alkali: #FF9999; /* Soft Red */
+            --col-alkaline-earth: #FFCC99; /* Soft Orange */
+            --col-transition: #FFFFCC; /* Pale Yellow */
+            --col-post-transition: #c4cdd6; /* Light Gray/Blueish */
+            --col-metalloid: #99CCCC; /* Teal */
+            --col-other-nonmetal: #99FF99; /* Light Green */
+            --col-halogen: #f2f7a1; /* Bright Yellow/Green */
+            --col-noble: #CC99FF; /* Light Purple */
+            --col-f-block: #e0c3fc; /* Distinct light purple/brownish */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        header {
+            max-width: 1200px;
+            text-align: center;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        h1 { margin: 0 0 10px 0; font-size: 1.8rem; }
+        .intro-text { font-size: 1rem; color: #b0b0c0; }
+
+        /* LEGEND */
+        .legend-container {
+            margin-bottom: 25px;
+            padding: 10px;
+            background: var(--panel-bg);
+            border-radius: 8px;
+            flex-shrink: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .legend-item { display: flex; align-items: center; font-size: 0.8rem; color: var(--text-color-main); }
+        .legend-color { width: 15px; height: 15px; border-radius: 3px; margin-right: 5px; border: 1px solid #555;}
+
+        /* --- MAIN LAYOUT --- */
+        .main-container {
+            display: flex;
+            flex-direction: column; 
+            gap: 30px; 
+            width: 100%;
+            max-width: 1600px;
+            flex-grow: 1;
+            align-items: center; 
+        }
+
+        /* --- SIZING CHANGE 1: Wrapper width reduced to 75% --- */
+        .periodic-table-wrapper {
+            width: 75%; /* Was 100% */
+            aspect-ratio: 18 / 10;
+            margin: 0 auto; /* Center the smaller table */
+        }
+
+        .periodic-table {
+            display: grid;
+            grid-template-columns: repeat(18, 1fr);
+            grid-template-rows: repeat(7, 1fr) 0.5fr repeat(2, 1fr);
+            /* --- SIZING CHANGE 2: Reduced gap --- */
+            gap: 2px; /* Was 3px */
+            height: 100%;
+            width: 100%;
+        }
+
+        .element-cell {
+            background-color: #333; 
+            color: var(--cell-text-color); 
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            aspect-ratio: 1 / 1; 
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .element-cell:hover {
+            transform: scale(1.2);
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            border-color: var(--cell-hover-border);
+        }
+
+        /* --- SIZING CHANGE 3: Reduced font sizes for smaller cells --- */
+        .atom-num { 
+            font-size: 0.5rem; /* Was 0.6rem */
+            position: absolute; top: 2px; left: 3px; opacity: 0.7; 
+        }
+        .symbol { 
+            font-size: 0.9rem; /* Was 1.1rem */
+            font-weight: bold; 
+        }
+
+        /* --- COLOR CATEGORY CLASSES --- */
+        .cat-hydrogen { background-color: var(--col-hydrogen); }
+        .cat-alkali { background-color: var(--col-alkali); }
+        .cat-alkaline-earth { background-color: var(--col-alkaline-earth); }
+        .cat-transition { background-color: var(--col-transition); }
+        .cat-post-transition { background-color: var(--col-post-transition); }
+        .cat-metalloid { background-color: var(--col-metalloid); }
+        .cat-other-nonmetal { background-color: var(--col-other-nonmetal); }
+        .cat-halogen { background-color: var(--col-halogen); }
+        .cat-noble { background-color: var(--col-noble); }
+        .cat-f-block { background-color: var(--col-f-block); }
+
+        /* Grid Positioning Helpers */
+        .row-gap { grid-row: 8; pointer-events: none; visibility: hidden;}
+        .lanthanide { grid-row: 9; }
+        .actinide { grid-row: 10; }
+
+        /* --- INFO PANEL --- */
+        .info-panel {
+            width: 100%;
+            max-width: 1200px;
+            background-color: var(--panel-bg);
+            padding: 30px;
+            border-radius: 12px;
+            border: 2px solid #444;
+            color: var(--text-color-main);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #555;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .panel-symbol {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-right: 25px;
+            background: var(--col-hydrogen); 
+            color: var(--cell-text-color);
+            padding: 10px 25px;
+            border-radius: 12px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .panel-title h2 { margin: 0; font-size: 2.2rem; }
+        .category-tag { 
+            background: #444; 
+            color: #fff;
+            padding: 6px 14px; 
+            border-radius: 16px; 
+            font-size: 0.9rem; 
+            display: inline-block; 
+            margin-top: 8px;
+        }
+
+        .data-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 25px; 
+            margin-bottom: 30px; 
+        }
+        .data-item label { display: block; color: #aaa; font-size: 0.9rem; margin-bottom: 5px;}
+        .data-item span { font-size: 1.3rem; font-weight: bold; }
+        .context-section h3 { border-bottom: 1px solid #555; padding-bottom: 10px; font-size: 1.4rem; margin-top: 0;}
+        .context-section p { line-height: 1.7; font-size: 1.1rem; color: #d0d0d0; max-width: 90ch;}
+
+        @media (max-width: 900px) {
+            /* On smaller screens, we return to full width */
+            .periodic-table-wrapper { width: 100%; aspect-ratio: auto; }
+            .periodic-table { gap: 1px; }
+            /* --- SIZING CHANGE 4: Adjusted mobile fonts further down --- */
+            .symbol { font-size: 0.75rem; }
+            .atom-num { font-size: 0.4rem; }
+            .info-panel { padding: 20px; }
+            .panel-symbol { font-size: 3rem; padding: 5px 20px;}
+            .panel-title h2 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>The Periodic Table of Elements</h1>
+        <div class="intro-text">
+            Click any element to reveal its complete chemical data below.
+        </div>
+    </header>
+
+    <div class="legend-container">
+        <div class="legend-item"><div class="legend-color" style="background: var(--col-alkali)"></div>Alkali Metal</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--col-alkaline-earth)"></div>Alkaline Earth</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--col-transition)"></div>Transition Metal</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--col-metalloid)"></div>Metalloid</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--col-other-nonmetal)"></div>Other Nonmetal</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--col-halogen)"></div>Halogen</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--col-noble)"></div>Noble Gas</div>
+        <div class="legend-item"><div class="legend-color" style="background: var(--col-f-block)"></div>Lanthanide/Actinide</div>
+    </div>
+
+    <div class="main-container">
+        <div class="periodic-table-wrapper">
+            <div id="table-container" class="periodic-table">
+                </div>
+        </div>
+
+        <div id="info-panel" class="info-panel">
+            <div class="panel-header">
+                <div class="panel-symbol" id="panel-symbol">H</div>
+                <div class="panel-title">
+                    <h2 id="panel-name">Hydrogen</h2>
+                    <span class="category-tag" id="panel-cat">Other Nonmetal</span>
+                </div>
+            </div>
+            
+            <div class="data-grid">
+                <div class="data-item">
+                    <label>Atomic Number</label>
+                    <span id="panel-num">1</span>
+                </div>
+                <div class="data-item">
+                    <label>Atomic Mass</label>
+                    <span id="panel-mass">1.008 u</span>
+                </div>
+                <div class="data-item">
+                    <label>Discovered</label>
+                    <span id="panel-year">1766</span>
+                </div>
+            </div>
+
+            <div class="context-section">
+                <h3>Practical Context</h3>
+                <p id="panel-context">
+                    The most abundant element in the universe. It fuels stars through nuclear fusion. On Earth, it's used in rocket fuel, industrial processing, and increasingly in clean energy fuel cells.
+                </p>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // 1. COMPLETE SYMBOL LIST
+    const allSymbols = [null, "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", " Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og"];
+
+    // 2. COMPLETE COMPREHENSIVE DATA
+    const completeElementData = {
+        1: { name: 'Hydrogen', mass: '1.008', year: 1766, context: "The most abundant element in the universe. It fuels stars through nuclear fusion. On Earth, it's used in rocket fuel, industrial processing, and increasingly in clean energy fuel cells." },
+        2: { name: 'Helium', mass: '4.0026', year: 1868, context: "Used to cool MRI magnets and superconducting instruments because it remains liquid at near absolute zero. Also fills party balloons." },
+        3: { name: 'Lithium', mass: '6.94', year: 1817, context: "Crucial for modern rechargeable batteries in phones, laptops, and electric vehicles. Also used in mood-stabilizing medication." },
+        4: { name: 'Beryllium', mass: '9.0122', year: 1798 },
+        5: { name: 'Boron', mass: '10.81', year: 1808 },
+        6: { name: 'Carbon', mass: '12.011', year: 'Antiquity', context: "The backbone of all life on Earth. It exists as soft graphite (pencil 'lead'), hard diamonds, and newer materials like graphene." },
+        7: { name: 'Nitrogen', mass: '14.007', year: 1772 },
+        8: { name: 'Oxygen', mass: '15.999', year: 1774, context: "Makes up 21% of air and is vital for respiration. Highly reactive, it supports combustion and causes rusting (oxidation) in metals." },
+        9: { name: 'Fluorine', mass: '18.998', year: 1886 },
+        10: { name: 'Neon', mass: '20.180', year: 1898 },
+        11: { name: 'Sodium', mass: '22.990', year: 1807 },
+        12: { name: 'Magnesium', mass: '24.305', year: 1755 },
+        13: { name: 'Aluminium', mass: '26.982', year: 1825, context: "Lightweight, corrosion-resistant metal used everywhere: soda cans, foil, airplane frames, and window frames." },
+        14: { name: 'Silicon', mass: '28.085', year: 1824, context: "The basis of the digital age. It is the primary semiconductor used to make microchips for computers and phones. Also the main ingredient in glass/sand." },
+        15: { name: 'Phosphorus', mass: '30.974', year: 1669 },
+        16: { name: 'Sulfur', mass: '32.06', year: 'Antiquity' },
+        17: { name: 'Chlorine', mass: '35.45', year: 1774 },
+        18: { name: 'Argon', mass: '39.948', year: 1894 },
+        19: { name: 'Potassium', mass: '39.098', year: 1807 },
+        20: { name: 'Calcium', mass: '40.078', year: 1808 },
+        21: { name: 'Scandium', mass: '44.956', year: 1879 },
+        22: { name: 'Titanium', mass: '47.867', year: 1791 },
+        23: { name: 'Vanadium', mass: '50.942', year: 1801 },
+        24: { name: 'Chromium', mass: '51.996', year: 1797 },
+        25: { name: 'Manganese', mass: '54.938', year: 1774 },
+        26: { name: 'Iron', mass: '55.845', year: 'Antiquity', context: "The most common metal in modern infrastructure. When mixed with carbon, it makes steel for buildings, cars, and bridges. Also carries oxygen in your blood." },
+        27: { name: 'Cobalt', mass: '58.933', year: 1735 },
+        28: { name: 'Nickel', mass: '58.693', year: 1751 },
+        29: { name: 'Copper', mass: '63.546', year: 'Antiquity', context: "Excellent conductor of electricity and heat, used in most electrical wiring and plumbing. Turns green when oxidized (like the Statue of Liberty)." },
+        30: { name: 'Zinc', mass: '65.38', year: 'Antiquity' },
+        31: { name: 'Gallium', mass: '69.723', year: 1875 },
+        32: { name: 'Germanium', mass: '72.630', year: 1886 },
+        33: { name: 'Arsenic', mass: '74.922', year: 'Antiquity' },
+        34: { name: 'Selenium', mass: '78.971', year: 1817 },
+        35: { name: 'Bromine', mass: '79.904', year: 1826 },
+        36: { name: 'Krypton', mass: '83.798', year: 1898 },
+        37: { name: 'Rubidium', mass: '85.468', year: 1861 },
+        38: { name: 'Strontium', mass: '87.62', year: 1790 },
+        39: { name: 'Yttrium', mass: '88.906', year: 1794 },
+        40: { name: 'Zirconium', mass: '91.224', year: 1789 },
+        41: { name: 'Niobium', mass: '92.906', year: 1801 },
+        42: { name: 'Molybdenum', mass: '95.95', year: 1778 },
+        43: { name: 'Technetium', mass: '[98]', year: 1937 },
+        44: { name: 'Ruthenium', mass: '101.07', year: 1844 },
+        45: { name: 'Rhodium', mass: '102.91', year: 1803 },
+        46: { name: 'Palladium', mass: '106.42', year: 1803 },
+        47: { name: 'Silver', mass: '107.87', year: 'Antiquity', context: "The best electrical conductor of all metals, used in high-end electronics. Also used in jewelry, coins, and historically in photography." },
+        48: { name: 'Cadmium', mass: '112.41', year: 1817 },
+        49: { name: 'Indium', mass: '114.82', year: 1863 },
+        50: { name: 'Tin', mass: '118.71', year: 'Antiquity' },
+        51: { name: 'Antimony', mass: '121.76', year: 'Antiquity' },
+        52: { name: 'Tellurium', mass: '127.60', year: 1782 },
+        53: { name: 'Iodine', mass: '126.90', year: 1811 },
+        54: { name: 'Xenon', mass: '131.29', year: 1898 },
+        55: { name: 'Cesium', mass: '132.91', year: 1860 },
+        56: { name: 'Barium', mass: '137.33', year: 1808 },
+        57: { name: 'Lanthanum', mass: '138.91', year: 1839 },
+        58: { name: 'Cerium', mass: '140.12', year: 1803 },
+        59: { name: 'Praseodymium', mass: '140.91', year: 1885 },
+        60: { name: 'Neodymium', mass: '144.24', year: 1885 },
+        61: { name: 'Promethium', mass: '[145]', year: 1945 },
+        62: { name: 'Samarium', mass: '150.36', year: 1879 },
+        63: { name: 'Europium', mass: '151.96', year: 1901 },
+        64: { name: 'Gadolinium', mass: '157.25', year: 1880 },
+        65: { name: 'Terbium', mass: '158.93', year: 1843 },
+        66: { name: 'Dysprosium', mass: '162.50', year: 1886 },
+        67: { name: 'Holmium', mass: '164.93', year: 1878 },
+        68: { name: 'Erbium', mass: '167.26', year: 1843 },
+        69: { name: 'Thulium', mass: '168.93', year: 1879 },
+        70: { name: 'Ytterbium', mass: '173.05', year: 1878 },
+        71: { name: 'Lutetium', mass: '174.97', year: 1907 },
+        72: { name: 'Hafnium', mass: '178.49', year: 1923 },
+        73: { name: 'Tantalum', mass: '180.95', year: 1802 },
+        74: { name: 'Tungsten', mass: '183.84', year: 1781 },
+        75: { name: 'Rhenium', mass: '186.21', year: 1925 },
+        76: { name: 'Osmium', mass: '190.23', year: 1803 },
+        77: { name: 'Iridium', mass: '192.22', year: 1803 },
+        78: { name: 'Platinum', mass: '195.08', year: 1735 },
+        79: { name: 'Gold', mass: '196.97', year: 'Antiquity', context: "Highly valued for its rarity, lack of corrosion, and beauty in jewelry. Also used in reliable connectors for spacecraft electronics." },
+        80: { name: 'Mercury', mass: '200.59', year: 'Antiquity' },
+        81: { name: 'Thallium', mass: '204.38', year: 1861 },
+        82: { name: 'Lead', mass: '207.2', year: 'Antiquity' },
+        83: { name: 'Bismuth', mass: '208.98', year: 1753 },
+        84: { name: 'Polonium', mass: '[209]', year: 1898 },
+        85: { name: 'Astatine', mass: '[210]', year: 1940 },
+        86: { name: 'Radon', mass: '[222]', year: 1900 },
+        87: { name: 'Francium', mass: '[223]', year: 1939 },
+        88: { name: 'Radium', mass: '[226]', year: 1898 },
+        89: { name: 'Actinium', mass: '[227]', year: 1899 },
+        90: { name: 'Thorium', mass: '232.04', year: 1829 },
+        91: { name: 'Protactinium', mass: '231.04', year: 1913 },
+        92: { name: 'Uranium', mass: '238.03', year: 1789, context: "Radioactive heavy metal used as the primary fuel source in nuclear power plants to generate electricity." },
+        93: { name: 'Neptunium', mass: '[237]', year: 1940 },
+        94: { name: 'Plutonium', mass: '[244]', year: 1940 },
+        95: { name: 'Americium', mass: '[243]', year: 1944 },
+        96: { name: 'Curium', mass: '[247]', year: 1944 },
+        97: { name: 'Berkelium', mass: '[247]', year: 1949 },
+        98: { name: 'Californium', mass: '[251]', year: 1950 },
+        99: { name: 'Einsteinium', mass: '[252]', year: 1952 },
+        100: { name: 'Fermium', mass: '[257]', year: 1952 },
+        101: { name: 'Mendelevium', mass: '[258]', year: 1955 },
+        102: { name: 'Nobelium', mass: '[259]', year: 1966 },
+        103: { name: 'Lawrencium', mass: '[266]', year: 1961 },
+        104: { name: 'Rutherfordium', mass: '[267]', year: 1969 },
+        105: { name: 'Dubnium', mass: '[268]', year: 1970 },
+        106: { name: 'Seaborgium', mass: '[269]', year: 1974 },
+        107: { name: 'Bohrium', mass: '[270]', year: 1981 },
+        108: { name: 'Hassium', mass: '[269]', year: 1984 },
+        109: { name: 'Meitnerium', mass: '[278]', year: 1982 },
+        110: { name: 'Darmstadtium', mass: '[281]', year: 1994 },
+        111: { name: 'Roentgenium', mass: '[282]', year: 1994 },
+        112: { name: 'Copernicium', mass: '[285]', year: 1996 },
+        113: { name: 'Nihonium', mass: '[286]', year: 2004 },
+        114: { name: 'Flerovium', mass: '[289]', year: 1998 },
+        115: { name: 'Moscovium', mass: '[290]', year: 2003 },
+        116: { name: 'Livermorium', mass: '[293]', year: 2000 },
+        117: { name: 'Tennessine', mass: '[294]', year: 2009 },
+        118: { name: 'Oganesson', mass: '[294]', year: 2002 }
+    };
+
+    // 3. Helper: Defines geometry AND specific chemical category for coloring
+    function getElementPositionData(z) {
+        let row, col, specificCat;
+
+        // --- Position Logic ---
+        if (z >= 57 && z <= 71) { row=9; col=z-54+1; } // Lanthanides
+        else if (z >= 89 && z <= 103) { row=10; col=z-86+1; } // Actinides
+        else if (z === 1) { row=1; col=1; }
+        else if (z === 2) { row=1; col=18; }
+        else if (z >= 3 && z <= 10) { row=2; col = (z <= 4) ? z-2 : z+8; }
+        else if (z >= 11 && z <= 18) { row=3; col = (z <= 12) ? z-10 : z; }
+        else if (z >= 19 && z <= 36) { row=4; col = z-18; }
+        else if (z >= 37 && z <= 54) { row=5; col = z-36; }
+        else if (z === 55 || z === 56) { row=6; col = z-54; }
+        else if (z >= 72 && z <= 86) { row=6; col = z-72+4; }
+        else if (z === 87 || z === 88) { row=7; col = z-86; }
+        else if (z >= 104 && z <= 118) { row=7; col = z-104+4; }
+
+        // --- Categorization Logic ---
+        if (z === 1) specificCat = 'hydrogen';
+        else if ([3, 11, 19, 37, 55, 87].includes(z)) specificCat = 'alkali';
+        else if ([4, 12, 20, 38, 56, 88].includes(z)) specificCat = 'alkaline-earth';
+        else if ([2, 10, 18, 36, 54, 86, 118].includes(z)) specificCat = 'noble';
+        else if ([9, 17, 35, 53, 85, 117].includes(z)) specificCat = 'halogen';
+        else if ([5, 14, 32, 33, 51, 52, 84].includes(z)) specificCat = 'metalloid';
+        else if ([6, 7, 8, 15, 16, 34].includes(z)) specificCat = 'other-nonmetal';
+        else if ((z >= 57 && z <= 71) || (z >= 89 && z <= 103)) specificCat = 'f-block';
+        else if (col >= 3 && col <= 12 && row <= 7) specificCat = 'transition';
+        else specificCat = 'post-transition';
+
+        return { row, col, specificCat };
+    }
+
+    const tableContainer = document.getElementById('table-container');
+
+    // 4. RENDER THE FULL TABLE
+    function renderFullTable() {
+        for (let z = 1; z <= 118; z++) {
+            const posData = getElementPositionData(z);
+            // Pull data from the complete list
+            const elementDetails = completeElementData[z];
+            const symbol = allSymbols[z];
+
+            const cell = document.createElement('div');
+            cell.classList.add('element-cell');
+            
+            // CSS Grid positioning & Coloring
+            cell.style.gridRowStart = posData.row;
+            cell.style.gridColumnStart = posData.col;
+            cell.classList.add(`cat-${posData.specificCat}`);
+
+            // Render Symbol and Number
+            cell.innerHTML = `
+                <span class="atom-num">${z}</span>
+                <span class="symbol">${symbol}</span>
+            `;
+
+            // Click handler
+            cell.addEventListener('click', () => {
+                const readableCatName = posData.specificCat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                
+                // Use specific context if written, otherwise generate generic context
+                const finalContext = elementDetails.context || `${elementDetails.name} is a ${readableCatName.toLowerCase()} with atomic number ${z}. Like other elements in this category, its chemical properties are defined by its electron configuration.`;
+
+                populatePanel({ 
+                    num: z, 
+                    sym: symbol, 
+                    catName: readableCatName, 
+                    catSlug: posData.specificCat, 
+                    ...elementDetails,
+                    context: finalContext
+                });
+            });
+            
+            tableContainer.appendChild(cell);
+        }
+    }
+
+    // 5. INTERACTION FUNCTION
+    function populatePanel(data) {
+        document.getElementById('panel-symbol').textContent = data.sym;
+        // Update symbol background color to match selected element
+        document.getElementById('panel-symbol').style.background = `var(--col-${data.catSlug})`;
+
+        document.getElementById('panel-name').textContent = data.name;
+        document.getElementById('panel-cat').textContent = data.catName;
+        document.getElementById('panel-num').textContent = data.num;
+        // Add 'u' unit if it's a precise mass, leave brackets alone if synthetic
+        document.getElementById('panel-mass').textContent = data.mass.includes('[') ? data.mass : data.mass + ' u';
+        document.getElementById('panel-year').textContent = data.year;
+        document.getElementById('panel-context').textContent = data.context;
+    }
+
+    // Initialize
+    renderFullTable();
+    // Load Hydrogen initially 
+    populatePanel({ num: 1, sym: 'H', catName: 'Hydrogen', catSlug: 'hydrogen', ...completeElementData[1] }); 
+
+</script>
+</body>
+</html>
