@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntax Sorcery: Interactive Grammar</title>
+    <style>
+        :root {
+            --primary-green: #27ae60;
+            --accent-black: #000000;
+            --bg-white: #ffffff;
+            --light-gray: #f4f4f4;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: var(--bg-white);
+            color: var(--accent-black);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        #game-wrapper {
+            width: 100%;
+            max-width: 900px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        /* Tutorial Overlay */
+        #tutorial-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-white);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+
+        .tutorial-content {
+            max-width: 700px;
+            text-align: left;
+            padding: 30px;
+            border: 4px solid var(--accent-black);
+        }
+
+        .tutorial-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .term-item {
+            font-size: 0.9rem;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .term-item b { color: var(--primary-green); }
+
+        /* Game Elements */
+        #sentence-box {
+            font-size: 2rem;
+            margin: 50px 0;
+            min-height: 100px;
+        }
+
+        .word {
+            display: inline-block;
+            padding: 5px 12px;
+            margin: 5px;
+            cursor: pointer;
+            border-bottom: 3px solid var(--light-gray);
+            transition: all 0.2s;
+        }
+
+        .word:hover { background: var(--light-gray); }
+        .word.selected { background: var(--primary-green); color: white; border-color: var(--accent-black); }
+        .word.correct { border-color: var(--primary-green); color: var(--primary-green); cursor: default; }
+
+        #tag-shelf {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .tag-btn {
+            padding: 12px 24px;
+            border: 2px solid var(--accent-black);
+            background: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tag-btn:hover { background: var(--accent-black); color: white; }
+
+        .btn-start {
+            margin-top: 20px;
+            padding: 15px 40px;
+            background: var(--primary-green);
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #stats { margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+<div id="tutorial-overlay">
+    <div class="tutorial-content">
+        <h1 style="text-align: center; border-bottom: 2px solid black; padding-bottom: 10px;">The Syntax Guide</h1>
+        <p>Before you begin <i>Syntax Sorcery</i>, review the building blocks of the English language:</p>
+        
+        <div class="tutorial-grid">
+            <div class="term-item"><b>Subject:</b> The person/thing performing the action. (e.g., <u>John</u> ran.)</div>
+            <div class="term-item"><b>Predicate:</b> The action or state of being. (e.g., He <u>ran</u>.)</div>
+            <div class="term-item"><b>Direct Object:</b> Receives the action. (e.g., He ate <u>pizza</u>.)</div>
+            <div class="term-item"><b>Modifier:</b> Describes a noun. (e.g., The <u>blue</u> sky.)</div>
+            <div class="term-item"><b>Adverb:</b> Describes a verb or adjective. (e.g., Ran <u>quickly</u>.)</div>
+            <div class="term-item"><b>Preposition:</b> Shows relationship. (e.g., <u>In</u> the house.)</div>
+            <div class="term-item"><b>Object:</b> Follows a preposition. (e.g., In the <u>house</u>.)</div>
+            <div class="term-item"><b>Sub. Conjunction:</b> Joins clauses. (e.g., <u>Because</u> it rained...)</div>
+            <div class="term-item"><b>Verbals:</b> Verbs acting as nouns/adjectives. (e.g., <u>Running</u> is fun.)</div>
+        </div>
+
+        <p style="background: #f9f9f9; padding: 10px; border-left: 5px solid var(--primary-green);">
+            <strong>How to play:</strong> Select a word in the sentence first, then click the correct category tag below it.
+        </p>
+        
+        <center><button class="btn-start" onclick="startGame()">ENTER THE LABORATORY</button></center>
+    </div>
+</div>
+
+<div id="game-wrapper">
+    <div id="stats">Score: <span id="score">0</span> | Level: <span id="level">1</span></div>
+    <div id="sentence-box"></div>
+    <div id="tag-shelf"></div>
+    <p id="msg" style="margin-top: 30px; font-style: italic;"></p>
+</div>
+
+<script>
+    const levels = [
+        {
+            text: "The professor teaches complex subjects because learning matters.",
+            mapping: {
+                "The": "Modifier", "professor": "Subject", "teaches": "Predicate",
+                "complex": "Modifier", "subjects": "Direct Object", 
+                "because": "Subordinate Conjunction", "learning": "Verbals", "matters": "Predicate"
+            }
+        },
+        {
+            text: "She quickly ran into the old building.",
+            mapping: {
+                "She": "Subject", "quickly": "Adverb", "ran": "Predicate",
+                "into": "Preposition", "the": "Modifier", "old": "Modifier", "building": "Object"
+            }
+        }
+    ];
+
+    const tags = ["Subject", "Predicate", "Direct Object", "Modifier", "Adverb", "Preposition", "Object", "Subordinate Conjunction", "Verbals"];
+    
+    let currentLevel = 0;
+    let score = 0;
+    let activeWord = null;
+
+    function startGame() {
+        document.getElementById('tutorial-overlay').style.display = 'none';
+        loadLevel();
+    }
+
+    function loadLevel() {
+        const box = document.getElementById('sentence-box');
+        const level = levels[currentLevel];
+        const words = level.text.split(" ");
+        
+        box.innerHTML = words.map(w => {
+            const clean = w.replace(/[^\w]/g, "");
+            return `<span class="word" onclick="handleWordClick(this)" data-answer="${level.mapping[clean]}">${w}</span>`;
+        }).join("");
+
+        const shelf = document.getElementById('tag-shelf');
+        shelf.innerHTML = tags.map(t => `<button class="tag-btn" onclick="handleTagClick('${t}')">${t}</button>`).join("");
+        
+        document.getElementById('level').innerText = currentLevel + 1;
+    }
+
+    function handleWordClick(el) {
+        if (el.classList.contains('correct')) return;
+        document.querySelectorAll('.word').forEach(w => w.classList.remove('selected'));
+        el.classList.add('selected');
+        activeWord = el;
+    }
+
+    function handleTagClick(tag) {
+        if (!activeWord) {
+            updateMsg("Please select a word from the sentence first.", "black");
+            return;
+        }
+
+        if (activeWord.dataset.answer === tag) {
+            activeWord.classList.remove('selected');
+            activeWord.classList.add('correct');
+            score += 10;
+            updateMsg("Correct! +10 points", "green");
+            activeWord = null;
+            checkProgress();
+        } else {
+            score -= 5;
+            updateMsg("Incorrect. Try analyzing the word's function again.", "red");
+        }
+        document.getElementById('score').innerText = score;
+    }
+
+    function updateMsg(txt, color) {
+        const m = document.getElementById('msg');
+        m.innerText = txt;
+        m.style.color = color;
+    }
+
+    function checkProgress() {
+        const remaining = document.querySelectorAll('.word:not(.correct)');
+        if (remaining.length === 0) {
+            updateMsg("Level Complete! Excellent analysis.", "green");
+            setTimeout(() => {
+                currentLevel++;
+                if (currentLevel < levels.length) {
+                    loadLevel();
+                } else {
+                    document.getElementById('game-wrapper').innerHTML = `<h1>Master of Syntax!</h1><p>Final Score: ${score}</p><button class="btn-start" onclick="location.reload()">Play Again</button>`;
+                }
+            }, 2000);
+        }
+    }
+</script>
+
+</body>
+</html>

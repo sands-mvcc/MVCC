@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Spinner - Random Student Selector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .input-section h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .file-upload:hover .file-upload-label {
+            background: #5a67d8;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .spinner-section {
+            text-align: center;
+            position: relative;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin: 0 auto 30px;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #333;
+            position: relative;
+            background: #f0f0f0;
+            transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+            overflow: hidden;
+        }
+
+        .wheel-segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .wheel.spinning {
+            animation: spin 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(1800deg); }
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #333;
+            z-index: 10;
+        }
+
+        .student-name {
+            position: absolute;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.9);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .selected-student {
+            background: #28a745;
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 1.5em;
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .student-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .student-list h3 {
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .student-item {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .student-item.called {
+            background: #6c757d;
+            text-decoration: line-through;
+        }
+
+        .stats {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .wheel-container {
+                width: 300px;
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Student Spinner</h1>
+            <p>The fun way to randomly select students!</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <h2>📝 Add Students</h2>
+                
+                <div class="input-group">
+                    <label for="manual-input">Type Names (one per line):</label>
+                    <textarea id="manual-input" rows="4" placeholder="Enter student names, one per line..."></textarea>
+                    <button class="btn" onclick="addManualNames()">Add Names</button>
+                </div>
+
+                <div class="input-group">
+                    <label>Upload Text File:</label>
+                    <div class="file-upload">
+                        <input type="file" id="text-file" accept=".txt" onchange="handleTextFile(event)">
+                        <label for="text-file" class="file-upload-label">Choose Text File (.txt)</label>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Upload CSV File:</label>
+                    <div class="file-upload">
+                        <input type="file" id="csv-file" accept=".csv" onchange="handleCSVFile(event)">
+                        <label for="csv-file" class="file-upload-label">Choose CSV File (.csv)</label>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="clearAllStudents()">Clear All</button>
+                    <button class="btn" onclick="resetCalled()">Reset Called</button>
+                </div>
+
+                <div class="student-list">
+                    <h3>Students (<span id="student-count">0</span>)</h3>
+                    <div id="students-display"></div>
+                </div>
+
+                <div class="stats">
+                    <div>Called: <span id="called-count">0</span></div>
+                    <div>Remaining: <span id="remaining-count">0</span></div>
+                    <div>Progress: <span id="progress-percent">0%</span></div>
+                </div>
+            </div>
+
+            <div class="spinner-section">
+                <h2>🎲 Spin the Wheel!</h2>
+                
+                <div class="wheel-container">
+                    <div class="wheel-pointer"></div>
+                    <div class="wheel" id="wheel">
+                        <!-- Student names will be added here dynamically -->
+                    </div>
+                </div>
+
+                <button class="btn" id="spin-btn" onclick="spinWheel()" disabled>
+                    🎯 SPIN THE WHEEL!
+                </button>
+
+                <div id="selected-student" class="selected-student" style="display: none;">
+                    <h3>Selected Student:</h3>
+                    <div id="selected-name"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let students = [];
+        let calledStudents = new Set();
+        let isSpinning = false;
+
+        function addManualNames() {
+            const input = document.getElementById('manual-input');
+            const names = input.value.split('\n')
+                .map(name => name.trim())
+                .filter(name => name.length > 0);
+            
+            if (names.length > 0) {
+                addStudents(names);
+                input.value = '';
+            }
+        }
+
+        function addStudents(newNames) {
+            const processedNames = processNames([...students.map(s => s.original), ...newNames]);
+            students = processedNames.map((name, index) => ({
+                id: index,
+                display: name,
+                original: newNames[index] || students[index]?.original || name
+            }));
+            
+            updateDisplay();
+            updateWheel();
+        }
+
+        function processNames(names) {
+            const nameCount = {};
+            const processed = [];
+
+            // Count occurrences of first names
+            names.forEach(name => {
+                const firstName = name.split(' ')[0].toLowerCase();
+                nameCount[firstName] = (nameCount[firstName] || 0) + 1;
+            });
+
+            // Process names and add last initial if needed
+            names.forEach(name => {
+                const parts = name.trim().split(' ');
+                const firstName = parts[0];
+                const lastName = parts[1];
+
+                if (nameCount[firstName.toLowerCase()] > 1 && lastName) {
+                    processed.push(`${firstName} ${lastName.charAt(0)}.`);
+                } else {
+                    processed.push(firstName);
+                }
+            });
+
+            return processed;
+        }
+
+        function handleTextFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const names = e.target.result.split('\n')
+                        .map(name => name.trim())
+                        .filter(name => name.length > 0);
+                    addStudents(names);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function handleCSVFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const lines = e.target.result.split('\n');
+                    const names = [];
+                    
+                    lines.forEach(line => {
+                        const columns = line.split(',').map(col => col.trim().replace(/"/g, ''));
+                        if (columns.length > 0 && columns[0]) {
+                            names.push(columns[0]);
+                        }
+                    });
+                    
+                    addStudents(names);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function updateDisplay() {
+            const studentsDisplay = document.getElementById('students-display');
+            const studentCount = document.getElementById('student-count');
+            const calledCount = document.getElementById('called-count');
+            const remainingCount = document.getElementById('remaining-count');
+            const progressPercent = document.getElementById('progress-percent');
+            const spinBtn = document.getElementById('spin-btn');
+
+            studentCount.textContent = students.length;
+            calledCount.textContent = calledStudents.size;
+            remainingCount.textContent = students.length - calledStudents.size;
+            
+            const progress = students.length > 0 ? Math.round((calledStudents.size / students.length) * 100) : 0;
+            progressPercent.textContent = progress + '%';
+
+            studentsDisplay.innerHTML = students.map(student => 
+                `<span class="student-item ${calledStudents.has(student.id) ? 'called' : ''}">${student.display}</span>`
+            ).join('');
+
+            spinBtn.disabled = students.length === 0 || isSpinning;
+        }
+
+        function updateWheel() {
+            const wheel = document.getElementById('wheel');
+            wheel.innerHTML = '';
+
+            if (students.length === 0) return;
+
+            const colors = [
+                '#ff6b6b', '#feca57', '#48cae4', '#ff8cc8', 
+                '#a8dadc', '#f1faee', '#e63946', '#457b9d',
+                '#6c5ce7', '#fd79a8', '#fdcb6e', '#e17055',
+                '#74b9ff', '#00cec9', '#55a3ff', '#fd79a8'
+            ];
+
+            const angleStep = 360 / students.length;
+            const wheelRadius = 200; // Half of 400px wheel container
+            const nameRadius = 140; // Distance from center for name placement
+
+            students.forEach((student, index) => {
+                // Create wheel segment - start from top (12 o'clock) and go clockwise
+                const segment = document.createElement('div');
+                segment.className = 'wheel-segment';
+                segment.style.background = colors[index % colors.length];
+                segment.style.transform = `rotate(${index * angleStep - 90}deg) skewY(${90 - angleStep}deg)`;
+                wheel.appendChild(segment);
+
+                // Create name element - position at center of segment
+                const segmentAngle = index * angleStep - 90 + angleStep / 2; // Center of segment, starting from top
+                const radian = segmentAngle * (Math.PI / 180);
+                const x = wheelRadius + nameRadius * Math.cos(radian);
+                const y = wheelRadius + nameRadius * Math.sin(radian);
+
+                const nameElement = document.createElement('div');
+                nameElement.className = 'student-name';
+                nameElement.textContent = student.display;
+                nameElement.style.left = x + 'px';
+                nameElement.style.top = y + 'px';
+                nameElement.style.transform = 'translate(-50%, -50%)';
+                nameElement.style.zIndex = '5';
+
+                if (calledStudents.has(student.id)) {
+                    nameElement.style.opacity = '0.5';
+                    nameElement.style.textDecoration = 'line-through';
+                    nameElement.style.color = '#666';
+                }
+
+                wheel.appendChild(nameElement);
+            });
+        }
+
+        function spinWheel() {
+            if (students.length === 0 || isSpinning) return;
+
+            // Check if we need to reset (50% rule)
+            if (calledStudents.size >= Math.ceil(students.length * 0.5)) {
+                if (calledStudents.size === students.length) {
+                    alert('All students have been called! Resetting...');
+                    resetCalled();
+                    return;
+                }
+            }
+
+            isSpinning = true;
+            document.getElementById('spin-btn').disabled = true;
+            document.getElementById('selected-student').style.display = 'none';
+
+            // Get available students (not called yet)
+            const availableStudents = students.filter(student => !calledStudents.has(student.id));
+            
+            if (availableStudents.length === 0) {
+                resetCalled();
+                return;
+            }
+
+            // Select random student from available ones
+            const selectedStudent = availableStudents[Math.floor(Math.random() * availableStudents.length)];
+            const selectedIndex = students.findIndex(s => s.id === selectedStudent.id);
+            
+            const wheel = document.getElementById('wheel');
+            const angleStep = 360 / students.length;
+            
+            // Calculate target angle to land on selected student
+            // Segments start at -90 degrees (top), so we need to account for this
+            const segmentCenterAngle = -90 + selectedIndex * angleStep + angleStep / 2;
+            const targetAngle = -segmentCenterAngle; // Negative to counter-rotate to bring segment to top
+            const spinRotations = 5 + Math.random() * 3; // 5-8 full rotations
+            const finalRotation = spinRotations * 360 + targetAngle;
+            
+            wheel.style.transform = `rotate(${finalRotation}deg)`;
+            wheel.classList.add('spinning');
+
+            setTimeout(() => {
+                calledStudents.add(selectedStudent.id);
+
+                document.getElementById('selected-name').textContent = selectedStudent.display;
+                document.getElementById('selected-student').style.display = 'block';
+
+                updateDisplay();
+                updateWheel();
+
+                wheel.classList.remove('spinning');
+                isSpinning = false;
+                document.getElementById('spin-btn').disabled = false;
+            }, 3000);
+        }
+
+        function clearAllStudents() {
+            students = [];
+            calledStudents.clear();
+            updateDisplay();
+            updateWheel();
+            document.getElementById('selected-student').style.display = 'none';
+        }
+
+        function resetCalled() {
+            calledStudents.clear();
+            updateDisplay();
+            updateWheel();
+            document.getElementById('selected-student').style.display = 'none';
+        }
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>
