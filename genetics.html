@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human Genetics Simulator - Interactive Punnett Square</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2d5016 0%, #4a7c2f 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-bottom: 3px solid #4a7c2f;
+        }
+
+        .info-section h2 {
+            color: #2d5016;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .info-section p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .info-section ul {
+            margin-left: 25px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 30px;
+            gap: 30px;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-section h3 {
+            color: #2d5016;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #4a7c2f;
+            padding-bottom: 8px;
+        }
+
+        .trait-selector {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .trait-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .trait-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #4a7c2f;
+            border-radius: 5px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .trait-selector select:focus {
+            outline: none;
+            border-color: #2d5016;
+            box-shadow: 0 0 0 3px rgba(74, 124, 47, 0.2);
+        }
+
+        .parent-inputs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .parent-input {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .parent-input h4 {
+            color: #2d5016;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .allele-inputs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .allele-inputs input {
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            border: 3px solid #4a7c2f;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .allele-inputs input:focus {
+            outline: none;
+            border-color: #2d5016;
+            box-shadow: 0 0 0 4px rgba(74, 124, 47, 0.2);
+            transform: scale(1.05);
+        }
+
+        .allele-inputs input.uppercase {
+            background: #e8f5e9;
+        }
+
+        .allele-inputs input.lowercase {
+            background: #fff3e0;
+        }
+
+        .punnett-container {
+            margin: 30px 0;
+        }
+
+        .punnett-container h3 {
+            color: #2d5016;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .punnett-square {
+            display: grid;
+            grid-template-columns: 80px repeat(2, 1fr);
+            grid-template-rows: 80px repeat(2, 1fr);
+            gap: 8px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .punnett-cell {
+            border: 3px solid #2d5016;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            background: white;
+            border-radius: 8px;
+            min-height: 100px;
+            transition: all 0.3s;
+        }
+
+        .punnett-cell:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .punnett-cell.header {
+            background: linear-gradient(135deg, #4a7c2f 0%, #5d9139 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .punnett-cell.empty {
+            background: #f8f9fa;
+            border-color: #e0e0e0;
+        }
+
+        .punnett-cell.result {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            font-size: 1.4em;
+            flex-direction: column;
+            padding: 10px;
+        }
+
+        .genotype {
+            font-size: 1.3em;
+            color: #2d5016;
+        }
+
+        .phenotype {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 3px solid #4a7c2f;
+            margin-top: 20px;
+        }
+
+        .results-section h3 {
+            color: #2d5016;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .ratio-display {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .ratio-display h4 {
+            color: #2d5016;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .ratio-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #f0f0f0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ratio-item .label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .ratio-item .value {
+            font-weight: bold;
+            color: #4a7c2f;
+            font-size: 1.1em;
+        }
+
+        .percentage-bar {
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 8px;
+            position: relative;
+        }
+
+        .percentage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a7c2f 0%, #5d9139 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-calculate {
+            background: linear-gradient(135deg, #4a7c2f 0%, #5d9139 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(74, 124, 47, 0.3);
+        }
+
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(74, 124, 47, 0.4);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #757575 0%, #9e9e9e 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-randomize {
+            background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-randomize:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .legend {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 2px solid #ffc107;
+        }
+
+        .legend h4 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .legend p {
+            color: #856404;
+            line-height: 1.6;
+            margin: 5px 0;
+        }
+
+        .notation-guide {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .notation-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ffc107;
+        }
+
+        .notation-item strong {
+            color: #2d5016;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            .parent-inputs {
+                flex-direction: column;
+            }
+
+            .punnett-square {
+                grid-template-columns: 60px repeat(2, 1fr);
+                grid-template-rows: 60px repeat(2, 1fr);
+            }
+
+            .punnett-cell {
+                min-height: 80px;
+                font-size: 1.2em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        footer {
+            background: #2d5016;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 2px solid #ef5350;
+            display: none;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 2px solid #66bb6a;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧬 Human Genetics Simulator</h1>
+            <p>Interactive Punnett Square Tool for Understanding Mendelian Inheritance</p>
+        </header>
+
+        <div class="info-section">
+            <h2>About Mendelian Inheritance</h2>
+            <p><strong>Mendelian inheritance</strong> describes how traits are passed from parents to offspring through genes. Gregor Mendel discovered that traits are inherited in predictable patterns based on dominant and recessive alleles.</p>
+            <p><strong>Key Concepts:</strong></p>
+            <ul>
+                <li><strong>Alleles:</strong> Different versions of a gene (e.g., B for brown eyes, b for blue eyes)</li>
+                <li><strong>Dominant Allele (Capital Letter):</strong> Masks the recessive allele and is expressed in the phenotype</li>
+                <li><strong>Recessive Allele (Lowercase Letter):</strong> Only expressed when two copies are present</li>
+                <li><strong>Genotype:</strong> The genetic makeup (e.g., BB, Bb, bb)</li>
+                <li><strong>Phenotype:</strong> The observable trait (e.g., brown eyes, blue eyes)</li>
+                <li><strong>Homozygous:</strong> Two identical alleles (BB or bb)</li>
+                <li><strong>Heterozygous:</strong> Two different alleles (Bb)</li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="input-section">
+                    <h3>🎯 Select Trait to Study</h3>
+                    <div class="trait-selector">
+                        <label for="traitSelect">Choose a Human Trait:</label>
+                        <select id="traitSelect">
+                            <option value="eye">Eye Color (Brown vs Blue)</option>
+                            <option value="hair">Hair Texture (Curly vs Straight)</option>
+                            <option value="widow">Widow's Peak (Present vs Absent)</option>
+                            <option value="earlobe">Earlobe Attachment (Free vs Attached)</option>
+                            <option value="dimples">Dimples (Present vs Absent)</option>
+                            <option value="tongue">Tongue Rolling (Able vs Unable)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-section">
+                    <h3>👨‍👩‍👧 Enter Parental Genotypes</h3>
+                    <div class="error-message" id="errorMessage"></div>
+                    <div class="parent-inputs">
+                        <div class="parent-input">
+                            <h4>👩 Mother's Alleles</h4>
+                            <div class="allele-inputs">
+                                <input type="text" id="mother1" maxlength="1" placeholder="B" class="uppercase">
+                                <input type="text" id="mother2" maxlength="1" placeholder="b" class="lowercase">
+                            </div>
+                        </div>
+                        <div class="parent-input">
+                            <h4>👨 Father's Alleles</h4>
+                            <div class="allele-inputs">
+                                <input type="text" id="father1" maxlength="1" placeholder="B" class="uppercase">
+                                <input type="text" id="father2" maxlength="1" placeholder="b" class="lowercase">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-calculate" onclick="calculatePunnett()">Calculate</button>
+                    <button class="btn btn-randomize" onclick="randomize()">Randomize</button>
+                    <button class="btn btn-reset" onclick="resetAll()">Reset</button>
+                </div>
+
+                <div class="legend">
+                    <h4>📚 Genetic Notation Guide</h4>
+                    <div class="notation-guide">
+                        <div class="notation-item">
+                            <strong>Capital Letter (B):</strong> Dominant allele
+                        </div>
+                        <div class="notation-item">
+                            <strong>Lowercase Letter (b):</strong> Recessive allele
+                        </div>
+                        <div class="notation-item">
+                            <strong>BB or bb:</strong> Homozygous (same alleles)
+                        </div>
+                        <div class="notation-item">
+                            <strong>Bb:</strong> Heterozygous (different alleles)
+                        </div>
+                    </div>
+                    <p style="margin-top: 10px;"><strong>Note:</strong> Use standard allele notation with capital letters for dominant traits and lowercase for recessive traits.</p>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="punnett-container">
+                    <h3>📊 Punnett Square Results</h3>
+                    <div class="punnett-square" id="punnettSquare">
+                        <div class="punnett-cell empty"></div>
+                        <div class="punnett-cell header" id="header1">-</div>
+                        <div class="punnett-cell header" id="header2">-</div>
+                        <div class="punnett-cell header" id="header3">-</div>
+                        <div class="punnett-cell result" id="cell1">
+                            <span class="genotype">--</span>
+                            <span class="phenotype">-</span>
+                        </div>
+                        <div class="punnett-cell result" id="cell2">
+                            <span class="genotype">--</span>
+                            <span class="phenotype">-</span>
+                        </div>
+                        <div class="punnett-cell header" id="header4">-</div>
+                        <div class="punnett-cell result" id="cell3">
+                            <span class="genotype">--</span>
+                            <span class="phenotype">-</span>
+                        </div>
+                        <div class="punnett-cell result" id="cell4">
+                            <span class="genotype">--</span>
+                            <span class="phenotype">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-section">
+                    <h3>📈 Genetic Analysis Summary</h3>
+                    
+                    <div class="ratio-display">
+                        <h4>Genotypic Ratios</h4>
+                        <div id="genotypeRatios">
+                            <p style="text-align: center; color: #999;">Calculate to see results</p>
+                        </div>
+                    </div>
+
+                    <div class="ratio-display">
+                        <h4>Phenotypic Ratios</h4>
+                        <div id="phenotypeRatios">
+                            <p style="text-align: center; color: #999;">Calculate to see results</p>
+                        </div>
+                    </div>
+
+                    <div class="ratio-display">
+                        <h4>Probability Summary</h4>
+                        <div id="probabilitySummary">
+                            <p style="text-align: center; color: #999;">Calculate to see results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>🧬 Human Genetics Simulator | Educational Tool for Understanding Mendelian Inheritance</p>
+            <p>Created for Biology and Genetics Education | © 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        // Trait definitions
+        const traits = {
+            eye: {
+                name: 'Eye Color',
+                dominant: 'Brown Eyes',
+                recessive: 'Blue Eyes',
+                letter: 'B'
+            },
+            hair: {
+                name: 'Hair Texture',
+                dominant: 'Curly Hair',
+                recessive: 'Straight Hair',
+                letter: 'C'
+            },
+            widow: {
+                name: "Widow's Peak",
+                dominant: "Widow's Peak",
+                recessive: 'No Peak',
+                letter: 'W'
+            },
+            earlobe: {
+                name: 'Earlobe Attachment',
+                dominant: 'Free Earlobes',
+                recessive: 'Attached Earlobes',
+                letter: 'E'
+            },
+            dimples: {
+                name: 'Dimples',
+                dominant: 'Dimples Present',
+                recessive: 'No Dimples',
+                letter: 'D'
+            },
+            tongue: {
+                name: 'Tongue Rolling',
+                dominant: 'Can Roll Tongue',
+                recessive: 'Cannot Roll',
+                letter: 'T'
+            }
+        };
+
+        let currentTrait = 'eye';
+
+        // Update trait selection
+        document.getElementById('traitSelect').addEventListener('change', function() {
+            currentTrait = this.value;
+            updatePlaceholders();
+        });
+
+        function updatePlaceholders() {
+            const letter = traits[currentTrait].letter;
+            document.getElementById('mother1').placeholder = letter;
+            document.getElementById('mother2').placeholder = letter.toLowerCase();
+            document.getElementById('father1').placeholder = letter;
+            document.getElementById('father2').placeholder = letter.toLowerCase();
+        }
+
+        // Auto-uppercase/lowercase based on input
+        document.querySelectorAll('.uppercase').forEach(input => {
+            input.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        });
+
+        document.querySelectorAll('.lowercase').forEach(input => {
+            input.addEventListener('input', function() {
+                this.value = this.value.toLowerCase();
+            });
+        });
+
+        function validateInputs() {
+            const m1 = document.getElementById('mother1').value;
+            const m2 = document.getElementById('mother2').value;
+            const f1 = document.getElementById('father1').value;
+            const f2 = document.getElementById('father2').value;
+
+            const letter = traits[currentTrait].letter;
+            const validChars = [letter, letter.toLowerCase()];
+
+            if (!m1 || !m2 || !f1 || !f2) {
+                showError('Please enter all alleles for both parents.');
+                return false;
+            }
+
+            if (!validChars.includes(m1) || !validChars.includes(m2) || 
+                !validChars.includes(f1) || !validChars.includes(f2)) {
+                showError(`Please use only '${letter}' or '${letter.toLowerCase()}' for this trait.`);
+                return false;
+            }
+
+            hideError();
+            return true;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function getPhenotype(genotype) {
+            const trait = traits[currentTrait];
+            const letter = trait.letter;
+            
+            if (genotype.includes(letter)) {
+                return trait.dominant;
+            } else {
+                return trait.recessive;
+            }
+        }
+
+        function calculatePunnett() {
+            if (!validateInputs()) {
+                return;
+            }
+
+            const m1 = document.getElementById('mother1').value;
+            const m2 = document.getElementById('mother2').value;
+            const f1 = document.getElementById('father1').value;
+            const f2 = document.getElementById('father2').value;
+
+            // Update headers
+            document.getElementById('header1').textContent = f1;
+            document.getElementById('header2').textContent = f2;
+            document.getElementById('header3').textContent = m1;
+            document.getElementById('header4').textContent = m2;
+
+            // Calculate offspring genotypes
+            const offspring = [
+                m1 + f1,
+                m1 + f2,
+                m2 + f1,
+                m2 + f2
+            ];
+
+            // Normalize genotypes (capital letter first)
+            const normalizedOffspring = offspring.map(g => {
+                const chars = g.split('');
+                return chars.sort((a, b) => {
+                    if (a === a.toUpperCase() && b === b.toLowerCase()) return -1;
+                    if (a === a.toLowerCase() && b === b.toUpperCase()) return 1;
+                    return 0;
+                }).join('');
+            });
+
+            // Update Punnett Square cells
+            for (let i = 0; i < 4; i++) {
+                const cell = document.getElementById(`cell${i + 1}`);
+                const genotype = normalizedOffspring[i];
+                const phenotype = getPhenotype(genotype);
+                
+                cell.querySelector('.genotype').textContent = genotype;
+                cell.querySelector('.phenotype').textContent = phenotype;
+            }
+
+            // Calculate ratios
+            calculateRatios(normalizedOffspring);
+        }
+
+        function calculateRatios(offspring) {
+            // Count genotypes
+            const genotypeCounts = {};
+            offspring.forEach(g => {
+                genotypeCounts[g] = (genotypeCounts[g] || 0) + 1;
+            });
+
+            // Count phenotypes
+            const phenotypeCounts = {};
+            offspring.forEach(g => {
+                const p = getPhenotype(g);
+                phenotypeCounts[p] = (phenotypeCounts[p] || 0) + 1;
+            });
+
+            // Display genotypic ratios
+            let genotypeHTML = '';
+            for (const [genotype, count] of Object.entries(genotypeCounts)) {
+                const percentage = (count / 4) * 100;
+                genotypeHTML += `
+                    <div class="ratio-item">
+                        <span class="label">${genotype}</span>
+                        <span class="value">${count}/4 (${percentage}%)</span>
+                    </div>
+                    <div class="percentage-bar">
+                        <div class="percentage-fill" style="width: ${percentage}%">${percentage}%</div>
+                    </div>
+                `;
+            }
+            document.getElementById('genotypeRatios').innerHTML = genotypeHTML;
+
+            // Display phenotypic ratios
+            let phenotypeHTML = '';
+            for (const [phenotype, count] of Object.entries(phenotypeCounts)) {
+                const percentage = (count / 4) * 100;
+                phenotypeHTML += `
+                    <div class="ratio-item">
+                        <span class="label">${phenotype}</span>
+                        <span class="value">${count}/4 (${percentage}%)</span>
+                    </div>
+                    <div class="percentage-bar">
+                        <div class="percentage-fill" style="width: ${percentage}%">${percentage}%</div>
+                    </div>
+                `;
+            }
+            document.getElementById('phenotypeRatios').innerHTML = phenotypeHTML;
+
+            // Display probability summary
+            const trait = traits[currentTrait];
+            const dominantCount = phenotypeCounts[trait.dominant] || 0;
+            const recessiveCount = phenotypeCounts[trait.recessive] || 0;
+            
+            const summaryHTML = `
+                <div class="ratio-item">
+                    <span class="label">Offspring with ${trait.dominant}</span>
+                    <span class="value">${dominantCount}/4 (${(dominantCount / 4) * 100}%)</span>
+                </div>
+                <div class="percentage-bar">
+                    <div class="percentage-fill" style="width: ${(dominantCount / 4) * 100}%">${(dominantCount / 4) * 100}%</div>
+                </div>
+                <div class="ratio-item">
+                    <span class="label">Offspring with ${trait.recessive}</span>
+                    <span class="value">${recessiveCount}/4 (${(recessiveCount / 4) * 100}%)</span>
+                </div>
+                <div class="percentage-bar">
+                    <div class="percentage-fill" style="width: ${(recessiveCount / 4) * 100}%">${(recessiveCount / 4) * 100}%</div>
+                </div>
+            `;
+            document.getElementById('probabilitySummary').innerHTML = summaryHTML;
+        }
+
+        function randomize() {
+            const letter = traits[currentTrait].letter;
+            const alleles = [letter, letter.toLowerCase()];
+            
+            document.getElementById('mother1').value = alleles[Math.floor(Math.random() * 2)];
+            document.getElementById('mother2').value = alleles[Math.floor(Math.random() * 2)];
+            document.getElementById('father1').value = alleles[Math.floor(Math.random() * 2)];
+            document.getElementById('father2').value = alleles[Math.floor(Math.random() * 2)];
+            
+            calculatePunnett();
+        }
+
+        function resetAll() {
+            document.getElementById('mother1').value = '';
+            document.getElementById('mother2').value = '';
+            document.getElementById('father1').value = '';
+            document.getElementById('father2').value = '';
+            
+            // Reset headers
+            document.getElementById('header1').textContent = '-';
+            document.getElementById('header2').textContent = '-';
+            document.getElementById('header3').textContent = '-';
+            document.getElementById('header4').textContent = '-';
+            
+            // Reset cells
+            for (let i = 1; i <= 4; i++) {
+                const cell = document.getElementById(`cell${i}`);
+                cell.querySelector('.genotype').textContent = '--';
+                cell.querySelector('.phenotype').textContent = '-';
+            }
+            
+            // Reset results
+            document.getElementById('genotypeRatios').innerHTML = '<p style="text-align: center; color: #999;">Calculate to see results</p>';
+            document.getElementById('phenotypeRatios').innerHTML = '<p style="text-align: center; color: #999;">Calculate to see results</p>';
+            document.getElementById('probabilitySummary').innerHTML = '<p style="text-align: center; color: #999;">Calculate to see results</p>';
+            
+            hideError();
+        }
+
+        // Initialize with default trait
+        updatePlaceholders();
+    </script>
+</body>
+</html>
