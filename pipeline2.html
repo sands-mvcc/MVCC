@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Study: Colonial Pipeline Ransomware Attack</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --sidebar-bg: #1a1a1a;
+            --text-main: #2d2d2d;
+            --text-light: #f4f4f4;
+            --accent-green: #2ecc71;
+            --accent-dark-green: #27ae60;
+            --border-color: #dddddd;
+            --terminal-black: #000000;
+            --instructor-bg: #f0fff4;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+
+        body {
+            display: flex;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Navigation Sidebar */
+        nav {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .nav-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+        }
+
+        .nav-header h1 { font-size: 1.2rem; color: var(--accent-green); text-transform: uppercase; letter-spacing: 1px; }
+
+        .nav-item {
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            border-left: 4px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-item:hover { background: #222; color: var(--accent-green); }
+        .nav-item.active {
+            background: #222;
+            border-left: 4px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .nav-icon { margin-right: 15px; width: 20px; text-align: center; }
+
+        /* Main Content Area */
+        main {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 40px;
+            scroll-behavior: smooth;
+        }
+
+        .section { display: none; max-width: 900px; margin: 0 auto; animation: fadeIn 0.4s ease-out; }
+        .section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { font-size: 2rem; margin-bottom: 20px; border-bottom: 3px solid var(--terminal-black); display: inline-block; padding-bottom: 5px; }
+        p { margin-bottom: 15px; font-size: 1.05rem; }
+
+        /* Dashboard Cards */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .stat-card {
+            background: var(--terminal-black);
+            color: white;
+            padding: 20px;
+            border-radius: 4px;
+            border-bottom: 4px solid var(--accent-green);
+        }
+
+        .stat-card h4 { color: var(--accent-green); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 10px; }
+        .stat-card p { font-size: 1.1rem; font-weight: bold; margin: 0; }
+
+        /* Instructor Prompt Box */
+        .instructor-box {
+            background-color: var(--instructor-bg);
+            border: 2px dashed var(--accent-dark-green);
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+
+        .instructor-box h4 { color: var(--accent-dark-green); margin-bottom: 10px; display: flex; align-items: center; }
+
+        /* Timeline Styles */
+        .timeline-controls { margin-bottom: 20px; }
+        .filter-btn {
+            padding: 8px 16px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: 1px solid var(--terminal-black);
+            background: white;
+            font-weight: bold;
+        }
+        .filter-btn.active { background: var(--terminal-black); color: white; }
+
+        .timeline-container { border-left: 3px solid var(--border-color); padding-left: 20px; margin-top: 20px; }
+        .timeline-item { position: relative; margin-bottom: 30px; }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -28px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .timeline-date { font-weight: bold; color: var(--accent-dark-green); font-size: 0.9rem; }
+
+        /* Flip Cards */
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            perspective: 1000px;
+            margin: 30px 0;
+        }
+
+        .flip-card { height: 200px; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.6s; }
+        .flip-card.flipped { transform: rotateY(180deg); }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .flip-card-front { background: #f9f9f9; text-align: center; }
+        .flip-card-back { background: var(--sidebar-bg); color: white; transform: rotateY(180deg); }
+
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background-color: var(--terminal-black); color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+
+        /* Quiz Styles */
+        .quiz-container { background: #f9f9f9; padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .question { margin-bottom: 20px; }
+        .options label { display: block; padding: 10px; background: white; border: 1px solid var(--border-color); margin-top: 5px; cursor: pointer; border-radius: 4px; }
+        .options input { margin-right: 10px; }
+        .quiz-btn { padding: 12px 24px; background: var(--terminal-black); color: white; border: none; cursor: pointer; margin-top: 15px; font-weight: bold; }
+        .quiz-btn:hover { background: var(--accent-dark-green); }
+        #quiz-result { margin-top: 20px; font-weight: bold; padding: 15px; display: none; border-radius: 4px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            nav { width: 100%; height: auto; position: sticky; top: 0; }
+            .nav-item { padding: 10px 15px; }
+            main { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-header">
+        <h1>Colonial Pipeline</h1>
+        <small>Cybersecurity Case Study</small>
+    </div>
+    <div class="nav-item active" onclick="showSection('overview', this)">
+        <span class="nav-icon">◈</span> Overview
+    </div>
+    <div class="nav-item" onclick="showSection('attack', this)">
+        <span class="nav-icon">⚔</span> Attack & Vulnerabilities
+    </div>
+    <div class="nav-item" onclick="showSection('detection', this)">
+        <span class="nav-icon">🔍</span> Detection & Response
+    </div>
+    <div class="nav-item" onclick="showSection('impact', this)">
+        <span class="nav-icon">📊</span> Impact Dashboard
+    </div>
+    <div class="nav-item" onclick="showSection('quiz', this)">
+        <span class="nav-icon">📝</span> Lessons & Quiz
+    </div>
+</nav>
+
+<main>
+    <section id="overview" class="section active">
+        <h2>Overview & Target</h2>
+        <p>The <strong>Colonial Pipeline</strong> is a critical artery for the United States' energy infrastructure, carrying roughly 2.5 million barrels of fuel per day—45% of the East Coast's supply of gasoline, diesel, and jet fuel.</p>
+        
+        <p>In May 2021, the company became the victim of a high-profile ransomware attack. While the malware primarily targeted the <strong>Information Technology (IT)</strong> systems, the company made the executive decision to proactive shut down its <strong>Operational Technology (OT)</strong>—the actual pipeline controls—to prevent the infection from jumping to critical infrastructure machinery.</p>
+
+        <div class="instructor-box">
+            <h4>💡 Instructor Prompt: Critical Infrastructure</h4>
+            <p>Divide into groups and identify three other "Single Points of Failure" in regional infrastructure. If these were hit by ransomware, would the mitigation strategy (shutting everything down) be viable?</p>
+        </div>
+
+        <h3>Affected Parties</h3>
+        <ul>
+            <li><strong>Colonial Pipeline:</strong> Operational paralysis and reputational damage.</li>
+            <li><strong>Direct Customers:</strong> Airlines and gas stations facing immediate supply shortages.</li>
+            <li><strong>General Public:</strong> Panic buying led to massive fuel shortages and price spikes across the Southeast US.</li>
+        </ul>
+    </section>
+
+    <section id="attack" class="section">
+        <h2>Attack Chain & Vulnerabilities</h2>
+        <p>The attackers were identified as <strong>DarkSide</strong>, a "Ransomware-as-a-Service" (RaaS) group based in Eastern Europe. They followed a classic double-extortion model: encrypting data and stealing it to threaten public release.</p>
+
+        <div class="timeline-container">
+            <div class="timeline-item">
+                <div class="timeline-date">Phase 1: Initial Access</div>
+                <p>Attackers gained entry using a <strong>compromised VPN password</strong>. The account was a legacy/unused remote-access account that did <strong>not</strong> have Multi-Factor Authentication (MFA) enabled.</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">Phase 2: Lateral Movement</div>
+                <p>Once inside the IT network, the group moved laterally, performing reconnaissance to find high-value business data and administrative credentials.</p>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-date">Phase 3: Exfiltration</div>
+                <p>Before deploying the ransomware, DarkSide exfiltrated nearly <strong>100 gigabytes</strong> of data within a two-hour window to use as leverage.</p>
+            </div>
+        </div>
+
+        <div class="instructor-box">
+            <h4>🛡️ Scenario: Kill Chain Mapping</h4>
+            <p>Based on the timeline above, at which stage of the <strong>Cyber Kill Chain</strong> could a robust 'Identity and Access Management' (IAM) policy have stopped this attack? Map these failures to the <strong>NIST CSF "Protect" function</strong>.</p>
+        </div>
+
+        <h3>Flip Cards: Teaching Angles</h3>
+        <p><em>Click cards to reveal pedagogical insights.</em></p>
+        <div class="card-container">
+            <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                <div class="flip-card-front"><strong>The Threat Actor</strong></div>
+                <div class="flip-card-back">DarkSide operates as RaaS. This means the person who hacked the VPN might not be the same person who wrote the malware. <strong>Lesson:</strong> The barrier to entry for complex attacks is lowering.</div>
+            </div>
+            <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                <div class="flip-card-front"><strong>The Vulnerability</strong></div>
+                <div class="flip-card-back">The "Zombie Account." An unused VPN account with no MFA. <strong>Lesson:</strong> Identity is the new perimeter. If you don't audit your active users, you're leaving the back door open.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="detection" class="section">
+        <h2>Detection & Response</h2>
+        <p>The attack was detected on May 7, 2021, when a ransom note appeared on a computer in the business network. The system began showing signs of mass file encryption shortly after.</p>
+        
+        <div class="stat-card" style="background:#fff; color:#000; border: 1px solid #ddd; margin-bottom: 20px;">
+            <h4 style="color:#27ae60">The $4.4 Million Decision</h4>
+            <p>Colonial Pipeline CEO Joseph Blount authorized the payment of 75 Bitcoin (approx. $4.4M) within hours of the attack. He cited the need to restore fuel flow to the country as the primary driver for payment.</p>
+        </div>
+
+        <div class="instructor-box">
+            <h4>⚖️ Tradeoff Analysis</h4>
+            <p>The FBI officially discourages paying ransoms. However, Colonial paid within hours. <strong>Discussion:</strong> Was this a failure of Incident Response planning, or a pragmatic necessity for National Security?</p>
+        </div>
+
+        <h3>Recovery Actions</h3>
+        <ul>
+            <li><strong>Isolation:</strong> The pipeline was manually shut down to "air gap" the OT environment from the infected IT network.</li>
+            <li><strong>Forensics:</strong> Mandiant was hired to lead the investigation and cleanup.</li>
+            <li><strong>Asset Recovery:</strong> In June 2021, the DOJ announced they had seized 63.7 Bitcoins (approx. $2.3M) from the attackers' wallet by obtaining the private key.</li>
+        </ul>
+    </section>
+
+    <section id="impact" class="section">
+        <h2>Impact Dashboard</h2>
+        
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <h4>Attack Window</h4>
+                <p>May 7 – May 12, 2021</p>
+            </div>
+            <div class="stat-card">
+                <h4>Primary Vector</h4>
+                <p>Compromised VPN (No MFA)</p>
+            </div>
+            <div class="stat-card">
+                <h4>Ransom Paid</h4>
+                <p>~$4.4 Million USD</p>
+            </div>
+            <div class="stat-card">
+                <h4>Operational Status</h4>
+                <p>Total Shutdown (6 Days)</p>
+            </div>
+        </div>
+
+        <h3>Impact Dimensions Table</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Dimension</th>
+                    <th>Description</th>
+                    <th>Discussion Question</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Economic</strong></td>
+                    <td>Gas prices hit a 7-year high; emergency fuel hauling via trucks was authorized.</td>
+                    <td>How does "Just-in-Time" delivery increase cyber risk?</td>
+                </tr>
+                <tr>
+                    <td><strong>Regulatory</strong></td>
+                    <td>TSA issued new Security Directives requiring pipeline owners to report incidents.</td>
+                    <td>Should private companies be forced to share IR data with the government?</td>
+                </tr>
+                <tr>
+                    <td><strong>Strategic</strong></td>
+                    <td>Highlighted the vulnerability of US energy to non-state actors.</td>
+                    <td>Is ransomware now a tool of unconventional warfare?</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="quiz" class="section">
+        <h2>Knowledge Check</h2>
+        <div class="quiz-container">
+            <div class="question">
+                <p><strong>1. What was the primary root cause that allowed the initial breach?</strong></p>
+                <div class="options">
+                    <label><input type="radio" name="q1" value="a"> A sophisticated Zero-Day exploit in the pipeline software.</label>
+                    <label><input type="radio" name="q1" value="b"> A compromised VPN account lacking Multi-Factor Authentication.</label>
+                    <label><input type="radio" name="q1" value="c"> A physical breach of a pipeline pumping station.</label>
+                </div>
+            </div>
+
+            <div class="question">
+                <p><strong>2. Why did Colonial Pipeline shut down the actual fuel flow (OT systems)?</strong></p>
+                <div class="options">
+                    <label><input type="radio" name="q2" value="a"> The ransomware had already encrypted the pipeline controllers.</label>
+                    <label><input type="radio" name="q2" value="b"> As a precaution to prevent the IT infection from spreading to the OT network.</label>
+                    <label><input type="radio" name="q2" value="c"> They were ordered to by the FBI to preserve evidence.</label>
+                </div>
+            </div>
+
+            <div class="question">
+                <p><strong>3. Which group was responsible for the attack?</strong></p>
+                <div class="options">
+                    <label><input type="radio" name="q3" value="a"> Lazarus Group</label>
+                    <label><input type="radio" name="q3" value="b"> DarkSide</label>
+                    <label><input type="radio" name="q3" value="c"> REvil</label>
+                </div>
+            </div>
+
+            <button class="quiz-btn" onclick="checkQuiz()">Check Answers</button>
+            <button class="quiz-btn" style="background:#666;" onclick="resetQuiz()">Reset</button>
+            
+            <div id="quiz-result"></div>
+        </div>
+
+        <div class="instructor-box" style="margin-top:40px;">
+            <h4>📝 Final Lab Assignment</h4>
+            <p>Draft a 1-page "Remediation Road Map" for Colonial Pipeline. Prioritize the first three technical controls you would implement to ensure this specific attack vector is closed forever.</p>
+        </div>
+    </section>
+</main>
+
+<script>
+    // Navigation Logic
+    function showSection(sectionId, element) {
+        // Update Sections
+        const sections = document.querySelectorAll('.section');
+        sections.forEach(s => s.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+
+        // Update Nav UI
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
+
+        // Scroll to top of main
+        document.querySelector('main').scrollTop = 0;
+    }
+
+    // Quiz Logic
+    function checkQuiz() {
+        let score = 0;
+        const total = 3;
+        const r1 = document.querySelector('input[name="q1"]:checked');
+        const r2 = document.querySelector('input[name="q2"]:checked');
+        const r3 = document.querySelector('input[name="q3"]:checked');
+
+        if (!r1 || !r2 || !r3) {
+            alert("Please answer all questions first.");
+            return;
+        }
+
+        if (r1.value === 'b') score++;
+        if (r2.value === 'b') score++;
+        if (r3.value === 'b') score++;
+
+        const resultDiv = document.getElementById('quiz-result');
+        resultDiv.style.display = 'block';
+        
+        if (score === total) {
+            resultDiv.style.background = '#d4edda';
+            resultDiv.style.color = '#155724';
+            resultDiv.innerHTML = `Excellent! ${score}/${total} correct. You have a solid grasp of the incident.`;
+        } else {
+            resultDiv.style.background = '#f8d7da';
+            resultDiv.style.color = '#721c24';
+            resultDiv.innerHTML = `Score: ${score}/${total}. Review the "Attack" and "Detection" sections and try again.`;
+        }
+    }
+
+    function resetQuiz() {
+        const radios = document.querySelectorAll('input[type="radio"]');
+        radios.forEach(r => r.checked = false);
+        const resultDiv = document.getElementById('quiz-result');
+        resultDiv.style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
