@@ -3,138 +3,486 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modulus Math Simulator</title>
+    <title>Modulus Time Attack Game</title>
     <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #222;
+            --primary-blue: #0056b3;
+            --light-blue: #e3f2fd;
+            --accent-blue: #2196f3;
+            --correct-color: #28a745;
+            --wrong-color: #dc3545;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 50px;
-            background: linear-gradient(to right, #ffecd2 0%, #fcb69f 100%);
-            color: #333;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        canvas {
-            border: 1px solid #000;
-            background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+        h1 { color: var(--primary-blue); margin-bottom: 5px; }
+        p.subtitle { color: #555; margin-bottom: 20px; }
+
+        /* Game Container and Screens */
+        #game-container {
+            background: #fff;
+            border: 3px solid var(--primary-blue);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 20px rgba(0, 86, 179, 0.15);
+            max-width: 900px;
+            width: 100%;
+            min-height: 550px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
         }
-        .controls {
+
+        .screen {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /*--- Start & End Screen Styles ---*/
+        input[type="text"] {
+            padding: 12px;
+            font-size: 1.2rem;
+            border: 2px solid var(--accent-blue);
+            border-radius: 8px;
             margin-bottom: 20px;
-            padding: 10px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
         }
-        label {
-            margin: 0 5px;
-        }
-        button {
-            margin-left: 10px;
-            padding: 5px 10px;
-            background-color: #4caf50;
+
+        .btn-primary {
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            background-color: var(--primary-blue);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 50px;
             cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s, background 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        button:hover {
-            background-color: #45a049;
+        .btn-primary:hover { background-color: var(--accent-blue); transform: translateY(-2px); }
+        .btn-primary:active { transform: translateY(1px); }
+
+        /*--- Game Screen Header (HUD) ---*/
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+            border-bottom: 2px solid var(--light-blue);
+            padding-bottom: 10px;
         }
-        #result {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+        .timer-box {
+            color: var(--text-color);
+        }
+        .timer-box span {
+            color: var(--wrong-color);
+            font-weight: 900;
+            font-size: 1.4rem;
+        }
+
+        /*--- Game Layout ---*/
+        .game-layout {
+            display: flex;
+            flex-wrap: wrap-reverse;
+            gap: 30px;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Question Section */
+        .question-section {
+            flex: 1;
+            min-width: 300px;
             text-align: center;
-            font-size: 18px;
+        }
+
+        .the-question {
+            font-size: 3rem;
+            margin: 20px 0;
+            color: var(--text-color);
+        }
+        .mod-symbol { color: var(--primary-blue); }
+
+        .answer-input {
+            font-size: 2rem;
+            width: 100px;
+            padding: 5px;
+            text-align: center;
+            border: 3px solid var(--primary-blue);
+            border-radius: 10px;
+            margin-right: 10px;
+        }
+
+        #feedback-message {
+            min-height: 1.5em;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .feedback-correct { color: var(--correct-color); }
+        .feedback-wrong { color: var(--wrong-color); }
+
+        /* Clock Visual Section */
+        .visual-section {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .clock-face {
+            width: 300px;
+            height: 300px;
+            border: 6px solid var(--text-color);
+            border-radius: 50%;
+            position: relative;
+            background-color: #fff;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        .center-point {
+            width: 16px; height: 16px;
+            background-color: var(--primary-blue);
+            border-radius: 50%;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 10;
+        }
+
+        .clock-hand {
+            position: absolute; bottom: 50%; left: 50%;
+            width: 6px; height: 120px;
+            background-color: var(--primary-blue);
+            border-radius: 3px;
+            transform-origin: bottom center;
+            transition: transform 2s cubic-bezier(0.25, 0.1, 0.25, 1);
+            z-index: 5;
+        }
+
+        .clock-number {
+            position: absolute;
+            font-size: 1.1rem; font-weight: bold;
+            color: var(--text-color);
+            width: 30px; height: 30px;
+            line-height: 30px; text-align: center;
+            transform: translate(-50%, -50%);
+        }
+
+        .clock-number.active {
+            color: var(--primary-blue);
+            font-size: 1.6rem;
+            text-shadow: 0 0 15px var(--accent-blue);
+            transition: all 0.3s ease;
+        }
+
+        /* Overlays */
+        #blocker-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.1); z-index: 100; display: none;
         }
     </style>
 </head>
 <body>
-    <div class="controls">
-        <label for="modulus">Modulus Value:</label>
-        <input type="number" id="modulus" min="1" value="12">
-        <label for="number">Number:</label>
-        <input type="number" id="number" min="0" value="0">
-        <button onclick="startAnimation()">Start Animation</button>
+
+    <h1>Modulus Time Attack</h1>
+    <p class="subtitle">Can you calculate the remainder before time runs out?</p>
+
+    <div id="game-container">
+        
+        <div id="start-screen" class="screen active">
+            <h2>Welcome, Math Agent!</h2>
+            <p style="max-width: 600px; text-align: center; margin-bottom: 30px; font-size: 1.1rem;">
+                Your mission: Solve 10 modulus (remainder) problems. 
+                You have 15 seconds per question. Watch the clock spin to confirm your answer!
+            </p>
+            <input type="text" id="player-name-input" placeholder="Enter Agent Name" maxlength="15">
+            <button class="btn-primary" onclick="startGame()">START MISSION</button>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div class="hud">
+                <div>Agent: <span id="hud-name"></span> | Question: <span id="hud-q-num">1</span>/10</div>
+                <div class="timer-box">Time: <span id="hud-timer">15</span>s</div>
+                <div>Score: <span id="hud-score">0</span></div>
+            </div>
+
+            <div class="game-layout">
+                <div class="question-section">
+                    <div class="the-question">
+                        <span id="q-dividend">25</span> <span class="mod-symbol">%</span> <span id="q-divisor">12</span>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <input type="number" id="user-answer" class="answer-input" placeholder="?">
+                        <button class="btn-primary" style="padding: 10px 25px; font-size: 1.1rem;" onclick="submitAnswer()">Submit</button>
+                    </div>
+                    <div id="feedback-message"></div>
+                </div>
+
+                 <div class="visual-section">
+                    <div class="clock-face" id="clock-container">
+                        <div class="center-point"></div>
+                        <div class="clock-hand" id="hand" style="transform: rotate(0deg);"></div>
+                        </div>
+                </div>
+            </div>
+             <div id="blocker-overlay"></div>
+        </div>
+
+        <div id="end-screen" class="screen">
+            <h2>Mission Complete!</h2>
+            <p style="font-size: 1.5rem; margin: 30px 0;">
+                Agent <span id="end-name" style="color: var(--primary-blue); font-weight: bold;"></span>, 
+                your final score is:
+            </p>
+            <div style="font-size: 4rem; font-weight: 900; color: var(--primary-blue); margin-bottom: 40px;">
+                <span id="end-score">80</span> / 100
+            </div>
+            <button class="btn-primary" onclick="location.reload()">Play Again</button>
+        </div>
+
     </div>
-    <canvas id="clockCanvas" width="300" height="300"></canvas>
-    <div id="result"></div>
 
     <script>
-        const canvas = document.getElementById('clockCanvas');
-        const ctx = canvas.getContext('2d');
-        const radius = canvas.width / 2;
-        ctx.translate(radius, radius);
+        // --- Game State Variables ---
+        let playerName = "Agent";
+        let score = 0;
+        let currentQuestionIndex = 0;
+        const totalQuestions = 10;
+        const timePerQuestion = 15;
+        let timeLeft = timePerQuestion;
+        let timerInterval;
+        let currentProblem = { dividend: 0, divisor: 0, answer: 0 };
+        let isAnimating = false;
 
-        function drawClock(modulus) {
-            ctx.clearRect(-radius, -radius, canvas.width, canvas.height);
+        // --- DOM Elements ---
+        const screens = document.querySelectorAll('.screen');
+        const hudName = document.getElementById('hud-name');
+        const hudQNum = document.getElementById('hud-q-num');
+        const hudTimer = document.getElementById('hud-timer');
+        const hudScore = document.getElementById('hud-score');
+        const qDividend = document.getElementById('q-dividend');
+        const qDivisor = document.getElementById('q-divisor');
+        const userAnswerInput = document.getElementById('user-answer');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const blockerOverlay = document.getElementById('blocker-overlay');
+        const clockContainer = document.getElementById('clock-container');
+        const hand = document.getElementById('hand');
 
-            // Draw the clock background
-            ctx.beginPath();
-            ctx.arc(0, 0, radius - 10, 0, 2 * Math.PI);
-            ctx.fillStyle = '#ffeb3b'; // Yellow clock background
-            ctx.fill();
+        // --- Utility Functions ---
+        function showScreen(screenId) {
+            screens.forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
 
-            // Draw the clock outline
-            ctx.beginPath();
-            ctx.arc(0, 0, radius - 10, 0, 2 * Math.PI);
-            ctx.lineWidth = 4; // Double the line width
-            ctx.strokeStyle = 'black'; // Clock outline color
-            ctx.stroke();
+        // Handle "Enter" key for submission
+        userAnswerInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                submitAnswer();
+            }
+        });
+        
+        // Handle "Enter" key for name input
+        document.getElementById('player-name-input').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                startGame();
+            }
+        });
 
-            // Draw clock numbers
-            for (let num = 0; num < modulus; num++) {
-                let angle = num * (2 * Math.PI / modulus) - Math.PI / 2; // Adjust angle to start at the top
-                let x = (radius - 30) * Math.cos(angle);
-                let y = (radius - 30) * Math.sin(angle);
-                ctx.fillStyle = '#333';
-                ctx.fillText(num, x - 5, y + 5);
+        // --- Game Engine ---
+
+        function startGame() {
+            const nameInput = document.getElementById('player-name-input').value.trim();
+            if (nameInput) playerName = nameInput;
+            
+            score = 0;
+            currentQuestionIndex = 0;
+            hudName.textContent = playerName;
+            hudScore.textContent = score;
+            
+            showScreen('game-screen');
+            nextRound();
+        }
+
+        function nextRound() {
+            if (currentQuestionIndex >= totalQuestions) {
+                endGame();
+                return;
+            }
+
+            currentQuestionIndex++;
+            hudQNum.textContent = currentQuestionIndex;
+            feedbackMessage.textContent = "";
+            feedbackMessage.className = "";
+            userAnswerInput.value = "";
+            userAnswerInput.focus();
+            blockerOverlay.style.display = "none";
+            
+            // Reset hand position instantly for new round
+            hand.style.transition = 'none';
+            hand.style.transform = 'rotate(0deg)';
+            // Force reflow to ensure transition reset takes effect
+            hand.offsetHeight; 
+            hand.style.transition = 'transform 2s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            document.querySelectorAll('.clock-number.active').forEach(el => el.classList.remove('active'));
+
+            generateProblem();
+            startTimer();
+        }
+
+        function generateProblem() {
+            // Difficulty scaling
+            let maxDivisor = 8;
+            if(currentQuestionIndex > 4) maxDivisor = 12;
+            if(currentQuestionIndex > 8) maxDivisor = 15;
+
+            const divisor = Math.floor(Math.random() * (maxDivisor - 3 + 1)) + 3; 
+            const multiplier = Math.floor(Math.random() * 4) + 2; 
+            const targetRemainder = Math.floor(Math.random() * divisor);
+            const dividend = (divisor * multiplier) + targetRemainder;
+
+            currentProblem = {
+                dividend: dividend,
+                divisor: divisor,
+                answer: dividend % divisor
+            };
+
+            qDividend.textContent = dividend;
+            qDivisor.textContent = divisor;
+            
+            drawClockFace(divisor);
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = timePerQuestion;
+            hudTimer.textContent = timeLeft;
+            hudTimer.style.color = "#222"; 
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                hudTimer.textContent = timeLeft;
+                
+                if (timeLeft <= 5) {
+                    hudTimer.style.color = "#dc3545"; // Red warning
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    submitAnswer(true); // Time's up trigger
+                }
+            }, 1000);
+        }
+
+        function submitAnswer(timesUp = false) {
+            if (isAnimating) return; 
+            isAnimating = true;
+            clearInterval(timerInterval);
+            blockerOverlay.style.display = "block"; 
+
+            // FIX WAS HERE: Removed space in variable name
+            const userGuess = parseInt(userAnswerInput.value);
+            const correctAnswer = currentProblem.answer;
+            let isCorrect = !timesUp && !isNaN(userGuess) && userGuess === correctAnswer;
+
+            if (isCorrect) {
+                score += 10;
+                hudScore.textContent = score;
+                feedbackMessage.innerHTML = "Correct! Watch the proof...";
+                feedbackMessage.className = "feedback-correct";
+            } else if (timesUp) {
+                 feedbackMessage.innerHTML = `Time's up! The answer is ${correctAnswer}.`;
+                 feedbackMessage.className = "feedback-wrong";
+            } else {
+                feedbackMessage.innerHTML = `Incorrect. The answer is ${correctAnswer}.`;
+                feedbackMessage.className = "feedback-wrong";
+            }
+
+            // Run the visual proof
+            runClockAnimation(currentProblem.dividend, currentProblem.divisor, correctAnswer, isCorrect);
+        }
+
+        function endGame() {
+            document.getElementById('end-name').textContent = playerName;
+            document.getElementById('end-score').textContent = score;
+            showScreen('end-screen');
+        }
+
+
+        // --- Visualization Functions ---
+        let currentDrawnDivisor = 0;
+
+        function drawClockFace(divisor) {
+            if (divisor === currentDrawnDivisor) return;
+            currentDrawnDivisor = divisor;
+            clockContainer.querySelectorAll('.clock-number').forEach(num => num.remove());
+            const radius = 125; 
+            for (let i = 0; i < divisor; i++) {
+                const numDiv = document.createElement('div');
+                numDiv.className = 'clock-number';
+                numDiv.innerText = i;
+                numDiv.id = `num-${i}`;
+                const angleDeg = (i / divisor) * 360;
+                const angleRad = (angleDeg - 90) * (Math.PI / 180);
+                numDiv.style.left = `calc(50% + ${radius * Math.cos(angleRad)}px)`;
+                numDiv.style.top = `calc(50% + ${radius * Math.sin(angleRad)}px)`;
+                clockContainer.appendChild(numDiv);
             }
         }
 
-        function startAnimation() {
-            const modulus = parseInt(document.getElementById('modulus').value);
-            const number = parseInt(document.getElementById('number').value);
-            const remainder = number % modulus;
+        function runClockAnimation(dividend, divisor, remainder, wasCorrect) {
+            const totalDegrees = (dividend / divisor) * 360;
 
-            drawClock(modulus);
+            setTimeout(() => {
+                hand.style.transform = `rotate(${totalDegrees}deg)`;
+            }, 100);
 
-            let angle = -Math.PI / 2; // Start angle at the top
-            const step = (2 * Math.PI / modulus);
-            let count = 0;
-            const interval = setInterval(() => {
-                ctx.clearRect(-radius, -radius, canvas.width, canvas.height);
-                drawClock(modulus);
-
-                angle = count * step - Math.PI / 2; // Calculate angle for each count
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo((radius - 30) * Math.cos(angle), (radius - 30) * Math.sin(angle));
-                ctx.lineWidth = 4; // Double the line width
-                ctx.strokeStyle = '#2196f3'; // Hand color (blue)
-                ctx.stroke();
-
-                // Draw the point at the end of the hand
-                ctx.beginPath();
-                ctx.arc((radius - 30) * Math.cos(angle), (radius - 30) * Math.sin(angle), 5, 0, 2 * Math.PI);
-                ctx.fillStyle = '#f44336'; // Point color (red)
-                ctx.fill();
-
-                count++;
-                if (count > number) {
-                    clearInterval(interval);
-                    displayResult(number, modulus, remainder);
+            setTimeout(() => {
+                const landedNumber = document.getElementById(`num-${remainder}`);
+                if (landedNumber) landedNumber.classList.add('active');
+                
+                if (!wasCorrect) {
+                     feedbackMessage.innerHTML = `See? It landed on ${remainder}.`;
                 }
-            }, 100); // Animate each count with a delay
+
+                setTimeout(() => {
+                    isAnimating = false;
+                    nextRound();
+                }, 1500);
+                
+            }, 2100); 
         }
 
-        function displayResult(number, modulus, remainder) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `${number} mod ${modulus} = ${remainder}`;
-        }
     </script>
 </body>
 </html>
