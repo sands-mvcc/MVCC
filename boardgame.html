@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Defense: Knowledge Race</title>
+    <style>
+        :root {
+            --primary-green: #2e7d32;
+            --bg-white: #ffffff;
+            --text-black: #1a1a1a;
+            --border-gray: #cccccc;
+            --red-team: #d32f2f;
+            --blue-team: #1976d2;
+            --white-team: #ffffff;
+            --orange-team: #f57c00;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-white);
+            color: var(--text-black);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            margin: 0;
+        }
+
+        /* Board Layout */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            width: 95%;
+            max-width: 1000px;
+            margin: 15px 0;
+        }
+
+        .step {
+            height: 65px;
+            border: 1px solid var(--border-gray);
+            position: relative;
+            background: #fdfdfd;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .step.special { border: 2px solid var(--primary-green); background-color: #f1f8e9; }
+
+        /* Team Shapes */
+        .token { width: 20px; height: 20px; margin: 2px; border: 1px solid #333; display: inline-block; }
+        .red-sq { background-color: var(--red-team); }
+        .blue-cir { background-color: var(--blue-team); border-radius: 50%; }
+        .white-ov { background-color: var(--white-team); border-radius: 50% / 25%; width: 24px; }
+        .orange-tri { 
+            background-color: var(--orange-team); 
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            border: none;
+        }
+
+        /* Console UI */
+        .ui-panel {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+            width: 95%;
+            max-width: 1000px;
+            background: #f8f8f8;
+            padding: 20px;
+            border: 1px solid var(--border-gray);
+            border-radius: 4px;
+        }
+
+        .display-box {
+            background: white;
+            padding: 15px;
+            border: 2px solid var(--text-black);
+            min-height: 80px;
+            margin: 10px 0;
+            font-size: 1.1em;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .answer-text { color: var(--primary-green); font-weight: bold; margin-top: 10px; display: none; }
+
+        button {
+            padding: 12px;
+            margin: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #333;
+            transition: opacity 0.2s;
+        }
+
+        .btn-main { background: var(--text-black); color: white; width: 100%; }
+        .btn-ans { background: #555; color: white; width: 100%; }
+        .btn-move { background: var(--primary-green); color: white; }
+        .btn-nav { background: #eee; color: #333; flex: 1; }
+
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .team-label { padding: 5px 15px; border: 2px solid #000; font-size: 1.2em; display: inline-block; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1 style="color: black;">Cyber Attack Board Race</h1>
+    
+    <div id="game-board"></div>
+
+    <div class="ui-panel">
+        <div class="card-zone">
+            <div id="active-team-display" class="team-label">Red Team's Turn</div>
+            
+            <button id="q-btn" class="btn-main" onclick="generateQuestion()">1. DRAW QUESTION CARD</button>
+            
+            <div id="card-display" class="display-box">
+                <div id="content-area">Click the button to start the round.</div>
+                <div id="answer-area" class="answer-text"></div>
+            </div>
+
+            <button id="ans-btn" class="btn-ans" onclick="showAnswer()" disabled>2. SHOW CORRECT ANSWER</button>
+            <button id="m-btn" class="btn-main" style="margin-top:10px;" onclick="drawMoveCard()" disabled>3. DRAW MOVE CARD</button>
+        </div>
+
+        <div class="move-zone" style="text-align:center;">
+            <h3>Movement Controls</h3>
+            <div style="display:flex;">
+                <button class="btn-nav" onclick="manualMove(-1)">← BACK</button>
+                <button class="btn-nav" onclick="manualMove(1)">FWD →</button>
+            </div>
+            <p><small>Manually move the player based on the Move Card result.</small></p>
+            <button class="btn-main" style="background:#444;" onclick="endTurn()">NEXT TEAM TURN</button>
+        </div>
+    </div>
+
+    <script>
+        const totalSteps = 50;
+        const teams = [
+            { name: "Red Team", class: "red-sq", pos: 1, color: "#d32f2f" },
+            { name: "Blue Team", class: "blue-cir", pos: 1, color: "#1976d2" },
+            { name: "White Team", class: "white-ov", pos: 1, color: "#ffffff" },
+            { name: "Orange Team", class: "orange-tri", pos: 1, color: "#f57c00" }
+        ];
+        let turnIdx = 0;
+        let currentAnswer = "";
+
+        const questionBank = [
+            { q: "What type of malware locks files and demands a ransom?", a: "Ransomware" },
+            { q: "A self-replicating malware that spreads over a network?", a: "Worm" },
+            { q: "Using fake emails to trick users into revealing passwords?", a: "Phishing" },
+            { q: "Software that records every keystroke you type?", a: "Keylogger" },
+            { q: "A program that appears harmless but contains malicious code?", a: "Trojan Horse" },
+            { q: "What does MFA stand for in cybersecurity?", a: "Multi-Factor Authentication" },
+            { q: "Attackers flooding a system with traffic to crash it is called...?", a: "DDoS (Distributed Denial of Service)" }
+        ];
+
+        const moveCards = [
+            "Strong Password Used: 1 step forward",
+            "Files Encrypted: 2 steps forward",
+            "Network Segmentation: 3 steps forward",
+            "Anti-virus stops malware: 4 steps forward",
+            "VPN used: 5 steps forward",
+            "Unused Ports Disabled: 6 steps forward",
+            "Removed Guest Accounts: 7 steps forward",
+            "Multi-factor Authentication: 8 steps forward",
+            "Backup required: 1 step backward",
+            "Infected by a virus: 2 steps backward",
+            "Attacked by Ransomware: 4 steps backward",
+            "Move to firewall station at step 25",
+            "Backup completed: Move to step 50"
+        ];
+
+        function init() {
+            const board = document.getElementById('game-board');
+            for (let i = 1; i <= totalSteps; i++) {
+                const step = document.createElement('div');
+                step.className = 'step';
+                if(i === 25 || i === 50) step.classList.add('special');
+                step.id = `step-${i}`;
+                step.innerHTML = `<span style="padding:2px">${i}</span><div id="tokens-${i}"></div>`;
+                board.appendChild(step);
+            }
+            updateUI();
+        }
+
+        function generateQuestion() {
+            const item = questionBank[Math.floor(Math.random() * questionBank.length)];
+            document.getElementById('content-area').innerHTML = `<strong>QUESTION:</strong><br>${item.q}`;
+            currentAnswer = item.a;
+            document.getElementById('answer-area').style.display = "none";
+            document.getElementById('answer-area').innerHTML = `CORRECT ANSWER: ${currentAnswer}`;
+            
+            document.getElementById('ans-btn').disabled = false;
+            document.getElementById('q-btn').disabled = true;
+        }
+
+        function showAnswer() {
+            document.getElementById('answer-area').style.display = "block";
+            document.getElementById('ans-btn').disabled = true;
+            document.getElementById('m-btn').disabled = false;
+        }
+
+        function drawMoveCard() {
+            const move = moveCards[Math.floor(Math.random() * moveCards.length)];
+            document.getElementById('content-area').innerHTML = `<strong>MOVE CARD DRAWN:</strong><br>${move}`;
+            document.getElementById('answer-area').style.display = "none";
+            document.getElementById('m-btn').disabled = true;
+        }
+
+        function manualMove(amt) {
+            let team = teams[turnIdx];
+            team.pos += amt;
+            if (team.pos < 1) team.pos = 1;
+            if (team.pos > 50) team.pos = 50;
+            updateUI();
+        }
+
+        function updateUI() {
+            // Render Tokens
+            for(let i=1; i<=50; i++) document.getElementById(`tokens-${i}`).innerHTML = '';
+            teams.forEach(t => {
+                const token = document.createElement('div');
+                token.className = `token ${t.class}`;
+                document.getElementById(`tokens-${t.pos}`).appendChild(token);
+            });
+
+            // Update Turn Label
+            const label = document.getElementById('active-team-display');
+            label.innerText = `${teams[turnIdx].name}'s Turn`;
+            label.style.backgroundColor = teams[turnIdx].color;
+            label.style.color = (turnIdx === 2) ? "black" : "white";
+        }
+
+        function endTurn() {
+            turnIdx = (turnIdx + 1) % teams.length;
+            document.getElementById('q-btn').disabled = false;
+            document.getElementById('ans-btn').disabled = true;
+            document.getElementById('m-btn').disabled = true;
+            document.getElementById('content-area').innerText = "New Turn. Draw a question!";
+            document.getElementById('answer-area').style.display = "none";
+            updateUI();
+        }
+
+        init();
+    </script>
+</body>
+</html>
