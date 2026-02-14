@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotPetya/ExPetr - The $10 Billion Cyberattack | Case Study</title>
+    <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+    color: #e0e0e0; 
+    line-height: 1.6; 
+}
+.header { 
+    background: linear-gradient(135deg, #c72c41 0%, #801336 100%); 
+    padding: 2rem; text-align: center; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+    position: sticky; top: 0; z-index: 1000; 
+}
+.header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+.header .subtitle { font-size: 1.1rem; opacity: 0.9; }
+.threat-level { 
+    display: inline-block; background: #ff3333; 
+    padding: 0.5rem 1.5rem; border-radius: 25px; 
+    margin-top: 1rem; font-weight: bold; 
+    animation: pulse 2s infinite; 
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+.nav-container { background: #0f3460; padding: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2); position: sticky; top: 140px; z-index: 999; }
+.nav-tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.5rem; max-width: 1400px; margin: 0 auto; padding: 0 1rem; }
+.nav-tabs button { background: #1a1a2e; color: #e0e0e0; border: 2px solid #533483; padding: 0.75rem 1.5rem; cursor: pointer; border-radius: 8px; font-size: 1rem; transition: all 0.3s ease; font-weight: 600; }
+.nav-tabs button:hover { background: #533483; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(83, 52, 131, 0.4); }
+.nav-tabs button.active { background: #c72c41; border-color: #c72c41; transform: translateY(-2px); }
+.content-section { display: none; max-width: 1400px; margin: 2rem auto; padding: 0 1rem; animation: fadeIn 0.5s ease; }
+.content-section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.content-card { background: #0f3460; padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 5px solid #c72c41; }
+.content-card h2 { color: #ff6b6b; margin-bottom: 1rem; font-size: 1.8rem; }
+.content-card h3 { color: #ffd93d; margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 1.3rem; }
+.content-card h4 { color: #00d4ff; margin-top: 1rem; margin-bottom: 0.5rem; }
+.content-card ul, .content-card ol { margin-left: 2rem; margin-bottom: 1rem; }
+.content-card li { margin-bottom: 0.5rem; }
+.content-card p { margin-bottom: 1rem; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.stat-card { background: linear-gradient(135deg, #533483 0%, #3a2359 100%); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.3s ease; border: 2px solid #6b4ba1; }
+.stat-card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(83, 52, 131, 0.5); }
+.stat-card .label { font-size: 0.9rem; opacity: 0.8; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+.stat-card .value { font-size: 2rem; font-weight: bold; color: #ff6b6b; }
+.timeline { position: relative; padding-left: 2rem; }
+.timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, #c72c41 0%, #533483 100%); }
+.timeline-item { position: relative; margin-bottom: 2rem; padding-left: 2rem; }
+.timeline-item::before { content: ''; position: absolute; left: -2.6rem; top: 0; width: 20px; height: 20px; background: #ff6b6b; border: 3px solid #0f3460; border-radius: 50%; }
+.timeline-item .time { color: #ffd93d; font-weight: bold; margin-bottom: 0.5rem; }
+.highlight-box { background: rgba(255, 107, 107, 0.1); border: 2px solid #ff6b6b; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; }
+.highlight-box.warning { background: rgba(255, 193, 7, 0.1); border-color: #ffc107; }
+.highlight-box.info { background: rgba(33, 150, 243, 0.1); border-color: #2196f3; }
+.vulnerability-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; background: #1a1a2e; border-radius: 8px; overflow: hidden; }
+.vulnerability-table th { background: #533483; padding: 1rem; text-align: left; font-weight: bold; }
+.vulnerability-table td { padding: 1rem; border-bottom: 1px solid #2d2d44; }
+.vulnerability-table tr:last-child td { border-bottom: none; }
+.vulnerability-table tr:hover { background: rgba(83, 52, 131, 0.2); }
+.attack-chain { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.attack-step { background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%); padding: 1.5rem; border-radius: 8px; text-align: center; border: 2px solid #533483; position: relative; }
+.attack-step::after { content: '→'; position: absolute; right: -1.5rem; top: 50%; transform: translateY(-50%); font-size: 2rem; color: #ff6b6b; }
+.attack-step:last-child::after { content: ''; }
+.attack-step .step-number { background: #c72c41; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-weight: bold; font-size: 1.2rem; }
+.impact-meter { background: #1a1a2e; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; }
+.meter-bar { background: #2d2d44; height: 30px; border-radius: 15px; overflow: hidden; margin-bottom: 1rem; position: relative; }
+.meter-fill { height: 100%; background: linear-gradient(90deg, #ff6b6b 0%, #c72c41 100%); transition: width 1s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 1rem; color: white; font-weight: bold; }
+.lesson-card { background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; border-left: 5px solid #ffd93d; transition: transform 0.3s ease; }
+.lesson-card:hover { transform: translateX(10px); }
+.lesson-card h4 { color: #ffd93d; margin-bottom: 0.5rem; }
+.collapsible { background: #533483; color: white; cursor: pointer; padding: 1rem; border: none; text-align: left; outline: none; font-size: 1.1rem; border-radius: 8px; margin-top: 1rem; width: 100%; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+.collapsible:hover { background: #6b4ba1; }
+.collapsible::after { content: '+'; font-size: 1.5rem; }
+.collapsible.active::after { content: '−'; }
+.collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: rgba(83, 52, 131, 0.2); border-radius: 0 0 8px 8px; }
+.collapsible-content-inner { padding: 1.5rem; }
+.footer { background: #0f3460; padding: 2rem; text-align: center; margin-top: 3rem; border-top: 3px solid #c72c41; }
+@media (max-width: 768px) { .header h1 { font-size: 1.8rem; } .nav-tabs button { font-size: 0.9rem; padding: 0.6rem 1rem; } .stats-grid { grid-template-columns: 1fr; } .attack-chain { grid-template-columns: 1fr; } .attack-step::after { content: '↓'; right: 50%; top: auto; bottom: -1.5rem; transform: translateX(50%); } .attack-step:last-child::after { content: ''; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔒 NotPetya/ExPetr Cyberattack Case Study</h1>
+        <p class="subtitle">June 27, 2017 | The Most Destructive Cyberattack in History</p>
+        <div class="threat-level">CRITICAL THREAT - $10+ BILLION DAMAGE</div>
+    </div>
+
+    <div class="nav-container">
+        <div class="nav-tabs">
+            <button onclick="showSection('dashboard')" class="active">Dashboard</button>
+            <button onclick="showSection('overview')">Overview</button>
+            <button onclick="showSection('targets')">Targets</button>
+            <button onclick="showSection('attackers')">Attackers</button>
+            <button onclick="showSection('method')">Method</button>
+            <button onclick="showSection('vulnerabilities')">Vulnerabilities</button>
+            <button onclick="showSection('detection')">Detection</button>
+            <button onclick="showSection('response')">Response</button>
+            <button onclick="showSection('impact')">Impact</button>
+            <button onclick="showSection('lessons')">Lessons</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="content-section active">
+        <div class="stats-grid">
+            <div class="stat-card"><div class="label">Attack Date</div><div class="value" style="font-size:1.5rem;">June 27, 2017</div></div>
+            <div class="stat-card"><div class="label">Organizations</div><div class="value">2,000+</div></div>
+            <div class="stat-card"><div class="label">Countries</div><div class="value">64+</div></div>
+            <div class="stat-card"><div class="label">Primary Target</div><div class="value" style="font-size:1.3rem;">Ukraine</div></div>
+            <div class="stat-card"><div class="label">Financial Damage</div><div class="value">$10B+</div></div>
+            <div class="stat-card"><div class="label">Attribution</div><div class="value" style="font-size:1.2rem;">Russian GRU</div></div>
+            <div class="stat-card"><div class="label">Attack Vector</div><div class="value" style="font-size:1.2rem;">Supply Chain</div></div>
+            <div class="stat-card"><div class="label">Malware Type</div><div class="value" style="font-size:1.3rem;">Wiper</div></div>
+        </div>
+        
+        <div class="content-card">
+            <h2>Attack Kill Chain</h2>
+            <div class="attack-chain">
+                <div class="attack-step"><div class="step-number">1</div>Supply Chain Compromise</div>
+                <div class="attack-step"><div class="step-number">2</div>Malicious Update</div>
+                <div class="attack-step"><div class="step-number">3</div>EternalBlue Exploit</div>
+                <div class="attack-step"><div class="step-number">4</div>Credential Theft</div>
+                <div class="attack-step"><div class="step-number">5</div>Lateral Movement</div>
+                <div class="attack-step"><div class="step-number">6</div>Disk Destruction</div>
+            </div>
+        </div>
+        
+        <div class="content-card">
+            <h2>Impact Metrics</h2>
+            <div class="impact-meter">
+                <p>Financial Impact</p><div class="meter-bar"><div class="meter-fill" style="width:100%;">Catastrophic</div></div>
+                <p>Operational Disruption</p><div class="meter-bar"><div class="meter-fill" style="width:95%;">Severe</div></div>
+                <p>Geographic Spread</p><div class="meter-bar"><div class="meter-fill" style="width:85%;">Global</div></div>
+                <p>Recovery Time</p><div class="meter-bar"><div class="meter-fill" style="width:90%;">Weeks-Months</div></div>
+                <p>Sophistication</p><div class="meter-bar"><div class="meter-fill" style="width:92%;">Advanced</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div id="overview" class="content-section">
+        <div class="content-card">
+            <h2>Attack Overview</h2>
+            <div class="highlight-box warning">
+                <h3>Critical Distinction</h3>
+                <p><strong>NotPetya was NOT ransomware</strong> - it was a destructive wiper malware designed to permanently destroy data while appearing to be ransomware. The ransom mechanism was deliberately broken, making recovery impossible.</p>
+            </div>
+            
+            <h3>Timeline of Events</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="time">March-June 2017</div>
+                    <p><strong>Preparation:</strong> Attackers compromise M.E.Doc software company and inject backdoors into updates.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="time">June 27, 10:30 AM</div>
+                    <p><strong>Initial Outbreak:</strong> Malicious update pushed to thousands of Ukrainian organizations via M.E.Doc.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="time">June 27, 11:00 AM-2:00 PM</div>
+                    <p><strong>Rapid Spread:</strong> EternalBlue and credential harvesting enable lateral movement across Ukraine.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="time">June 27, Afternoon</div>
+                    <p><strong>Global Impact:</strong> Multinational corporations experience infections spreading globally.</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="time">June 27-28</div>
+                    <p><strong>Infrastructure Disruption:</strong> Ports, shipping, pharma, and government paralyzed.</p>
+                </div>
+            </div>
+            
+            <h3>What Made NotPetya Unique</h3>
+            <ul>
+                <li><strong>Supply Chain Attack:</strong> First major weaponization of software updates at scale</li>
+                <li><strong>Pseudo-Ransomware:</strong> Wiper disguised as ransomware for deniability</li>
+                <li><strong>Multi-Vector Propagation:</strong> Combined multiple exploitation techniques</li>
+                <li><strong>Geopolitical Warfare:</strong> State-sponsored critical infrastructure attack</li>
+                <li><strong>Collateral Damage:</strong> Billions in unintended global damage</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- TARGETS -->
+    <div id="targets" class="content-section">
+        <div class="content-card">
+            <h2>Target Organizations</h2>
+            <div class="highlight-box warning">
+                <h3>Primary Target: Ukraine</h3>
+                <p>NotPetya specifically targeted Ukraine, timed for Constitution Day (June 28). Over 80% of initial infections were Ukrainian.</p>
+            </div>
+            
+            <h3>Major Victims</h3>
+            <table class="vulnerability-table">
+                <tr><th>Organization</th><th>Sector</th><th>Loss</th><th>Impact</th></tr>
+                <tr><td>Merck</td><td>Pharmaceutical</td><td>$870M</td><td>Vaccine production halted, global shortages</td></tr>
+                <tr><td>FedEx/TNT</td><td>Logistics</td><td>$400M</td><td>Complete operational shutdown, permanent customer loss</td></tr>
+                <tr><td>Maersk</td><td>Shipping</td><td>$300M</td><td>76 ports affected, 20% of global container shipping paralyzed</td></tr>
+                <tr><td>Saint-Gobain</td><td>Construction</td><td>$384M</td><td>Global IT system compromise</td></tr>
+                <tr><td>Ukrainian Gov't</td><td>Government</td><td>Billions</td><td>Cabinet, Treasury, Pension Fund paralyzed</td></tr>
+            </table>
+            
+            <button class="collapsible">Ukrainian Critical Infrastructure</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Energy:</strong> Power grid operators forced to manual operations</p>
+                <p><strong>Transportation:</strong> Kiev Metro, airports, railways disrupted</p>
+                <p><strong>Financial:</strong> ATM shutdowns, online banking outages</p>
+                <p><strong>Healthcare:</strong> Patient records lost, appointment systems failed</p>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- ATTACKERS -->
+    <div id="attackers" class="content-section">
+        <div class="content-card">
+            <h2>The Attackers</h2>
+            <div class="highlight-box warning">
+                <h3>Official Attribution</h3>
+                <p><strong>Threat Actor:</strong> Russian Military Intelligence (GRU) - Unit 74455</p>
+                <p><strong>Also Known As:</strong> Sandworm Team, TeleBots, Voodoo Bear</p>
+                <p><strong>Confidence Level:</strong> High - Multiple governments and security firms concur</p>
+            </div>
+            
+            <h3>Attribution Evidence</h3>
+            <ul>
+                <li><strong>Code Similarity:</strong> Shared components with BlackEnergy, Industroyer</li>
+                <li><strong>Infrastructure Overlap:</strong> C2 linked to previous GRU operations</li>
+                <li><strong>Targeting Pattern:</strong> Consistent with Russian geopolitical objectives</li>
+                <li><strong>Timing:</strong> Eve of Ukrainian Constitution Day</li>
+                <li><strong>M.E.Doc Compromise:</strong> State-level sophistication</li>
+                <li><strong>Intelligence Sources:</strong> Western agencies independently concurred</li>
+            </ul>
+            
+            <button class="collapsible">Sandworm Operations History</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>2015-2016:</strong> BlackEnergy attacks on Ukrainian power grid</p>
+                <p><strong>2016:</strong> Industroyer malware targeting industrial control systems</p>
+                <p><strong>2017:</strong> NotPetya wiper attack</p>
+                <p><strong>2018:</strong> Olympic Destroyer targeting Winter Olympics</p>
+            </div></div>
+            
+            <h3>Strategic Objectives</h3>
+            <ol>
+                <li>Disrupt Ukrainian critical infrastructure and economy</li>
+                <li>Undermine confidence in Ukrainian government</li>
+                <li>Demonstrate Russian cyber warfare capabilities</li>
+                <li>Maintain plausible deniability (ransomware disguise)</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- METHOD -->
+    <div id="method" class="content-section">
+        <div class="content-card">
+            <h2>Attack Method</h2>
+            <h3>Phase 1: Supply Chain Compromise</h3>
+            <p><strong>M.E.Doc Software:</strong> Ukrainian tax/accounting software required by law, 400,000+ users, 90% of Ukrainian businesses</p>
+            <p><strong>Compromise Timeline:</strong></p>
+            <ul>
+                <li>October 2016-March 2017: Initial reconnaissance and compromise</li>
+                <li>March-June 2017: Backdoor testing via multiple updates</li>
+                <li>June 27, 2017: Final malicious payload delivered</li>
+            </ul>
+            
+            <h3>Phase 2: Credential Harvesting</h3>
+            <table class="vulnerability-table">
+                <tr><th>Technique</th><th>Method</th><th>Purpose</th></tr>
+                <tr><td>LSASS Dumping</td><td>Mimikatz-like tool</td><td>Extract plaintext passwords/NTLM hashes</td></tr>
+                <tr><td>Credential Manager</td><td>Windows credential store</td><td>Saved network passwords</td></tr>
+                <tr><td>LSA Secrets</td><td>Registry extraction</td><td>Service account credentials</td></tr>
+                <tr><td>Pass-the-Hash</td><td>Use hashes directly</td><td>Authenticate without passwords</td></tr>
+            </table>
+            
+            <h3>Phase 3: Lateral Movement</h3>
+            <button class="collapsible">EternalBlue (CVE-2017-0144)</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Vulnerability:</strong> SMBv1 remote code execution</p>
+                <p><strong>Patch Available:</strong> March 2017 (MS17-010) - 3 months before attack</p>
+                <p><strong>Impact:</strong> Wormable spread without credentials</p>
+                <p><strong>Technical Details:</strong> Buffer overflow in SMBv1, SYSTEM-level execution, no user interaction required</p>
+            </div></div>
+            
+            <button class="collapsible">PSExec / WMI Propagation</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p>Used harvested credentials with legitimate Windows tools:</p>
+                <ul>
+                    <li><strong>PSExec:</strong> Embedded Sysinternals tool for remote execution</li>
+                    <li><strong>WMI:</strong> Native Windows remote management</li>
+                    <li><strong>Advantage:</strong> Legitimate tools, less likely to trigger alerts</li>
+                </ul>
+            </div></div>
+            
+            <h3>Phase 4: Destruction</h3>
+            <p><strong>File Encryption:</strong> Salsa20 cipher, 65+ file types, AES-128 keys encrypted with RSA-2048</p>
+            <p><strong>MBR Overwrite:</strong> Custom bootloader, fake CHKDSK display, Master File Table encryption</p>
+            <p><strong>Fake Ransom:</strong> $300 Bitcoin demand, broken payment mechanism, no recovery possible</p>
+        </div>
+    </div>
+
+    <!-- VULNERABILITIES -->
+    <div id="vulnerabilities" class="content-section">
+        <div class="content-card">
+            <h2>Vulnerabilities Exploited</h2>
+            <table class="vulnerability-table">
+                <tr><th>Vulnerability</th><th>CVE</th><th>Impact</th><th>Patch Status</th></tr>
+                <tr><td>EternalBlue SMBv1</td><td>CVE-2017-0144</td><td>Wormable RCE</td><td>Patched March 2017</td></tr>
+                <tr><td>M.E.Doc Supply Chain</td><td>N/A</td><td>Initial infection vector</td><td>Infrastructure rebuild required</td></tr>
+                <tr><td>Weak Credentials</td><td>N/A</td><td>Lateral movement</td><td>Configuration issue</td></tr>
+                <tr><td>Flat Networks</td><td>N/A</td><td>Unrestricted spread</td><td>Architecture issue</td></tr>
+            </table>
+            
+            <h3>Organizational Weaknesses</h3>
+            <button class="collapsible">Patch Management Failures</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Issues:</strong> Delayed patching (3+ months), fear of breaking systems, manual processes, incomplete coverage</p>
+                <p><strong>Impact:</strong> Critical vulnerability remained exploitable despite patch availability</p>
+            </div></div>
+            
+            <button class="collapsible">Network Segmentation Deficiencies</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Problems:</strong> Flat networks, unrestricted lateral movement, shared credentials, overly permissive firewalls</p>
+                <p><strong>Impact:</strong> Single compromised workstation reached thousands of systems</p>
+            </div></div>
+            
+            <button class="collapsible">Backup Inadequacies</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Failures:</strong> Online backups encrypted, insufficient air-gapping, untested restoration, incomplete coverage</p>
+                <p><strong>Impact:</strong> Recovery impossible for many organizations</p>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- DETECTION -->
+    <div id="detection" class="content-section">
+        <div class="content-card">
+            <h2>Detection Challenges</h2>
+            <div class="highlight-box warning">
+                <p>NotPetya spread so rapidly (network-wide in 2-3 hours) that detection capabilities were largely irrelevant for containment.</p>
+            </div>
+            
+            <h3>Detection Points</h3>
+            <table class="vulnerability-table">
+                <tr><th>Method</th><th>Timing</th><th>Effectiveness</th></tr>
+                <tr><td>User Reports</td><td>Minutes-hours after infection</td><td>Too late - already encrypted</td></tr>
+                <tr><td>Antivirus</td><td>Hours-days (no signatures)</td><td>Limited - 4/61 vendors detected initially</td></tr>
+                <tr><td>Network Traffic</td><td>Real-time if monitored</td><td>Potentially effective but rarely monitored</td></tr>
+                <tr><td>EDR Behavioral</td><td>Real-time</td><td>Most effective but rarely deployed in 2017</td></tr>
+            </table>
+            
+            <h3>Why Traditional Detection Failed</h3>
+            <ul>
+                <li><strong>Signature-Based AV:</strong> No signatures existed, legitimate tool use</li>
+                <li><strong>Network Blind Spots:</strong> East-west traffic not monitored, SMB considered normal</li>
+                <li><strong>Speed of Attack:</strong> Faster than manual response capability</li>
+                <li><strong>No External C2:</strong> Self-contained wiper with no external communication</li>
+            </ul>
+            
+            <h3>Advanced Detection That Could Have Helped</h3>
+            <button class="collapsible">Endpoint Detection & Response (EDR)</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <ul>
+                    <li>Credential Access: LSASS memory dumping detection</li>
+                    <li>Lateral Movement: Unusual process relationships</li>
+                    <li>Persistence: MBR modifications</li>
+                    <li>Impact: Mass file encryption activities</li>
+                </ul>
+            </div></div>
+            
+            <button class="collapsible">Network Detection & Response (NDR)</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <ul>
+                    <li>East-West Monitoring: Workstation-to-workstation SMB traffic</li>
+                    <li>Protocol Anomalies: Malformed SMB packets</li>
+                    <li>Volume Analysis: Unusual data movement</li>
+                    <li>Authentication: Mass authentication attempts</li>
+                </ul>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- RESPONSE -->
+    <div id="response" class="content-section">
+        <div class="content-card">
+            <h2>Incident Response & Recovery</h2>
+            <div class="highlight-box warning">
+                <p>NotPetya's speed meant traditional IR was ineffective. Most organizations were in crisis before understanding the attack.</p>
+            </div>
+            
+            <h3>Response Challenges</h3>
+            <ul>
+                <li><strong>Simultaneous Global Impact:</strong> Thousands affected at once, IR resources overwhelmed</li>
+                <li><strong>Complete Infrastructure Loss:</strong> No systems left to respond from</li>
+                <li><strong>Communication Breakdown:</strong> Email, phones, all IT systems offline</li>
+                <li><strong>Speed vs. Response:</strong> Network encrypted in hours, not days</li>
+            </ul>
+            
+            <h3>Recovery Approaches</h3>
+            <table class="vulnerability-table">
+                <tr><th>Method</th><th>Viability</th><th>Timeline</th></tr>
+                <tr><td>Pay Ransom</td><td>Impossible</td><td>N/A - mechanism broken</td></tr>
+                <tr><td>Restore Backups</td><td>Variable</td><td>Days to weeks</td></tr>
+                <tr><td>Rebuild from Scratch</td><td>Necessary</td><td>Weeks to months</td></tr>
+                <tr><td>Forensic Recovery</td><td>Limited</td><td>Days per system</td></tr>
+            </table>
+            
+            <button class="collapsible">Maersk Recovery - Success Story</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Damage:</strong> 4,000 servers, 45,000 PCs encrypted, all domain controllers lost except one in Ghana</p>
+                <p><strong>Recovery:</strong> 4,000 IT staff mobilized, retrieved Ghana DC by plane, rebuilt in 10 days</p>
+                <p><strong>Cost:</strong> $300 million</p>
+                <p><strong>Keys to Success:</strong> Unlimited budget, surviving DC (luck), strong partnerships, clear priorities</p>
+            </div></div>
+            
+            <button class="collapsible">Merck - Pharmaceutical Challenges</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Unique Issues:</strong> FDA-validated systems destroyed, electronic batch records lost</p>
+                <p><strong>Impact:</strong> Gardasil vaccine production halted for months, global shortages</p>
+                <p><strong>Loss:</strong> $870 million (largest single-company loss)</p>
+            </div></div>
+        </div>
+    </div>
+
+    <!-- IMPACT -->
+    <div id="impact" class="content-section">
+        <div class="content-card">
+            <h2>Impact Analysis</h2>
+            <div class="highlight-box warning">
+                <h3>Most Destructive Cyberattack in History</h3>
+                <p>$10+ billion in total global damages, affecting 64+ countries and 2,000+ organizations</p>
+            </div>
+            
+            <h3>Financial Impact by Sector</h3>
+            <table class="vulnerability-table">
+                <tr><th>Sector</th><th>Example</th><th>Loss</th><th>Impact Type</th></tr>
+                <tr><td>Pharmaceutical</td><td>Merck</td><td>$870M</td><td>Production loss, vaccine shortages</td></tr>
+                <tr><td>Logistics</td><td>FedEx/TNT</td><td>$400M</td><td>Service disruption, customer loss</td></tr>
+                <tr><td>Shipping</td><td>Maersk</td><td>$300M</td><td>Global operations shutdown</td></tr>
+                <tr><td>Government</td><td>Ukraine</td><td>Billions</td><td>Critical infrastructure disruption</td></tr>
+                <tr><td>Total</td><td>Global</td><td>$10B+</td><td>Most expensive cyberattack ever</td></tr>
+            </table>
+            
+            <h3>Operational Impact</h3>
+            <button class="collapsible">Critical Infrastructure Disruption</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Power Grid:</strong> Manual operations, blackout risks</p>
+                <p><strong>Ports:</strong> 76 ports shutdown, global shipping affected</p>
+                <p><strong>Healthcare:</strong> Hospital systems, patient records, pharmaceutical supply</p>
+                <p><strong>Transportation:</strong> Airports, metro, railways disrupted</p>
+            </div></div>
+            
+            <button class="collapsible">Supply Chain Cascade</button>
+            <div class="collapsible-content"><div class="collapsible-content-inner">
+                <p><strong>Shipping:</strong> Maersk handled 20% of global containers - ripple effects worldwide</p>
+                <p><strong>Pharmaceutical:</strong> Gardasil vaccine shortages lasted into 2018</p>
+                <p><strong>Manufacturing:</strong> Just-in-time inventory systems broke down</p>
+            </div></div>
+            
+            <h3>Long-term Industry Impact</h3>
+            <ul>
+                <li><strong>Budget Increases:</strong> Enterprise security budgets doubled 2017-2020</li>
+                <li><strong>C-Suite Attention:</strong> Cybersecurity became board-level concern</li>
+                <li><strong>Technology Adoption:</strong> Massive increase in EDR, NDR, SIEM</li>
+                <li><strong>Backup Revolution:</strong> Offline, immutable backups standard</li>
+                <li><strong>Zero Trust:</strong> Segmentation and least privilege priorities</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- LESSONS LEARNED -->
+    <div id="lessons" class="content-section">
+        <div class="content-card">
+            <h2>Lessons Learned</h2>
+            <div class="highlight-box warning">
+                <p>The $10 billion lesson: These best practices are written in the losses of thousands of organizations.</p>
+            </div>
+            
+            <div class="lesson-card">
+                <h4>1. Patch Management is Non-Negotiable</h4>
+                <p><strong>Lesson:</strong> EternalBlue was patched 3 months before NotPetya. Organizations that patched within 30 days were protected.</p>
+                <p><strong>Best Practices:</strong></p>
+                <ul>
+                    <li>Automated patch deployment for critical security updates</li>
+                    <li>Critical patches within 72 hours of release</li>
+                    <li>Maintain complete asset inventory</li>
+                    <li>Emergency patching bypasses normal change management</li>
+                </ul>
+            </div>
+            
+            <div class="lesson-card">
+                <h4>2. Supply Chain Security Must Be Proactive</h4>
+                <p><strong>Lesson:</strong> M.E.Doc compromised for months. Organizations trusted updates without verification.</p>
+                <p><strong>Best Practices:</strong></p>
+                <ul>
+                    <li>Rigorous vendor security assessments</li>
+                    <li>Software update verification (code signing, hashes)</li>
+                    <li>Monitor vendor update behavior</li>
+                    <li>Segment vendor access (least privilege, network isolation)</li>
+                    <li>Third-party risk management programs</li>
+                </ul>
+            </div>
+            
+            <div class="lesson-card">
+                <h4>3. Backups Must Be Immutable and Offline</h4>
+                <p><strong>Lesson:</strong> Online backups were encrypted. Only offline, air-gapped backups survived.</p>
+                <p><strong>Best Practices:</strong></p>
+                <ul>
+                    <li>3-2-1 rule: 3 copies, 2 media types, 1 offsite/offline</li>
+                    <li>Immutable backups (WORM, tape, cloud immutable)</li>
+                    <li>Air-gap critical backups</li>
+                    <li>Test restoration monthly for critical systems</li>
+                    <li>Separate backup credentials from domain</li>
+                </ul>
+            </div>
+            
+            <div class="lesson-card">
+                <h4>4. Network Segmentation Limits Blast Radius</h4>
+                <p><strong>Lesson:</strong> Flat networks allowed organization-wide spread in hours. Segmented networks contained infections.</p>
+                <p><strong>Best Practices:</strong></p>
+                <ul>
+                    <li>Zero trust architecture (verify explicitly, least privilege, assume breach)</li>
+                    <li>Segment by function, sensitivity, trust level</li>
+                    <li>Restrict workstation-to-workstation communication</li>
+                    <li>Require authentication between segments</li>
+                    <li>Micro-segmentation for critical assets</li>
+                </ul>
+            </div>
+            
+            <div class="lesson-card">
+                <h4>5. Credential Hygiene Prevents Lateral Movement</h4>
+                <p><strong>Lesson:</strong> Harvested credentials enabled organization-wide compromise. Shared passwords were devastating.</p>
+                <p><strong>Best Practices:</strong></p>
+                <ul>
+                    <li>Eliminate shared local admin passwords (use LAPS)</li>
+                    <li>Privileged access management (PAM) solutions</li>
+                    <li>Unique passwords for every system</li>
+                    <li>Multi-factor authentication everywhere</li>
+                    <li>Minimize privileged account usage (JIT access)</li>
+                    <li>Monitor credential dumping attempts</li>
+                </ul>
+            </div>
+            
+            <div class="lesson-card">
+                <h4>6. Detection Must Focus on Behavior</h4>
+                <p><strong>Lesson:</strong> Signature-based AV was useless. Behavioral detection could have identified anomalies.</p>
+                <p><strong>Best Practices:</strong></p>
+                <ul>
+                    <li>Deploy EDR (Endpoint Detection and Response)</li>
+                    <li>Implement NDR for east-west traffic</li>
+                    <li>Use behavioral analytics and ML</li>
+                    <li>Monitor credential access, lateral movement, impact</li>
+                    <li>Establish baselines for normal behavior</li>
+                </ul>
+            </div>
+            
+            <div class="lesson-card">
+                <h4>7. Incident Response Plans Must Be Tested</h4>
+                <p><strong>Lesson:</strong> Organizations with tested IR plans recovered 3-5x faster than those without.</p>
+                <p><strong>Best Practices:</strong></p>
+                <ul>
+                    <li>Tabletop exercises quarterly</li>
+                    <li>Full-scale simulations annually</li>
+                    <li>Test communication channels (assume IT will be down)</li>
+                    <li>Out-of-band communication methods</li>
+                    <li>Document procedures offline</li>
+                    <li>Pre-establish vendor relationships</li>
+                    <li>Practice backup restoration regularly</li>
+                </ul>
+            </div>
+            
+            <div class="lesson-card">
+                <h4>8. Executive Buy-In is Essential</h4>
+                <p><strong>Lesson:</strong> CEOs who immediately approved unlimited resources enabled fastest recovery.</p>
+                <p><strong>Best Practices:</strong></p>
+                <ul>
+                    <li>Report cybersecurity risk at board level</li>
+                    <li>Quantify risk in business terms (revenue impact, disruption)</li>
+                    <li>Establish clear executive authority for security decisions</li>
+                    <li>Pre-approve emergency response budgets</li>
+                    <li>Include cybersecurity in business continuity planning</li>
+                    <li>Executive participation in exercises</li>
+                </ul>
+            </div>
+            
+            <h3>Summary: The NotPetya Legacy</h3>
+            <div class="highlight-box info">
+                <p>NotPetya fundamentally changed cybersecurity. It proved that:</p>
+                <ul>
+                    <li>State-sponsored cyberattacks can cause unprecedented damage</li>
+                    <li>Supply chain security is critical infrastructure</li>
+                    <li>Prevention through patching is cheaper than recovery</li>
+                    <li>Backups are worthless if not offline and tested</li>
+                    <li>Network segmentation is essential defense-in-depth</li>
+                    <li>Behavioral detection beats signature-based approaches</li>
+                    <li>Cyber insurance may not cover state-sponsored attacks</li>
+                    <li>Executive support determines recovery success</li>
+                </ul>
+                <p><strong>The $10 billion question:</strong> Has your organization learned these lessons, or will you be the next case study?</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2024 NotPetya/ExPetr Case Study | Educational Resource</p>
+        <p style="margin-top:1rem;">Developed by Prof. John for Moraine Valley Community College Cybersecurity Program</p>
+        <p style="margin-top:0.5rem; font-size:0.8rem; opacity:0.7;">Based on publicly available information and security research</p>
+    </div>
+
+    <script>
+        function showSection(id) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.collapsible').forEach(c => {
+                c.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    const content = this.nextElementSibling;
+                    content.style.maxHeight = content.style.maxHeight ? null : content.scrollHeight + 'px';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
