@@ -3,145 +3,1222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AES Encryption Tool</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <title>🔐 AES-256 Encryption Learning Tool</title>
+    
+    <!-- CryptoJS Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js" 
+            integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ==" 
+            crossorigin="anonymous" 
+            referrerpolicy="no-referrer"></script>
+    
     <style>
+        /* ===== CSS VARIABLES ===== */
+        :root {
+            /* Primary Colors */
+            --primary-blue: #2196F3;
+            --primary-dark: #1976D2;
+            --primary-light: #BBDEFB;
+            
+            /* Accent Colors */
+            --accent-green: #4CAF50;
+            --accent-orange: #FF9800;
+            --accent-red: #F44336;
+            
+            /* Neutral Colors */
+            --bg-main: #F5F7FA;
+            --bg-card: #FFFFFF;
+            --text-primary: #263238;
+            --text-secondary: #607D8B;
+            --border-color: #CFD8DC;
+            
+            /* Status Colors */
+            --success-green: #4CAF50;
+            --warning-yellow: #FFC107;
+            --error-red: #F44336;
+            --info-blue: #2196F3;
+            
+            /* Key Strength Indicators */
+            --strength-weak: #F44336;
+            --strength-moderate: #FF9800;
+            --strength-strong: #8BC34A;
+            --strength-very-strong: #4CAF50;
+        }
+
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
             padding: 20px;
         }
 
-        h1 {
-            color: #ff0000;
+        /* ===== LAYOUT ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        div.container {
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 10px;
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-dark));
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        /* ===== LEARNING OBJECTIVES ===== */
+        .learning-objectives {
+            background: var(--bg-card);
+            border-left: 4px solid var(--accent-green);
             padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 80%;
-            max-width: 600px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        label, input, select, button, textarea {
-            display: block;
-            margin: 10px 0;
+        .learning-objectives h4 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+
+        .learning-objectives ul {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .learning-objectives li {
+            padding: 5px 0;
+            font-size: 0.95rem;
+        }
+
+        /* ===== INFO PANEL ===== */
+        .info-panel {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-toggle {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
             width: 100%;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s;
+        }
+
+        .info-toggle:hover {
+            background: var(--primary-dark);
+        }
+
+        .info-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .info-content.active {
+            max-height: 2000px;
+            margin-top: 20px;
+        }
+
+        .info-section {
+            margin-bottom: 25px;
+        }
+
+        .info-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+
+        .info-section ul, .info-section ol {
+            margin-left: 20px;
+        }
+
+        .info-section li {
+            margin-bottom: 8px;
+        }
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .tip {
+            background: #F8F9FA;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-blue);
+        }
+
+        .tip-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+
+        /* ===== MAIN PANELS ===== */
+        .panels-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-header {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .panel-header h2 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: var(--primary-dark);
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .form-group {
+            margin-bottom: 20px;
         }
 
         label {
-            color: #333;
-            font-weight: bold;
-        }
-
-        input, select, textarea {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        button {
-            background-color: #ff0000;
-            color: #fff;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        button:hover {
-            background-color: #cc0000;
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
         }
 
         textarea {
-            font-family: monospace;
-            height: 100px;
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: #FFFFFF;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            resize: vertical;
+            min-height: 100px;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            font-size: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        input.error, textarea.error {
+            border-color: var(--error-red);
+            animation: error-shake 0.4s;
+        }
+
+        .toggle-visibility {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: color 0.3s;
+        }
+
+        .toggle-visibility:hover {
+            color: var(--primary-blue);
+        }
+
+        .char-count {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* ===== KEY STRENGTH INDICATOR ===== */
+        .strength-indicator {
+            height: 6px;
+            width: 100%;
+            background: #E0E0E0;
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .strength-bar {
+            height: 100%;
+            transition: all 0.4s ease;
+            border-radius: 3px;
+            width: 0%;
+        }
+
+        .strength-weak .strength-bar {
+            width: 25%;
+            background: var(--strength-weak);
+        }
+
+        .strength-moderate .strength-bar {
+            width: 50%;
+            background: var(--strength-moderate);
+        }
+
+        .strength-strong .strength-bar {
+            width: 75%;
+            background: var(--strength-strong);
+        }
+
+        .strength-very-strong .strength-bar {
+            width: 100%;
+            background: var(--strength-very-strong);
+        }
+
+        .strength-text {
+            font-size: 0.875rem;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-secondary {
+            background: #ECEFF1;
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: #CFD8DC;
+        }
+
+        .btn-success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #388E3C;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #C62828;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:active {
+            animation: button-press 0.2s;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+        }
+
+        /* ===== OUTPUT DISPLAY ===== */
+        .output-container {
+            background: #F8F9FA;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .output-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .output-text {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            word-break: break-all;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        /* ===== MESSAGES ===== */
+        .message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            animation: slideIn 0.3s;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message-success {
+            background: #E8F5E9;
+            border-left: 4px solid var(--success-green);
+            color: #2E7D32;
+        }
+
+        .message-error {
+            background: #FFEBEE;
+            border-left: 4px solid var(--error-red);
+            color: #C62828;
+        }
+
+        .message-info {
+            background: #E3F2FD;
+            border-left: 4px solid var(--info-blue);
+            color: #1565C0;
+        }
+
+        /* ===== TOOLTIP ===== */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            margin-left: 5px;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #263238;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px 12px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes button-press {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes error-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes success-flash {
+            0%, 100% { background: var(--bg-card); }
+            50% { background: rgba(76, 175, 80, 0.1); }
+        }
+
+        .success-flash {
+            animation: success-flash 0.6s;
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 1024px) {
+            .panels-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .panel {
+                padding: 20px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .tips-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>AES Encryption Tool</h1>
+    <!-- HEADER -->
     <div class="container">
-        <label for="cleartext">Cleartext:</label>
-        <input type="text" id="cleartext" placeholder="Enter cleartext" />
+        <div class="header">
+            <h1>🔐 AES-256 Encryption Learning Tool</h1>
+            <p>Master symmetric encryption with hands-on practice • Educational Tool for Cybersecurity Students</p>
+        </div>
 
-        <label for="key">Symmetrical Key:</label>
-        <input type="text" id="key" placeholder="Enter symmetrical key" />
+        <!-- LEARNING OBJECTIVES -->
+        <div class="learning-objectives">
+            <h4>📖 Learning Objectives</h4>
+            <p>By using this tool, you will understand:</p>
+            <ul>
+                <li>✓ How symmetric encryption works</li>
+                <li>✓ The role of Initialization Vectors (IVs)</li>
+                <li>✓ Importance of key strength and randomness</li>
+                <li>✓ How key derivation functions (PBKDF2) enhance security</li>
+                <li>✓ The difference between encryption and encoding</li>
+                <li>✓ Practical applications of AES-256-CBC</li>
+            </ul>
+        </div>
 
-        <label for="mode">Mode:</label>
-        <select id="mode">
-            <option value="ECB">ECB</option>
-            <option value="CBC">CBC</option>
-        </select>
+        <!-- INFO PANEL -->
+        <div class="info-panel">
+            <button class="info-toggle" onclick="toggleInfo()">
+                <span>📚 What is AES Encryption? (Click to expand)</span>
+                <span id="info-arrow">▼</span>
+            </button>
+            <div class="info-content" id="info-content">
+                <div class="info-section">
+                    <h3>🔐 What is AES Encryption?</h3>
+                    <p>
+                        <strong>AES (Advanced Encryption Standard)</strong> is a symmetric encryption 
+                        algorithm adopted by the U.S. government in 2001. It's used worldwide to 
+                        protect classified information and is the industry standard for data encryption.
+                    </p>
+                    <ul>
+                        <li><strong>Symmetric:</strong> Same key encrypts and decrypts</li>
+                        <li><strong>Block Cipher:</strong> Encrypts data in 128-bit blocks</li>
+                        <li><strong>256-bit Key:</strong> This tool uses AES-256 (strongest variant)</li>
+                        <li><strong>CBC Mode:</strong> Cipher Block Chaining for enhanced security</li>
+                    </ul>
+                </div>
 
-        <button onclick="encrypt()">Encrypt</button>
-        <button onclick="decrypt()">Decrypt</button>
+                <div class="info-section">
+                    <h3>⚙️ How This Tool Works</h3>
+                    <ol>
+                        <li><strong>Key Derivation:</strong> Your passphrase is strengthened using PBKDF2 
+                            with 1000 iterations and a random salt</li>
+                        <li><strong>IV Generation:</strong> A random 128-bit Initialization Vector is 
+                            created for each encryption to ensure uniqueness</li>
+                        <li><strong>Encryption:</strong> AES-256-CBC algorithm transforms your plaintext 
+                            into ciphertext</li>
+                        <li><strong>Output:</strong> Results are Base64-encoded for easy sharing</li>
+                    </ol>
+                </div>
 
-        <label for="ciphertext">Ciphertext:</label>
-        <textarea id="ciphertext" readonly></textarea>
+                <div class="info-section">
+                    <h3>🛡️ Security Best Practices</h3>
+                    <div class="tips-grid">
+                        <div class="tip">
+                            <span class="tip-icon">🔑</span>
+                            <strong>Use Strong Keys:</strong> 12+ characters with mixed case, 
+                            numbers, and symbols
+                        </div>
+                        <div class="tip">
+                            <span class="tip-icon">🎲</span>
+                            <strong>Random is Better:</strong> Use the random key generator for 
+                            maximum security
+                        </div>
+                        <div class="tip">
+                            <span class="tip-icon">📝</span>
+                            <strong>Save Your Keys:</strong> Store keys securely - you'll need 
+                            them to decrypt
+                        </div>
+                        <div class="tip">
+                            <span class="tip-icon">🚫</span>
+                            <strong>Never Share Keys:</strong> Never send your key through the 
+                            same channel as encrypted data
+                        </div>
+                        <div class="tip">
+                            <span class="tip-icon">🔄</span>
+                            <strong>New IV Each Time:</strong> The tool automatically creates a 
+                            new IV for each encryption
+                        </div>
+                        <div class="tip">
+                            <span class="tip-icon">⚠️</span>
+                            <strong>Educational Use:</strong> This is a learning tool. For 
+                            production use, consult security professionals
+                        </div>
+                    </div>
+                </div>
 
-        <label for="decryptedtext">Decrypted Text:</label>
-        <textarea id="decryptedtext" readonly></textarea>
+                <div class="info-section">
+                    <h3>📚 Real-World Applications</h3>
+                    <ul>
+                        <li>🏦 <strong>Banking:</strong> Protecting financial transactions and customer data</li>
+                        <li>💬 <strong>Messaging:</strong> End-to-end encryption in Signal, WhatsApp</li>
+                        <li>☁️ <strong>Cloud Storage:</strong> Encrypting files in Dropbox, Google Drive</li>
+                        <li>🌐 <strong>Web Security:</strong> HTTPS connections use AES for data transfer</li>
+                        <li>💾 <strong>Disk Encryption:</strong> BitLocker, FileVault use AES-256</li>
+                        <li>📱 <strong>Mobile Devices:</strong> iOS and Android encrypt user data with AES</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN PANELS -->
+        <div class="panels-container">
+            <!-- ENCRYPTION PANEL -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>🔒 Encrypt</h2>
+                </div>
+
+                <div class="form-group">
+                    <label for="plaintext">
+                        Plaintext Message
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Enter the message you want to encrypt. This can be any text including letters, numbers, and symbols.</span>
+                        </span>
+                    </label>
+                    <textarea id="plaintext" placeholder="Enter your message here..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="encrypt-key">
+                        Encryption Key
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Use a strong passphrase (12+ characters recommended). Include uppercase, lowercase, numbers, and symbols for maximum security.</span>
+                        </span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password" id="encrypt-key" placeholder="Enter encryption key..." oninput="validateEncryptKey()">
+                        <button class="toggle-visibility" onclick="toggleKeyVisibility('encrypt-key')" aria-label="Toggle key visibility">
+                            👁️
+                        </button>
+                    </div>
+                    <div class="char-count" id="encrypt-key-count">0 characters</div>
+                    <div class="strength-indicator" id="encrypt-strength">
+                        <div class="strength-bar"></div>
+                    </div>
+                    <div class="strength-text" id="encrypt-strength-text"></div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-secondary btn-full" onclick="generateRandomKey('encrypt')">
+                        🎲 Generate Random Key
+                    </button>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary btn-full" onclick="encryptText()">
+                        🔒 Encrypt Message
+                    </button>
+                </div>
+
+                <div id="encrypt-message" class="message"></div>
+
+                <div id="encrypt-output" style="display: none;">
+                    <div class="output-container">
+                        <span class="output-label">Initialization Vector (IV)</span>
+                        <button class="copy-btn btn btn-secondary btn-small" onclick="copyToClipboard('iv-output')">📋 Copy</button>
+                        <div class="output-text" id="iv-output"></div>
+                    </div>
+
+                    <div class="output-container">
+                        <span class="output-label">Salt</span>
+                        <button class="copy-btn btn btn-secondary btn-small" onclick="copyToClipboard('salt-output')">📋 Copy</button>
+                        <div class="output-text" id="salt-output"></div>
+                    </div>
+
+                    <div class="output-container">
+                        <span class="output-label">Ciphertext (Base64)</span>
+                        <button class="copy-btn btn btn-secondary btn-small" onclick="copyToClipboard('ciphertext-output')">📋 Copy</button>
+                        <div class="output-text" id="ciphertext-output"></div>
+                    </div>
+
+                    <div class="output-container">
+                        <span class="output-label">Combined Format (IV:Salt:Ciphertext)</span>
+                        <button class="copy-btn btn btn-secondary btn-small" onclick="copyToClipboard('combined-output')">📋 Copy</button>
+                        <div class="output-text" id="combined-output"></div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-danger btn-full" onclick="clearEncryptFields()">
+                        🧹 Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- DECRYPTION PANEL -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>🔓 Decrypt</h2>
+                </div>
+
+                <div class="form-group">
+                    <label for="ciphertext">
+                        Ciphertext
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Paste the encrypted message here. You can use either the combined format (IV:Salt:Ciphertext) or just the ciphertext with manual IV entry.</span>
+                        </span>
+                    </label>
+                    <textarea id="ciphertext" placeholder="Paste encrypted text here (combined format: IV:Salt:Ciphertext)..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="decrypt-key">
+                        Decryption Key
+                        <span class="tooltip">ℹ️
+                            <span class="tooltiptext">Enter the same passphrase that was used for encryption. The key is case-sensitive and must match exactly.</span>
+                        </span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password" id="decrypt-key" placeholder="Enter decryption key...">
+                        <button class="toggle-visibility" onclick="toggleKeyVisibility('decrypt-key')" aria-label="Toggle key visibility">
+                            👁️
+                        </button>
+                    </div>
+                    <div class="char-count" id="decrypt-key-count">0 characters</div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary btn-full" onclick="decryptText()">
+                        🔓 Decrypt Message
+                    </button>
+                </div>
+
+                <div id="decrypt-message" class="message"></div>
+
+                <div id="decrypt-output" style="display: none;">
+                    <div class="output-container">
+                        <span class="output-label">Decrypted Plaintext</span>
+                        <button class="copy-btn btn btn-secondary btn-small" onclick="copyToClipboard('plaintext-output')">📋 Copy</button>
+                        <div class="output-text" id="plaintext-output"></div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-danger btn-full" onclick="clearDecryptFields()">
+                        🧹 Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <p>🎓 Educational Tool for Cybersecurity Training | AES-256-CBC Encryption</p>
+            <p>© 2024 | For Educational Use Only | Not for Production Environments</p>
+        </div>
     </div>
 
+    <!-- JAVASCRIPT -->
     <script>
-        function encrypt() {
-            const cleartext = document.getElementById('cleartext').value;
-            const key = document.getElementById('key').value;
-            const mode = document.getElementById('mode').value;
-
-            let encrypted = '';
-            if (mode === 'ECB') {
-                encrypted = CryptoJS.AES.encrypt(cleartext, CryptoJS.enc.Utf8.parse(key), {
-                    mode: CryptoJS.mode.ECB,
-                    padding: CryptoJS.pad.Pkcs7
-                }).toString();
-            } else if (mode === 'CBC') {
-                const iv = CryptoJS.lib.WordArray.random(16);
-                encrypted = CryptoJS.AES.encrypt(cleartext, CryptoJS.enc.Utf8.parse(key), {
-                    mode: CryptoJS.mode.CBC,
-                    padding: CryptoJS.pad.Pkcs7,
-                    iv: iv
-                }).toString();
-                // Include the IV with the ciphertext for decryption
-                encrypted = iv.toString() + encrypted;
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if CryptoJS loaded successfully
+            if (typeof CryptoJS === 'undefined') {
+                alert('⚠️ CryptoJS library failed to load. Please check your internet connection and refresh the page.');
             }
 
-            document.getElementById('ciphertext').value = encrypted;
+            // Initialize character counters
+            updateCharacterCount('encrypt-key', 'encrypt-key-count');
+            updateCharacterCount('decrypt-key', 'decrypt-key-count');
+
+            // Add input event listeners
+            document.getElementById('encrypt-key').addEventListener('input', function() {
+                updateCharacterCount('encrypt-key', 'encrypt-key-count');
+            });
+
+            document.getElementById('decrypt-key').addEventListener('input', function() {
+                updateCharacterCount('decrypt-key', 'decrypt-key-count');
+            });
+        });
+
+        // ===== UTILITY FUNCTIONS =====
+        function toggleInfo() {
+            const content = document.getElementById('info-content');
+            const arrow = document.getElementById('info-arrow');
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                arrow.textContent = '▼';
+            } else {
+                content.classList.add('active');
+                arrow.textContent = '▲';
+            }
         }
 
-        function decrypt() {
-            const ciphertext = document.getElementById('ciphertext').value;
-            const key = document.getElementById('key').value;
-            const mode = document.getElementById('mode').value;
+        function toggleKeyVisibility(elementId) {
+            const input = document.getElementById(elementId);
+            if (input.type === 'password') {
+                input.type = 'text';
+            } else {
+                input.type = 'password';
+            }
+        }
 
-            let decrypted = '';
-            if (mode === 'ECB') {
-                const bytes = CryptoJS.AES.decrypt(ciphertext, CryptoJS.enc.Utf8.parse(key), {
-                    mode: CryptoJS.mode.ECB,
-                    padding: CryptoJS.pad.Pkcs7
-                });
-                decrypted = bytes.toString(CryptoJS.enc.Utf8);
-            } else if (mode === 'CBC') {
-                const iv = CryptoJS.enc.Hex.parse(ciphertext.substr(0, 32));
-                const encrypted = ciphertext.substr(32);
-                const bytes = CryptoJS.AES.decrypt(encrypted, CryptoJS.enc.Utf8.parse(key), {
-                    mode: CryptoJS.mode.CBC,
-                    padding: CryptoJS.pad.Pkcs7,
-                    iv: iv
-                });
-                decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        function updateCharacterCount(inputId, displayId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            const count = input.value.length;
+            display.textContent = `${count} character${count !== 1 ? 's' : ''}`;
+        }
+
+        function validateKey(key) {
+            const length = key.length;
+            let strength = 'weak';
+            let score = 0;
+            let message = '';
+
+            // Length check
+            if (length >= 20) score += 3;
+            else if (length >= 13) score += 2;
+            else if (length >= 8) score += 1;
+
+            // Complexity checks
+            if (/[a-z]/.test(key)) score += 1;
+            if (/[A-Z]/.test(key)) score += 1;
+            if (/[0-9]/.test(key)) score += 1;
+            if (/[!@#$%^&*()\-_=+[\]{}|;:'",.<>?/\\]/.test(key)) score += 1;
+
+            // Determine strength
+            if (score >= 7) {
+                strength = 'very-strong';
+                message = '🛡️ Very strong key! Excellent security';
+            } else if (score >= 5) {
+                strength = 'strong';
+                message = '✅ Strong key';
+            } else if (score >= 3) {
+                strength = 'moderate';
+                message = '👍 Moderate strength. Add special characters for better security';
+            } else {
+                strength = 'weak';
+                message = '⚠️ Weak key. Consider using 12+ characters';
             }
 
-            document.getElementById('decryptedtext').value = decrypted;
+            return { strength, score, message };
+        }
+
+        function validateEncryptKey() {
+            const key = document.getElementById('encrypt-key').value;
+            const indicator = document.getElementById('encrypt-strength');
+            const text = document.getElementById('encrypt-strength-text');
+
+            if (key.length === 0) {
+                indicator.className = 'strength-indicator';
+                text.textContent = '';
+                return;
+            }
+
+            const validation = validateKey(key);
+            indicator.className = `strength-indicator strength-${validation.strength}`;
+            text.textContent = validation.message;
+        }
+
+        function validateBase64(str) {
+            try {
+                return /^[A-Za-z0-9+/]*={0,2}$/.test(str) && str.length > 0;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function validateHexString(str) {
+            return /^[0-9A-Fa-f]{32}$/.test(str);
+        }
+
+        function showMessage(elementId, message, type) {
+            const msgElement = document.getElementById(elementId);
+            msgElement.textContent = message;
+            msgElement.className = `message message-${type} show`;
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                msgElement.classList.remove('show');
+            }, 5000);
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    // Show temporary feedback
+                    const originalText = element.textContent;
+                    element.textContent = '✓ Copied!';
+                    element.style.color = 'var(--success-green)';
+                    
+                    setTimeout(() => {
+                        element.textContent = originalText;
+                        element.style.color = '';
+                    }, 1500);
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    alert('Failed to copy to clipboard. Please select and copy manually.');
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    alert('✓ Copied to clipboard!');
+                } catch (err) {
+                    alert('Failed to copy. Please select and copy manually.');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        // ===== KEY GENERATION =====
+        function generateRandomKey(type) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+';
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            
+            let key = '';
+            for (let i = 0; i < 32; i++) {
+                key += chars[array[i] % chars.length];
+            }
+
+            if (type === 'encrypt') {
+                document.getElementById('encrypt-key').value = key;
+                document.getElementById('encrypt-key').type = 'text'; // Show the generated key
+                validateEncryptKey();
+                showMessage('encrypt-message', '🎲 Random key generated. Save this key securely!', 'info');
+            } else {
+                document.getElementById('decrypt-key').value = key;
+                document.getElementById('decrypt-key').type = 'text';
+                showMessage('decrypt-message', '🎲 Random key generated.', 'info');
+            }
+
+            updateCharacterCount(`${type}-key`, `${type}-key-count`);
+        }
+
+        // ===== ENCRYPTION FUNCTION =====
+        function encryptText() {
+            const plaintext = document.getElementById('plaintext').value;
+            const passphrase = document.getElementById('encrypt-key').value;
+
+            // Validation
+            if (!plaintext.trim()) {
+                showMessage('encrypt-message', '❌ Please enter text to encrypt', 'error');
+                document.getElementById('plaintext').classList.add('error');
+                setTimeout(() => document.getElementById('plaintext').classList.remove('error'), 400);
+                return;
+            }
+
+            if (!passphrase) {
+                showMessage('encrypt-message', '🔑 Please enter an encryption key', 'error');
+                document.getElementById('encrypt-key').classList.add('error');
+                setTimeout(() => document.getElementById('encrypt-key').classList.remove('error'), 400);
+                return;
+            }
+
+            if (passphrase.length < 8) {
+                showMessage('encrypt-message', '⚠️ Key must be at least 8 characters long', 'error');
+                document.getElementById('encrypt-key').classList.add('error');
+                setTimeout(() => document.getElementById('encrypt-key').classList.remove('error'), 400);
+                return;
+            }
+
+            try {
+                // Generate random salt
+                const salt = CryptoJS.lib.WordArray.random(128/8);
+                
+                // Derive key using PBKDF2
+                const key = CryptoJS.PBKDF2(passphrase, salt, {
+                    keySize: 256/32,
+                    iterations: 1000,
+                    hasher: CryptoJS.algo.SHA256
+                });
+                
+                // Generate random IV
+                const iv = CryptoJS.lib.WordArray.random(128/8);
+                
+                // Encrypt using AES-256-CBC
+                const encrypted = CryptoJS.AES.encrypt(plaintext, key, {
+                    iv: iv,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+                
+                // Convert to display formats
+                const ivHex = CryptoJS.enc.Hex.stringify(iv);
+                const ciphertext = encrypted.ciphertext.toString(CryptoJS.enc.Base64);
+                const saltB64 = CryptoJS.enc.Base64.stringify(salt);
+                const combined = `${ivHex}:${saltB64}:${ciphertext}`;
+
+                // Display results
+                document.getElementById('iv-output').textContent = ivHex;
+                document.getElementById('salt-output').textContent = saltB64;
+                document.getElementById('ciphertext-output').textContent = ciphertext;
+                document.getElementById('combined-output').textContent = combined;
+                document.getElementById('encrypt-output').style.display = 'block';
+
+                // Success message
+                showMessage('encrypt-message', '✅ Encryption successful!', 'success');
+                
+                // Add success flash animation
+                document.querySelector('.panel').classList.add('success-flash');
+                setTimeout(() => document.querySelector('.panel').classList.remove('success-flash'), 600);
+
+            } catch (error) {
+                console.error('Encryption error:', error);
+                showMessage('encrypt-message', '❌ Encryption failed. Please try again.', 'error');
+            }
+        }
+
+        // ===== DECRYPTION FUNCTION =====
+        function decryptText() {
+            const ciphertextInput = document.getElementById('ciphertext').value.trim();
+            const passphrase = document.getElementById('decrypt-key').value;
+
+            // Validation
+            if (!ciphertextInput) {
+                showMessage('decrypt-message', '❌ Please enter ciphertext to decrypt', 'error');
+                document.getElementById('ciphertext').classList.add('error');
+                setTimeout(() => document.getElementById('ciphertext').classList.remove('error'), 400);
+                return;
+            }
+
+            if (!passphrase) {
+                showMessage('decrypt-message', '🔑 Please enter the decryption key', 'error');
+                document.getElementById('decrypt-key').classList.add('error');
+                setTimeout(() => document.getElementById('decrypt-key').classList.remove('error'), 400);
+                return;
+            }
+
+            try {
+                // Parse combined format: IV:Salt:Ciphertext
+                const parts = ciphertextInput.split(':');
+                
+                if (parts.length !== 3) {
+                    showMessage('decrypt-message', '❌ Invalid input format. Expected IV:Salt:Ciphertext', 'error');
+                    document.getElementById('ciphertext').classList.add('error');
+                    setTimeout(() => document.getElementById('ciphertext').classList.remove('error'), 400);
+                    return;
+                }
+
+                const ivHex = parts[0];
+                const saltB64 = parts[1];
+                const ciphertext = parts[2];
+
+                // Validate IV format
+                if (!validateHexString(ivHex)) {
+                    showMessage('decrypt-message', '❌ Invalid IV. Must be 32 hexadecimal characters', 'error');
+                    return;
+                }
+
+                // Validate Base64 format
+                if (!validateBase64(ciphertext)) {
+                    showMessage('decrypt-message', '❌ Invalid ciphertext format. Must be Base64-encoded', 'error');
+                    return;
+                }
+
+                // Convert from string formats
+                const iv = CryptoJS.enc.Hex.parse(ivHex);
+                const salt = CryptoJS.enc.Base64.parse(saltB64);
+                
+                // Derive same key using stored salt
+                const key = CryptoJS.PBKDF2(passphrase, salt, {
+                    keySize: 256/32,
+                    iterations: 1000,
+                    hasher: CryptoJS.algo.SHA256
+                });
+                
+                // Decrypt
+                const decrypted = CryptoJS.AES.decrypt(ciphertext, key, {
+                    iv: iv,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+                
+                // Convert to UTF-8
+                const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
+
+                if (!plaintext) {
+                    showMessage('decrypt-message', '🔐 Incorrect key or corrupted ciphertext', 'error');
+                    return;
+                }
+
+                // Display result
+                document.getElementById('plaintext-output').textContent = plaintext;
+                document.getElementById('decrypt-output').style.display = 'block';
+
+                // Success message
+                showMessage('decrypt-message', '✅ Decryption successful!', 'success');
+                
+                // Add success flash animation
+                const panels = document.querySelectorAll('.panel');
+                panels[1].classList.add('success-flash');
+                setTimeout(() => panels[1].classList.remove('success-flash'), 600);
+
+            } catch (error) {
+                console.error('Decryption error:', error);
+                showMessage('decrypt-message', '❌ Decryption failed. Check your key and ciphertext.', 'error');
+            }
+        }
+
+        // ===== CLEAR FUNCTIONS =====
+        function clearEncryptFields() {
+            if (confirm('🧹 Clear all encryption fields and outputs?')) {
+                document.getElementById('plaintext').value = '';
+                document.getElementById('encrypt-key').value = '';
+                document.getElementById('encrypt-output').style.display = 'none';
+                document.getElementById('encrypt-message').classList.remove('show');
+                document.getElementById('encrypt-strength').className = 'strength-indicator';
+                document.getElementById('encrypt-strength-text').textContent = '';
+                updateCharacterCount('encrypt-key', 'encrypt-key-count');
+                showMessage('encrypt-message', '🧹 All fields cleared', 'info');
+            }
+        }
+
+        function clearDecryptFields() {
+            if (confirm('🧹 Clear all decryption fields and outputs?')) {
+                document.getElementById('ciphertext').value = '';
+                document.getElementById('decrypt-key').value = '';
+                document.getElementById('decrypt-output').style.display = 'none';
+                document.getElementById('decrypt-message').classList.remove('show');
+                updateCharacterCount('decrypt-key', 'decrypt-key-count');
+                showMessage('decrypt-message', '🧹 All fields cleared', 'info');
+            }
         }
     </script>
 </body>
