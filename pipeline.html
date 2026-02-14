@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Colonial Pipeline Ransomware Case Study – Cybersecurity</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-alt: #141a33;
+      --accent: #00d4a6;
+      --accent-soft: rgba(0,212,166,0.15);
+      --danger: #ff5c7a;
+      --text-main: #f4f6ff;
+      --text-muted: #b8bedc;
+      --card-bg: #171e3a;
+      --border-subtle: #222948;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1b2344 0, #050714 55%, #020309 100%);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar navigation */
+    #sidebar {
+      width: 260px;
+      background: linear-gradient(180deg, #050714 0, #050714 40%, #050714 100%);
+      border-right: 1px solid var(--border-subtle);
+      padding: 1.25rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: conic-gradient(from 180deg, var(--accent), #4c8dff, #ff5c7a, var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #050714;
+      box-shadow: 0 0 18px rgba(0, 212, 166, 0.6);
+    }
+
+    .brand-text h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.03em;
+    }
+
+    .brand-text p {
+      margin: 0.15rem 0 0;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .nav-section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s ease, color 0.15s ease, border 0.15s ease, transform 0.08s ease;
+    }
+
+    .nav-link span.icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 7px;
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: var(--accent);
+      background: #050714;
+    }
+
+    .nav-link:hover {
+      background: rgba(0,212,166,0.06);
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+      transform: translateX(1px);
+    }
+
+    .nav-link.active {
+      background: var(--accent-soft);
+      color: var(--text-main);
+      border-color: var(--accent);
+    }
+
+    .nav-link.active span.icon {
+      background: var(--accent);
+      color: #050714;
+      border-color: transparent;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.75rem;
+    }
+
+    .sidebar-footer strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Main content area */
+    #main {
+      margin-left: 260px;
+      padding: 1.25rem 1.25rem 2rem;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .title-block h2 {
+      margin: 0;
+      font-size: 1.55rem;
+    }
+
+    .title-block p {
+      margin: 0.3rem 0 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      max-width: 520px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      font-size: 0.75rem;
+      padding: 0.25rem 0.7rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: rgba(10,16,40,0.9);
+    }
+
+    .pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .pill.danger span.dot {
+      background: var(--danger);
+    }
+
+    /* Dashboard cards */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(145deg, rgba(12,18,48,0.96), rgba(22,29,70,0.96));
+      border-radius: 14px;
+      padding: 0.9rem;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at top left, rgba(0,212,166,0.22), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(92,167,255,0.24), transparent 55%);
+      opacity: 0.55;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-footnote {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-tag {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.7rem;
+      font-size: 0.68rem;
+      padding: 0.16rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.09);
+      background: rgba(2,4,14,0.8);
+      color: var(--text-muted);
+      z-index: 1;
+    }
+
+    /* Section containers */
+    section {
+      margin-bottom: 1.75rem;
+    }
+
+    section h3 {
+      margin: 0 0 0.3rem;
+      font-size: 1.15rem;
+    }
+
+    section p {
+      margin: 0.25rem 0 0.6rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      max-width: 800px;
+    }
+
+    .section-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(260px, 1.4fr);
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    /* Timeline */
+    .timeline {
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(9,13,34,0.9);
+      padding: 0.8rem 0.9rem;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .timeline-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      align-items: center;
+    }
+
+    .timeline-filters {
+      display: flex;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(12,19,52,0.95);
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      padding: 0.18rem 0.6rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.22rem;
+    }
+
+    .filter-btn span.dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .filter-btn[data-type="impact"] span.dot {
+      background: #e6bf4a;
+    }
+
+    .filter-btn[data-type="detection"] span.dot {
+      background: #4c8dff;
+    }
+
+    .filter-btn[data-type="response"] span.dot {
+      background: #ff5c7a;
+    }
+
+    .filter-btn.active {
+      border-color: var(--accent);
+      color: var(--text-main);
+      background: rgba(0,212,166,0.14);
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 0.65rem;
+      padding: 0.45rem 0;
+      border-bottom: 1px dashed rgba(65,74,120,0.7);
+      align-items: baseline;
+    }
+
+    .timeline-item:last-child {
+      border-bottom: none;
+    }
+
+    .timeline-date {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .timeline-content {
+      position: relative;
+    }
+
+    .timeline-title {
+      font-size: 0.86rem;
+      font-weight: 600;
+      margin-bottom: 0.1rem;
+    }
+
+    .timeline-metadata {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .timeline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(6,9,30,0.96);
+      color: var(--text-muted);
+    }
+
+    .timeline-badge span.small-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .timeline-badge[data-type="impact"] span.small-dot {
+      background: #e6bf4a;
+    }
+
+    .timeline-badge[data-type="detection"] span.small-dot {
+      background: #4c8dff;
+    }
+
+    .timeline-badge[data-type="response"] span.small-dot {
+      background: #ff5c7a;
+    }
+
+    /* Flip cards */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .flip-card {
+      perspective: 1000px;
+      height: 180px;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.4s ease;
+      cursor: pointer;
+    }
+
+    .flip-card.flipped .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      background: radial-gradient(circle at top left, rgba(0,212,166,0.24), rgba(8,10,26,0.96));
+      padding: 0.7rem;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .flip-face.back {
+      transform: rotateY(180deg);
+      background: radial-gradient(circle at bottom right, rgba(255,92,122,0.26), rgba(8,10,26,0.96));
+    }
+
+    .flip-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .flip-body {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .flip-foot {
+      margin-top: 0.3rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0.9;
+    }
+
+    .flip-foot span {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* Attack chain */
+    .killchain {
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      padding: 0.8rem 0.9rem;
+      background: rgba(8,11,30,0.96);
+    }
+
+    .killchain-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.65rem;
+      margin-top: 0.4rem;
+    }
+
+    .kill-step {
+      border-radius: 10px;
+      border: 1px solid rgba(55,68,120,0.8);
+      padding: 0.55rem;
+      font-size: 0.78rem;
+      background: radial-gradient(circle at top, rgba(0,212,166,0.16), rgba(6,9,26,0.96));
+      position: relative;
+    }
+
+    .kill-step h4 {
+      margin: 0 0 0.2rem;
+      font-size: 0.8rem;
+    }
+
+    .kill-tag {
+      position: absolute;
+      top: 0.45rem;
+      right: 0.5rem;
+      font-size: 0.65rem;
+      padding: 0.06rem 0.4rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-muted);
+    }
+
+    /* Quiz */
+    .quiz {
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      padding: 0.8rem 0.9rem;
+      background: rgba(9,12,32,0.98);
+    }
+
+    .quiz-item {
+      margin-bottom: 0.65rem;
+    }
+
+    .quiz-item h4 {
+      margin: 0 0 0.25rem;
+      font-size: 0.86rem;
+    }
+
+    .quiz-options {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.28rem;
+      font-size: 0.84rem;
+    }
+
+    .quiz-options label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.4rem;
+      border-radius: 8px;
+      border: 1px solid rgba(43,51,96,0.9);
+      cursor: pointer;
+      background: rgba(10,14,36,0.96);
+    }
+
+    .quiz-options input {
+      accent-color: var(--accent);
+    }
+
+    .quiz-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.4rem;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .quiz-result {
+      color: var(--accent);
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      background: var(--accent);
+      color: #050714;
+      font-size: 0.8rem;
+      padding: 0.3rem 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 0 14px rgba(0,212,166,0.55);
+    }
+
+    .btn.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      box-shadow: none;
+    }
+
+    /* Impact table */
+    .impact-table-wrapper {
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(9,12,32,0.98);
+      padding: 0.7rem 0.9rem;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    th, td {
+      border-bottom: 1px solid rgba(47,56,99,0.8);
+      padding: 0.45rem 0.4rem;
+      text-align: left;
+    }
+
+    th {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      background: rgba(10,14,36,0.96);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .impact-tag {
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      border: 1px solid rgba(230,191,74,0.7);
+      color: #f5e0a1;
+      background: rgba(230,191,74,0.16);
+    }
+
+    /* Scenario prompt */
+    .scenario-box {
+      border-radius: 12px;
+      border: 1px dashed var(--accent);
+      padding: 0.7rem 0.8rem;
+      background: rgba(1,12,20,0.9);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .scenario-box strong {
+      color: var(--accent);
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 900px) {
+      body {
+        flex-direction: column;
+        overflow: auto;
+      }
+
+      #sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+        overflow-x: auto;
+      }
+
+      .brand-text p {
+        display: none;
+      }
+
+      nav {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+      }
+
+      .nav-link {
+        white-space: nowrap;
+      }
+
+      .sidebar-footer {
+        display: none;
+      }
+
+      #main {
+        margin-left: 0;
+      }
+
+      .section-inner {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">CP</div>
+      <div class="brand-text">
+        <h1>Colonial Pipeline</h1>
+        <p>Ransomware incident case study</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="nav-section-title">Navigate</div>
+      <nav>
+        <button class="nav-link active" data-target="overview">
+          <span class="icon">ⓘ</span>
+          Overview
+        </button>
+        <button class="nav-link" data-target="attack">
+          <span class="icon">⚡</span>
+          Attack & Vulnerabilities
+        </button>
+        <button class="nav-link" data-target="detection">
+          <span class="icon">👁</span>
+          Detection & Response
+        </button>
+        <button class="nav-link" data-target="impact">
+          <span class="icon">📊</span>
+          Impact Dashboard
+        </button>
+        <button class="nav-link" data-target="lessons">
+          <span class="icon">🎯</span>
+          Lessons & Quiz
+        </button>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      Designed for <strong>college cybersecurity</strong> courses.
+    </div>
+  </aside>
+
+  <main id="main">
+    <header>
+      <div class="title-block">
+        <h2>Colonial Pipeline Ransomware Attack – May 2021</h2>
+        <p>
+          In May 2021, ransomware operators from the DarkSide group targeted Colonial Pipeline’s business network, prompting a shutdown of fuel delivery to much of the U.S. East Coast and exposing weaknesses in critical infrastructure security.[web:10][web:13]
+        </p>
+      </div>
+      <div class="pill-row">
+        <div class="pill">
+          <span class="dot"></span>
+          Critical infrastructure – energy sector[web:10][web:19]
+        </div>
+        <div class="pill danger">
+          <span class="dot"></span>
+          Ransomware-as-a-service (DarkSide)[web:10][web:17]
+        </div>
+        <div class="pill">
+          💡 Interactive case study
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard section -->
+    <div class="dashboard-grid">
+      <div class="stat-card">
+        <div class="stat-tag">Timeline</div>
+        <div class="stat-label">Attack window</div>
+        <div class="stat-value">May 6–12, 2021</div>
+        <div class="stat-footnote">Ransomware deployed May 7; pipeline restarted May 12.[web:10][web:13]</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-tag">Threat Actor</div>
+        <div class="stat-label">Ransomware group</div>
+        <div class="stat-value">DarkSide</div>
+        <div class="stat-footnote">
+          Ransomware-as-a-service operated by a Russian-speaking criminal group.[web:10][web:17]
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-tag">Initial Access</div>
+        <div class="stat-label">Entry point</div>
+        <div class="stat-value">Compromised VPN account</div>
+        <div class="stat-footnote">
+          Stolen password on an unused VPN account without multifactor authentication.[web:10][web:16]
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-tag">Business Impact</div>
+        <div class="stat-label">Ransom & disruption</div>
+        <div class="stat-value">$4.4M ransom paid</div>
+        <div class="stat-footnote">
+          75 Bitcoin paid; fuel shortages and emergency declarations along the East Coast.[web:13][web:12]
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section id="overview" class="content-section">
+      <h3>Overview & Target Organization</h3>
+      <p>
+        Colonial Pipeline operates a major refined products pipeline system from Texas to the U.S. East Coast, carrying gasoline, diesel, and jet fuel and supplying roughly half of the East Coast’s fuel.[web:10][web:19] The May 2021 ransomware attack affected Colonial’s IT systems and led the company to shut down pipeline operations as a precaution to protect industrial control systems.[web:10][web:13]
+      </p>
+
+      <div class="section-inner">
+        <div>
+          <div class="timeline">
+            <div class="timeline-controls">
+              <div class="timeline-filters">
+                <button class="filter-btn active" data-filter="all">
+                  <span class="dot"></span> All events
+                </button>
+                <button class="filter-btn" data-filter="attack" data-type="attack">
+                  <span class="dot"></span> Attack
+                </button>
+                <button class="filter-btn" data-filter="detection" data-type="detection">
+                  <span class="dot"></span> Detection/Response
+                </button>
+                <button class="filter-btn" data-filter="impact" data-type="impact">
+                  <span class="dot"></span> Impact
+                </button>
+              </div>
+              <small style="color:var(--text-muted);font-size:0.72rem;">Click filters to focus your analysis.</small>
+            </div>
+
+            <div id="timeline-items">
+              <div class="timeline-item" data-type="attack">
+                <div class="timeline-date">Pre-2021</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">Stolen credentials leak</div>
+                  <div class="timeline-metadata">
+                    A password for an old VPN account is compromised in a separate data breach and later reused by the attackers.[web:10][web:16]
+                  </div>
+                  <span class="timeline-badge" data-type="attack">
+                    <span class="small-dot"></span> Initial access setup
+                  </span>
+                </div>
+              </div>
+
+              <div class="timeline-item" data-type="attack">
+                <div class="timeline-date">May 6–7</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">DarkSide gains network access</div>
+                  <div class="timeline-metadata">
+                    DarkSide uses the stolen VPN credentials (no MFA) to access Colonial’s business network and begins reconnaissance and lateral movement.[web:10][web:16]
+                  </div>
+                  <span class="timeline-badge" data-type="attack">
+                    <span class="small-dot"></span> Intrusion & movement
+                  </span>
+                </div>
+              </div>
+
+              <div class="timeline-item" data-type="attack">
+                <div class="timeline-date">May 6</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">Data exfiltration</div>
+                  <div class="timeline-metadata">
+                    The attackers exfiltrate approximately 100 GB of data from Colonial’s network over a short window, setting up double-extortion leverage.[web:10][web:16]
+                  </div>
+                  <span class="timeline-badge" data-type="attack">
+                    <span class="small-dot"></span> Data theft
+                  </span>
+                </div>
+              </div>
+
+              <div class="timeline-item" data-type="attack">
+                <div class="timeline-date">May 7</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">Ransomware deployed</div>
+                  <div class="timeline-metadata">
+                    DarkSide ransomware encrypts business systems, including billing and accounting, and leaves a ransom note demanding payment in cryptocurrency.[web:10][web:13]
+                  </div>
+                  <span class="timeline-badge" data-type="attack">
+                    <span class="small-dot"></span> Encryption
+                  </span>
+                </div>
+              </div>
+
+              <div class="timeline-item" data-type="detection">
+                <div class="timeline-date">May 7</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">Incident detected & shutdown</div>
+                  <div class="timeline-metadata">
+                    Colonial detects the ransomware, engages incident-response specialists, and proactively shuts down pipeline operations to contain the incident.[web:10][web:14]
+                  </div>
+                  <span class="timeline-badge" data-type="detection">
+                    <span class="small-dot"></span> Detection & containment
+                  </span>
+                </div>
+              </div>
+
+              <div class="timeline-item" data-type="detection">
+                <div class="timeline-date">May 10</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">FBI attribution</div>
+                  <div class="timeline-metadata">
+                    The FBI publicly confirms that the DarkSide ransomware group is responsible for the compromise of Colonial Pipeline’s networks.[web:19]
+                  </div>
+                  <span class="timeline-badge" data-type="detection">
+                    <span class="small-dot"></span> Attribution
+                  </span>
+                </div>
+              </div>
+
+              <div class="timeline-item" data-type="detection">
+                <div class="timeline-date">May 7–8</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">Ransom paid</div>
+                  <div class="timeline-metadata">
+                    Within hours of the attack, Colonial pays about 75 Bitcoin (around $4.4 million) to receive a decryption tool from the attackers.[web:13]
+                  </div>
+                  <span class="timeline-badge" data-type="detection">
+                    <span class="small-dot"></span> Ransom payment
+                  </span>
+                </div>
+              </div>
+
+              <div class="timeline-item" data-type="impact">
+                <div class="timeline-date">May 8–11</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">Fuel shortages & panic buying</div>
+                  <div class="timeline-metadata">
+                    The shutdown triggers fuel shortages, price spikes, and panic buying across several states; emergency declarations are issued to ease supply constraints.[web:10][web:12]
+                  </div>
+                  <span class="timeline-badge" data-type="impact">
+                    <span class="small-dot"></span> Societal impact
+                  </span>
+                </div>
+              </div>
+
+              <div class="timeline-item" data-type="impact">
+                <div class="timeline-date">May 12+</div>
+                <div class="timeline-content">
+                  <div class="timeline-title">Pipeline restart & recovery</div>
+                  <div class="timeline-metadata">
+                    Colonial resumes pipeline operations on May 12, using both the decryption tool and their own restoration processes to recover systems.[web:10][web:13]
+                  </div>
+                  <span class="timeline-badge" data-type="impact">
+                    <span class="small-dot"></span> Recovery
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="scenario-box">
+            <strong>Instructor prompt:</strong> Ask students to use the timeline filters to reconstruct the kill chain. Have them identify at least two points where better controls or monitoring could have broken the attack path.
+          </div>
+          <p style="margin-top:0.6rem;">
+            The primary direct victim was Colonial Pipeline Company, but the attack also affected fuel suppliers, airlines, and millions of consumers who depended on the disrupted fuel distribution.[web:10][web:12]
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ATTACK -->
+    <section id="attack" class="content-section" style="display:none;">
+      <h3>Attack Method & Vulnerabilities</h3>
+      <p>
+        DarkSide used a ransomware-as-a-service model, providing affiliates with tooling that combined data exfiltration and strong encryption to maximize extortion pressure.[web:10][web:17] The intrusion exploited a legacy VPN account using stolen credentials and lacking multifactor authentication, exposing weaknesses in account lifecycle management and remote-access hardening.[web:10][web:16]
+      </p>
+
+      <div class="section-inner">
+        <div>
+          <div class="killchain">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+              <strong style="font-size:0.85rem;">Attack chain walkthrough</strong>
+              <small style="color:var(--text-muted);font-size:0.75rem;">Hover mentally over each step and map to your own environment.</small>
+            </div>
+            <div class="killchain-steps">
+              <div class="kill-step">
+                <span class="kill-tag">Initial Access</span>
+                <h4>1. Compromised VPN credentials</h4>
+                <p>
+                  Attackers obtain a Colonial VPN password from prior data breaches and use it to sign in to an unused remote-access account with no multifactor authentication.[web:10][web:16]
+                </p>
+              </div>
+              <div class="kill-step">
+                <span class="kill-tag">Discovery</span>
+                <h4>2. Internal reconnaissance</h4>
+                <p>
+                  Once inside, the threat actors enumerate systems, network shares, and privileged accounts to identify high-value targets on the business network.[web:10][web:11]
+                </p>
+              </div>
+              <div class="kill-step">
+                <span class="kill-tag">Lateral Movement</span>
+                <h4>3. Privilege escalation & spread</h4>
+                <p>
+                  DarkSide affiliates move laterally, gaining access to servers that store sensitive business data and supporting systems like billing.[web:10][web:11]
+                </p>
+              </div>
+              <div class="kill-step">
+                <span class="kill-tag">Collection/Exfil</span>
+                <h4>4. Data theft for leverage</h4>
+                <p>
+                  Approximately 100 GB of data is exfiltrated from Colonial’s systems in a short time window, enabling double-extortion threats to leak stolen information.[web:10][web:16]
+                </p>
+              </div>
+              <div class="kill-step">
+                <span class="kill-tag">Impact</span>
+                <h4>5. Ransomware deployment</h4>
+                <p>
+                  DarkSide encrypts files on key business systems and leaves ransom notes demanding cryptocurrency payment for decryption tools and to avoid data leaks.[web:10][web:13]
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card-grid">
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">Who were the attackers?</div>
+                  <div class="flip-body">
+                    DarkSide was a financially motivated cybercriminal group offering ransomware-as-a-service to affiliates, primarily targeting large organizations in Western countries.[web:10][web:17]
+                  </div>
+                  <div class="flip-foot">
+                    Click card to view <span>instructor angle</span>.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">Teaching angle – Threat actors</div>
+                  <div class="flip-body">
+                    Use this case to stress that critical-infrastructure risk is not limited to nation-state operators; criminal RaaS groups can create strategic national impacts through “ordinary” extortion campaigns.
+                  </div>
+                  <div class="flip-foot">
+                    Prompt: Have students compare motivations of criminal vs. state actors.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">Key vulnerabilities exploited</div>
+                  <div class="flip-body">
+                    DarkSide abused a legacy VPN account that lacked multifactor authentication and had not been disabled, highlighting gaps in account lifecycle controls and remote-access security.[web:10][web:16]
+                  </div>
+                  <div class="flip-foot">
+                    Click for <span>hardening ideas</span>.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">Hardening opportunities</div>
+                  <div class="flip-body">
+                    Emphasize mandatory MFA for all remote access, periodic audits to remove unused accounts, and tight segmentation between IT and OT networks so business ransomware cannot easily reach control systems.[web:10][web:14]
+                  </div>
+                  <div class="flip-foot">
+                    Student task: Draft a short VPN security checklist.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">Ransomware behavior</div>
+                  <div class="flip-body">
+                    DarkSide ransomware combined strong encryption with data exfiltration, using algorithms such as Salsa20 and RSA to make decryption infeasible without the attackers’ key.[web:10][web:11]
+                  </div>
+                  <div class="flip-foot">
+                    Click for <span>defense focus</span>.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">Defensive implications</div>
+                  <div class="flip-body">
+                    Since strong encryption is assumed, defenses must emphasize preventing initial access, monitoring exfiltration patterns, and maintaining tested offline backups rather than relying on “breaking” the cipher.[web:11][web:17]
+                  </div>
+                  <div class="flip-foot">
+                    Activity: Map controls to each kill-chain phase.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DETECTION & RESPONSE -->
+    <section id="detection" class="content-section" style="display:none;">
+      <h3>Detection, Response & Ransom Decision</h3>
+      <p>
+        Colonial detected the ransomware on its business network and chose to shut down pipeline operations to prevent potential spread to operational technology, while bringing in third-party incident-response experts and notifying federal agencies.[web:10][web:14] The company ultimately paid a multimillion-dollar ransom to obtain a decryption tool, although internal restoration processes reportedly recovered systems more efficiently than the provided tool.[web:13]
+      </p>
+
+      <div class="section-inner">
+        <div>
+          <div class="card-grid">
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">How was it detected?</div>
+                  <div class="flip-body">
+                    Colonial observed ransomware activity on its IT systems, including encrypted files and ransom notes, prompting an internal incident response and external support.[web:10][web:14]
+                  </div>
+                  <div class="flip-foot">
+                    Click for <span>detection lessons</span>.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">Detection lessons</div>
+                  <div class="flip-body">
+                    Case studies show multiple precursors—such as anomalous logins and data transfers—could have been noticed days earlier, illustrating the importance of correlating observables and escalating suspicious patterns promptly.[web:11]
+                  </div>
+                  <div class="flip-foot">
+                    Exercise: Design SIEM alerts for these precursors.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">Incident response actions</div>
+                  <div class="flip-body">
+                    The company isolated affected systems, shut down pipeline operations, engaged incident-response specialists, and coordinated with the FBI, CISA, and other agencies.[web:10][web:14]
+                  </div>
+                  <div class="flip-foot">
+                    Click for <span>IR playbook</span> angle.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">IR playbook themes</div>
+                  <div class="flip-body">
+                    Use this event to illustrate containment-first strategies, communication with regulators, and the need for predefined decision criteria on when to shut down operations and how to manage public messaging.[web:12][web:19]
+                  </div>
+                  <div class="flip-foot">
+                    Activity: Draft a 5-step ransomware IR plan.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">Ransom payment</div>
+                  <div class="flip-body">
+                    Colonial paid approximately 75 Bitcoin (about $4.4 million), though U.S. authorities later recovered a portion of the payment from the attackers’ wallet.[web:13]
+                  </div>
+                  <div class="flip-foot">
+                    Click for <span>ethics & policy</span>.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">Ethical & policy issues</div>
+                  <div class="flip-body">
+                    Ransom payments may reduce downtime but can incentivize further attacks and may intersect with sanctions or legal restrictions, making this a rich scenario for risk, ethics, and policy discussions in class.[web:12][web:18]
+                  </div>
+                  <div class="flip-foot">
+                    Debate: Should critical providers ever pay?
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div>
+          <div class="scenario-box">
+            <strong>Scenario:</strong> Imagine you are the CISO of a regional utility company. Your team discovers ransomware on your business network, but operations are still unaffected. In 10 minutes, you must brief the CEO. What three immediate actions do you recommend, and how do you justify the decision to keep operations online or shut them down?
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- IMPACT -->
+    <section id="impact" class="content-section" style="display:none;">
+      <h3>Impact on Operations & Society</h3>
+      <p>
+        Although the malware hit Colonial’s business systems, the company’s decision to shut down pipeline operations disrupted fuel distribution, leading to shortages, price spikes, and government emergency measures across several states.[web:10][web:12] The incident highlighted how attacks on IT networks can rapidly cascade into physical and economic consequences for critical infrastructure and the broader public.[web:14][web:18]
+      </p>
+
+      <div class="section-inner">
+        <div class="impact-table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Dimension</th>
+                <th>Details</th>
+                <th>Example Discussion Question</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Operational</td>
+                <td>
+                  Pipeline operations were halted for several days while Colonial assessed damage and restored systems, affecting fuel flows from the Gulf Coast to the East Coast.[web:10][web:13]
+                </td>
+                <td>
+                  How would you weigh the tradeoff between operational continuity and security when production is not yet directly impacted?
+                </td>
+              </tr>
+              <tr>
+                <td>Economic</td>
+                <td>
+                  Fuel shortages and panic buying produced localized price spikes and logistical challenges for transportation and aviation sectors.[web:10][web:12]
+                </td>
+                <td>
+                  What additional costs (beyond the ransom) should be factored into a cybersecurity risk model for critical infrastructure?
+                </td>
+              </tr>
+              <tr>
+                <td>Regulatory</td>
+                <td>
+                  The attack prompted greater scrutiny of pipeline cybersecurity and accelerated mandatory security directives and assessments for pipeline operators.[web:12][web:18]
+                </td>
+                <td>
+                  How should regulators balance prescriptive rules versus flexible, risk-based requirements for private critical infrastructure?
+                </td>
+              </tr>
+              <tr>
+                <td>Reputational</td>
+                <td>
+                  Colonial faced criticism for decisions leading up to the attack, including delays in voluntary security assessments and its handling of the incident.[web:12]
+                </td>
+                <td>
+                  How might earlier participation in assessments or stronger public communication have changed perceptions of Colonial’s security posture?
+                </td>
+              </tr>
+              <tr>
+                <td>Strategic</td>
+                <td>
+                  The breach demonstrated that ransomware against business networks can have national security implications when it targets critical infrastructure.[web:14][web:18]
+                </td>
+                <td>
+                  Should ransomware against critical infrastructure be treated differently (e.g., as terrorism) in law and policy?
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="scenario-box">
+            <strong>Mini-activity:</strong> Assign each student group one impact dimension from the table. Have them propose two specific technical controls and two governance/management actions that would reduce that impact in a future incident.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LESSONS & QUIZ -->
+    <section id="lessons" class="content-section" style="display:none;">
+      <h3>Lessons Learned & Knowledge Check</h3>
+      <p>
+        The Colonial incident underscores the importance of hardened remote access, proactive monitoring of precursors, tested recovery capabilities, and clear incident-response playbooks for critical infrastructure operators.[web:10][web:11] It also illustrates how decisions about paying ransoms, shutting down operations, and communicating with regulators and the public can shape long-term risk and policy responses.[web:12][web:18]
+      </p>
+
+      <div class="section-inner">
+        <div>
+          <div class="card-grid" style="margin-bottom:0.9rem;">
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">Remote access & identity</div>
+                  <div class="flip-body">
+                    Enforce MFA on all external access, regularly audit and remove unused accounts, and apply least privilege to limit damage from compromised credentials.[web:10][web:16]
+                  </div>
+                  <div class="flip-foot">
+                    Click for <span>class exercise</span>.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">Exercise idea</div>
+                  <div class="flip-body">
+                    Have students review your institution’s VPN or SSO guidance (or a sample policy) and identify three concrete changes that would have reduced the risk exploited in this case.
+                  </div>
+                  <div class="flip-foot">
+                    Deliverable: 1-page policy critique.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">Monitoring & detection</div>
+                  <div class="flip-body">
+                    Use centralized logging and SIEM analytics to flag unusual logins, privilege changes, and bursts of data exfiltration as early indicators of attack.[web:11][web:14]
+                  </div>
+                  <div class="flip-foot">
+                    Click for <span>log lab</span>.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">Log analysis lab</div>
+                  <div class="flip-body">
+                    Provide synthetic VPN and firewall logs with suspicious patterns similar to those in this case. Ask students to write simple detection rules or queries to surface anomalies.
+                  </div>
+                  <div class="flip-foot">
+                    Outcome: Draft “detections wishlist.”
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flip-card">
+              <div class="flip-card-inner">
+                <div class="flip-face front">
+                  <div class="flip-title">Resilience & recovery</div>
+                  <div class="flip-body">
+                    Maintain offline, tested backups for critical systems and verify that restoration timelines align with the business’s tolerance for downtime.[web:10][web:17]
+                  </div>
+                  <div class="flip-foot">
+                    Click for <span>BC/DR angle</span>.
+                  </div>
+                </div>
+                <div class="flip-face back">
+                  <div class="flip-title">BC/DR planning</div>
+                  <div class="flip-body">
+                    Use Colonial as a scenario in which students must propose RTO/RPO targets and identify which systems must be restored first to minimize societal and economic impact.
+                  </div>
+                  <div class="flip-foot">
+                    Output: Tiered recovery priority list.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="scenario-box">
+            <strong>Capstone prompt:</strong> Ask students to write a 2–3 paragraph executive summary for non-technical leadership, explaining how a single unused VPN account led to national fuel disruptions and outlining three priority investments to prevent similar incidents.
+          </div>
+        </div>
+
+        <div>
+          <div class="quiz" id="quiz">
+            <div class="quiz-item">
+              <h4>1. What was the initial access vector used against Colonial Pipeline?</h4>
+              <div class="quiz-options">
+                <label>
+                  <input type="radio" name="q1" value="a">
+                  Spear-phishing email with a malicious attachment.
+                </label>
+                <label>
+                  <input type="radio" name="q1" value="b">
+                  Exploitation of an internet-facing VPN account with reused credentials and no MFA.[web:10][web:16]
+                </label>
+                <label>
+                  <input type="radio" name="q1" value="c">
+                  USB drop in a corporate parking lot.
+                </label>
+              </div>
+            </div>
+
+            <div class="quiz-item">
+              <h4>2. Why did Colonial shut down pipeline operations even though the ransomware hit IT systems?</h4>
+              <div class="quiz-options">
+                <label>
+                  <input type="radio" name="q2" value="a">
+                  Regulators immediately mandated shutdown of all pipelines nationwide.
+                </label>
+                <label>
+                  <input type="radio" name="q2" value="b">
+                  To prevent potential spread into operational technology and to safely assess the scope of compromise.[web:10][web:14]
+                </label>
+                <label>
+                  <input type="radio" name="q2" value="c">
+                  The ransomware automatically turned off all physical pumps.
+                </label>
+              </div>
+            </div>
+
+            <div class="quiz-item">
+              <h4>3. Which statement about the ransom payment is most accurate?</h4>
+              <div class="quiz-options">
+                <label>
+                  <input type="radio" name="q3" value="a">
+                  Colonial refused to pay, and no ransom was ever transferred.
+                </label>
+                <label>
+                  <input type="radio" name="q3" value="b">
+                  Colonial paid about 75 Bitcoin (around $4.4 million), and later a portion was recovered by U.S. authorities.[web:13]
+                </label>
+                <label>
+                  <input type="radio" name="q3" value="c">
+                  The ransom was paid in cash delivered directly to the attackers.
+                </label>
+              </div>
+            </div>
+
+            <div class="quiz-footer">
+              <button class="btn" id="submitQuiz">Check answers</button>
+              <button class="btn secondary" id="resetQuiz">Reset</button>
+              <div class="quiz-result" id="quizResult"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Navigation
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('.content-section');
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        const target = link.getAttribute('data-target');
+
+        navLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+
+        sections.forEach(sec => {
+          if (sec.id === target) sec.style.display = '';
+          else sec.style.display = 'none';
+        });
+      });
+    });
+
+    // Timeline filter
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const timelineItems = document.querySelectorAll('.timeline-item');
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter');
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        timelineItems.forEach(item => {
+          const type = item.getAttribute('data-type');
+          if (filter === 'all' || filter === type) {
+            item.style.display = 'grid';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Flip cards
+    const flipCards = document.querySelectorAll('.flip-card');
+    flipCards.forEach(card => {
+      card.addEventListener('click', () => {
+        card.classList.toggle('flipped');
+      });
+    });
+
+    // Quiz
+    const quizAnswers = {
+      q1: 'b',
+      q2: 'b',
+      q3: 'b'
+    };
+
+    const submitBtn = document.getElementById('submitQuiz');
+    const resetBtn = document.getElementById('resetQuiz');
+    const quizResult = document.getElementById('quizResult');
+
+    submitBtn.addEventListener('click', () => {
+      let score = 0;
+      let total = Object.keys(quizAnswers).length;
+
+      for (const q in quizAnswers) {
+        const selected = document.querySelector('input[name="' + q + '"]:checked');
+        if (selected && selected.value === quizAnswers[q]) {
+          score++;
+        }
+      }
+
+      if (score === total) {
+        quizResult.textContent = 'Excellent – you answered all questions correctly.';
+      } else {
+        quizResult.textContent = 'You scored ' + score + ' out of ' + total + '. Review the sections and try again.';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      const inputs = document.querySelectorAll('.quiz input[type="radio"]');
+      inputs.forEach(i => i.checked = false);
+      quizResult.textContent = '';
+    });
+  </script>
+</body>
+</html>
