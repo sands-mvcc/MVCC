@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Ohm's & Power Law Lab</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --green: #2ecc71;
+            --black: #1a1a1a;
+            --gray: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--black);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .lab-card {
+            width: 100%;
+            max-width: 850px;
+            border: 3px solid var(--black);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 8px 8px 0px var(--green);
+        }
+
+        .header {
+            border-bottom: 4px solid var(--green);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        .mode-selector {
+            background: var(--black);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        select {
+            padding: 8px;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 40px;
+        }
+
+        .slider-box {
+            background: var(--gray);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--green);
+        }
+
+        .slider-group { margin-bottom: 25px; }
+        
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--green);
+        }
+
+        .result-display {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+        }
+
+        .unit-large {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--black);
+            margin: 0;
+        }
+
+        .formula-hint {
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .technician-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f8f0;
+            border: 1px solid var(--green);
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="lab-card">
+    <div class="header">
+        <h1>Mastery Lab: <span style="color:var(--green)">V, I, R, & P</span></h1>
+        <p>Select a variable to calculate based on known circuit values.</p>
+    </div>
+
+    <div class="mode-selector">
+        <label>I want to find the value of:</label>
+        <select id="mode" onchange="initSim()">
+            <option value="I">Current (I) - Amps</option>
+            <option value="V">Voltage (V) - Volts</option>
+            <option value="R">Resistance (R) - Ohms</option>
+            <option value="P">Power (P) - Watts</option>
+        </select>
+    </div>
+
+    <div class="workspace">
+        <div class="slider-box" id="inputArea">
+            </div>
+
+        <div class="result-display">
+            <p id="resLabel">Resulting Current</p>
+            <h2 class="unit-large" id="mainOutput">0.00</h2>
+            <span id="unitSign">A</span>
+            <div class="formula-hint" id="formulaUsed">I = V / R</div>
+        </div>
+    </div>
+
+    <div class="technician-note" id="feedback">
+        Adjust sliders to begin analysis.
+    </div>
+</div>
+
+<script>
+    const inputs = {
+        V: { label: "Voltage (V)", min: 1, max: 240, val: 12, unit: "V" },
+        I: { label: "Current (I)", min: 0.1, max: 20, val: 2, unit: "A" },
+        R: { label: "Resistance (R)", min: 1, max: 1000, val: 10, unit: "Ω" },
+        P: { label: "Power (P)", min: 1, max: 2000, val: 100, unit: "W" }
+    };
+
+    function initSim() {
+        const mode = document.getElementById('mode').value;
+        const inputArea = document.getElementById('inputArea');
+        inputArea.innerHTML = '';
+        
+        // Determine which two variables to show as inputs
+        let activeInputs = [];
+        if (mode === 'I') activeInputs = ['V', 'R'];
+        if (mode === 'V') activeInputs = ['I', 'R'];
+        if (mode === 'R') activeInputs = ['V', 'I'];
+        if (mode === 'P') activeInputs = ['V', 'I'];
+
+        activeInputs.forEach(key => {
+            const data = inputs[key];
+            inputArea.innerHTML += `
+                <div class="slider-group">
+                    <label>${data.label}: <b id="${key}Val">${data.val}</b>${data.unit}</label>
+                    <input type="range" id="slide_${key}" min="${data.min}" max="${data.max}" value="${data.val}" oninput="updateCalc()">
+                </div>
+            `;
+        });
+        updateCalc();
+    }
+
+    function updateCalc() {
+        const mode = document.getElementById('mode').value;
+        let result = 0;
+        let formula = "";
+        let feedback = "";
+
+        if (mode === 'I') {
+            const v = parseFloat(document.getElementById('slide_V').value);
+            const r = parseFloat(document.getElementById('slide_R').value);
+            document.getElementById('VVal').innerText = v;
+            document.getElementById('RVal').innerText = r;
+            result = v / r;
+            formula = "I = V / R";
+            document.getElementById('unitSign').innerText = "Amperes";
+            document.getElementById('resLabel').innerText = "Current (I)";
+        } else if (mode === 'V') {
+            const i = parseFloat(document.getElementById('slide_I').value);
+            const r = parseFloat(document.getElementById('slide_R').value);
+            document.getElementById('IVal').innerText = i;
+            document.getElementById('RVal').innerText = r;
+            result = i * r;
+            formula = "V = I × R";
+            document.getElementById('unitSign').innerText = "Volts";
+            document.getElementById('resLabel').innerText = "Voltage (V)";
+        } else if (mode === 'R') {
+            const v = parseFloat(document.getElementById('slide_V').value);
+            const i = parseFloat(document.getElementById('slide_I').value);
+            document.getElementById('VVal').innerText = v;
+            document.getElementById('IVal').innerText = i;
+            result = v / i;
+            formula = "R = V / I";
+            document.getElementById('unitSign').innerText = "Ohms";
+            document.getElementById('resLabel').innerText = "Resistance (R)";
+        } else if (mode === 'P') {
+            const v = parseFloat(document.getElementById('slide_V').value);
+            const i = parseFloat(document.getElementById('slide_I').value);
+            document.getElementById('VVal').innerText = v;
+            document.getElementById('IVal').innerText = i;
+            result = v * i;
+            formula = "P = V × I";
+            document.getElementById('unitSign').innerText = "Watts";
+            document.getElementById('resLabel').innerText = "Power (P)";
+        }
+
+        document.getElementById('mainOutput').innerText = result.toFixed(2);
+        document.getElementById('formulaUsed').innerText = formula;
+        
+        // Dynamic Feedback
+        if (mode === 'P' && result > 1500) {
+            feedback = "⚠️ WARNING: High Power load. Standard household circuits (15A) may trip.";
+        } else if (mode === 'I' && result > 10) {
+            feedback = "⚠️ CAUTION: High Current. Ensure wire gauge is sufficient to prevent fire.";
+        } else {
+            feedback = "✅ Circuit values are within typical instructional lab parameters.";
+        }
+        document.getElementById('feedback').innerText = feedback;
+    }
+
+    initSim();
+</script>
+
+</body>
+</html>
