@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular Flow of Income - Interactive Simulation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #1e40af;
+            --light-blue: #3b82f6;
+            --accent-blue: #60a5fa;
+            --dark-gray: #1f2937;
+            --medium-gray: #6b7280;
+            --light-gray: #f3f4f6;
+            --bg: #ffffff;
+            --card: #f9fafb;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #ffffff;
+            color: #1f2937;
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--medium-gray);
+            font-weight: 300;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            animation: fadeIn 1s ease-out 0.3s backwards;
+        }
+
+        .diagram-section {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .diagram-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        .diagram-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .diagram-image {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+        }
+
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-card {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .control-card:hover {
+            border-color: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+        }
+
+        .control-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .control-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .control-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        .slider-container {
+            margin-top: 1rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--medium-gray);
+        }
+
+        .slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            outline: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: #f3f4f6;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--medium-gray);
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        .simulation-section {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            animation: fadeIn 1s ease-out 0.6s backwards;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .flow-visualization {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .flow-node {
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+
+        .flow-node::after {
+            content: '→';
+            position: absolute;
+            right: -1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            color: var(--light-blue);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .flow-node:not(:last-child)::after {
+            opacity: 1;
+        }
+
+        .flow-node.active {
+            background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
+            transform: scale(1.05);
+            border-color: var(--light-blue);
+        }
+
+        .flow-node-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-node-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            color: var(--dark-gray);
+            font-weight: 600;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-blue);
+            color: #ffffff;
+        }
+
+        .scenario-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .scenario-card {
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+
+        .scenario-card:hover {
+            border-color: var(--light-blue);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .scenario-card.active {
+            border-color: var(--primary-blue);
+            background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+        }
+
+        .scenario-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .scenario-desc {
+            font-size: 0.85rem;
+            color: var(--medium-gray);
+            line-height: 1.5;
+        }
+
+        .insights-section {
+            background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            border: 2px solid var(--light-blue);
+            animation: fadeIn 1s ease-out 0.9s backwards;
+        }
+
+        .chart-section {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+            animation: fadeIn 1s ease-out 1.2s backwards;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insights-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insights-content {
+            color: var(--dark-gray);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .insights-content strong {
+            color: var(--primary-blue);
+        }
+
+        .multiplier-effect {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--primary-blue);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 8px;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.1) rotate(180deg);
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes flowPulse {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
+            }
+            50% {
+                box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+            }
+        }
+
+        .flow-animation {
+            animation: flowPulse 2s ease-in-out infinite;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .flow-visualization {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .scenario-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Circular Flow of Income</h1>
+            <p class="subtitle">Interactive Macroeconomic Simulation • Explore the relationships between households, firms, and government</p>
+        </header>
+
+        <div class="main-grid">
+            <div class="diagram-section">
+                <div class="diagram-container">
+                    <img src="circular.png" alt="Circular Flow Diagram" class="diagram-image">
+                    
+                    <div class="simulation-section">
+                        <h2 class="control-title">💰 Current Economic State</h2>
+                        <div class="flow-visualization" id="flowVisualization">
+                            <div class="flow-node" id="householdsNode">
+                                <div class="flow-node-title">Households</div>
+                                <div class="flow-node-value" id="householdsValue">$100B</div>
+                            </div>
+                            <div class="flow-node" id="firmsNode">
+                                <div class="flow-node-title">Firms</div>
+                                <div class="flow-node-value" id="firmsValue">$100B</div>
+                            </div>
+                            <div class="flow-node" id="governmentNode">
+                                <div class="flow-node-title">Government</div>
+                                <div class="flow-node-value" id="governmentValue">$25B</div>
+                            </div>
+                            <div class="flow-node" id="gdpNode">
+                                <div class="flow-node-title">GDP</div>
+                                <div class="flow-node-value" id="gdpValue">$225B</div>
+                            </div>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="btn-primary" onclick="runSimulation()">▶ Run Simulation</button>
+                            <button class="btn-secondary" onclick="resetSimulation()">↻ Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <div class="control-card">
+                    <div class="control-header">
+                        <div class="control-icon">🏠</div>
+                        <div class="control-title">Household Income</div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Wages & Income</span>
+                            <span class="slider-value" id="householdIncomeDisplay">$100B</span>
+                        </div>
+                        <input type="range" id="householdIncome" min="50" max="200" value="100" step="5">
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <span class="metric-label">MPC (Spending Rate)</span>
+                            <span class="metric-value" id="mpcDisplay">0.80</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-card">
+                    <div class="control-header">
+                        <div class="control-icon">🏭</div>
+                        <div class="control-title">Business Activity</div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Investment Level</span>
+                            <span class="slider-value" id="investmentDisplay">$30B</span>
+                        </div>
+                        <input type="range" id="investment" min="10" max="60" value="30" step="5">
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <span class="metric-label">Production</span>
+                            <span class="metric-value" id="productionDisplay">$100B</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-card">
+                    <div class="control-header">
+                        <div class="control-icon">🏛️</div>
+                        <div class="control-title">Government Policy</div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Govt Spending</span>
+                            <span class="slider-value" id="govSpendingDisplay">$25B</span>
+                        </div>
+                        <input type="range" id="govSpending" min="10" max="50" value="25" step="5">
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Tax Rate</span>
+                            <span class="slider-value" id="taxRateDisplay">20%</span>
+                        </div>
+                        <input type="range" id="taxRate" min="10" max="40" value="20" step="2">
+                    </div>
+                </div>
+
+                <div class="control-card">
+                    <div class="control-header">
+                        <div class="control-icon">📊</div>
+                        <div class="control-title">Economic Indicators</div>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <span class="metric-label">Total GDP</span>
+                            <span class="metric-value" id="totalGDP">$225B</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Multiplier Effect</span>
+                            <span class="metric-value" id="multiplier">5.0x</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Velocity of Money</span>
+                            <span class="metric-value" id="velocity">2.25</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="simulation-section">
+            <h2 class="control-title">📈 Try These Scenarios</h2>
+            <div class="scenario-cards">
+                <div class="scenario-card" onclick="applyScenario('recession')">
+                    <div class="scenario-title">📉 Economic Recession</div>
+                    <div class="scenario-desc">Low household income, reduced investment, and decreased government spending</div>
+                </div>
+                <div class="scenario-card" onclick="applyScenario('boom')">
+                    <div class="scenario-title">📈 Economic Boom</div>
+                    <div class="scenario-desc">High consumer confidence, increased investment, and robust government activity</div>
+                </div>
+                <div class="scenario-card" onclick="applyScenario('stimulus')">
+                    <div class="scenario-title">💵 Fiscal Stimulus</div>
+                    <div class="scenario-desc">Government increases spending and reduces taxes to stimulate the economy</div>
+                </div>
+                <div class="scenario-card" onclick="applyScenario('austerity')">
+                    <div class="scenario-title">🔒 Austerity Measures</div>
+                    <div class="scenario-desc">Government cuts spending and raises taxes to reduce deficit</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2 class="chart-title">📊 Economic Variables Comparison</h2>
+            <div class="chart-container">
+                <canvas id="economicChart"></canvas>
+            </div>
+        </div>
+
+        <div class="insights-section">
+            <div class="insights-title">💡 Key Economic Insights</div>
+            <div class="insights-content" id="insightsContent">
+                <p>The circular flow model demonstrates how money moves through an economy. <strong>Households</strong> provide labor and resources to <strong>firms</strong>, who pay wages and profits. This income is then spent on goods and services, creating a continuous cycle.</p>
+                
+                <div class="multiplier-effect">
+                    <strong>The Multiplier Effect:</strong> When the government increases spending by $1B, it creates more than $1B in economic activity. The recipients spend their income (based on MPC), creating additional rounds of spending. With an MPC of 0.80, the multiplier is 5x, meaning $1B in spending generates $5B in total economic activity!
+                </div>
+                
+                <p style="margin-top: 1rem;">
+                    <strong>Key relationships to explore:</strong><br>
+                    • Higher household income → More consumer spending → Increased firm revenue → Higher GDP<br>
+                    • Government spending stimulates demand → Creates jobs → Increases household income<br>
+                    • Taxes reduce disposable income but fund government services<br>
+                    • Investment by firms creates capital and future growth capacity
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Economic Model Variables
+        let householdIncome = 100;
+        let investment = 30;
+        let govSpending = 25;
+        let taxRate = 20;
+        let mpc = 0.80; // Marginal Propensity to Consume
+        let economicChart = null;
+
+        // Initialize Chart
+        function initializeChart() {
+            const ctx = document.getElementById('economicChart').getContext('2d');
+            
+            economicChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Household Income', 'Investment', 'Government Spending', 'Consumption', 'GDP'],
+                    datasets: [{
+                        label: 'Billions ($)',
+                        data: [100, 30, 25, 80, 225],
+                        backgroundColor: [
+                            'rgba(30, 64, 175, 0.7)',   // Primary blue
+                            'rgba(59, 130, 246, 0.7)',  // Light blue
+                            'rgba(96, 165, 250, 0.7)',  // Accent blue
+                            'rgba(147, 197, 253, 0.7)', // Lighter blue
+                            'rgba(30, 64, 175, 0.9)'    // Dark blue for GDP
+                        ],
+                        borderColor: [
+                            'rgba(30, 64, 175, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(96, 165, 250, 1)',
+                            'rgba(147, 197, 253, 1)',
+                            'rgba(30, 64, 175, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Current Economic State (in Billions)',
+                            font: {
+                                size: 16,
+                                family: 'Outfit',
+                                weight: '600'
+                            },
+                            color: '#1f2937'
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 64, 175, 0.9)',
+                            titleFont: {
+                                size: 14,
+                                family: 'Outfit'
+                            },
+                            bodyFont: {
+                                size: 13,
+                                family: 'JetBrains Mono'
+                            },
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return '$' + context.parsed.y.toFixed(1) + 'B';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value + 'B';
+                                },
+                                font: {
+                                    family: 'Outfit',
+                                    size: 11
+                                },
+                                color: '#6b7280'
+                            },
+                            grid: {
+                                color: 'rgba(229, 231, 235, 0.5)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Outfit',
+                                    size: 11
+                                },
+                                color: '#6b7280'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(householdIncome, investment, govSpending, consumption, gdp) {
+            if (economicChart) {
+                economicChart.data.datasets[0].data = [
+                    householdIncome,
+                    investment,
+                    govSpending,
+                    consumption,
+                    gdp
+                ];
+                economicChart.update('none'); // 'none' for instant update without animation
+            }
+        }
+
+        // Initialize event listeners
+        document.getElementById('householdIncome').addEventListener('input', updateValues);
+        document.getElementById('investment').addEventListener('input', updateValues);
+        document.getElementById('govSpending').addEventListener('input', updateValues);
+        document.getElementById('taxRate').addEventListener('input', updateValues);
+
+        function updateValues() {
+            householdIncome = parseFloat(document.getElementById('householdIncome').value);
+            investment = parseFloat(document.getElementById('investment').value);
+            govSpending = parseFloat(document.getElementById('govSpending').value);
+            taxRate = parseFloat(document.getElementById('taxRate').value);
+
+            // Update displays
+            document.getElementById('householdIncomeDisplay').textContent = `$${householdIncome}B`;
+            document.getElementById('investmentDisplay').textContent = `$${investment}B`;
+            document.getElementById('govSpendingDisplay').textContent = `$${govSpending}B`;
+            document.getElementById('taxRateDisplay').textContent = `${taxRate}%`;
+
+            // Calculate MPC based on income (inverse relationship - richer people save more)
+            mpc = Math.max(0.65, Math.min(0.95, 1 - (householdIncome - 50) / 300));
+            document.getElementById('mpcDisplay').textContent = mpc.toFixed(2);
+
+            calculateEconomy();
+        }
+
+        function calculateEconomy() {
+            // Calculate disposable income after taxes
+            const taxes = householdIncome * (taxRate / 100);
+            const disposableIncome = householdIncome - taxes;
+            
+            // Consumer spending based on MPC
+            const consumption = disposableIncome * mpc;
+            
+            // Calculate GDP components: C + I + G
+            const gdp = consumption + investment + govSpending;
+            
+            // Calculate multiplier effect
+            const multiplier = 1 / (1 - mpc);
+            
+            // Calculate velocity of money (GDP / Money Supply approximation)
+            const velocity = gdp / householdIncome;
+            
+            // Production equals spending in equilibrium
+            const production = consumption + investment;
+
+            // Update flow nodes
+            document.getElementById('householdsValue').textContent = `$${householdIncome.toFixed(0)}B`;
+            document.getElementById('firmsValue').textContent = `$${production.toFixed(0)}B`;
+            document.getElementById('governmentValue').textContent = `$${govSpending.toFixed(0)}B`;
+            document.getElementById('gdpValue').textContent = `$${gdp.toFixed(0)}B`;
+
+            // Update indicators
+            document.getElementById('totalGDP').textContent = `$${gdp.toFixed(1)}B`;
+            document.getElementById('multiplier').textContent = `${multiplier.toFixed(1)}x`;
+            document.getElementById('velocity').textContent = velocity.toFixed(2);
+            document.getElementById('productionDisplay').textContent = `$${production.toFixed(0)}B`;
+
+            // Update chart
+            updateChart(householdIncome, investment, govSpending, consumption, gdp);
+
+            // Update insights based on current state
+            updateInsights(gdp, multiplier, mpc, taxRate);
+        }
+
+        function updateInsights(gdp, multiplier, mpc, taxRate) {
+            let insight = `<p>The circular flow model demonstrates how money moves through an economy. <strong>Households</strong> provide labor and resources to <strong>firms</strong>, who pay wages and profits. This income is then spent on goods and services, creating a continuous cycle.</p>`;
+            
+            insight += `<div class="multiplier-effect">
+                <strong>Current Multiplier Effect: ${multiplier.toFixed(1)}x</strong><br>
+                With an MPC of ${mpc.toFixed(2)}, every dollar of government spending generates $${multiplier.toFixed(2)} in total economic activity through successive rounds of spending.
+            </div>`;
+
+            if (gdp > 220) {
+                insight += `<p style="margin-top: 1rem;"><strong>🎉 Strong Economy!</strong> Your GDP of $${gdp.toFixed(1)}B indicates a healthy, growing economy with robust consumer spending and business investment.</p>`;
+            } else if (gdp < 180) {
+                insight += `<p style="margin-top: 1rem;"><strong>⚠️ Economic Slowdown</strong> GDP of $${gdp.toFixed(1)}B suggests the economy may need stimulus. Consider increasing government spending or reducing taxes.</p>`;
+            }
+
+            if (taxRate > 30) {
+                insight += `<p style="margin-top: 0.5rem;"><strong>High Tax Burden:</strong> Current tax rate of ${taxRate}% significantly reduces disposable income, which may dampen consumer spending.</p>`;
+            }
+
+            document.getElementById('insightsContent').innerHTML = insight;
+        }
+
+        function runSimulation() {
+            const nodes = document.querySelectorAll('.flow-node');
+            let currentIndex = 0;
+
+            // Remove all active classes first
+            nodes.forEach(node => node.classList.remove('active', 'flow-animation'));
+
+            // Animate flow through each node
+            const interval = setInterval(() => {
+                if (currentIndex > 0) {
+                    nodes[currentIndex - 1].classList.remove('flow-animation');
+                }
+                
+                if (currentIndex < nodes.length) {
+                    nodes[currentIndex].classList.add('active', 'flow-animation');
+                    currentIndex++;
+                } else {
+                    clearInterval(interval);
+                    // Keep last node highlighted
+                    setTimeout(() => {
+                        nodes.forEach(node => node.classList.remove('active', 'flow-animation'));
+                    }, 1000);
+                }
+            }, 800);
+        }
+
+        function resetSimulation() {
+            document.getElementById('householdIncome').value = 100;
+            document.getElementById('investment').value = 30;
+            document.getElementById('govSpending').value = 25;
+            document.getElementById('taxRate').value = 20;
+            updateValues();
+
+            // Clear active scenario
+            document.querySelectorAll('.scenario-card').forEach(card => {
+                card.classList.remove('active');
+            });
+        }
+
+        function applyScenario(scenario) {
+            // Clear previous active scenario
+            document.querySelectorAll('.scenario-card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            // Mark current scenario as active
+            event.target.closest('.scenario-card').classList.add('active');
+
+            switch(scenario) {
+                case 'recession':
+                    document.getElementById('householdIncome').value = 60;
+                    document.getElementById('investment').value = 15;
+                    document.getElementById('govSpending').value = 15;
+                    document.getElementById('taxRate').value = 22;
+                    break;
+                case 'boom':
+                    document.getElementById('householdIncome').value = 180;
+                    document.getElementById('investment').value = 55;
+                    document.getElementById('govSpending').value = 35;
+                    document.getElementById('taxRate').value = 18;
+                    break;
+                case 'stimulus':
+                    document.getElementById('householdIncome').value = 100;
+                    document.getElementById('investment').value = 30;
+                    document.getElementById('govSpending').value = 45;
+                    document.getElementById('taxRate').value = 14;
+                    break;
+                case 'austerity':
+                    document.getElementById('householdIncome').value = 100;
+                    document.getElementById('investment').value = 25;
+                    document.getElementById('govSpending').value = 15;
+                    document.getElementById('taxRate').value = 32;
+                    break;
+            }
+            updateValues();
+            runSimulation();
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', function() {
+            initializeChart();
+            calculateEconomy();
+        });
+    </script>
+</body>
+</html>
