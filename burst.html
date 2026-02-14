@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Detection: Understanding Perplexity and Burstiness</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: white;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background-color: #2d5016;
+            color: white;
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .sidebar h1 {
+            padding: 0 1.5rem 2rem;
+            color: #90EE90;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #4a7c23;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background-color: #4a7c23;
+            border-left-color: #90EE90;
+        }
+
+        .nav-item.active {
+            background-color: #4a7c23;
+            border-left-color: #90EE90;
+            color: #90EE90;
+        }
+
+        .nav-item::before {
+            content: "▶";
+            position: absolute;
+            left: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-item.active::before {
+            opacity: 1;
+        }
+
+        .nav-text {
+            margin-left: 1rem;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 3rem;
+            flex: 1;
+            max-width: calc(100vw - 280px);
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section h2 {
+            color: #2d5016;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 3px solid #90EE90;
+            padding-bottom: 0.5rem;
+        }
+
+        .section h3 {
+            color: #4a7c23;
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem;
+        }
+
+        .section p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            text-align: justify;
+        }
+
+        .highlight-box {
+            background-color: #f0f8f0;
+            border-left: 5px solid #4a7c23;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 5px;
+        }
+
+        .example-box {
+            background-color: #f8f8f8;
+            border: 2px solid #90EE90;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+        }
+
+        .example-box h4 {
+            color: #2d5016;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .human-text {
+            background-color: #e8f5e8;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-style: italic;
+        }
+
+        .ai-text {
+            background-color: #fff5f5;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-style: italic;
+        }
+
+        .key-term {
+            background-color: #90EE90;
+            color: #2d5016;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 280px;
+            width: calc(100% - 280px);
+            height: 4px;
+            background-color: #e0e0e0;
+            z-index: 1000;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #4a7c23;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .interactive-button {
+            background-color: #4a7c23;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin: 1rem 0;
+            transition: background-color 0.3s ease;
+        }
+
+        .interactive-button:hover {
+            background-color: #2d5016;
+        }
+
+        .quiz-container {
+            background-color: #f0f8f0;
+            padding: 2rem;
+            border-radius: 10px;
+            margin: 2rem 0;
+        }
+
+        .code-block {
+            background-color: #1e1e1e;
+            color: #90EE90;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+            .main-content {
+                margin-left: 250px;
+                padding: 2rem;
+            }
+            .progress-bar {
+                left: 250px;
+                width: calc(100% - 250px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="container">
+        <nav class="sidebar">
+            <h1>AI Detection Lesson</h1>
+            <div class="nav-item active" data-section="introduction">
+                <div class="nav-text">Introduction</div>
+            </div>
+            <div class="nav-item" data-section="perplexity">
+                <div class="nav-text">Understanding Perplexity</div>
+            </div>
+            <div class="nav-item" data-section="burstiness">
+                <div class="nav-text">Understanding Burstiness</div>
+            </div>
+            <div class="nav-item" data-section="detection-process">
+                <div class="nav-text">Detection Process</div>
+            </div>
+            <div class="nav-item" data-section="examples">
+                <div class="nav-text">Comparative Examples</div>
+            </div>
+            <div class="nav-item" data-section="takeaways">
+                <div class="nav-text">Key Takeaways</div>
+            </div>
+            <div class="nav-item" data-section="prompt-technique">
+                <div class="nav-text">Detection Evasion</div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <section id="introduction" class="section active">
+                <h2>Introduction to AI Text Detection</h2>
+                <p>This lesson will introduce the methods AI detectors use to identify AI-generated versus human-created text and writing. It is very important that educators understand these concepts.</p>
+                
+                <div class="highlight-box">
+                    <h3>Two Key Factors</h3>
+                    <p>When creating AI-generated text, two factors are used to measure human versus AI-sourced text:</p>
+                    <ul style="margin-left: 2rem; margin-top: 1rem;">
+                        <li><span class="key-term">Perplexity</span> - How predictable the text is</li>
+                        <li><span class="key-term">Burstiness</span> - Variation in sentence structure and complexity</li>
+                    </ul>
+                </div>
+
+                <p>Understanding these concepts is crucial for educators who need to distinguish between human and AI-generated content in academic settings.</p>
+                
+                <button class="interactive-button" onclick="showSection('perplexity')">Start Learning →</button>
+            </section>
+
+            <section id="perplexity" class="section">
+                <h2>Understanding Perplexity</h2>
+                
+                <div class="highlight-box">
+                    <h3>What is Perplexity?</h3>
+                    <p><span class="key-term">Perplexity</span> is a measure used in natural language processing (NLP) to quantify how well a probabilistic model predicts a sequence of words.</p>
+                </div>
+
+                <h3>Key Characteristics:</h3>
+                <p><strong>Lower perplexity indicates a better prediction model.</strong> When evaluating text perplexity, the detection algorithms evaluate how "natural" the generated text appears. A model with low perplexity produces text that aligns closely with typical human language patterns.</p>
+
+                <div class="example-box">
+                    <h4>How Perplexity Works in Detection:</h4>
+                    <p><strong>Human Writing:</strong> Naturally incorporates a wide variety of linguistic patterns, idioms, and unpredictable word choices. This can sometimes increase perplexity, as human text does not always follow strictly probabilistic patterns.</p>
+                    <p><strong>AI Writing:</strong> Models strive to minimize perplexity by predicting the next most likely word based on context. As a result, AI-generated text might feel overly "perfect" or formulaic.</p>
+                </div>
+
+                <button class="interactive-button" onclick="showSection('burstiness')">Next: Burstiness →</button>
+            </section>
+
+            <section id="burstiness" class="section">
+                <h2>Understanding Burstiness</h2>
+                
+                <div class="highlight-box">
+                    <h3>What is Burstiness?</h3>
+                    <p><span class="key-term">Burstiness</span> refers to the variability in sentence length, structure, and complexity within a piece of text.</p>
+                </div>
+
+                <h3>Human vs. AI Burstiness:</h3>
+                <p><strong>Human Writing:</strong> Often exhibits high burstiness, with longer, complex sentences interspersed with shorter, simpler ones. This variation gives human writing its dynamic and engaging quality.</p>
+                
+                <p><strong>AI-Generated Text:</strong> Tends to be more uniform in style and structure, producing consistent sentence lengths and structures. This can make the text seem monotonous or overly polished, lacking the "flow" of natural human expression.</p>
+
+                <div class="example-box">
+                    <h4>Burstiness in Practice:</h4>
+                    <p>Humans often write with high burstiness, especially in creative or emotional contexts. A paragraph might contain an intricate, descriptive sentence followed by a succinct statement for emphasis.</p>
+                </div>
+
+                <button class="interactive-button" onclick="showSection('detection-process')">Next: Detection Process →</button>
+            </section>
+
+            <section id="detection-process" class="section">
+                <h2>The Detection Process</h2>
+                
+                <h3>How Detectors Analyze Perplexity:</h3>
+                <div class="example-box">
+                    <p><strong>Human Writers:</strong> The algorithm assumes human writers naturally incorporate a wide variety of linguistic patterns, idioms, and unpredictable word choices. This can sometimes increase perplexity, as human text does not always follow strictly probabilistic patterns.</p>
+                    
+                    <p><strong>AI Models:</strong> Strive to minimize perplexity by predicting the next most likely word based on context. As a result, AI-generated text might feel overly "perfect" or formulaic.</p>
+                </div>
+
+                <h3>How Detectors Evaluate Burstiness:</h3>
+                <div class="example-box">
+                    <p><strong>Human Writing:</strong> Detectors assume humans often write with high burstiness, especially in creative or emotional contexts. A paragraph might contain an intricate, descriptive sentence followed by a succinct statement for emphasis.</p>
+                    
+                    <p><strong>AI-Generated Text:</strong> Tends to have low burstiness, producing consistent sentence lengths and structures. This can make the text seem monotonous or overly polished, lacking the "flow" of natural human expression.</p>
+                </div>
+
+                <button class="interactive-button" onclick="showSection('examples')">See Examples →</button>
+            </section>
+
+            <section id="examples" class="section">
+                <h2>Comparative Examples</h2>
+                
+                <h3>Example of Human Writing:</h3>
+                <div class="human-text">
+                    "The sun dipped below the horizon, casting a fiery glow across the sky. It was breathtaking. For a moment, everything felt still, as though the world had paused to admire the beauty."
+                </div>
+                <p><strong>Analysis:</strong> The burstiness is evident - a long descriptive sentence is followed by a short, impactful one. This creates rhythm and emotional impact.</p>
+
+                <h3>Example of AI-Generated Text:</h3>
+                <div class="ai-text">
+                    "The sun was setting. The sky turned orange and red. It was beautiful. Everything seemed peaceful."
+                </div>
+                <p><strong>Analysis:</strong> The text is grammatically correct but lacks the variety and rhythm typical of human writing. Notice the uniform sentence structure and predictable word choices.</p>
+
+                <div class="quiz-container">
+                    <h4>Interactive Exercise:</h4>
+                    <p>Click the button below to reveal the key differences:</p>
+                    <button class="interactive-button" onclick="toggleAnalysis()">Show Detailed Analysis</button>
+                    <div id="detailedAnalysis" style="display: none; margin-top: 1rem;">
+                        <p><strong>Human Text Features:</strong></p>
+                        <ul style="margin-left: 2rem;">
+                            <li>Varied sentence lengths (long descriptive + short impactful)</li>
+                            <li>Rich, descriptive language ("fiery glow," "breathtaking")</li>
+                            <li>Emotional connection and metaphor</li>
+                            <li>Natural flow and rhythm</li>
+                        </ul>
+                        <p><strong>AI Text Features:</strong></p>
+                        <ul style="margin-left: 2rem;">
+                            <li>Uniform sentence structure</li>
+                            <li>Simple, predictable vocabulary</li>
+                            <li>Lacks emotional depth</li>
+                            <li>Monotonous rhythm</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <button class="interactive-button" onclick="showSection('takeaways')">Key Takeaways →</button>
+            </section>
+
+            <section id="takeaways" class="section">
+                <h2>Key Takeaways</h2>
+                
+                <div class="highlight-box">
+                    <h3>The Signatures of Writing</h3>
+                    <p>While AI-generated text is increasingly sophisticated, the differences in <span class="key-term">perplexity</span> and <span class="key-term">burstiness</span> often reveal the distinct "signatures" of human versus machine writing.</p>
+                </div>
+
+                <h3>Human Writing Characteristics:</h3>
+                <ul style="margin-left: 2rem; margin-bottom: 2rem;">
+                    <li>More likely to use unpredictable structures</li>
+                    <li>Varies sentence patterns naturally</li>
+                    <li>Contributes to richness and authenticity</li>
+                    <li>Shows emotional and creative expression</li>
+                    <li>Contains natural inconsistencies</li>
+                </ul>
+
+                <h3>AI Writing Characteristics:</h3>
+                <ul style="margin-left: 2rem; margin-bottom: 2rem;">
+                    <li>Optimizes for predictable, "correct" patterns</li>
+                    <li>Maintains consistent structure</li>
+                    <li>Lacks natural human variability</li>
+                    <li>May appear overly polished</li>
+                    <li>Follows probabilistic word selection</li>
+                </ul>
+
+                <button class="interactive-button" onclick="showSection('prompt-technique')">Learn Evasion Techniques →</button>
+            </section>
+
+            <section id="prompt-technique" class="section">
+                <h2>Detection Evasion Technique</h2>
+                
+                <div class="highlight-box">
+                    <h3>Important Note for Educators</h3>
+                    <p>The following information is provided for educational awareness. Understanding these techniques helps educators better identify when students might be attempting to circumvent AI detection systems.</p>
+                </div>
+
+                <h3>Defeating AI Text Detection:</h3>
+                <p>The following text included in a prompt can be used to defeat AI text generation detection by specifically targeting the factors we've learned about:</p>
+
+                <div class="code-block">
+Generate text content that must have a high degree of perplexity and the highest degree of burstiness.
+                </div>
+
+                <div class="example-box">
+                    <h4>How This Works:</h4>
+                    <p><strong>High Perplexity:</strong> Instructs the AI to use more unpredictable word choices and linguistic patterns, mimicking human unpredictability.</p>
+                    <p><strong>High Burstiness:</strong> Encourages varied sentence structures, mixing complex and simple sentences to create the rhythm characteristic of human writing.</p>
+                </div>
+
+                <div class="highlight-box">
+                    <h3>Educational Implications</h3>
+                    <p>As an educator, being aware of this technique helps you:</p>
+                    <ul style="margin-left: 2rem; margin-top: 1rem;">
+                        <li>Better evaluate student submissions</li>
+                        <li>Look for other indicators of AI use</li>
+                        <li>Develop more sophisticated detection strategies</li>
+                        <li>Educate students about academic integrity</li>
+                    </ul>
+                </div>
+
+                <button class="interactive-button" onclick="showSection('introduction')">Return to Start</button>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all nav items
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+
+            // Add active class to corresponding nav item
+            const activeNavItem = document.querySelector(`[data-section="${sectionId}"]`);
+            if (activeNavItem) {
+                activeNavItem.classList.add('active');
+            }
+
+            // Update progress bar
+            updateProgressBar(sectionId);
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        function updateProgressBar(sectionId) {
+            const sections = ['introduction', 'perplexity', 'burstiness', 'detection-process', 'examples', 'takeaways', 'prompt-technique'];
+            const currentIndex = sections.indexOf(sectionId);
+            const progress = ((currentIndex + 1) / sections.length) * 100;
+            
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function toggleAnalysis() {
+            const analysis = document.getElementById('detailedAnalysis');
+            const button = analysis.previousElementSibling;
+            
+            if (analysis.style.display === 'none') {
+                analysis.style.display = 'block';
+                button.textContent = 'Hide Analysis';
+            } else {
+                analysis.style.display = 'none';
+                button.textContent = 'Show Detailed Analysis';
+            }
+        }
+
+        // Add click event listeners to navigation items
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const sectionId = this.getAttribute('data-section');
+                    showSection(sectionId);
+                });
+            });
+
+            // Initialize progress bar
+            updateProgressBar('introduction');
+        });
+
+        // Add smooth scrolling behavior
+        document.documentElement.style.scrollBehavior = 'smooth';
+    </script>
+</body>
+</html>
