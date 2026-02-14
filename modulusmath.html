@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modular Arithmetic Clock - Interactive Learning Tool</title>
+    <style>
+        /* 
+        ============================================
+        MODULAR ARITHMETIC CLOCK VISUALIZER
+        ============================================
+        README:
+        This is an interactive pedagogical tool for teaching modular arithmetic through
+        clock-like circular visualization. Open this HTML file in any modern browser.
+        
+        KEYBOARD SHORTCUTS:
+        - SPACE: Play/Pause animation
+        - RIGHT ARROW: Step forward one count
+        - LEFT ARROW: Step backward one count
+        - R: Reset to initial state
+        
+        FEATURES:
+        - Adjustable modulus (8-16)
+        - Positive/negative counting with customizable step sizes
+        - Smooth animations with speed control
+        - Exercise mode with immediate feedback
+        - Fast-forward mode for large counts
+        - Equivalence class visualization
+        
+        MAIN FUNCTIONS:
+        - computeResidue(n, m): Calculate n mod m correctly for negative numbers
+        - animateToResidue(target): Smoothly animate clock hand to target position
+        - stepOnce(direction): Advance one step forward or backward
+        - updateUI(): Refresh all display elements
+        ============================================
+        */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .clock-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #clockCanvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .info-display {
+            margin-top: 20px;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .current-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #5a67d8;
+            margin: 10px 0;
+        }
+        
+        .equation-display {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .step-info {
+            font-size: 1.2em;
+            color: #718096;
+            margin: 10px 0;
+        }
+        
+        .controls-panel {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        
+        .control-group input[type="number"],
+        .control-group input[type="range"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+        
+        .control-group input[type="range"] {
+            padding: 0;
+        }
+        
+        .slider-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+            color: #5a67d8;
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: #5a67d8;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .toggle-switch input[type="checkbox"] {
+            width: 50px;
+            height: 26px;
+            position: relative;
+            appearance: none;
+            background: #cbd5e0;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch input[type="checkbox"]:checked {
+            background: #5a67d8;
+        }
+        
+        .toggle-switch input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch input[type="checkbox"]:checked::before {
+            left: 26px;
+        }
+        
+        .history-trail {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .history-trail h3 {
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        
+        .trail-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .trail-item {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            background: #5a67d8;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .mapping-table {
+            margin-top: 15px;
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .mapping-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .mapping-table th,
+        .mapping-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .mapping-table th {
+            background: #5a67d8;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .explanation-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #edf2f7;
+            border-left: 4px solid #5a67d8;
+            border-radius: 8px;
+        }
+        
+        .explanation-box h3 {
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        
+        .explanation-box p {
+            line-height: 1.6;
+            color: #4a5568;
+        }
+        
+        .exercises {
+            margin-top: 30px;
+            padding: 25px;
+            background: #fff5f5;
+            border-radius: 15px;
+            border: 2px solid #fc8181;
+        }
+        
+        .exercises h2 {
+            color: #c53030;
+            margin-bottom: 15px;
+        }
+        
+        .exercise-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .exercise-item h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .exercise-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+        
+        .exercise-input input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+        
+        .feedback {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .feedback.correct {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .feedback.incorrect {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .equivalence-display {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e6fffa;
+            border-radius: 10px;
+            border: 2px solid #81e6d9;
+        }
+        
+        .equivalence-display h3 {
+            color: #234e52;
+            margin-bottom: 10px;
+        }
+        
+        .equiv-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .equiv-item {
+            padding: 8px 12px;
+            background: #4fd1c5;
+            color: white;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        footer {
+            background: #2d3748;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🕐 Modular Arithmetic Clock</h1>
+            <p>Visualize remainder arithmetic through interactive circular counting</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="clock-container">
+                <canvas id="clockCanvas" width="600" height="600" role="img" aria-label="Modular arithmetic clock visualization"></canvas>
+                
+                <div class="info-display">
+                    <div class="step-info" id="stepInfo">Step 0: value = 0</div>
+                    <div class="current-value" id="currentValue">Remainder: 0</div>
+                    <div class="equation-display" id="equationDisplay">0 ≡ 0 (mod 8)</div>
+                </div>
+                
+                <div class="history-trail">
+                    <h3>Recent Positions</h3>
+                    <div class="trail-items" id="trailItems"></div>
+                </div>
+                
+                <div class="explanation-box">
+                    <h3>What's Happening?</h3>
+                    <p id="explanationText">Set your parameters and press Play to start exploring modular arithmetic!</p>
+                </div>
+            </div>
+            
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label for="modulusSlider">Modulus (m): <span class="slider-value" id="modulusValue">8</span></label>
+                    <input type="range" id="modulusSlider" min="8" max="16" value="8" aria-label="Modulus value">
+                </div>
+                
+                <div class="control-group">
+                    <label for="countInput">Count Target (any integer):</label>
+                    <input type="number" id="countInput" value="11" aria-label="Count target">
+                </div>
+                
+                <div class="control-group">
+                    <label for="stepSize">Step Size:</label>
+                    <input type="number" id="stepSize" value="1" aria-label="Step size">
+                </div>
+                
+                <div class="control-group">
+                    <label for="speedSlider">Animation Speed: <span class="slider-value" id="speedValue">5</span> steps/sec</label>
+                    <input type="range" id="speedSlider" min="1" max="20" value="5" aria-label="Animation speed">
+                </div>
+                
+                <div class="control-group toggle-switch">
+                    <input type="checkbox" id="loopToggle" aria-label="Loop mode">
+                    <label for="loopToggle">Loop Mode (infinite counting)</label>
+                </div>
+                
+                <div class="control-group toggle-switch">
+                    <input type="checkbox" id="equivToggle" aria-label="Show equivalence classes">
+                    <label for="equivToggle">Show Equivalence Classes</label>
+                </div>
+                
+                <div class="control-group toggle-switch">
+                    <input type="checkbox" id="detailsToggle" aria-label="Advanced details">
+                    <label for="detailsToggle">Advanced Details</label>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-primary" id="playBtn" aria-label="Play animation">▶ Play</button>
+                    <button class="btn-secondary" id="pauseBtn" aria-label="Pause animation">⏸ Pause</button>
+                    <button class="btn-success" id="stepForwardBtn" aria-label="Step forward">→ Step Forward</button>
+                    <button class="btn-warning" id="stepBackBtn" aria-label="Step backward">← Step Back</button>
+                    <button class="btn-danger" id="resetBtn" aria-label="Reset to initial state">↺ Reset</button>
+                </div>
+                
+                <div class="mapping-table" id="mappingTable">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Integer</th>
+                                <th>Remainder</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mappingBody"></tbody>
+                    </table>
+                </div>
+                
+                <div class="equivalence-display" id="equivDisplay" style="display: none;">
+                    <h3>Numbers ≡ <span id="equivResidue">0</span> (mod <span id="equivModulus">8</span>)</h3>
+                    <div class="equiv-items" id="equivItems"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="exercises">
+            <h2>Practice Exercises</h2>
+            
+            <div class="exercise-item">
+                <h3>Exercise 1: Basic Remainder</h3>
+                <p>If m = 12, what is 37 mod 12? Use the simulator to check your answer!</p>
+                <div class="exercise-input">
+                    <input type="number" id="exercise1Input" placeholder="Your answer" aria-label="Exercise 1 answer">
+                    <button class="btn-primary" onclick="checkExercise1()">Check Answer</button>
+                </div>
+                <div id="exercise1Feedback"></div>
+            </div>
+            
+            <div class="exercise-item">
+                <h3>Exercise 2: Negative Numbers</h3>
+                <p>If m = 10, what is -23 mod 10? Remember: modular arithmetic always gives non-negative remainders!</p>
+                <div class="exercise-input">
+                    <input type="number" id="exercise2Input" placeholder="Your answer" aria-label="Exercise 2 answer">
+                    <button class="btn-primary" onclick="checkExercise2()">Check Answer</button>
+                </div>
+                <div id="exercise2Feedback"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Interactive Modular Arithmetic Learning Tool | Use keyboard shortcuts: SPACE (play/pause), → (step forward), ← (step back), R (reset)</p>
+        </footer>
+    </div>
+    
+    <script>
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        
+        const state = {
+            modulus: 8,
+            currentPosition: 0,
+            currentCount: 0,
+            targetCount: 11,
+            stepSize: 1,
+            stepIndex: 0,
+            isPlaying: false,
+            animationSpeed: 5,
+            loopMode: false,
+            history: [],
+            animationId: null,
+            currentAngle: -Math.PI / 2,
+            targetAngle: -Math.PI / 2,
+            isAnimating: false
+        };
+        
+        // ============================================
+        // CORE MATHEMATICAL FUNCTIONS
+        // ============================================
+        
+        /**
+         * Compute n mod m correctly for negative numbers
+         * JavaScript's % operator doesn't handle negatives the way we want
+         */
+        function computeResidue(n, m) {
+            return ((n % m) + m) % m;
+        }
+        
+        /**
+         * Calculate angle for a given residue position on the clock
+         */
+        function getAngleForPosition(position, modulus) {
+            return -Math.PI / 2 + (position * 2 * Math.PI) / modulus;
+        }
+        
+        /**
+         * Add to history trail with maximum length
+         */
+        function addToHistory(value) {
+            state.history.push(value);
+            if (state.history.length > 10) {
+                state.history.shift();
+            }
+        }
+        
+        // ============================================
+        // CANVAS DRAWING FUNCTIONS
+        // ============================================
+        
+        const canvas = document.getElementById('clockCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function drawClock() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 60;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw outer circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#5a67d8';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            // Draw ticks and labels
+            for (let i = 0; i < state.modulus; i++) {
+                const angle = getAngleForPosition(i, state.modulus);
+                const x1 = centerX + radius * Math.cos(angle);
+                const y1 = centerY + radius * Math.sin(angle);
+                const x2 = centerX + (radius - 20) * Math.cos(angle);
+                const y2 = centerY + (radius - 20) * Math.sin(angle);
+                
+                // Highlight current position
+                if (i === state.currentPosition) {
+                    ctx.beginPath();
+                    ctx.arc(x1, y1, 30, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ff6347';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+                
+                // Draw tick
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = '#5a67d8';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw label
+                const labelX = centerX + (radius + 35) * Math.cos(angle);
+                const labelY = centerY + (radius + 35) * Math.sin(angle);
+                ctx.fillStyle = '#2d3748';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(i.toString(), labelX, labelY);
+            }
+            
+            // Draw clock hand
+            const handLength = radius - 40;
+            const handX = centerX + handLength * Math.cos(state.currentAngle);
+            const handY = centerY + handLength * Math.sin(state.currentAngle);
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(handX, handY);
+            ctx.strokeStyle = '#e53e3e';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            
+            // Draw center circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
+            ctx.fillStyle = '#2d3748';
+            ctx.fill();
+            
+            // Draw arrow head
+            const arrowSize = 20;
+            const arrowAngle = Math.atan2(handY - centerY, handX - centerX);
+            ctx.beginPath();
+            ctx.moveTo(handX, handY);
+            ctx.lineTo(
+                handX - arrowSize * Math.cos(arrowAngle - Math.PI / 6),
+                handY - arrowSize * Math.sin(arrowAngle - Math.PI / 6)
+            );
+            ctx.lineTo(
+                handX - arrowSize * Math.cos(arrowAngle + Math.PI / 6),
+                handY - arrowSize * Math.sin(arrowAngle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fillStyle = '#e53e3e';
+            ctx.fill();
+        }
+        
+        // ============================================
+        // ANIMATION FUNCTIONS
+        // ============================================
+        
+        function animateToResidue(targetPosition) {
+            state.targetAngle = getAngleForPosition(targetPosition, state.modulus);
+            state.isAnimating = true;
+            
+            function animate() {
+                if (!state.isAnimating) return;
+                
+                const diff = state.targetAngle - state.currentAngle;
+                const normalizedDiff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                
+                if (Math.abs(normalizedDiff) < 0.01) {
+                    state.currentAngle = state.targetAngle;
+                    state.isAnimating = false;
+                    drawClock();
+                    return;
+                }
+                
+                state.currentAngle += normalizedDiff * 0.15;
+                drawClock();
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+        
+        // ============================================
+        // STEP AND PLAY FUNCTIONS
+        // ============================================
+        
+        function stepOnce(direction) {
+            const step = state.stepSize * direction;
+            state.currentCount += step;
+            state.stepIndex++;
+            
+            state.currentPosition = computeResidue(state.currentCount, state.modulus);
+            addToHistory(state.currentPosition);
+            
+            animateToResidue(state.currentPosition);
+            updateUI();
+        }
+        
+        function play() {
+            if (state.isPlaying) return;
+            
+            state.isPlaying = true;
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            
+            const interval = 1000 / state.animationSpeed;
+            
+            function playLoop() {
+                if (!state.isPlaying) return;
+                
+                // Check if we've reached target (unless in loop mode)
+                if (!state.loopMode && Math.abs(state.currentCount) >= Math.abs(state.targetCount)) {
+                    pause();
+                    return;
+                }
+                
+                stepOnce(Math.sign(state.targetCount) || 1);
+                
+                state.animationId = setTimeout(playLoop, interval);
+            }
+            
+            playLoop();
+        }
+        
+        function pause() {
+            state.isPlaying = false;
+            if (state.animationId) {
+                clearTimeout(state.animationId);
+                state.animationId = null;
+            }
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+        }
+        
+        function reset() {
+            pause();
+            state.currentPosition = 0;
+            state.currentCount = 0;
+            state.stepIndex = 0;
+            state.history = [];
+            state.currentAngle = -Math.PI / 2;
+            state.targetAngle = -Math.PI / 2;
+            updateUI();
+            drawClock();
+        }
+        
+        // ============================================
+        // UI UPDATE FUNCTIONS
+        // ============================================
+        
+        function updateUI() {
+            // Update displays
+            document.getElementById('currentValue').textContent = `Remainder: ${state.currentPosition}`;
+            document.getElementById('equationDisplay').textContent = 
+                `${state.currentCount} ≡ ${state.currentPosition} (mod ${state.modulus})`;
+            document.getElementById('stepInfo').textContent = 
+                `Step ${state.stepIndex}: value = ${state.currentCount}`;
+            
+            // Update history trail
+            const trailItems = document.getElementById('trailItems');
+            trailItems.innerHTML = '';
+            state.history.forEach((val, idx) => {
+                const item = document.createElement('div');
+                item.className = 'trail-item';
+                item.textContent = val;
+                item.style.opacity = (idx + 1) / state.history.length;
+                trailItems.appendChild(item);
+            });
+            
+            // Update mapping table
+            updateMappingTable();
+            
+            // Update explanation
+            updateExplanation();
+            
+            // Update equivalence classes if enabled
+            if (document.getElementById('equivToggle').checked) {
+                updateEquivalenceClasses();
+            }
+        }
+        
+        function updateMappingTable() {
+            const tbody = document.getElementById('mappingBody');
+            tbody.innerHTML = '';
+            
+            const start = -state.modulus;
+            const end = 2 * state.modulus;
+            
+            for (let i = start; i <= end; i++) {
+                const row = tbody.insertRow();
+                const cell1 = row.insertCell(0);
+                const cell2 = row.insertCell(1);
+                cell1.textContent = i;
+                cell2.textContent = computeResidue(i, state.modulus);
+                
+                if (i === state.currentCount) {
+                    row.style.background = '#ffd700';
+                    row.style.fontWeight = 'bold';
+                }
+            }
+        }
+        
+        function updateExplanation() {
+            const explanationText = document.getElementById('explanationText');
+            const detailsMode = document.getElementById('detailsToggle').checked;
+            
+            if (state.currentCount === 0) {
+                explanationText.textContent = "We start at position 0. Set your parameters and press Play to begin!";
+            } else if (state.currentCount > 0) {
+                const cycles = Math.floor(state.currentCount / state.modulus);
+                const remainder = state.currentPosition;
+                
+                if (detailsMode) {
+                    explanationText.textContent = 
+                        `Starting from 0, we counted ${state.currentCount} steps forward. ` +
+                        `This equals ${cycles} complete cycle(s) around the clock plus ${remainder} extra step(s). ` +
+                        `Mathematically: ${state.currentCount} = ${cycles} × ${state.modulus} + ${remainder}, ` +
+                        `so ${state.currentCount} mod ${state.modulus} = ${remainder}.`;
+                } else {
+                    explanationText.textContent = 
+                        `After counting ${state.currentCount} from 0, we land at ${remainder} because ` +
+                        `we went around the clock ${cycles} time(s) and had ${remainder} left over.`;
+                }
+            } else {
+                const absCount = Math.abs(state.currentCount);
+                const cycles = Math.floor(absCount / state.modulus);
+                
+                if (detailsMode) {
+                    explanationText.textContent = 
+                        `Counting backward ${absCount} steps from 0 lands us at ${state.currentPosition}. ` +
+                        `In modular arithmetic, ${state.currentCount} ≡ ${state.currentPosition} (mod ${state.modulus}) ` +
+                        `because negative numbers wrap around to their positive equivalents.`;
+                } else {
+                    explanationText.textContent = 
+                        `Counting backward ${absCount} from 0, we land at ${state.currentPosition}. ` +
+                        `Going backward wraps around the clock in the opposite direction!`;
+                }
+            }
+        }
+        
+        function updateEquivalenceClasses() {
+            const equivDisplay = document.getElementById('equivDisplay');
+            const equivItems = document.getElementById('equivItems');
+            const equivResidue = document.getElementById('equivResidue');
+            const equivModulus = document.getElementById('equivModulus');
+            
+            equivDisplay.style.display = 'block';
+            equivResidue.textContent = state.currentPosition;
+            equivModulus.textContent = state.modulus;
+            
+            equivItems.innerHTML = '';
+            
+            // Show 10 examples
+            for (let i = -2; i < 8; i++) {
+                const value = state.currentPosition + i * state.modulus;
+                const item = document.createElement('div');
+                item.className = 'equiv-item';
+                item.textContent = value;
+                if (value === state.currentCount) {
+                    item.style.background = '#ffd700';
+                    item.style.color = '#2d3748';
+                }
+                equivItems.appendChild(item);
+            }
+        }
+        
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+        
+        document.getElementById('modulusSlider').addEventListener('input', (e) => {
+            state.modulus = parseInt(e.target.value);
+            document.getElementById('modulusValue').textContent = state.modulus;
+            reset();
+        });
+        
+        document.getElementById('countInput').addEventListener('change', (e) => {
+            state.targetCount = parseInt(e.target.value) || 0;
+        });
+        
+        document.getElementById('stepSize').addEventListener('change', (e) => {
+            state.stepSize = parseInt(e.target.value) || 1;
+        });
+        
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            state.animationSpeed = parseInt(e.target.value);
+            document.getElementById('speedValue').textContent = state.animationSpeed;
+        });
+        
+        document.getElementById('loopToggle').addEventListener('change', (e) => {
+            state.loopMode = e.target.checked;
+        });
+        
+        document.getElementById('equivToggle').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                updateEquivalenceClasses();
+            } else {
+                document.getElementById('equivDisplay').style.display = 'none';
+            }
+        });
+        
+        document.getElementById('playBtn').addEventListener('click', play);
+        document.getElementById('pauseBtn').addEventListener('click', pause);
+        document.getElementById('stepForwardBtn').addEventListener('click', () => stepOnce(1));
+        document.getElementById('stepBackBtn').addEventListener('click', () => stepOnce(-1));
+        document.getElementById('resetBtn').addEventListener('click', reset);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    if (state.isPlaying) pause();
+                    else play();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    stepOnce(1);
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    stepOnce(-1);
+                    break;
+                case 'r':
+                case 'R':
+                    e.preventDefault();
+                    reset();
+                    break;
+            }
+        });
+        
+        // ============================================
+        // EXERCISE FUNCTIONS
+        // ============================================
+        
+        function checkExercise1() {
+            const answer = parseInt(document.getElementById('exercise1Input').value);
+            const correct = computeResidue(37, 12);
+            const feedback = document.getElementById('exercise1Feedback');
+            
+            if (answer === correct) {
+                feedback.className = 'feedback correct';
+                feedback.textContent = `✓ Correct! 37 mod 12 = ${correct}. Great job!`;
+            } else {
+                feedback.className = 'feedback incorrect';
+                feedback.textContent = `✗ Not quite. Try using the simulator with m=12 and count=37. The answer is ${correct}.`;
+            }
+        }
+        
+        function checkExercise2() {
+            const answer = parseInt(document.getElementById('exercise2Input').value);
+            const correct = computeResidue(-23, 10);
+            const feedback = document.getElementById('exercise2Feedback');
+            
+            if (answer === correct) {
+                feedback.className = 'feedback correct';
+                feedback.textContent = `✓ Correct! -23 mod 10 = ${correct}. Excellent understanding of negative modular arithmetic!`;
+            } else {
+                feedback.className = 'feedback incorrect';
+                feedback.textContent = `✗ Not quite. Remember: modular arithmetic gives non-negative remainders. Try m=10, count=-23. The answer is ${correct}.`;
+            }
+        }
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        function init() {
+            state.targetCount = parseInt(document.getElementById('countInput').value);
+            document.getElementById('pauseBtn').disabled = true;
+            updateUI();
+            drawClock();
+        }
+        
+        // Start the application
+        init();
+    </script>
+</body>
+</html>
