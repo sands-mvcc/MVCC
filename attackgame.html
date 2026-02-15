@@ -3,196 +3,865 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cybersecurity Board Game</title>
+    <title>Cyber Defense Challenge</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: black;
-            color: white;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1225 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #00f5ff;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            color: #7dd3c0;
+            font-size: 1em;
+            letter-spacing: 2px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .stat-box {
+            background: rgba(13, 18, 37, 0.8);
+            border: 2px solid #00f5ff;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 25px rgba(0, 245, 255, 0.5);
+        }
+
+        .stat-label {
+            color: #7dd3c0;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            color: #00f5ff;
+            font-size: 1.8em;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        .streak-indicator {
+            color: #ffd700;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        #gameContainer {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
         #gameBoard {
             position: relative;
-            width: 400px;
-            height: 400px;
-            margin: 20px auto;
-            border: 5px solid white;
+            width: 500px;
+            height: 500px;
+            margin: 0 auto;
+            border: 3px solid #00f5ff;
             border-radius: 50%;
-            background: radial-gradient(circle, grey, white);
+            background: radial-gradient(circle, rgba(13, 18, 37, 0.9), rgba(10, 14, 39, 0.95));
+            box-shadow: 0 0 40px rgba(0, 245, 255, 0.4), inset 0 0 60px rgba(0, 245, 255, 0.1);
+            animation: pulse 3s ease-in-out infinite;
         }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(0, 245, 255, 0.4), inset 0 0 60px rgba(0, 245, 255, 0.1); }
+            50% { box-shadow: 0 0 60px rgba(0, 245, 255, 0.6), inset 0 0 80px rgba(0, 245, 255, 0.2); }
+        }
+
         .cell {
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             position: absolute;
             display: flex;
             justify-content: center;
             align-items: center;
-            border: 2px solid white;
+            border: 2px solid #7dd3c0;
             border-radius: 50%;
-            background-color: red;
-            transition: background-color 0.3s;
-        }
-        .cell:hover {
-            background-color: grey;
-        }
-        .player {
-            background-color: black;
-            color: white;
-            border-radius: 50%;
-            padding: 15px;
-            font-weight: bold;
-            transition: transform 0.3s;
-        }
-        #questionContainer {
-            margin: 20px;
-        }
-        button {
-            background-color: red;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 10px;
-            border-radius: 5px;
+            background: linear-gradient(135deg, rgba(26, 31, 58, 0.8), rgba(13, 18, 37, 0.9));
+            transition: all 0.4s ease;
             cursor: pointer;
-            transition: background-color 0.3s;
+            box-shadow: 0 0 10px rgba(125, 211, 192, 0.3);
         }
-        button:hover {
-            background-color: grey;
+
+        .cell:hover {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.2), rgba(125, 211, 192, 0.2));
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.6);
         }
-        #feedback {
-            margin: 20px;
-            font-size: 1.5em;
-            visibility: hidden;
+
+        .cell.completed {
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(125, 211, 192, 0.3));
+            border-color: #00f5ff;
         }
-        .flash-red {
-            animation: flashRed 1s ease-in-out 3;
+
+        .cell.current {
+            animation: currentCell 1.5s ease-in-out infinite;
+            border-width: 3px;
         }
-        @keyframes flashRed {
-            0%, 100% { background-color: red; }
-            50% { background-color: black; }
+
+        @keyframes currentCell {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(0, 245, 255, 0.8);
+                transform: scale(1.05);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(0, 245, 255, 1);
+                transform: scale(1.15);
+            }
         }
-        #score {
+
+        .player {
+            background: linear-gradient(135deg, #00f5ff, #7dd3c0);
+            color: #0a0e27;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.8);
+            animation: playerGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes playerGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 245, 255, 0.8); }
+            50% { box-shadow: 0 0 25px rgba(0, 245, 255, 1); }
+        }
+
+        .cell-number {
+            color: #7dd3c0;
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+
+        #centerScore {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+        }
+
+        #centerScore .score-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: #00f5ff;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.8);
+            margin-bottom: 10px;
+        }
+
+        #centerScore .level-display {
+            color: #7dd3c0;
+            font-size: 1.2em;
+            letter-spacing: 2px;
+        }
+
+        #questionContainer {
+            max-width: 800px;
+            margin: 0 auto 30px;
+            background: rgba(13, 18, 37, 0.9);
+            border: 2px solid #00f5ff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .question-category {
+            background: linear-gradient(135deg, #00f5ff, #7dd3c0);
+            color: #0a0e27;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .timer {
+            color: #ffd700;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .timer.warning {
+            color: #ff4444;
+            animation: timerWarning 0.5s ease-in-out infinite;
+        }
+
+        @keyframes timerWarning {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        #questionText {
+            font-size: 1.3em;
+            line-height: 1.6;
+            color: #e0e0e0;
+            margin-bottom: 25px;
+            text-align: left;
+            padding: 20px;
+            background: rgba(26, 31, 58, 0.5);
+            border-left: 4px solid #7dd3c0;
+            border-radius: 5px;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        button {
+            background: linear-gradient(135deg, #00f5ff, #7dd3c0);
+            color: #0a0e27;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+            font-family: 'Courier New', monospace;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 25px rgba(0, 245, 255, 0.8);
+            background: linear-gradient(135deg, #7dd3c0, #00f5ff);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: linear-gradient(135deg, #555, #777);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        #feedback {
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 20px 0;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        #feedback.correct {
+            color: #00ff88;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+            visibility: visible;
+        }
+
+        #feedback.incorrect {
+            color: #ff4444;
+            text-shadow: 0 0 20px rgba(255, 68, 68, 0.8);
+            visibility: visible;
+        }
+
+        .flash-correct {
+            animation: flashCorrect 0.6s ease-in-out;
+        }
+
+        .flash-incorrect {
+            animation: flashIncorrect 0.6s ease-in-out 3;
+        }
+
+        @keyframes flashCorrect {
+            0%, 100% { background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(125, 211, 192, 0.3)); }
+            50% { background: linear-gradient(135deg, rgba(0, 255, 136, 0.6), rgba(0, 245, 255, 0.6)); }
+        }
+
+        @keyframes flashIncorrect {
+            0%, 100% { background: linear-gradient(135deg, rgba(26, 31, 58, 0.8), rgba(13, 18, 37, 0.9)); }
+            50% { background: linear-gradient(135deg, rgba(255, 68, 68, 0.5), rgba(255, 0, 0, 0.5)); }
+        }
+
+        .bonus-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.95), rgba(125, 211, 192, 0.95));
+            color: #0a0e27;
+            padding: 30px 50px;
+            border-radius: 20px;
             font-size: 2em;
             font-weight: bold;
-            color: white;
+            z-index: 1000;
+            box-shadow: 0 0 50px rgba(0, 245, 255, 1);
+            animation: bonusPopup 1.5s ease-out;
+        }
+
+        @keyframes bonusPopup {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        }
+
+        .progress-bar {
+            max-width: 800px;
+            width: 100%;
+            height: 20px;
+            background: rgba(13, 18, 37, 0.8);
+            border: 2px solid #7dd3c0;
+            border-radius: 10px;
+            margin: 20px auto;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f5ff, #7dd3c0, #00ff88);
+            width: 0%;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.8);
+        }
+
+        .achievement {
+            position: fixed;
+            top: 20px;
+            right: -350px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.95), rgba(255, 165, 0, 0.95));
+            color: #0a0e27;
+            padding: 20px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            z-index: 1000;
+            animation: achievementSlide 4s ease-in-out;
+        }
+
+        @keyframes achievementSlide {
+            0%, 100% { right: -350px; }
+            15%, 85% { right: 20px; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #0a0e27, #1a1f3a);
+            border: 3px solid #00f5ff;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 0 50px rgba(0, 245, 255, 0.8);
+            animation: modalAppear 0.5s ease-out;
+        }
+
+        @keyframes modalAppear {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal h2 {
+            color: #00f5ff;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.8);
+        }
+
+        .modal p {
+            color: #e0e0e0;
+            font-size: 1.3em;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .modal button {
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2em; }
+            #gameBoard { width: 350px; height: 350px; }
+            .cell { width: 50px; height: 50px; }
+            #questionText { font-size: 1.1em; }
+            .button-container { flex-direction: column; }
+            button { width: 100%; }
         }
     </style>
 </head>
 <body>
-    <h1>Cybersecurity Board Game</h1>
-    <div id="gameBoard">
-        <div id="score">Score: 0</div>
+    <header>
+        <h1>⚡ CYBER DEFENSE CHALLENGE ⚡</h1>
+        <p class="subtitle">Test Your Cybersecurity Knowledge</p>
+    </header>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <div class="stat-label">Score</div>
+            <div class="stat-value" id="scoreDisplay">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Level</div>
+            <div class="stat-value" id="levelDisplay">1</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Streak</div>
+            <div class="stat-value" id="streakDisplay">0</div>
+            <div class="streak-indicator" id="streakBonus"></div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Multiplier</div>
+            <div class="stat-value" id="multiplierDisplay">1x</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Accuracy</div>
+            <div class="stat-value" id="accuracyDisplay">0%</div>
+        </div>
     </div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div id="gameContainer">
+        <div id="gameBoard">
+            <div id="centerScore">
+                <div class="score-display" id="centerScoreValue">0</div>
+                <div class="level-display">LEVEL <span id="centerLevel">1</span></div>
+            </div>
+        </div>
+    </div>
+
     <div id="questionContainer">
+        <div class="question-header">
+            <div class="question-category" id="questionCategory">PHISHING</div>
+            <div class="timer" id="timer">30</div>
+        </div>
         <p id="questionText"></p>
-        <button onclick="answerQuestion('true')">True</button>
-        <button onclick="answerQuestion('false')">False</button>
+        <div class="button-container">
+            <button onclick="answerQuestion('true')" id="trueBtn">✓ TRUE</button>
+            <button onclick="answerQuestion('false')" id="falseBtn">✗ FALSE</button>
+        </div>
     </div>
-    <div id="feedback">INCORRECT</div>
+
+    <div id="feedback"></div>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <h2>🎉 VICTORY! 🎉</h2>
+            <p>Congratulations, Cyber Defender!</p>
+            <p><strong>Final Score:</strong> <span id="finalScore"></span></p>
+            <p><strong>Accuracy:</strong> <span id="finalAccuracy"></span></p>
+            <p><strong>Max Streak:</strong> <span id="finalStreak"></span></p>
+            <button onclick="resetGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
     <script>
         const totalCells = 12;
         const gameBoard = document.getElementById('gameBoard');
         const questionText = document.getElementById('questionText');
+        const questionCategory = document.getElementById('questionCategory');
         const feedback = document.getElementById('feedback');
-        const scoreElement = document.getElementById('score');
+        const timer = document.getElementById('timer');
+        const progressFill = document.getElementById('progressFill');
+
         let playerPosition = 0;
         let score = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let multiplier = 1;
+        let level = 1;
+        let correctAnswers = 0;
+        let totalAnswers = 0;
+        let timeLeft = 30;
+        let timerInterval;
+        let currentQuestionIndex = -1;
+        let answeredQuestions = [];
 
         const questions = [
-            { question: 'Phishing: Phishing attacks involve tricking users into revealing personal information by pretending to be a trustworthy entity.', answer: 'true' },
-            { question: 'Phishing: Phishing attacks are only conducted through emails.', answer: 'false' },
-            { question: 'Malware: Malware includes viruses, worms, and trojans.', answer: 'true' },
-            { question: 'Malware: Malware can only infect a computer through email attachments.', answer: 'false' },
-            { question: 'Ransomware: Ransomware encrypts a user\'s files and demands a ransom to restore access.', answer: 'true' },
-            { question: 'Ransomware: Paying the ransom guarantees the return of encrypted data.', answer: 'false' },
-            { question: 'DDoS: A DDoS attack overwhelms a network or website with traffic to make it inaccessible.', answer: 'true' },
-            { question: 'DDoS: DDoS attacks only affect websites and cannot impact networks.', answer: 'false' },
-            { question: 'Man-in-the-Middle (MitM): In a MitM attack, the attacker secretly intercepts and relays messages between two parties.', answer: 'true' },
-            { question: 'Man-in-the-Middle (MitM): MitM attacks are only possible on unencrypted networks.', answer: 'false' },
-            { question: 'SQL Injection: SQL injection attacks involve inserting malicious SQL code into a query to manipulate a database.', answer: 'true' },
-            { question: 'SQL Injection: Using prepared statements can help prevent SQL injection attacks.', answer: 'true' },
-            { question: 'Cross-Site Scripting (XSS): XSS attacks involve injecting malicious scripts into trusted websites.', answer: 'true' },
-            { question: 'Cross-Site Scripting (XSS): XSS attacks cannot steal cookies from users.', answer: 'false' },
-            { question: 'Credential Stuffing: Credential stuffing uses stolen account credentials to gain unauthorized access.', answer: 'true' },
-            { question: 'Credential Stuffing: Credential stuffing attacks rely on the assumption that users reuse passwords across multiple sites.', answer: 'true' },
-            { question: 'Brute Force Attack: A brute force attack tries all possible password combinations until the correct one is found.', answer: 'true' },
-            { question: 'Brute Force Attack: Brute force attacks are ineffective against strong, complex passwords.', answer: 'true' },
-            { question: 'Zero-Day Exploit: Zero-day exploits target previously unknown vulnerabilities.', answer: 'true' },
-            { question: 'Zero-Day Exploit: Zero-day exploits are usually addressed immediately by vendors.', answer: 'false' },
-            { question: 'Insider Threat: Insider threats originate from within an organization.', answer: 'true' },
-            { question: 'Insider Threat: Insider threats are always intentional and malicious.', answer: 'false' },
-            { question: 'Social Engineering: Social engineering manipulates people into giving up confidential information.', answer: 'true' },
-            { question: 'Social Engineering: Social engineering attacks do not require technical skills to execute.', answer: 'true' },
-            { question: 'Drive-By Download: Drive-by downloads occur when malicious code is unintentionally downloaded by visiting a compromised website.', answer: 'true' },
-            { question: 'Drive-By Download: Drive-by downloads require user interaction to initiate.', answer: 'false' },
-            { question: 'Advanced Persistent Threat (APT): APTs are prolonged and targeted attacks where intruders remain undetected for an extended period.', answer: 'true' },
-            { question: 'Advanced Persistent Threat (APT): APTs usually involve sophisticated techniques and are often state-sponsored.', answer: 'true' },
-            { question: 'IoT Attacks: IoT attacks exploit vulnerabilities in Internet of Things devices.', answer: 'true' },
-            { question: 'IoT Attacks: IoT devices are immune to cyber attacks due to their simple design.', answer: 'false' },
-            { question: 'DNS Spoofing: DNS spoofing redirects traffic from a legitimate website to a malicious one.', answer: 'true' },
-            { question: 'DNS Spoofing: DNS spoofing can be prevented by using DNSSEC (Domain Name System Security Extensions).', answer: 'true' },
+            { question: 'Phishing attacks involve tricking users into revealing personal information by pretending to be a trustworthy entity.', answer: 'true', category: 'Phishing' },
+            { question: 'Phishing attacks are only conducted through emails.', answer: 'false', category: 'Phishing' },
+            { question: 'Malware includes viruses, worms, and trojans.', answer: 'true', category: 'Malware' },
+            { question: 'Malware can only infect a computer through email attachments.', answer: 'false', category: 'Malware' },
+            { question: 'Ransomware encrypts a user\'s files and demands a ransom to restore access.', answer: 'true', category: 'Ransomware' },
+            { question: 'Paying the ransom guarantees the return of encrypted data.', answer: 'false', category: 'Ransomware' },
+            { question: 'A DDoS attack overwhelms a network or website with traffic to make it inaccessible.', answer: 'true', category: 'DDoS' },
+            { question: 'DDoS attacks only affect websites and cannot impact networks.', answer: 'false', category: 'DDoS' },
+            { question: 'In a MitM attack, the attacker secretly intercepts and relays messages between two parties.', answer: 'true', category: 'MitM' },
+            { question: 'MitM attacks are only possible on unencrypted networks.', answer: 'false', category: 'MitM' },
+            { question: 'SQL injection attacks involve inserting malicious SQL code into a query to manipulate a database.', answer: 'true', category: 'SQL Injection' },
+            { question: 'Using prepared statements can help prevent SQL injection attacks.', answer: 'true', category: 'SQL Injection' },
+            { question: 'XSS attacks involve injecting malicious scripts into trusted websites.', answer: 'true', category: 'XSS' },
+            { question: 'XSS attacks cannot steal cookies from users.', answer: 'false', category: 'XSS' },
+            { question: 'Credential stuffing uses stolen account credentials to gain unauthorized access.', answer: 'true', category: 'Credential Stuffing' },
+            { question: 'Credential stuffing attacks rely on the assumption that users reuse passwords across multiple sites.', answer: 'true', category: 'Credential Stuffing' },
+            { question: 'A brute force attack tries all possible password combinations until the correct one is found.', answer: 'true', category: 'Brute Force' },
+            { question: 'Brute force attacks are ineffective against strong, complex passwords.', answer: 'true', category: 'Brute Force' },
+            { question: 'Zero-day exploits target previously unknown vulnerabilities.', answer: 'true', category: 'Zero-Day' },
+            { question: 'Zero-day exploits are usually addressed immediately by vendors.', answer: 'false', category: 'Zero-Day' },
+            { question: 'Insider threats originate from within an organization.', answer: 'true', category: 'Insider Threat' },
+            { question: 'Insider threats are always intentional and malicious.', answer: 'false', category: 'Insider Threat' },
+            { question: 'Social engineering manipulates people into giving up confidential information.', answer: 'true', category: 'Social Engineering' },
+            { question: 'Social engineering attacks do not require technical skills to execute.', answer: 'true', category: 'Social Engineering' },
+            { question: 'Drive-by downloads occur when malicious code is unintentionally downloaded by visiting a compromised website.', answer: 'true', category: 'Drive-By Download' },
+            { question: 'Drive-by downloads require user interaction to initiate.', answer: 'false', category: 'Drive-By Download' },
+            { question: 'APTs are prolonged and targeted attacks where intruders remain undetected for an extended period.', answer: 'true', category: 'APT' },
+            { question: 'APTs usually involve sophisticated techniques and are often state-sponsored.', answer: 'true', category: 'APT' },
+            { question: 'IoT attacks exploit vulnerabilities in Internet of Things devices.', answer: 'true', category: 'IoT' },
+            { question: 'IoT devices are immune to cyber attacks due to their simple design.', answer: 'false', category: 'IoT' },
+            { question: 'DNS spoofing redirects traffic from a legitimate website to a malicious one.', answer: 'true', category: 'DNS Spoofing' },
+            { question: 'DNS spoofing can be prevented by using DNSSEC (Domain Name System Security Extensions).', answer: 'true', category: 'DNS Spoofing' },
         ];
 
         function createBoard() {
-            gameBoard.innerHTML = '<div id="score">Score: ' + score + '</div>';
-            const radius = 180; // Radius of the circle
-            const centerX = 200;
-            const centerY = 200;
+            const boardHTML = document.getElementById('centerScore').outerHTML;
+            gameBoard.innerHTML = boardHTML;
+            
+            const radius = 210;
+            const centerX = 250;
+            const centerY = 250;
+            
             for (let i = 0; i < totalCells; i++) {
-                const angle = (2 * Math.PI / totalCells) * i;
-                const x = centerX + radius * Math.cos(angle) - 30; // Adjusting for cell width
-                const y = centerY + radius * Math.sin(angle) - 30; // Adjusting for cell height
+                const angle = (2 * Math.PI / totalCells) * i - Math.PI / 2;
+                const x = centerX + radius * Math.cos(angle) - 35;
+                const y = centerY + radius * Math.sin(angle) - 35;
+                
                 const cell = document.createElement('div');
                 cell.classList.add('cell');
                 cell.style.left = `${x}px`;
                 cell.style.top = `${y}px`;
                 cell.dataset.index = i;
+                
+                if (i < playerPosition) {
+                    cell.classList.add('completed');
+                }
+                
                 if (i === playerPosition) {
+                    cell.classList.add('current');
                     const player = document.createElement('div');
                     player.classList.add('player');
                     player.innerText = 'P';
                     cell.appendChild(player);
+                } else {
+                    const cellNumber = document.createElement('div');
+                    cellNumber.classList.add('cell-number');
+                    cellNumber.innerText = i + 1;
+                    cell.appendChild(cellNumber);
                 }
+                
                 gameBoard.appendChild(cell);
             }
         }
 
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 30;
+            timer.innerText = timeLeft;
+            timer.classList.remove('warning');
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timer.innerText = timeLeft;
+                
+                if (timeLeft <= 10) {
+                    timer.classList.add('warning');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    answerQuestion('timeout');
+                }
+            }, 1000);
+        }
+
         function askQuestion() {
-            const randomIndex = Math.floor(Math.random() * questions.length);
-            questionText.innerText = questions[randomIndex].question;
-            questionText.dataset.answer = questions[randomIndex].answer;
+            let randomIndex;
+            let attempts = 0;
+            
+            do {
+                randomIndex = Math.floor(Math.random() * questions.length);
+                attempts++;
+            } while (answeredQuestions.includes(randomIndex) && attempts < 50);
+            
+            if (attempts >= 50) {
+                answeredQuestions = [];
+            }
+            
+            answeredQuestions.push(randomIndex);
+            currentQuestionIndex = randomIndex;
+            
+            const q = questions[randomIndex];
+            questionText.innerText = q.question;
+            questionCategory.innerText = q.category.toUpperCase();
+            questionText.dataset.answer = q.answer;
+            
+            startTimer();
+            enableButtons();
+        }
+
+        function disableButtons() {
+            document.getElementById('trueBtn').disabled = true;
+            document.getElementById('falseBtn').disabled = true;
+        }
+
+        function enableButtons() {
+            document.getElementById('trueBtn').disabled = false;
+            document.getElementById('falseBtn').disabled = false;
+        }
+
+        function updateStats() {
+            document.getElementById('scoreDisplay').innerText = score;
+            document.getElementById('centerScoreValue').innerText = score;
+            document.getElementById('levelDisplay').innerText = level;
+            document.getElementById('centerLevel').innerText = level;
+            document.getElementById('streakDisplay').innerText = streak;
+            document.getElementById('multiplierDisplay').innerText = multiplier + 'x';
+            
+            const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
+            document.getElementById('accuracyDisplay').innerText = accuracy + '%';
+            
+            const progress = (playerPosition / totalCells) * 100;
+            progressFill.style.width = progress + '%';
+            
+            if (streak >= 3) {
+                document.getElementById('streakBonus').innerText = '🔥 ON FIRE!';
+            } else {
+                document.getElementById('streakBonus').innerText = '';
+            }
+        }
+
+        function calculateMultiplier() {
+            if (streak >= 10) return 5;
+            if (streak >= 7) return 4;
+            if (streak >= 5) return 3;
+            if (streak >= 3) return 2;
+            return 1;
+        }
+
+        function showBonusPopup(text) {
+            const popup = document.createElement('div');
+            popup.classList.add('bonus-popup');
+            popup.innerText = text;
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 1500);
+        }
+
+        function showAchievement(text) {
+            const achievement = document.createElement('div');
+            achievement.classList.add('achievement');
+            achievement.innerText = '🏆 ' + text;
+            document.body.appendChild(achievement);
+            
+            setTimeout(() => {
+                achievement.remove();
+            }, 4000);
         }
 
         function answerQuestion(answer) {
+            clearInterval(timerInterval);
+            disableButtons();
+            
             const correctAnswer = questionText.dataset.answer;
             const currentCell = document.querySelector(`[data-index="${playerPosition}"]`);
-            if (answer === correctAnswer) {
-                playerPosition += 1;
-                score += 10; // Increase score for correct answer
-                feedback.style.visibility = 'hidden';
-                if (playerPosition >= totalCells) {
-                    alert('Congratulations! You have won the game!');
-                    playerPosition = 0;
-                    score = 0; // Reset score after winning
-                }
-            } else {
-                currentCell.classList.add('flash-red');
-                feedback.style.visibility = 'visible';
-                score -= 5; // Decrease score for incorrect answer
+            totalAnswers++;
+            
+            if (answer === 'timeout') {
+                currentCell.classList.add('flash-incorrect');
+                feedback.className = 'incorrect';
+                feedback.innerText = '⏱️ TIME\'S UP! (-10)';
+                score = Math.max(0, score - 10);
+                streak = 0;
+                multiplier = 1;
+                
                 setTimeout(() => {
-                    currentCell.classList.remove('flash-red');
+                    currentCell.classList.remove('flash-incorrect');
                     feedback.style.visibility = 'hidden';
-                }, 3000);
+                    updateStats();
+                    askQuestion();
+                }, 2000);
+                
+            } else if (answer === correctAnswer) {
+                correctAnswers++;
+                streak++;
+                maxStreak = Math.max(maxStreak, streak);
+                multiplier = calculateMultiplier();
+                
+                const timeBonus = Math.max(0, Math.floor(timeLeft / 3));
+                const basePoints = 10;
+                const totalPoints = (basePoints + timeBonus) * multiplier;
+                
+                currentCell.classList.add('flash-correct');
+                feedback.className = 'correct';
+                feedback.innerText = `✓ CORRECT! +${totalPoints}`;
+                
+                if (timeBonus > 0) {
+                    feedback.innerText += ` (⚡${timeBonus} speed bonus)`;
+                }
+                
+                score += totalPoints;
+                playerPosition++;
+                
+                if (multiplier > 1) {
+                    showBonusPopup(`${multiplier}x COMBO MULTIPLIER!`);
+                }
+                
+                if (streak === 5) {
+                    showAchievement('5 STREAK ACHIEVED!');
+                } else if (streak === 10) {
+                    showAchievement('10 STREAK! UNSTOPPABLE!');
+                }
+                
+                if (playerPosition >= totalCells) {
+                    setTimeout(() => {
+                        showWinModal();
+                    }, 1500);
+                    return;
+                }
+                
+                if (playerPosition % 3 === 0 && playerPosition > 0) {
+                    level++;
+                }
+                
+                setTimeout(() => {
+                    currentCell.classList.remove('flash-correct');
+                    feedback.style.visibility = 'hidden';
+                    createBoard();
+                    updateStats();
+                    askQuestion();
+                }, 1500);
+                
+            } else {
+                currentCell.classList.add('flash-incorrect');
+                feedback.className = 'incorrect';
+                feedback.innerText = '✗ INCORRECT! (-5)';
+                score = Math.max(0, score - 5);
+                streak = 0;
+                multiplier = 1;
+                
+                setTimeout(() => {
+                    currentCell.classList.remove('flash-incorrect');
+                    feedback.style.visibility = 'hidden';
+                    updateStats();
+                    askQuestion();
+                }, 2000);
             }
+            
+            updateStats();
+        }
+
+        function showWinModal() {
+            clearInterval(timerInterval);
+            const accuracy = Math.round((correctAnswers / totalAnswers) * 100);
+            
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('finalAccuracy').innerText = accuracy + '%';
+            document.getElementById('finalStreak').innerText = maxStreak;
+            document.getElementById('winModal').style.display = 'flex';
+        }
+
+        function resetGame() {
+            playerPosition = 0;
+            score = 0;
+            streak = 0;
+            maxStreak = 0;
+            multiplier = 1;
+            level = 1;
+            correctAnswers = 0;
+            totalAnswers = 0;
+            answeredQuestions = [];
+            
+            document.getElementById('winModal').style.display = 'none';
+            
             createBoard();
+            updateStats();
             askQuestion();
         }
 
         createBoard();
+        updateStats();
         askQuestion();
     </script>
 </body>
