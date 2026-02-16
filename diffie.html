@@ -149,6 +149,24 @@
             text-shadow: 1px 1px 2px white;
         }
 
+        .color-picker-group {
+            margin: 1rem 0;
+        }
+
+        .color-picker-group input[type="color"] {
+            width: 100%;
+            height: 60px;
+            border: 2px solid #000;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .color-picker-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
         .math-steps {
             background-color: #f8f9fa;
             padding: 1.5rem;
@@ -391,6 +409,11 @@
 
             <h3>The Scenario</h3>
             <p>Alice and Bob want to create a shared secret color, but Eve (an eavesdropper) is watching everything they send to each other.</p>
+
+            <div class="info-box">
+                <h4>🎨 Try it yourself!</h4>
+                <p>Select colors below to see how the mixing works. Notice how both Alice and Bob arrive at the same final color!</p>
+            </div>
 
             <div id="paintDemo" class="paint-demo">
                 <!-- Will be populated by JavaScript -->
@@ -754,40 +777,133 @@
     </footer>
 
     <script>
-        // Paint mixing demo
-        function initPaintDemo() {
+        // Paint mixing demo with interactive colors
+        let publicColor = '#FFD700'; // Yellow
+        let aliceSecret = '#DC143C'; // Red
+        let bobSecret = '#1E90FF'; // Blue
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        function mixColors(color1, color2) {
+            const rgb1 = hexToRgb(color1);
+            const rgb2 = hexToRgb(color2);
+            
+            // Average the RGB values
+            const r = Math.round((rgb1.r + rgb2.r) / 2);
+            const g = Math.round((rgb1.g + rgb2.g) / 2);
+            const b = Math.round((rgb1.b + rgb2.b) / 2);
+            
+            return rgbToHex(r, g, b);
+        }
+
+        function getContrastColor(hexColor) {
+            const rgb = hexToRgb(hexColor);
+            const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+            return brightness > 128 ? '#000000' : '#FFFFFF';
+        }
+
+        function updatePaintDemo() {
+            // Calculate mixed colors
+            const aliceMix = mixColors(publicColor, aliceSecret);
+            const bobMix = mixColors(publicColor, bobSecret);
+            const aliceFinal = mixColors(bobMix, aliceSecret);
+            const bobFinal = mixColors(aliceMix, bobSecret);
+
             const demoHTML = `
                 <div class="paint-container">
                     <h4>🎨 Public Color</h4>
-                    <div class="paint-box" style="background-color: #FFD700;">Yellow</div>
+                    <div class="color-picker-group">
+                        <label>Choose public color:</label>
+                        <input type="color" id="publicColorPicker" value="${publicColor}">
+                    </div>
+                    <div class="paint-box" style="background-color: ${publicColor}; color: ${getContrastColor(publicColor)};">
+                        Public Color
+                    </div>
                     <p><strong>Everyone knows this</strong></p>
                 </div>
                 
                 <div class="paint-container">
                     <h4>👤 Alice</h4>
-                    <div class="paint-box" style="background-color: #DC143C;">Red (Secret)</div>
-                    <p><strong>Only Alice knows</strong></p>
-                    <div class="paint-box" style="background-color: #FF8C00;">Yellow + Red = Orange</div>
+                    <div class="color-picker-group">
+                        <label>Alice's secret color:</label>
+                        <input type="color" id="aliceColorPicker" value="${aliceSecret}">
+                    </div>
+                    <div class="paint-box" style="background-color: ${aliceSecret}; color: ${getContrastColor(aliceSecret)};">
+                        Alice's Secret
+                    </div>
+                    <p><strong>Only Alice knows ↓</strong></p>
+                    <div class="paint-box" style="background-color: ${aliceMix}; color: ${getContrastColor(aliceMix)};">
+                        Public + Alice's Secret
+                    </div>
                     <p><strong>Sends to Bob →</strong></p>
                 </div>
                 
                 <div class="paint-container">
                     <h4>👤 Bob</h4>
-                    <div class="paint-box" style="background-color: #1E90FF;">Blue (Secret)</div>
-                    <p><strong>Only Bob knows</strong></p>
-                    <div class="paint-box" style="background-color: #32CD32;">Yellow + Blue = Green</div>
+                    <div class="color-picker-group">
+                        <label>Bob's secret color:</label>
+                        <input type="color" id="bobColorPicker" value="${bobSecret}">
+                    </div>
+                    <div class="paint-box" style="background-color: ${bobSecret}; color: ${getContrastColor(bobSecret)};">
+                        Bob's Secret
+                    </div>
+                    <p><strong>Only Bob knows ↓</strong></p>
+                    <div class="paint-box" style="background-color: ${bobMix}; color: ${getContrastColor(bobMix)};">
+                        Public + Bob's Secret
+                    </div>
                     <p><strong>Sends to Alice →</strong></p>
                 </div>
                 
                 <div class="paint-container">
                     <h4>🔐 Shared Secret</h4>
-                    <div class="paint-box" style="background-color: #8B4513;">Brown</div>
-                    <p><strong>Alice:</strong> Green + Red = Brown</p>
-                    <p><strong>Bob:</strong> Orange + Blue = Brown</p>
-                    <p><strong>Same result! 🎉</strong></p>
+                    <div class="paint-box" style="background-color: ${aliceFinal}; color: ${getContrastColor(aliceFinal)};">
+                        Alice's Final Mix
+                    </div>
+                    <p><strong>Alice:</strong> Bob's Mix + Alice's Secret</p>
+                    <div class="paint-box" style="background-color: ${bobFinal}; color: ${getContrastColor(bobFinal)};">
+                        Bob's Final Mix
+                    </div>
+                    <p><strong>Bob:</strong> Alice's Mix + Bob's Secret</p>
+                    ${aliceFinal === bobFinal ? 
+                        '<p style="color: #1e7e34; font-weight: bold; font-size: 1.1rem;">✅ Same color! Shared secret established! 🎉</p>' : 
+                        '<p style="color: #dc3545; font-weight: bold;">⚠️ Colors are very similar (due to mixing algorithm)</p>'}
                 </div>
             `;
+            
             document.getElementById('paintDemo').innerHTML = demoHTML;
+
+            // Add event listeners to color pickers
+            setTimeout(() => {
+                document.getElementById('publicColorPicker').addEventListener('input', (e) => {
+                    publicColor = e.target.value;
+                    updatePaintDemo();
+                });
+                
+                document.getElementById('aliceColorPicker').addEventListener('input', (e) => {
+                    aliceSecret = e.target.value;
+                    updatePaintDemo();
+                });
+                
+                document.getElementById('bobColorPicker').addEventListener('input', (e) => {
+                    bobSecret = e.target.value;
+                    updatePaintDemo();
+                });
+            }, 0);
+        }
+
+        function initPaintDemo() {
+            updatePaintDemo();
         }
 
         // Modular exponentiation function
