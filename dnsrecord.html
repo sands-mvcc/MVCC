@@ -1,352 +1,984 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
-    <meta charset="UTF-8">
-    <title>DNS Record Simulator</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DNS Record Creation Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --white:   #ffffff;
+      --offwhite:#f4f6fb;
+      --blue:    #1141a0;
+      --blue-lt: #1e5fce;
+      --blue-xlt:#dce8ff;
+      --navy:    #0a1a3c;
+      --black:   #0d0d0d;
+      --red:     #c8132a;
+      --red-lt:  #e63248;
+      --red-xlt: #fde8eb;
+      --gray:    #5a6378;
+      --gray-lt: #c4cad8;
+      --border:  #d0d8ea;
+      --mono:    'Share Tech Mono', monospace;
+      --sans:    'Barlow', sans-serif;
+      --cond:    'Barlow Condensed', sans-serif;
+    }
 
-        h1 {
-            text-align: center;
-            color: #d32f2f;
-            margin-top: 20px;
-            font-size: 32px;
-            font-weight: bold;
-        }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px 30px;
-            background-color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-        }
+    body {
+      background: var(--offwhite);
+      font-family: var(--sans);
+      color: var(--black);
+      min-height: 100vh;
+    }
 
-        .form-group {
-            margin-bottom: 30px;
-        }
+    /* ─── HEADER ─── */
+    header {
+      background: var(--navy);
+      border-bottom: 4px solid var(--red);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .header-icon {
+      width: 48px; height: 48px;
+      background: var(--red);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-icon svg { width: 28px; height: 28px; fill: white; }
+    .header-text h1 {
+      font-family: var(--cond);
+      font-size: 1.75rem;
+      font-weight: 900;
+      color: var(--white);
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .header-text p {
+      font-size: 0.82rem;
+      color: var(--gray-lt);
+      margin-top: 3px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
 
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: bold;
-            font-size: 16px;
-            color: #555;
-        }
+    /* ─── STEPS BANNER ─── */
+    .steps-bar {
+      background: var(--blue);
+      padding: 12px 28px;
+    }
+    .steps-bar-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+    .step-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      padding: 0 20px 0 0;
+      position: relative;
+    }
+    .step-badge:not(:last-child)::after {
+      content: '▶';
+      color: rgba(255,255,255,0.4);
+      margin-left: 16px;
+      font-size: 0.65rem;
+    }
+    .step-num {
+      width: 24px; height: 24px;
+      background: var(--red);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
 
-        input, select {
-            padding: 12px;
-            width: 100%;
-            font-size: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-            background-color: #f9f9f9;
-            transition: background-color 0.3s ease;
-        }
+    /* ─── MAIN LAYOUT ─── */
+    .main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 30px 28px 60px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
 
-        input:focus, select:focus {
-            background-color: #fff;
-            outline: none;
-            border-color: #d32f2f;
-        }
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--white);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(17,65,160,0.07);
+    }
+    .card-header {
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+    .card-header.blue  { background: var(--blue);  border-color: var(--blue); }
+    .card-header.navy  { background: var(--navy);  border-color: var(--navy); }
+    .card-header.red   { background: var(--red);   border-color: var(--red); }
+    .card-header h2 {
+      font-family: var(--cond);
+      font-size: 1rem;
+      font-weight: 900;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .card-header .card-num {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: white;
+      flex-shrink: 0;
+    }
+    .card-body { padding: 20px 22px; }
 
-        button {
-            padding: 12px 20px;
-            font-size: 14px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
+    /* ─── SECTION: RECORD TYPE EXPLORER ─── */
+    .record-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .rec-btn {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      padding: 8px 16px;
+      border: 2px solid var(--blue);
+      background: white;
+      color: var(--blue);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.18s;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .rec-btn:hover   { background: var(--blue-xlt); }
+    .rec-btn.active  { background: var(--blue); color: white; }
+    .rec-btn.rec-red { border-color: var(--red); color: var(--red); }
+    .rec-btn.rec-red:hover  { background: var(--red-xlt); }
+    .rec-btn.rec-red.active { background: var(--red); color: white; }
 
-        .info-button {
-            background-color: #d32f2f;
-            color: white;
-            margin: 5px;
-            min-width: 120px;
-            text-align: center;
-            border: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+    .info-box {
+      background: var(--offwhite);
+      border-left: 4px solid var(--blue);
+      border-radius: 0 8px 8px 0;
+      padding: 14px 16px;
+      min-height: 80px;
+      transition: border-color 0.2s;
+    }
+    .info-box.red-border { border-color: var(--red); }
+    .info-box .info-title {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 5px;
+    }
+    .info-box .info-text {
+      font-size: 0.9rem;
+      color: var(--black);
+      line-height: 1.55;
+    }
+    .info-box .info-example {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      background: var(--navy);
+      color: #82cfff;
+      border-radius: 5px;
+      padding: 6px 10px;
+      margin-top: 8px;
+      display: inline-block;
+    }
 
-        .info-button:hover {
-            background-color: #b71c1c;
-        }
+    /* ─── SECTION: SIMULATOR FORM ─── */
+    .full-width { grid-column: 1 / -1; }
 
-        .form-group-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: 12px;
-        }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 24px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
 
-        .info-section {
-            margin-top: 15px;
-            padding: 15px;
-            background-color: #f7f7f7;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            font-size: 15px;
-            line-height: 1.6;
-        }
+    label {
+      font-size: 0.78rem;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gray);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    label .required { color: var(--red); font-size: 1rem; line-height: 1; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
+    .field-hint {
+      font-size: 0.74rem;
+      color: var(--gray);
+      line-height: 1.4;
+      margin-top: -2px;
+      font-style: italic;
+    }
 
-        table, th, td {
-            border: 1px solid #ddd;
-            padding: 14px;
-            text-align: left;
-            font-size: 15px;
-        }
+    select, input[type="text"], input[type="number"] {
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: 7px;
+      background: white;
+      color: var(--black);
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      width: 100%;
+    }
+    select:focus, input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px var(--blue-xlt);
+    }
+    select { cursor: pointer; }
 
-        th {
-            background-color: #d32f2f;
-            color: white;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
+    .dynamic-fields {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 24px;
+    }
 
-        td {
-            background-color: #fafafa;
-        }
+    /* ─── INSTRUCTION PANEL ─── */
+    .instructions {
+      background: var(--blue-xlt);
+      border: 2px solid var(--blue);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    .instructions h3 {
+      font-family: var(--cond);
+      font-size: 0.88rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--blue);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .instructions ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .instructions ul li {
+      font-size: 0.84rem;
+      color: var(--navy);
+      padding-left: 20px;
+      position: relative;
+      line-height: 1.4;
+    }
+    .instructions ul li::before {
+      content: '›';
+      position: absolute;
+      left: 5px;
+      color: var(--red);
+      font-weight: 900;
+    }
 
-        .center {
-            text-align: center;
-        }
-    </style>
+    /* ─── BTN CREATE ─── */
+    .btn-row {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .btn-create {
+      background: var(--red);
+      color: white;
+      font-family: var(--cond);
+      font-size: 1rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 13px 36px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s, box-shadow 0.18s;
+      box-shadow: 0 3px 10px rgba(200,19,42,0.3);
+    }
+    .btn-create:hover {
+      background: var(--red-lt);
+      box-shadow: 0 5px 16px rgba(200,19,42,0.4);
+    }
+    .btn-create:active { transform: scale(0.97); }
+
+    .btn-clear {
+      background: white;
+      color: var(--gray);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      padding: 13px 24px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .btn-clear:hover { border-color: var(--gray); color: var(--black); }
+
+    /* ─── STATUS MESSAGE ─── */
+    .status-msg {
+      grid-column: 1 / -1;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-msg.success {
+      display: flex;
+      background: #e8f8ed;
+      border: 2px solid #2ea855;
+      color: #1a6830;
+    }
+    .status-msg.error {
+      display: flex;
+      background: var(--red-xlt);
+      border: 2px solid var(--red);
+      color: var(--red);
+    }
+
+    /* ─── DNS TABLE ─── */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 0.83rem;
+    }
+    thead th {
+      background: var(--navy);
+      color: white;
+      padding: 10px 14px;
+      text-align: left;
+      font-family: var(--cond);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    thead th:first-child { border-radius: 6px 0 0 0; }
+    thead th:last-child  { border-radius: 0 6px 0 0; }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    tbody tr:hover { background: var(--blue-xlt); }
+    tbody td { padding: 10px 14px; color: var(--black); vertical-align: middle; }
+    td .type-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: white;
+    }
+    .badge-A    { background: var(--blue); }
+    .badge-AAAA { background: #1077b8; }
+    .badge-CNAME{ background: #6b45c5; }
+    .badge-MX   { background: #c07a00; }
+    .badge-NS   { background: var(--gray); }
+    .badge-TXT  { background: #1a8a4a; }
+
+    .empty-row td {
+      text-align: center;
+      color: var(--gray);
+      font-style: italic;
+      padding: 30px;
+      font-family: var(--sans);
+      font-size: 0.9rem;
+    }
+
+    .delete-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--gray);
+      border-radius: 5px;
+      cursor: pointer;
+      padding: 3px 8px;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+    }
+    .delete-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-xlt); }
+
+    /* ─── ZONE FILE PREVIEW ─── */
+    .zone-preview {
+      background: var(--navy);
+      border-radius: 8px;
+      padding: 16px 18px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: #a8c8ff;
+      line-height: 1.8;
+      min-height: 80px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .zone-comment { color: #4a6a9a; }
+    .zone-record  { color: #82cfff; }
+    .zone-val     { color: #f4d97a; }
+    .zone-type    { color: #ff8a80; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--navy);
+      border-top: 3px solid var(--red);
+      padding: 14px 28px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      color: var(--gray-lt);
+      letter-spacing: 0.06em;
+    }
+    footer span { color: var(--red); }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card { animation: fadeSlide 0.4s ease both; }
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.12s; }
+    .card:nth-child(3) { animation-delay: 0.18s; }
+    .card:nth-child(4) { animation-delay: 0.24s; }
+    .card:nth-child(5) { animation-delay: 0.30s; }
+
+    @keyframes rowPop {
+      from { opacity: 0; background: #dce8ff; }
+      to   { opacity: 1; background: transparent; }
+    }
+    .new-row { animation: rowPop 0.6s ease; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 720px) {
+      .main { grid-template-columns: 1fr; }
+      .full-width, .dynamic-fields { grid-column: 1; grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: 1; }
+      .btn-row { flex-direction: column; }
+      .steps-bar-inner { flex-wrap: wrap; gap: 6px; }
+    }
+  </style>
 </head>
 <body>
 
-    <h1>DNS Record Creation Simulator</h1>
-
-    <div class="container">
-
-        <!-- Buttons to display information about DNS record types -->
-        <div class="form-group center">
-            <label>Click on the buttons to learn about DNS record types:</label>
-            <div class="form-group-buttons">
-                <button class="info-button" onclick="showRecordInfo('A')">A</button>
-                <button class="info-button" onclick="showRecordInfo('AAAA')">AAAA</button>
-                <button class="info-button" onclick="showRecordInfo('CNAME')">CNAME</button>
-                <button class="info-button" onclick="showRecordInfo('MX')">MX</button>
-                <button class="info-button" onclick="showRecordInfo('NS')">NS</button>
-                <button class="info-button" onclick="showRecordInfo('TXT')">TXT</button>
-            </div>
-        </div>
-
-        <!-- Information section for DNS record types -->
-        <div class="info-section" id="recordInfo">
-            Click on the buttons above to see the description of each DNS record type.
-        </div>
-
-        <!-- Buttons to display information about domain types -->
-        <div class="form-group center">
-            <label>Click on the buttons to learn about domain types:</label>
-            <div class="form-group-buttons">
-                <button class="info-button" onclick="showDomainInfo('.com')">.com</button>
-                <button class="info-button" onclick="showDomainInfo('.net')">.net</button>
-                <button class="info-button" onclick="showDomainInfo('.org')">.org</button>
-                <button class="info-button" onclick="showDomainInfo('.gov')">.gov</button>
-            </div>
-        </div>
-
-        <!-- Information section for domain types -->
-        <div class="info-section" id="domainInfo">
-            Click on the buttons above to see the description of each domain type.
-        </div>
-
-        <!-- Form for DNS record creation -->
-        <div class="form-group">
-            <label for="recordType">Select Record Type:</label>
-            <select id="recordType" onchange="showInputFields()">
-                <option value="A">A (Address Record)</option>
-                <option value="AAAA">AAAA (IPv6 Address Record)</option>
-                <option value="CNAME">CNAME (Alias Record)</option>
-                <option value="MX">MX (Mail Exchange Record)</option>
-                <option value="NS">NS (Name Server Record)</option>
-                <option value="TXT">TXT (Text Record)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="domainName">Domain Name:</label>
-            <input type="text" id="domainName" placeholder="Enter domain (e.g., example.com)">
-        </div>
-
-        <div id="ipAddressGroup" class="form-group">
-            <label for="ipAddress">IP Address:</label>
-            <input type="text" id="ipAddress" placeholder="Enter IP address (e.g., 192.168.1.1)">
-        </div>
-
-        <div id="aliasGroup" class="form-group" style="display: none;">
-            <label for="alias">Alias (CNAME):</label>
-            <input type="text" id="alias" placeholder="Enter alias (e.g., www.example.com)">
-        </div>
-
-        <div id="mxPriorityGroup" class="form-group" style="display: none;">
-            <label for="mxPriority">MX Priority:</label>
-            <input type="number" id="mxPriority" placeholder="Enter MX priority">
-        </div>
-
-        <div id="txtValueGroup" class="form-group" style="display: none;">
-            <label for="txtValue">TXT Value:</label>
-            <input type="text" id="txtValue" placeholder="Enter text record value">
-        </div>
-
-        <button class="info-button" onclick="createRecord()">Create Record</button>
-
-        <!-- Table to display created DNS records -->
-        <table>
-            <thead>
-                <tr>
-                    <th>Record Type</th>
-                    <th>Domain</th>
-                    <th>Details</th>
-                </tr>
-            </thead>
-            <tbody id="dnsRecordsTable">
-                <!-- DNS records will be dynamically added here -->
-            </tbody>
-        </table>
-
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="header-inner">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.18 5 4.05 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+      </svg>
     </div>
+    <div class="header-text">
+      <h1>DNS Record Creation Simulator</h1>
+      <p>Moraine Valley Community College &nbsp;·&nbsp; Cybersecurity &amp; Networking Education</p>
+    </div>
+  </div>
+</header>
 
-    <script>
-        // Show description for selected record type
-        function showRecordInfo(recordType) {
-            let info = '';
+<!-- ═══ STEPS BAR ═══ -->
+<div class="steps-bar">
+  <div class="steps-bar-inner">
+    <div class="step-badge"><span class="step-num">1</span>Explore record types</div>
+    <div class="step-badge"><span class="step-num">2</span>Explore domain types</div>
+    <div class="step-badge"><span class="step-num">3</span>Fill in the form</div>
+    <div class="step-badge"><span class="step-num">4</span>Click Create Record</div>
+    <div class="step-badge"><span class="step-num">5</span>Review your DNS zone</div>
+  </div>
+</div>
 
-            switch (recordType) {
-                case 'A':
-                    info = 'A Record: Maps a domain to an IPv4 address.';
-                    break;
-                case 'AAAA':
-                    info = 'AAAA Record: Maps a domain to an IPv6 address.';
-                    break;
-                case 'CNAME':
-                    info = 'CNAME Record: Creates an alias for another domain.';
-                    break;
-                case 'MX':
-                    info = 'MX Record: Specifies email servers for the domain.';
-                    break;
-                case 'NS':
-                    info = 'NS Record: Specifies the authoritative name servers for the domain.';
-                    break;
-                case 'TXT':
-                    info = 'TXT Record: Holds arbitrary text information (often for verification).';
-                    break;
-            }
+<!-- ═══ MAIN ═══ -->
+<main class="main">
 
-            document.getElementById('recordInfo').innerText = info;
-        }
+  <!-- CARD 1: Record Type Explorer -->
+  <div class="card">
+    <div class="card-header blue">
+      <div class="card-num">1</div>
+      <h2>DNS Record Types</h2>
+    </div>
+    <div class="card-body">
+      <p style="font-size:0.83rem;color:var(--gray);margin-bottom:12px;font-family:var(--mono);">
+        Click each button to learn what each record type does:
+      </p>
+      <div class="record-buttons" id="recTypeButtons">
+        <button class="rec-btn" onclick="showRecInfo('A')">A</button>
+        <button class="rec-btn" onclick="showRecInfo('AAAA')">AAAA</button>
+        <button class="rec-btn" onclick="showRecInfo('CNAME')">CNAME</button>
+        <button class="rec-btn" onclick="showRecInfo('MX')">MX</button>
+        <button class="rec-btn" onclick="showRecInfo('NS')">NS</button>
+        <button class="rec-btn" onclick="showRecInfo('TXT')">TXT</button>
+      </div>
+      <div class="info-box" id="recInfoBox">
+        <div class="info-title">Select a record type above</div>
+        <div class="info-text">Click any button to see a description, real-world use case, and an example of that DNS record type.</div>
+      </div>
+    </div>
+  </div>
 
-        // Show description for selected domain type
-        function showDomainInfo(domainType) {
-            let info = '';
+  <!-- CARD 2: Domain Type Explorer -->
+  <div class="card">
+    <div class="card-header navy">
+      <div class="card-num">2</div>
+      <h2>Domain Type Explorer</h2>
+    </div>
+    <div class="card-body">
+      <p style="font-size:0.83rem;color:var(--gray);margin-bottom:12px;font-family:var(--mono);">
+        Click each TLD to learn when and why it is used:
+      </p>
+      <div class="record-buttons" id="domainButtons">
+        <button class="rec-btn rec-red" onclick="showDomInfo('.com')">.com</button>
+        <button class="rec-btn rec-red" onclick="showDomInfo('.net')">.net</button>
+        <button class="rec-btn rec-red" onclick="showDomInfo('.org')">.org</button>
+        <button class="rec-btn rec-red" onclick="showDomInfo('.gov')">.gov</button>
+        <button class="rec-btn rec-red" onclick="showDomInfo('.edu')">.edu</button>
+        <button class="rec-btn rec-red" onclick="showDomInfo('.mil')">.mil</button>
+      </div>
+      <div class="info-box red-border" id="domInfoBox">
+        <div class="info-title">Select a domain type above</div>
+        <div class="info-text">Click any button to see which organizations use that top-level domain and why it was created.</div>
+      </div>
+    </div>
+  </div>
 
-            switch (domainType) {
-                case '.com':
-                    info = '.com: Used for commercial organizations and businesses.';
-                    break;
-                case '.net':
-                    info = '.net: Originally used for network infrastructure; now general purpose.';
-                    break;
-                case '.org':
-                    info = '.org: Typically used for non-profit organizations.';
-                    break;
-                case '.gov':
-                    info = '.gov: Reserved for government entities.';
-                    break;
-            }
+  <!-- CARD 3: Simulator Form -->
+  <div class="card full-width">
+    <div class="card-header red">
+      <div class="card-num">3</div>
+      <h2>Create a DNS Record</h2>
+    </div>
+    <div class="card-body">
 
-            document.getElementById('domainInfo').innerText = info;
-        }
+      <div class="instructions">
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--blue)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          How to Use This Simulator
+        </h3>
+        <ul>
+          <li>Select a <strong>Record Type</strong> from the dropdown — the form will show only the fields that record type needs.</li>
+          <li>Enter a <strong>Domain Name</strong> without "http://" — example: <code style="font-family:var(--mono);font-size:0.82em;background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px;">morainevalley.edu</code></li>
+          <li>Fill in the remaining fields, then click <strong>Create Record</strong> to add it to your zone table.</li>
+          <li>Your records are also displayed as a <strong>zone file preview</strong> at the bottom — the actual format used by DNS servers.</li>
+        </ul>
+      </div>
 
-        function showInputFields() {
-            const recordType = document.getElementById('recordType').value;
-            const ipAddressGroup = document.getElementById('ipAddressGroup');
-            const aliasGroup = document.getElementById('aliasGroup');
-            const mxPriorityGroup = document.getElementById('mxPriorityGroup');
-            const txtValueGroup = document.getElementById('txtValueGroup');
+      <div class="form-grid" id="simForm">
+        <div class="form-group">
+          <label>Record Type <span class="required">*</span></label>
+          <div class="field-hint">Choose the DNS record type you want to create</div>
+          <select id="recordType" onchange="updateFormFields()">
+            <option value="">— Select a Record Type —</option>
+            <option value="A">A &nbsp;— IPv4 Address Record</option>
+            <option value="AAAA">AAAA &nbsp;— IPv6 Address Record</option>
+            <option value="CNAME">CNAME &nbsp;— Alias Record</option>
+            <option value="MX">MX &nbsp;— Mail Exchange Record</option>
+            <option value="NS">NS &nbsp;— Name Server Record</option>
+            <option value="TXT">TXT &nbsp;— Text Record</option>
+          </select>
+        </div>
 
-            // Hide all optional fields by default
-            ipAddressGroup.style.display = 'none';
-            aliasGroup.style.display = 'none';
-            mxPriorityGroup.style.display = 'none';
-            txtValueGroup.style.display = 'none';
+        <div class="form-group">
+          <label>Domain Name <span class="required">*</span></label>
+          <div class="field-hint">e.g., morainevalley.edu or www.example.com</div>
+          <input type="text" id="domainName" placeholder="example.com" autocomplete="off"/>
+        </div>
 
-            // Show relevant input fields based on selected record type
-            if (recordType === 'A' || recordType === 'AAAA') {
-                ipAddressGroup.style.display = 'block';
-            } else if (recordType === 'CNAME') {
-                aliasGroup.style.display = 'block';
-            } else if (recordType === 'MX') {
-                mxPriorityGroup.style.display = 'block';
-            } else if (recordType === 'TXT') {
-                txtValueGroup.style.display = 'block';
-            }
-        }
+        <!-- Dynamic fields injected here -->
+        <div class="dynamic-fields" id="dynamicFields"></div>
 
-        function createRecord() {
-            const recordType = document.getElementById('recordType').value;
-            const domainName = document.getElementById('domainName').value.trim();
-            const ipAddress = document.getElementById('ipAddress').value.trim();
-            const alias = document.getElementById('alias').value.trim();
-            const mxPriority = document.getElementById('mxPriority').value.trim();
-            const txtValue = document.getElementById('txtValue').value.trim();
+        <!-- Status -->
+        <div class="status-msg" id="statusMsg"></div>
 
-            let details = '';
+        <div class="btn-row">
+          <button class="btn-create" onclick="createRecord()">&#43; Create Record</button>
+          <button class="btn-clear" onclick="clearForm()">Clear Form</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-            if (recordType === 'A' || recordType === 'AAAA') {
-                details = `IP Address: ${ipAddress}`;
-            } else if (recordType === 'CNAME') {
-                details = `Alias: ${alias}`;
-            } else if (recordType === 'MX') {
-                details = `Priority: ${mxPriority}`;
-            } else if (recordType === 'TXT') {
-                details = `Value: ${txtValue}`;
-            }
+  <!-- CARD 4: DNS Zone Table -->
+  <div class="card" style="grid-column:1 / -1; flex:2;">
+    <div class="card-header blue">
+      <div class="card-num">4</div>
+      <h2>DNS Zone — Created Records</h2>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table id="recordTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Domain Name</th>
+              <th>TTL</th>
+              <th>Details / Value</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="empty-row"><td colspan="6">No records yet — use the form above to create your first DNS record.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-            if (!domainName || (details === '' && recordType !== 'NS')) {
-                alert('Please fill out all required fields.');
-                return;
-            }
+  <!-- CARD 5: Zone File Preview -->
+  <div class="card full-width">
+    <div class="card-header navy">
+      <div class="card-num">5</div>
+      <h2>Zone File Preview &nbsp;<span style="font-size:0.7rem;font-weight:400;opacity:0.7;font-family:var(--mono);">(standard BIND format)</span></h2>
+    </div>
+    <div class="card-body">
+      <div class="zone-preview" id="zonePreview"><span class="zone-comment">; Zone file will appear here as you create records.
+; This is the format real DNS servers read.
+;
+; &lt;name&gt;   &lt;TTL&gt;   IN   &lt;TYPE&gt;   &lt;value&gt;</span></div>
+    </div>
+  </div>
 
-            // Add new record to the table
-            const dnsRecordsTable = document.getElementById('dnsRecordsTable');
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${recordType}</td>
-                <td>${domainName}</td>
-                <td>${details || 'Name Server Record'}</td>
-            `;
-            dnsRecordsTable.appendChild(newRow);
+</main>
 
-            // Clear input fields
-            document.getElementById('domainName').value = '';
-            document.getElementById('ipAddress').value = '';
-            document.getElementById('alias').value = '';
-            document.getElementById('mxPriority').value = '';
-            document.getElementById('txtValue').value = '';
-        }
-    </script>
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  Moraine Valley Community College &nbsp;·&nbsp; Cybersecurity &amp; Networking Program &nbsp;·&nbsp;
+  <span>DNS Record Simulator</span> &nbsp;·&nbsp; Educational Use Only
+</footer>
 
+<script>
+/* ════════════════════════════════════════════
+   DATA DEFINITIONS
+════════════════════════════════════════════ */
+const recordData = {
+  A: {
+    title: 'A Record — IPv4 Address Record',
+    text:  'Maps a hostname to a 32-bit IPv4 address. This is the most common DNS record — it is what allows browsers to find a server when you type a domain name.',
+    example: 'www.example.com.  300  IN  A  93.184.216.34'
+  },
+  AAAA: {
+    title: 'AAAA Record — IPv6 Address Record',
+    text:  'Maps a hostname to a 128-bit IPv6 address. As IPv4 addresses run out, AAAA records are essential for modern internet infrastructure. IPv6 uses eight groups of four hexadecimal digits.',
+    example: 'www.example.com.  300  IN  AAAA  2606:2800:220:1:248:1893:25c8:1946'
+  },
+  CNAME: {
+    title: 'CNAME Record — Canonical Name (Alias)',
+    text:  'Creates an alias that points one hostname to another hostname (not an IP). Commonly used to make "www.example.com" resolve to "example.com". A CNAME cannot coexist with other records at the same name.',
+    example: 'www.example.com.  300  IN  CNAME  example.com.'
+  },
+  MX: {
+    title: 'MX Record — Mail Exchange Record',
+    text:  'Directs email for a domain to the appropriate mail server(s). Multiple MX records can exist with different priority values — lower numbers = higher priority. Without MX records, email delivery fails.',
+    example: 'example.com.  300  IN  MX  10  mail.example.com.'
+  },
+  NS: {
+    title: 'NS Record — Name Server Record',
+    text:  'Identifies which DNS servers are authoritative for a domain. Every domain must have at least two NS records for redundancy. These records delegate authority for a zone to specific name servers.',
+    example: 'example.com.  86400  IN  NS  ns1.example.com.'
+  },
+  TXT: {
+    title: 'TXT Record — Text Record',
+    text:  'Stores arbitrary text data associated with a domain. Originally for human-readable notes, TXT records are now widely used for email verification (SPF, DKIM), domain ownership verification (Google, Microsoft), and security policies (DMARC).',
+    example: 'example.com.  300  IN  TXT  "v=spf1 include:_spf.google.com ~all"'
+  }
+};
+
+const domainData = {
+  '.com': {
+    title: '.com — Commercial',
+    text:  'The most widely used TLD, originally intended for commercial organizations. Now used universally by businesses, personal websites, and organizations worldwide. Over 150 million .com domains are registered.',
+    example: 'www.cisco.com. &nbsp;&nbsp;300  IN  A  72.163.4.185'
+  },
+  '.net': {
+    title: '.net — Network',
+    text:  'Originally designed for network infrastructure providers (ISPs, backbone providers). Today it is used broadly as an alternative to .com for businesses, technology companies, and network-related services.',
+    example: 'ns1.isp.net. &nbsp;&nbsp;&nbsp;&nbsp;86400  IN  A  198.41.0.4'
+  },
+  '.org': {
+    title: '.org — Organization',
+    text:  'Originally intended for non-profit organizations and NGOs. Still predominantly used by non-profits, open-source projects, educational initiatives, and community groups. Wikipedia uses .org.',
+    example: 'donate.redcross.org.  300  IN  A  54.173.71.84'
+  },
+  '.gov': {
+    title: '.gov — Government',
+    text:  'Restricted to U.S. federal, state, and local government agencies. Administered by CISA. Organizations must prove they are a legitimate government entity to register a .gov domain. This provides trust and authenticity.',
+    example: 'www.irs.gov. &nbsp;&nbsp;&nbsp;&nbsp;300  IN  A  192.174.2.82'
+  },
+  '.edu': {
+    title: '.edu — Education',
+    text:  'Reserved for accredited U.S. post-secondary educational institutions. Administered by Educause. Community colleges, universities, and technical schools use .edu to establish academic credibility.',
+    example: 'www.morainevalley.edu. &nbsp;300  IN  A  198.17.0.2'
+  },
+  '.mil': {
+    title: '.mil — Military',
+    text:  'Exclusively used by the United States Department of Defense and its agencies. Among the original six top-level domains established in 1985. All U.S. military branches operate under .mil domains.',
+    example: 'www.army.mil. &nbsp;&nbsp;&nbsp;300  IN  A  216.34.81.207'
+  }
+};
+
+/* ════════════════════════════════════════════
+   EXPLORER PANELS
+════════════════════════════════════════════ */
+function showRecInfo(type) {
+  const d = recordData[type];
+  document.querySelectorAll('#recTypeButtons .rec-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const box = document.getElementById('recInfoBox');
+  box.classList.remove('red-border');
+  box.innerHTML = `
+    <div class="info-title">${d.title}</div>
+    <div class="info-text">${d.text}</div>
+    <div class="info-example">${d.example}</div>`;
+}
+
+function showDomInfo(tld) {
+  const d = domainData[tld];
+  document.querySelectorAll('#domainButtons .rec-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const box = document.getElementById('domInfoBox');
+  box.innerHTML = `
+    <div class="info-title">${d.title}</div>
+    <div class="info-text">${d.text}</div>
+    <div class="info-example">${d.example}</div>`;
+}
+
+/* ════════════════════════════════════════════
+   DYNAMIC FORM FIELDS
+════════════════════════════════════════════ */
+function updateFormFields() {
+  const type = document.getElementById('recordType').value;
+  const container = document.getElementById('dynamicFields');
+  clearStatus();
+  container.innerHTML = '';
+
+  const fields = {
+    A: [{id:'ipv4', label:'IPv4 Address', placeholder:'e.g., 93.184.216.34', hint:'32-bit address in dotted-decimal notation (4 octets, 0–255 each)'}],
+    AAAA: [{id:'ipv6', label:'IPv6 Address', placeholder:'e.g., 2606:2800:220:1:248:1893:25c8:1946', hint:'128-bit address in colon-separated hexadecimal groups'}],
+    CNAME: [{id:'alias', label:'Alias (Points To)', placeholder:'e.g., example.com', hint:'The canonical hostname this alias resolves to — do NOT use an IP address'}],
+    MX: [
+      {id:'mxPriority', label:'Priority', placeholder:'e.g., 10', hint:'Lower number = higher priority (10, 20, 30…)', type:'number'},
+      {id:'mxServer', label:'Mail Server Hostname', placeholder:'e.g., mail.example.com', hint:'The fully qualified domain name of the mail server'}
+    ],
+    NS: [{id:'nsServer', label:'Name Server Hostname', placeholder:'e.g., ns1.example.com', hint:'Fully qualified domain name of the authoritative name server'}],
+    TXT: [{id:'txtValue', label:'TXT Value (Text String)', placeholder:'e.g., v=spf1 include:_spf.google.com ~all', hint:'SPF, DKIM, DMARC, or domain verification string — enclose in quotes on real servers'}],
+  };
+
+  if (!fields[type]) return;
+
+  const ttlGroup = document.createElement('div');
+  ttlGroup.className = 'form-group';
+  ttlGroup.innerHTML = `
+    <label>TTL (Time to Live)</label>
+    <div class="field-hint">Seconds DNS resolvers cache this record (300 = 5 min, 86400 = 24 hrs)</div>
+    <select id="ttlValue">
+      <option value="60">60 — 1 minute (testing)</option>
+      <option value="300" selected>300 — 5 minutes (default)</option>
+      <option value="3600">3600 — 1 hour</option>
+      <option value="14400">14400 — 4 hours</option>
+      <option value="86400">86400 — 24 hours</option>
+    </select>`;
+  container.appendChild(ttlGroup);
+
+  fields[type].forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'form-group';
+    div.innerHTML = `
+      <label>${f.label} <span class="required">*</span></label>
+      <div class="field-hint">${f.hint}</div>
+      <input type="${f.type||'text'}" id="${f.id}" placeholder="${f.placeholder}" autocomplete="off"/>`;
+    container.appendChild(div);
+  });
+}
+
+/* ════════════════════════════════════════════
+   RECORD TABLE STATE
+════════════════════════════════════════════ */
+let records = [];
+let counter = 1;
+
+function createRecord() {
+  clearStatus();
+  const type   = document.getElementById('recordType').value;
+  const domain = document.getElementById('domainName').value.trim();
+
+  if (!type)   return showStatus('error', '⚠ Please select a Record Type before continuing.');
+  if (!domain) return showStatus('error', '⚠ Please enter a Domain Name.');
+  if (!/^[a-zA-Z0-9._\-]+\.[a-zA-Z]{2,}$/.test(domain))
+    return showStatus('error', '⚠ Domain Name format looks invalid. Try something like "example.com" or "sub.domain.edu".');
+
+  const ttl = document.getElementById('ttlValue')?.value || '300';
+  let details = '';
+
+  if (type === 'A') {
+    const v = val('ipv4');
+    if (!v) return showStatus('error', '⚠ IPv4 Address is required for an A record.');
+    if (!isValidIPv4(v)) return showStatus('error', '⚠ IPv4 Address appears invalid. Use dotted-decimal format like 192.168.1.1');
+    details = v;
+  } else if (type === 'AAAA') {
+    const v = val('ipv6');
+    if (!v) return showStatus('error', '⚠ IPv6 Address is required for an AAAA record.');
+    details = v;
+  } else if (type === 'CNAME') {
+    const v = val('alias');
+    if (!v) return showStatus('error', '⚠ Alias hostname is required for a CNAME record.');
+    details = v;
+  } else if (type === 'MX') {
+    const p = val('mxPriority'), s = val('mxServer');
+    if (!p || !s) return showStatus('error', '⚠ Both Priority and Mail Server are required for an MX record.');
+    details = `Priority: ${p} → ${s}`;
+  } else if (type === 'NS') {
+    const v = val('nsServer');
+    if (!v) return showStatus('error', '⚠ Name Server hostname is required for an NS record.');
+    details = v;
+  } else if (type === 'TXT') {
+    const v = val('txtValue');
+    if (!v) return showStatus('error', '⚠ A TXT value is required for a TXT record.');
+    details = `"${v}"`;
+  }
+
+  const record = { id: counter++, type, domain, ttl, details };
+  records.push(record);
+  renderTable();
+  renderZoneFile();
+  showStatus('success', `✔ ${type} record for "${domain}" created successfully and added to the zone.`);
+}
+
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function isValidIPv4(ip) {
+  const parts = ip.split('.');
+  if (parts.length !== 4) return false;
+  return parts.every(p => {
+    const n = parseInt(p, 10);
+    return !isNaN(n) && n >= 0 && n <= 255 && String(n) === p;
+  });
+}
+
+function deleteRecord(id) {
+  records = records.filter(r => r.id !== id);
+  renderTable();
+  renderZoneFile();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  if (records.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No records yet — use the form above to create your first DNS record.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = records.map((r, i) => `
+    <tr class="${i === records.length - 1 ? 'new-row' : ''}">
+      <td style="color:var(--gray);font-family:var(--mono)">${r.id}</td>
+      <td><span class="type-badge badge-${r.type}">${r.type}</span></td>
+      <td style="font-family:var(--mono)">${r.domain}</td>
+      <td style="font-family:var(--mono);color:var(--gray)">${r.ttl}s</td>
+      <td style="font-family:var(--mono)">${r.details}</td>
+      <td><button class="delete-btn" onclick="deleteRecord(${r.id})">✕ Delete</button></td>
+    </tr>`).join('');
+}
+
+function renderZoneFile() {
+  const el = document.getElementById('zonePreview');
+  if (records.length === 0) {
+    el.innerHTML = `<span class="zone-comment">; Zone file will appear here as you create records.\n; This is the format real DNS servers read.\n;\n; &lt;name&gt;   &lt;TTL&gt;   IN   &lt;TYPE&gt;   &lt;value&gt;</span>`;
+    return;
+  }
+  const header = `<span class="zone-comment">; Generated Zone File — DNS Record Simulator
+; Moraine Valley Community College
+; ─────────────────────────────────────────────────────────────
+$ORIGIN .
+$TTL 300\n</span>`;
+
+  const rows = records.map(r => {
+    let val = r.details;
+    if (r.type === 'MX') {
+      const parts = r.details.split(' → ');
+      const pri = parts[0].replace('Priority: ', '');
+      val = `${pri} ${parts[1]}`;
+    }
+    const name = (r.domain + '.').padEnd(36);
+    const ttl  = r.ttl.padEnd(8);
+    return `<span class="zone-record">${name}${ttl}IN  </span><span class="zone-type">${r.type.padEnd(8)}</span><span class="zone-val">${val}</span>`;
+  });
+  el.innerHTML = header + rows.join('\n');
+}
+
+/* ════════════════════════════════════════════
+   STATUS & UTILITIES
+════════════════════════════════════════════ */
+function showStatus(type, msg) {
+  const el = document.getElementById('statusMsg');
+  el.className = `status-msg ${type}`;
+  el.innerHTML = msg;
+  el.style.display = 'flex';
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function clearStatus() {
+  const el = document.getElementById('statusMsg');
+  el.style.display = 'none';
+}
+
+function clearForm() {
+  document.getElementById('recordType').value = '';
+  document.getElementById('domainName').value = '';
+  document.getElementById('dynamicFields').innerHTML = '';
+  clearStatus();
+}
+
+/* Init zone preview */
+renderZoneFile();
+</script>
 </body>
 </html>
