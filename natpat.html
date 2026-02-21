@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>NAT/PAT Interactive Lesson + Header/Translation Builder (OSI Context)</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --ink:#0b0f14;
+      --muted:#5b6675;
+      --line:#e7ecf2;
+      --soft:#f6f8fb;
+      --soft2:#f2f7f4;
+      --green:#0b6b3a;
+      --green2:#148a4a;
+      --danger:#b42318;
+      --warn:#9a6700;
+      --ok:#067647;
+      --shadow: 0 10px 24px rgba(16,24,40,.08);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+      line-height:1.4;
+    }
+    a{color:inherit}
+    .app{display:flex; min-height:100vh}
+    /* Left nav */
+    .nav{
+      width:280px; border-right:1px solid var(--line); background:#fff;
+      position:sticky; top:0; height:100vh; padding:18px 14px;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center; padding:10px 10px 14px;
+      border-bottom:1px solid var(--line); margin-bottom:12px;
+    }
+    .logo{
+      width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,var(--green),#0f8f4a);
+      box-shadow: 0 10px 16px rgba(11,107,58,.18);
+    }
+    .brand h1{font-size:14px; margin:0}
+    .brand p{margin:2px 0 0; font-size:12px; color:var(--muted)}
+    .nav .sectionTitle{
+      margin:14px 10px 8px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
+    }
+    .nav button{
+      width:100%; text-align:left; padding:10px 10px; border-radius:12px;
+      border:1px solid transparent; background:transparent; cursor:pointer;
+      display:flex; gap:10px; align-items:flex-start;
+    }
+    .nav button:hover{background:var(--soft)}
+    .nav button.active{
+      background:var(--soft2);
+      border-color: rgba(11,107,58,.25);
+    }
+    .nav .dot{
+      width:10px; height:10px; border-radius:999px; background:var(--line); margin-top:5px;
+    }
+    .nav button.active .dot{background:var(--green)}
+    .nav .label{font-weight:650; font-size:13px}
+    .nav .desc{font-size:12px; color:var(--muted); margin-top:2px}
+    .nav .footer{
+      position:absolute; bottom:12px; left:14px; right:14px;
+      border-top:1px solid var(--line); padding-top:10px; color:var(--muted); font-size:12px;
+      display:flex; justify-content:space-between; gap:10px; align-items:center;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      border:1px solid var(--line); padding:6px 10px; border-radius:999px; background:#fff;
+      font-size:12px; color:var(--muted);
+    }
+    .pill b{color:var(--ink)}
+    /* Main */
+    .main{flex:1; padding:22px 26px 40px; background:var(--bg)}
+    .topbar{
+      display:flex; justify-content:space-between; gap:12px; align-items:flex-start;
+      margin-bottom:18px;
+    }
+    .topbar h2{margin:0; font-size:20px}
+    .topbar .sub{margin:6px 0 0; color:var(--muted); font-size:13px; max-width:72ch}
+    .controlsRow{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end}
+    .btn{
+      border:1px solid var(--line); background:#fff; padding:9px 12px; border-radius:12px;
+      cursor:pointer; font-weight:650; font-size:13px;
+    }
+    .btn:hover{background:var(--soft)}
+    .btn.primary{
+      border-color: rgba(11,107,58,.25);
+      background: linear-gradient(180deg, rgba(11,107,58,.08), rgba(11,107,58,.02));
+    }
+    .grid{
+      display:grid; grid-template-columns: 1.1fr .9fr; gap:14px;
+    }
+    @media (max-width: 1050px){
+      .nav{position:fixed; left:0; top:0; z-index:10; transform:translateX(0)}
+      .grid{grid-template-columns:1fr}
+      .main{padding-left:310px}
+    }
+    @media (max-width: 820px){
+      .nav{position:static; width:100%; height:auto}
+      .app{flex-direction:column}
+      .main{padding-left:16px; padding-right:16px}
+    }
+
+    .card{
+      background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow: var(--shadow); padding:14px;
+    }
+    .card h3{margin:0 0 10px; font-size:15px}
+    .muted{color:var(--muted)}
+    .kpiRow{display:flex; gap:10px; flex-wrap:wrap}
+    .kpi{
+      padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:var(--soft);
+      min-width: 170px;
+    }
+    .kpi .k{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
+    .kpi .v{margin-top:6px; font-weight:800; font-size:14px}
+    .tag{
+      display:inline-flex; align-items:center; border:1px solid var(--line); background:#fff;
+      padding:6px 10px; border-radius:999px; font-size:12px; color:var(--muted);
+      gap:8px;
+    }
+    .tag .s{width:8px; height:8px; border-radius:999px; background:var(--line)}
+    .tag.good .s{background:var(--ok)}
+    .tag.warn .s{background:var(--warn)}
+    .tag.bad .s{background:var(--danger)}
+    .twoCol{
+      display:grid; grid-template-columns: 1fr 1fr; gap:12px;
+    }
+    @media (max-width: 980px){ .twoCol{grid-template-columns:1fr} }
+
+    .list{
+      margin:0; padding-left:18px;
+    }
+    .list li{margin:6px 0}
+    .callout{
+      border:1px solid rgba(11,107,58,.25);
+      background: linear-gradient(180deg, rgba(11,107,58,.08), rgba(11,107,58,.02));
+      padding:12px; border-radius:14px;
+    }
+    .callout b{color:var(--green)}
+    .hr{height:1px; background:var(--line); margin:12px 0}
+    /* Inputs */
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
+    input, select, textarea{
+      width:100%; padding:10px 10px; border-radius:12px; border:1px solid var(--line);
+      background:#fff; font-size:13px; outline:none;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(11,107,58,.45);
+      box-shadow: 0 0 0 4px rgba(11,107,58,.10);
+    }
+    textarea{min-height:88px; resize:vertical; font-family: var(--mono)}
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    @media (max-width: 980px){ .row{grid-template-columns:1fr} }
+    .mono{
+      font-family:var(--mono); font-size:12px; white-space:pre-wrap;
+      background: #0b0f14; color:#e6edf3;
+      border-radius:14px; padding:12px; border:1px solid rgba(255,255,255,.08);
+      overflow:auto;
+    }
+    .miniMono{
+      font-family:var(--mono); font-size:12px;
+      padding:8px 10px; border-radius:12px; border:1px solid var(--line); background:var(--soft);
+      overflow:auto;
+    }
+    .quizQ{
+      border:1px solid var(--line); border-radius:14px; padding:12px; background:var(--soft);
+    }
+    .quizQ h4{margin:0 0 8px; font-size:14px}
+    .choices{display:grid; gap:8px}
+    .choice{
+      border:1px solid var(--line); background:#fff; border-radius:12px; padding:10px; cursor:pointer;
+      display:flex; gap:10px; align-items:flex-start;
+    }
+    .choice:hover{background:#fbfcfe}
+    .choice .radio{
+      width:18px; height:18px; border-radius:999px; border:2px solid var(--line); margin-top:2px;
+    }
+    .choice.selected .radio{border-color: var(--green); box-shadow: inset 0 0 0 5px var(--green)}
+    .resultLine{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px}
+    .badge{
+      display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:6px 10px;
+      font-size:12px; font-weight:750;
+    }
+    .badge.ok{background: rgba(6,118,71,.10); color: var(--ok); border:1px solid rgba(6,118,71,.25)}
+    .badge.no{background: rgba(180,35,24,.10); color: var(--danger); border:1px solid rgba(180,35,24,.25)}
+    .badge.neutral{background: rgba(91,102,117,.10); color: var(--muted); border:1px solid rgba(91,102,117,.25)}
+    .small{font-size:12px; color:var(--muted)}
+    .osi{
+      display:grid; gap:10px;
+    }
+    .layer{
+      border:1px solid var(--line); border-radius:14px; padding:12px; background:#fff;
+      display:flex; gap:12px; align-items:flex-start;
+    }
+    .layer .num{
+      width:34px; height:34px; border-radius:12px;
+      background: linear-gradient(135deg, rgba(11,107,58,.16), rgba(11,107,58,.04));
+      border:1px solid rgba(11,107,58,.18);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:850; color:var(--green);
+      flex:0 0 auto;
+    }
+    .layer .title{font-weight:800}
+    .layer .meta{font-size:12px; color:var(--muted); margin-top:4px}
+    .split{
+      display:grid; grid-template-columns: 1fr 1fr; gap:12px;
+    }
+    @media (max-width: 980px){ .split{grid-template-columns:1fr} }
+    .table{
+      width:100%; border-collapse:separate; border-spacing:0; overflow:hidden;
+      border:1px solid var(--line); border-radius:14px;
+      background:#fff;
+    }
+    .table th, .table td{
+      padding:10px 10px; border-bottom:1px solid var(--line);
+      font-size:12px; text-align:left; vertical-align:top;
+    }
+    .table th{background:var(--soft); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+    .table tr:last-child td{border-bottom:none}
+    .right{text-align:right}
+    .hint{
+      font-size:12px; color:var(--muted);
+      border-left:3px solid rgba(11,107,58,.35);
+      padding-left:10px; margin-top:8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="nav" aria-label="Left navigation">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>NAT / PAT Teaching Lab</h1>
+          <p>OSI mapping • Translation builder • Skills & checks</p>
+        </div>
+      </div>
+
+      <div class="sectionTitle">Navigate</div>
+      <button class="navBtn active" data-view="overview">
+        <span class="dot" aria-hidden="true"></span>
+        <span>
+          <div class="label">1) Overview</div>
+          <div class="desc">What NAT/PAT is and why it exists</div>
+        </span>
+      </button>
+      <button class="navBtn" data-view="osi">
+        <span class="dot" aria-hidden="true"></span>
+        <span>
+          <div class="label">2) OSI Model Focus</div>
+          <div class="desc">Where NAT/PAT touches the stack</div>
+        </span>
+      </button>
+      <button class="navBtn" data-view="types">
+        <span class="dot" aria-hidden="true"></span>
+        <span>
+          <div class="label">3) NAT/PAT Types</div>
+          <div class="desc">Static, Dynamic, PAT (Overload)</div>
+        </span>
+      </button>
+      <button class="navBtn" data-view="builder">
+        <span class="dot" aria-hidden="true"></span>
+        <span>
+          <div class="label">4) Header/Translation Builder</div>
+          <div class="desc">Construct pre/post NAT packet fields</div>
+        </span>
+      </button>
+      <button class="navBtn" data-view="skills">
+        <span class="dot" aria-hidden="true"></span>
+        <span>
+          <div class="label">5) Admin Knowledge & Skills</div>
+          <div class="desc">What a network admin must master</div>
+        </span>
+      </button>
+      <button class="navBtn" data-view="troubleshooting">
+        <span class="dot" aria-hidden="true"></span>
+        <span>
+          <div class="label">6) Troubleshooting Lab</div>
+          <div class="desc">Common failures and what to check</div>
+        </span>
+      </button>
+      <button class="navBtn" data-view="quiz">
+        <span class="dot" aria-hidden="true"></span>
+        <span>
+          <div class="label">7) Knowledge Check</div>
+          <div class="desc">Interactive questions with feedback</div>
+        </span>
+      </button>
+
+      <div class="footer">
+        <span class="pill"><b id="clock">--:--</b> <span>Local</span></span>
+        <span class="pill">Theme: <b>White • Green • Black</b></span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h2 id="viewTitle">Overview: NAT & PAT</h2>
+          <p class="sub" id="viewSub">
+            NAT changes IP addressing at the network edge; PAT additionally multiplexes many internal flows onto one public IP using ports.
+            Use the builder to see what actually changes in a packet and in the translation state.
+          </p>
+        </div>
+        <div class="controlsRow">
+          <button class="btn" id="btnPrint">Print-friendly</button>
+          <button class="btn primary" id="btnReset">Reset lesson state</button>
+        </div>
+      </div>
+
+      <!-- VIEWS -->
+      <section id="view-overview" class="view">
+        <div class="grid">
+          <div class="card">
+            <h3>Core Concepts (High-level)</h3>
+            <div class="callout">
+              <b>Key idea:</b> NAT/PAT is a boundary function (often on a router/firewall) that rewrites packet addressing information,
+              then maintains state so return traffic is mapped back to the correct internal host.
+            </div>
+            <div class="hr"></div>
+            <div class="twoCol">
+              <div>
+                <h3 style="margin-top:0">Terms you must know</h3>
+                <ul class="list">
+                  <li><b>Inside local</b>: the internal (private) address of a host (e.g., 192.168.1.10).</li>
+                  <li><b>Inside global</b>: the public address representing that internal host to the outside (e.g., 203.0.113.5).</li>
+                  <li><b>Outside global</b>: the real public address of the external host (e.g., 142.250.x.x).</li>
+                  <li><b>Outside local</b>: the external host address as seen from the inside (often same as outside global).</li>
+                  <li><b>Translation state / mapping</b>: table entries binding inside ↔ outside tuples.</li>
+                  <li><b>PAT / Overload</b>: many inside hosts share one public IP using different source ports.</li>
+                </ul>
+              </div>
+              <div>
+                <h3 style="margin-top:0">Why NAT/PAT exists</h3>
+                <ul class="list">
+                  <li><b>IPv4 conservation</b>: share limited public IPv4 space.</li>
+                  <li><b>Addressing independence</b>: internal RFC1918 can change without renumbering the ISP edge.</li>
+                  <li><b>Basic hiding (not security)</b>: inbound reachability is constrained unless explicitly allowed.</li>
+                  <li><b>Policy control</b>: often paired with firewall rules and logging.</li>
+                </ul>
+                <div class="hint">
+                  NAT ≠ firewall. NAT changes addressing; a firewall enforces policy. Many edge devices do both.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>What changes in a packet?</h3>
+            <div class="kpiRow">
+              <div class="kpi">
+                <div class="k">NAT (Layer focus)</div>
+                <div class="v">OSI L3 — IP addresses</div>
+              </div>
+              <div class="kpi">
+                <div class="k">PAT (Layer focus)</div>
+                <div class="v">OSI L4 — TCP/UDP ports</div>
+              </div>
+              <div class="kpi">
+                <div class="k">Stateful requirement</div>
+                <div class="v">Translation table</div>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <h3 style="margin-top:0">Mini-simulator</h3>
+            <p class="muted" style="margin-top:-6px">
+              Pick a scenario to see a typical translation tuple.
+            </p>
+
+            <label>Scenario</label>
+            <select id="scenario">
+              <option value="web">Inside host browsing to external web server (TCP/443)</option>
+              <option value="dns">Inside host querying DNS (UDP/53)</option>
+              <option value="static">Inbound to a published internal web server (Static NAT / Port-forward)</option>
+              <option value="voip">Voice/video flow (UDP high ports)</option>
+            </select>
+
+            <div class="hr"></div>
+            <div class="miniMono" id="scenarioOut"></div>
+
+            <div class="hint">
+              Notice that <b>PAT</b> typically rewrites the <b>source port</b> on outbound flows to keep tuples unique.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-osi" class="view" hidden>
+        <div class="grid">
+          <div class="card">
+            <h3>OSI Model: Where NAT/PAT operates</h3>
+            <p class="muted" style="margin-top:-6px">
+              NAT is primarily a Layer 3 function; PAT expands into Layer 4 by rewriting ports.
+              Many real-world devices implement NAT/PAT alongside stateful firewalling (often described as “edge security”).
+            </p>
+
+            <div class="osi" id="osiList"></div>
+
+            <div class="hr"></div>
+
+            <h3>Interactive: map an action to the OSI layer</h3>
+            <div class="row">
+              <div>
+                <label>Action</label>
+                <select id="osiAction">
+                  <option value="rewrite_ip">Rewrite source/destination IP</option>
+                  <option value="rewrite_port">Rewrite TCP/UDP port</option>
+                  <option value="encap_eth">Encapsulate into Ethernet frame</option>
+                  <option value="tls">Negotiate TLS session</option>
+                  <option value="route">Route packet between networks</option>
+                  <option value="arp">Resolve IP to MAC via ARP</option>
+                  <option value="dns">Resolve name using DNS</option>
+                </select>
+              </div>
+              <div>
+                <label>Your guess (layer)</label>
+                <select id="osiGuess">
+                  <option value="7">7 Application</option>
+                  <option value="6">6 Presentation</option>
+                  <option value="5">5 Session</option>
+                  <option value="4">4 Transport</option>
+                  <option value="3">3 Network</option>
+                  <option value="2">2 Data Link</option>
+                  <option value="1">1 Physical</option>
+                </select>
+              </div>
+            </div>
+            <div class="resultLine">
+              <button class="btn primary" id="btnOsiCheck">Check</button>
+              <span class="badge neutral" id="osiBadge">Ready</span>
+              <span class="small" id="osiExplain"></span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>NAT/PAT in the real stack</h3>
+            <ul class="list">
+              <li><b>Layer 3 (IP)</b>: NAT modifies IPv4 src/dst addresses and recalculates the IP header checksum.</li>
+              <li><b>Layer 4 (TCP/UDP)</b>: PAT modifies ports and recalculates L4 checksums (or pseudo-header checks).</li>
+              <li><b>Upper layers</b>: Application payload is usually unchanged, but some protocols embed IPs/ports in payload (can break without helpers).</li>
+            </ul>
+            <div class="callout">
+              <b>Operational implication:</b> NAT/PAT is not just “address rewrite”; it is state, timers, and protocol edge-cases.
+            </div>
+
+            <div class="hr"></div>
+
+            <h3>Protocol edge-cases you’ll see</h3>
+            <ul class="list">
+              <li><b>FTP (active mode)</b>: embeds addressing/ports; historically required “ALG” helpers.</li>
+              <li><b>SIP/VoIP</b>: NAT traversal issues; often needs STUN/TURN/ICE or SBCs.</li>
+              <li><b>IPsec</b>: NAT can conflict with AH; NAT-T helps ESP traverse NAT.</li>
+              <li><b>P2P / inbound games</b>: requires port-forwarding or UPnP (with risk).</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-types" class="view" hidden>
+        <div class="grid">
+          <div class="card">
+            <h3>NAT/PAT Types and When to Use Them</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>What it does</th>
+                  <th>Typical use</th>
+                  <th>Tradeoffs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Static NAT</b></td>
+                  <td>1:1 fixed mapping between inside local and inside global.</td>
+                  <td>Publishing an internal server with a dedicated public IP.</td>
+                  <td>Consumes public IPs; simple and predictable.</td>
+                </tr>
+                <tr>
+                  <td><b>Dynamic NAT</b></td>
+                  <td>Maps inside hosts to a pool of public IPs, per-session.</td>
+                  <td>Organizations with a small public pool; fewer hosts than pool size active concurrently.</td>
+                  <td>Still consumes public IPs; mapping changes over time.</td>
+                </tr>
+                <tr>
+                  <td><b>PAT (NAT Overload)</b></td>
+                  <td>Many inside hosts share one public IP using unique source ports.</td>
+                  <td>Most common home/SMB Internet edge.</td>
+                  <td>Port exhaustion risks; some inbound use-cases need port forwarding.</td>
+                </tr>
+                <tr>
+                  <td><b>Port Forward / DNAT</b></td>
+                  <td>Inbound mapping of public IP:port → internal IP:port.</td>
+                  <td>Expose a specific service (e.g., HTTPS) behind NAT.</td>
+                  <td>Requires firewall policy; increases exposure surface.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="hr"></div>
+
+            <h3>Translation tuple (the mental model)</h3>
+            <div class="callout">
+              Think in <b>5-tuples</b>: <span style="font-family:var(--mono)">(srcIP, srcPort, dstIP, dstPort, protocol)</span>.
+              PAT commonly rewrites <b>srcIP</b> and <b>srcPort</b> outbound, then tracks it.
+            </div>
+
+            <div class="hint">
+              “NAT header” isn’t a separate protocol header in the packet. What you build in the next section is the
+              <b>before/after IP + TCP/UDP header fields</b> plus the <b>translation-table entry</b> that makes it work.
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Timers & State (what admins actually manage)</h3>
+            <ul class="list">
+              <li><b>Idle timeouts</b> differ by protocol: TCP established vs UDP “pseudo-sessions”.</li>
+              <li><b>Connection tracking</b> correlates NAT with firewall state (common on next-gen firewalls).</li>
+              <li><b>Port allocation</b> strategies: sequential, random, per-destination pooling.</li>
+              <li><b>Logging</b> is crucial for attribution: internal host ↔ public IP:port at time T.</li>
+            </ul>
+            <div class="callout">
+              <b>Skill target:</b> read NAT tables, interpret tuples, reason about return traffic, and validate policy + routing.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-builder" class="view" hidden>
+        <div class="grid">
+          <div class="card">
+            <h3>NAT/PAT Header + Translation Builder</h3>
+            <p class="muted" style="margin-top:-6px">
+              Build a packet’s key Layer 3/4 fields, then apply NAT mode. You’ll get:
+              (1) packet fields before NAT, (2) packet fields after NAT, (3) a translation-table entry.
+            </p>
+
+            <div class="row">
+              <div>
+                <label>Protocol</label>
+                <select id="proto">
+                  <option value="TCP">TCP</option>
+                  <option value="UDP">UDP</option>
+                </select>
+              </div>
+              <div>
+                <label>NAT Mode</label>
+                <select id="natMode">
+                  <option value="pat">PAT (Overload) — many inside to one public IP</option>
+                  <option value="static">Static NAT — fixed 1:1 (no port rewrite unless you choose)</option>
+                  <option value="portfwd">Port Forward (DNAT) — inbound public IP:port to inside IP:port</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="split">
+              <div>
+                <h3 style="margin-top:0">Inside (LAN side)</h3>
+                <div class="row">
+                  <div>
+                    <label>Inside Local IP (private)</label>
+                    <input id="inLocalIP" value="192.168.1.10" />
+                  </div>
+                  <div>
+                    <label>Inside Source Port</label>
+                    <input id="inSrcPort" value="51524" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div>
+                    <label>Outside Global IP (destination)</label>
+                    <input id="outIP" value="142.250.72.14" />
+                  </div>
+                  <div>
+                    <label>Destination Port</label>
+                    <input id="dstPort" value="443" />
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div>
+                    <label>TTL (IPv4)</label>
+                    <input id="ttl" value="64" />
+                  </div>
+                  <div>
+                    <label>TCP Flags (if TCP)</label>
+                    <select id="tcpFlags">
+                      <option value="SYN">SYN</option>
+                      <option value="SYN,ACK">SYN,ACK</option>
+                      <option value="ACK">ACK</option>
+                      <option value="PSH,ACK">PSH,ACK</option>
+                      <option value="FIN,ACK">FIN,ACK</option>
+                      <option value="RST">RST</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 style="margin-top:0">Edge (WAN side / public)</h3>
+                <div class="row">
+                  <div>
+                    <label>Inside Global IP (public/NAT IP)</label>
+                    <input id="inGlobalIP" value="203.0.113.5" />
+                  </div>
+                  <div>
+                    <label>PAT Allocated Source Port (optional)</label>
+                    <input id="patPort" value="" placeholder="Leave blank to auto-assign"/>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div>
+                    <label>Port-forward Public IP (for DNAT)</label>
+                    <input id="pfPublicIP" value="203.0.113.5" />
+                  </div>
+                  <div>
+                    <label>Port-forward Public Port (for DNAT)</label>
+                    <input id="pfPublicPort" value="8443" />
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div>
+                    <label>Internal Service IP (DNAT target)</label>
+                    <input id="pfInsideIP" value="192.168.1.50" />
+                  </div>
+                  <div>
+                    <label>Internal Service Port (DNAT target)</label>
+                    <input id="pfInsidePort" value="443" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="resultLine">
+              <button class="btn primary" id="btnBuild">Build Translation</button>
+              <span class="badge neutral" id="buildBadge">Ready</span>
+              <span class="small" id="buildNote"></span>
+            </div>
+
+            <div class="hr"></div>
+
+            <h3 style="margin-top:0">Output</h3>
+            <label>Packet BEFORE NAT (key header fields)</label>
+            <div class="mono" id="beforeOut"></div>
+
+            <label style="margin-top:10px">Packet AFTER NAT (key header fields)</label>
+            <div class="mono" id="afterOut"></div>
+
+            <label style="margin-top:10px">Translation Table Entry (state)</label>
+            <div class="mono" id="tableOut"></div>
+
+            <div class="hint">
+              The device must also update checksums when it rewrites addresses/ports (IPv4 header checksum, plus TCP/UDP checksum).
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Explain the Output (what to look for)</h3>
+            <ul class="list">
+              <li><b>PAT outbound</b>: source IP becomes inside global; source port becomes an allocated PAT port.</li>
+              <li><b>Static outbound</b>: source IP changes, source port often unchanged (unless policy forces rewrite).</li>
+              <li><b>Port-forward inbound</b>: destination IP:port becomes internal IP:port (DNAT); return traffic is typically SNAT’d back.</li>
+            </ul>
+
+            <div class="hr"></div>
+
+            <h3>Quick exercises</h3>
+            <div class="quizQ">
+              <h4>Exercise A</h4>
+              <div class="small">Set mode to <b>PAT</b>. Change the inside host to 192.168.1.25 and rebuild. What changes most reliably?</div>
+              <div class="hint">Answer: the public-facing tuple must remain unique, so the NAT device can change the source port.</div>
+            </div>
+            <div style="height:10px"></div>
+            <div class="quizQ">
+              <h4>Exercise B</h4>
+              <div class="small">Set mode to <b>Port Forward</b>. Use public port 8443 → internal 443. Which tuple field changes inbound?</div>
+              <div class="hint">Answer: destination IP and destination port (DNAT).</div>
+            </div>
+
+            <div class="hr"></div>
+            <h3>NAT/PAT “header” vocabulary (for exams/interviews)</h3>
+            <ul class="list">
+              <li><b>L3 fields</b>: source IP, destination IP, TTL, protocol number.</li>
+              <li><b>L4 fields</b>: source port, destination port, flags (TCP), length (UDP).</li>
+              <li><b>State fields</b>: inside local ↔ inside global; outside tuple; protocol; timers; interface/zone.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-skills" class="view" hidden>
+        <div class="grid">
+          <div class="card">
+            <h3>Knowledge Areas Network Administrators Need (NAT/PAT)</h3>
+            <div class="twoCol">
+              <div>
+                <h3 style="margin-top:0">Concepts & Terms</h3>
+                <ul class="list">
+                  <li>RFC1918 private ranges; public vs private routing.</li>
+                  <li>Inside/outside local/global terminology; SNAT vs DNAT.</li>
+                  <li>5-tuple flow identification; stateful connection tracking.</li>
+                  <li>Static vs dynamic vs PAT; port forwarding.</li>
+                  <li>NAT hairpin/loopback (internal clients reaching internal servers via public IP).</li>
+                  <li>NAT traversal methods (STUN/TURN/ICE), NAT-T for IPsec.</li>
+                </ul>
+              </div>
+              <div>
+                <h3 style="margin-top:0">Hands-on Skills</h3>
+                <ul class="list">
+                  <li>Configure NAT rules (source/destination), objects, and policies on routers/firewalls.</li>
+                  <li>Read NAT tables and correlate with sessions/logs.</li>
+                  <li>Validate routing + default gateway behavior for return traffic.</li>
+                  <li>Implement port forwards with least-privilege firewall rules.</li>
+                  <li>Document NAT for incident response and compliance (who had which public tuple at time T).</li>
+                  <li>Use packet captures to confirm rewritten tuples and handshake correctness.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <h3>Security and operational practices</h3>
+            <ul class="list">
+              <li><b>Do not rely on NAT as security</b>: enforce explicit firewall policy and segment networks.</li>
+              <li><b>Log wisely</b>: NAT logs can be high-volume; tune retention and searchable fields.</li>
+              <li><b>Avoid overexposure</b>: inbound port forwards expand attack surface; prefer VPN / reverse proxy when appropriate.</li>
+              <li><b>Capacity planning</b>: consider concurrent sessions and ephemeral port availability (PAT exhaustion).</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3>Role-ready checklist (interview / job task)</h3>
+            <div class="miniMono" id="checklistOut"></div>
+            <div class="hr"></div>
+            <h3>Self-assessment</h3>
+            <div class="row">
+              <div>
+                <label>I can confidently explain inside local vs inside global</label>
+                <select class="selfRate" data-key="term">
+                  <option value="0">Not yet</option>
+                  <option value="1">Somewhat</option>
+                  <option value="2">Confident</option>
+                  <option value="3">Could teach it</option>
+                </select>
+              </div>
+              <div>
+                <label>I can read a NAT table and identify the internal host for a public tuple</label>
+                <select class="selfRate" data-key="table">
+                  <option value="0">Not yet</option>
+                  <option value="1">Somewhat</option>
+                  <option value="2">Confident</option>
+                  <option value="3">Could teach it</option>
+                </select>
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label>I can configure a safe port forward (DNAT + firewall)</label>
+                <select class="selfRate" data-key="dnat">
+                  <option value="0">Not yet</option>
+                  <option value="1">Somewhat</option>
+                  <option value="2">Confident</option>
+                  <option value="3">Could teach it</option>
+                </select>
+              </div>
+              <div>
+                <label>I can troubleshoot “works outbound, fails inbound” scenarios</label>
+                <select class="selfRate" data-key="ts">
+                  <option value="0">Not yet</option>
+                  <option value="1">Somewhat</option>
+                  <option value="2">Confident</option>
+                  <option value="3">Could teach it</option>
+                </select>
+              </div>
+            </div>
+            <div class="resultLine">
+              <span class="badge neutral" id="skillBadge">Self-rating: not set</span>
+              <span class="small" id="skillText"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-troubleshooting" class="view" hidden>
+        <div class="grid">
+          <div class="card">
+            <h3>Troubleshooting NAT/PAT: Common Failure Patterns</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Symptom</th>
+                  <th>Most likely causes</th>
+                  <th>What to check first</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Outbound web fails</b></td>
+                  <td>No SNAT/PAT rule match, missing default route, DNS issues, upstream block.</td>
+                  <td>Session table, NAT rule hit counters, default route, DNS resolution.</td>
+                </tr>
+                <tr>
+                  <td><b>Outbound works, inbound port-forward fails</b></td>
+                  <td>Firewall rule missing, wrong DNAT target, ISP blocks port, wrong public IP, asymmetric routing.</td>
+                  <td>DNAT rule, firewall policy, packet capture on WAN, service listening internally.</td>
+                </tr>
+                <tr>
+                  <td><b>Intermittent failures / timeouts</b></td>
+                  <td>Session timeout too short, UDP “session” aging, port exhaustion, CPU overload.</td>
+                  <td>Timeout settings, conn count, NAT pool usage, device utilization.</td>
+                </tr>
+                <tr>
+                  <td><b>VoIP / video breaks</b></td>
+                  <td>NAT traversal mismatch, SIP helper issues, UDP pinholes, symmetric NAT behavior.</td>
+                  <td>STUN/TURN usage, SIP ALG settings, session pinholes, firewall SIP policies.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="hr"></div>
+
+            <h3>Interactive “First checks” decision helper</h3>
+            <div class="row">
+              <div>
+                <label>Pick a symptom</label>
+                <select id="symptom">
+                  <option value="outbound">Outbound traffic fails (no Internet)</option>
+                  <option value="inbound">Inbound port-forward fails</option>
+                  <option value="onehost">Only one internal host fails</option>
+                  <option value="voip">VoIP/Video issues through NAT</option>
+                </select>
+              </div>
+              <div>
+                <label>Environment</label>
+                <select id="env">
+                  <option value="home">Home/SMB router (PAT)</option>
+                  <option value="fw">Firewall appliance (zones/policies)</option>
+                  <option value="cloud">Cloud NAT gateway</option>
+                </select>
+              </div>
+            </div>
+            <div class="resultLine">
+              <button class="btn primary" id="btnDiag">Generate checklist</button>
+              <span class="badge neutral" id="diagBadge">Ready</span>
+            </div>
+            <div class="miniMono" id="diagOut" style="margin-top:10px"></div>
+          </div>
+
+          <div class="card">
+            <h3>Packet-capture mindset (OSI-guided)</h3>
+            <ul class="list">
+              <li><b>L1/L2</b>: link up? correct VLAN? ARP/ND functioning?</li>
+              <li><b>L3</b>: correct IP/mask/gateway? correct route selection? public IP correct?</li>
+              <li><b>L4</b>: correct ports? TCP handshake? UDP replies arriving?</li>
+              <li><b>Policy</b>: NAT rule match AND firewall allow must both be true.</li>
+              <li><b>State</b>: translation exists for return traffic; timers not expiring early.</li>
+            </ul>
+            <div class="callout">
+              <b>Rule of thumb:</b> verify <span style="font-family:var(--mono)">tuple + policy + route</span> in that order.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-quiz" class="view" hidden>
+        <div class="grid">
+          <div class="card">
+            <h3>Knowledge Check</h3>
+            <p class="muted" style="margin-top:-6px">
+              Choose an answer; you’ll get immediate feedback and an explanation.
+            </p>
+            <div id="quizHost"></div>
+            <div class="hr"></div>
+            <div class="resultLine">
+              <button class="btn primary" id="btnNextQ">Next question</button>
+              <span class="badge neutral" id="quizBadge">Question 1</span>
+              <span class="small" id="quizScore"></span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Mini rubric (what I expect you to be able to do)</h3>
+            <ul class="list">
+              <li><b>Explain</b> NAT vs PAT using correct OSI vocabulary.</li>
+              <li><b>Interpret</b> a translation tuple and identify the inside host.</li>
+              <li><b>Design</b> a safe inbound exposure approach (DNAT + firewall + logging).</li>
+              <li><b>Troubleshoot</b> with packet captures and rule hit counts.</li>
+            </ul>
+            <div class="callout">
+              <b>Performance target:</b> score 6/8 or better and complete one builder exercise with correct tuple reasoning.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ---------- Utilities ----------
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function setClock(){
+      const d = new Date();
+      $('#clock').textContent = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    }
+    setInterval(setClock, 1000 * 15);
+    setClock();
+
+    function isValidPort(p){
+      const n = Number(p);
+      return Number.isInteger(n) && n >= 1 && n <= 65535;
+    }
+    function isLikelyIPv4(ip){
+      // Lightweight validation (not exhaustive)
+      const parts = String(ip).trim().split('.');
+      if(parts.length !== 4) return false;
+      return parts.every(x => {
+        if(x === '' || !/^\d+$/.test(x)) return false;
+        const n = Number(x);
+        return n >= 0 && n <= 255;
+      });
+    }
+    function randEphemeral(){
+      // Typical ephemeral range; not universal
+      return Math.floor(49152 + Math.random() * (65535-49152));
+    }
+    function formatPacket({srcIP, srcPort, dstIP, dstPort, proto, ttl, flags}){
+      const ipHdr =
+`IPv4 Header (key fields)
+- src: ${srcIP}
+- dst: ${dstIP}
+- ttl: ${ttl}
+- protocol: ${proto === 'TCP' ? '6 (TCP)' : '17 (UDP)'}
+- checksum: (recomputed when src/dst change)`;
+
+      const l4Hdr =
+proto === 'TCP'
+? `TCP Header (key fields)
+- srcPort: ${srcPort}
+- dstPort: ${dstPort}
+- flags: ${flags}
+- checksum: (recomputed when port/IP change)`
+: `UDP Header (key fields)
+- srcPort: ${srcPort}
+- dstPort: ${dstPort}
+- checksum: (recomputed when port/IP change)`;
+
+      const tuple = `Flow 5-tuple
+(${srcIP}, ${srcPort}) -> (${dstIP}, ${dstPort})  proto=${proto}`;
+
+      return `${tuple}\n\n${ipHdr}\n\n${l4Hdr}`;
+    }
+    function badge(el, kind, text){
+      el.className = `badge ${kind}`;
+      el.textContent = text;
+    }
+
+    // ---------- Navigation ----------
+    const viewMeta = {
+      overview: {
+        title: "Overview: NAT & PAT",
+        sub: "NAT changes IP addressing at the network edge; PAT additionally multiplexes many internal flows onto one public IP using ports. Use the builder to see what changes in packet fields and in translation state."
+      },
+      osi: {
+        title: "OSI Model Focus: NAT/PAT Placement",
+        sub: "NAT is primarily Layer 3 (Network). PAT extends to Layer 4 (Transport) by rewriting ports. The OSI model helps you troubleshoot by validating the right layer in the right order."
+      },
+      types: {
+        title: "NAT/PAT Types: Static, Dynamic, PAT, Port Forward",
+        sub: "Choose a NAT mode based on address availability, inbound exposure needs, and operational constraints like logging and scale."
+      },
+      builder: {
+        title: "Header/Translation Builder: Before/After NAT",
+        sub: "Construct key IPv4 + TCP/UDP fields, then apply NAT/PAT. You’ll also generate a translation-table entry, which is the essential state that makes return traffic work."
+      },
+      skills: {
+        title: "Admin Knowledge & Skills: NAT/PAT Readiness",
+        sub: "Practical NAT/PAT competence combines terminology, configuration, verification, and incident-ready logging."
+      },
+      troubleshooting: {
+        title: "Troubleshooting Lab: NAT/PAT Failures",
+        sub: "Most NAT issues are a combination of rule matching, policy, and routing. Use a structured OSI-guided checklist."
+      },
+      quiz: {
+        title: "Knowledge Check: NAT/PAT + OSI",
+        sub: "Answer questions with immediate feedback to verify understanding of NAT/PAT behavior and where it sits in the OSI model."
+      }
+    };
+
+    function showView(name){
+      $$('.view').forEach(v => v.hidden = true);
+      $(`#view-${name}`).hidden = false;
+
+      $$('.navBtn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+      $('#viewTitle').textContent = viewMeta[name].title;
+      $('#viewSub').textContent = viewMeta[name].sub;
+
+      localStorage.setItem('natpat_view', name);
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    $$('.navBtn').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
+
+    // ---------- Overview: scenarios ----------
+    const scenarioData = {
+      web: {
+        insideIP:"192.168.1.10", insidePort:"51524",
+        natIP:"203.0.113.5", natPort:"60211",
+        outsideIP:"142.250.72.14", outsidePort:"443", proto:"TCP",
+        note:"Typical PAT: inside host to HTTPS. NAT rewrites srcIP and often srcPort."
+      },
+      dns: {
+        insideIP:"192.168.1.10", insidePort:"53012",
+        natIP:"203.0.113.5", natPort:"53012",
+        outsideIP:"8.8.8.8", outsidePort:"53", proto:"UDP",
+        note:"UDP has no handshake, but NAT still tracks a pseudo-session with a timeout."
+      },
+      static: {
+        insideIP:"192.168.1.50", insidePort:"443",
+        natIP:"203.0.113.50", natPort:"443",
+        outsideIP:"198.51.100.77", outsidePort:"51524", proto:"TCP",
+        note:"Static NAT publishing a server. Often paired with firewall allow rules for inbound."
+      },
+      voip: {
+        insideIP:"192.168.1.20", insidePort:"51234",
+        natIP:"203.0.113.5", natPort:"61234",
+        outsideIP:"198.51.100.12", outsidePort:"40000", proto:"UDP",
+        note:"Real-time UDP flows can be sensitive to NAT timeouts and symmetric NAT behavior."
+      }
+    };
+
+    function renderScenario(){
+      const k = $('#scenario').value;
+      const s = scenarioData[k];
+      const out =
+`Scenario: ${$('#scenario').selectedOptions[0].textContent}
+
+Inside (LAN)
+- inside local: ${s.insideIP}:${s.insidePort}
+
+Outside (Internet)
+- outside global: ${s.outsideIP}:${s.outsidePort}  proto=${s.proto}
+
+After NAT (WAN-facing tuple)
+- inside global: ${s.natIP}:${s.natPort}
+
+Why it matters:
+- ${s.note}`;
+      $('#scenarioOut').textContent = out;
+    }
+    $('#scenario').addEventListener('change', renderScenario);
+    renderScenario();
+
+    // ---------- OSI list + mapping check ----------
+    const osiLayers = [
+      {n:7, name:"Application", ex:"HTTP(S), DNS, SMTP, SSH", nat:"NAT usually does not change payload; some protocols embed IP/port and can require helpers."},
+      {n:6, name:"Presentation", ex:"TLS, encoding, compression", nat:"TLS is not “fixed” by NAT; NAT operates below."},
+      {n:5, name:"Session", ex:"Session control, RPC concepts", nat:"NAT state is different from session layer; don’t conflate terms."},
+      {n:4, name:"Transport", ex:"TCP/UDP ports, segments/datagrams", nat:"PAT rewrites ports and updates L4 checksums."},
+      {n:3, name:"Network", ex:"IPv4/IPv6, routing", nat:"NAT rewrites IP addresses and updates IPv4 header checksum."},
+      {n:2, name:"Data Link", ex:"Ethernet, switching, MAC, ARP (adjacent)", nat:"ARP happens on local link; NAT is not ARP."},
+      {n:1, name:"Physical", ex:"Bits, signaling, cables", nat:"No NAT involvement here."}
+    ];
+    function renderOSI(){
+      const host = $('#osiList');
+      host.innerHTML = "";
+      osiLayers.forEach(L => {
+        const div = document.createElement('div');
+        div.className = 'layer';
+        div.innerHTML = `
+          <div class="num">${L.n}</div>
+          <div>
+            <div class="title">${L.name}</div>
+            <div class="meta"><b>Examples:</b> ${L.ex}</div>
+            <div class="meta"><b>NAT/PAT note:</b> ${L.nat}</div>
+          </div>`;
+        host.appendChild(div);
+      });
+    }
+    renderOSI();
+
+    const osiKey = {
+      rewrite_ip: {layer:3, why:"Rewriting IP addresses is a Layer 3 (Network) function."},
+      rewrite_port: {layer:4, why:"Rewriting TCP/UDP ports is Layer 4 (Transport) — this is PAT behavior."},
+      encap_eth: {layer:2, why:"Ethernet framing is Layer 2 (Data Link)."},
+      tls: {layer:6, why:"TLS is typically mapped to Layer 6 (Presentation) in OSI discussions."},
+      route: {layer:3, why:"Routing is Layer 3 (Network)."},
+      arp: {layer:2, why:"ARP is adjacent to Layer 2 (Data Link) operation."},
+      dns: {layer:7, why:"DNS is an application-layer protocol (Layer 7)."}
+    };
+
+    $('#btnOsiCheck').addEventListener('click', () => {
+      const action = $('#osiAction').value;
+      const guess = Number($('#osiGuess').value);
+      const correct = osiKey[action].layer;
+      if(guess === correct){
+        badge($('#osiBadge'), 'ok', 'Correct');
+      }else{
+        badge($('#osiBadge'), 'no', `Incorrect (Correct: L${correct})`);
+      }
+      $('#osiExplain').textContent = osiKey[action].why;
+    });
+
+    // ---------- Builder ----------
+    function getBuilderInputs(){
+      const proto = $('#proto').value;
+      const mode = $('#natMode').value;
+
+      const inLocalIP = $('#inLocalIP').value.trim();
+      const inSrcPort = $('#inSrcPort').value.trim();
+      const outIP = $('#outIP').value.trim();
+      const dstPort = $('#dstPort').value.trim();
+      const ttl = $('#ttl').value.trim();
+      const flags = $('#tcpFlags').value;
+
+      const inGlobalIP = $('#inGlobalIP').value.trim();
+      const patPort = $('#patPort').value.trim();
+
+      const pfPublicIP = $('#pfPublicIP').value.trim();
+      const pfPublicPort = $('#pfPublicPort').value.trim();
+      const pfInsideIP = $('#pfInsideIP').value.trim();
+      const pfInsidePort = $('#pfInsidePort').value.trim();
+
+      return {proto, mode, inLocalIP, inSrcPort, outIP, dstPort, ttl, flags, inGlobalIP, patPort, pfPublicIP, pfPublicPort, pfInsideIP, pfInsidePort};
+    }
+
+    function validateBuilder(x){
+      const errs = [];
+      // Common
+      if(!isLikelyIPv4(x.outIP)) errs.push("Outside destination IP is not a valid-looking IPv4 address.");
+      if(!isValidPort(x.dstPort)) errs.push("Destination port must be 1–65535.");
+      if(!Number.isInteger(Number(x.ttl)) || Number(x.ttl) < 1 || Number(x.ttl) > 255) errs.push("TTL must be 1–255.");
+
+      if(x.mode === 'pat' || x.mode === 'static'){
+        if(!isLikelyIPv4(x.inLocalIP)) errs.push("Inside local IP is not a valid-looking IPv4 address.");
+        if(!isValidPort(x.inSrcPort)) errs.push("Inside source port must be 1–65535.");
+        if(!isLikelyIPv4(x.inGlobalIP)) errs.push("Inside global (public/NAT) IP is not a valid-looking IPv4 address.");
+        if(x.patPort !== "" && !isValidPort(x.patPort)) errs.push("PAT allocated port (if provided) must be 1–65535.");
+      }
+      if(x.mode === 'portfwd'){
+        // For inbound: public tuple and internal target
+        if(!isLikelyIPv4(x.pfPublicIP)) errs.push("Port-forward public IP is not a valid-looking IPv4 address.");
+        if(!isValidPort(x.pfPublicPort)) errs.push("Port-forward public port must be 1–65535.");
+        if(!isLikelyIPv4(x.pfInsideIP)) errs.push("Internal service IP is not a valid-looking IPv4 address.");
+        if(!isValidPort(x.pfInsidePort)) errs.push("Internal service port must be 1–65535.");
+        // For a demo inbound client port we still reuse inSrcPort/outIP/dstPort; allow blanks? keep required
+        if(!isLikelyIPv4(x.outIP)) errs.push("External client IP (outside global) is not valid-looking IPv4.");
+        if(!isValidPort(x.inSrcPort)) errs.push("External client source port must be 1–65535 (use Inside Source Port field as client port).");
+        // dstPort is not used in portfwd mode (we use pfPublicPort), but validate already.
+      }
+      return errs;
+    }
+
+    function build(){
+      const x = getBuilderInputs();
+      const errs = validateBuilder(x);
+      if(errs.length){
+        badge($('#buildBadge'), 'no', 'Fix inputs');
+        $('#buildNote').textContent = errs[0];
+        $('#beforeOut').textContent = "—";
+        $('#afterOut').textContent = "—";
+        $('#tableOut').textContent = errs.map(e=>`- ${e}`).join('\n');
+        return;
+      }
+      badge($('#buildBadge'), 'ok', 'Built');
+      $('#buildNote').textContent = "Generated packet fields and translation state.";
+
+      const ttl = Number(x.ttl);
+      let beforePacket, afterPacket, table;
+
+      if(x.mode === 'pat'){
+        const allocated = x.patPort === "" ? randEphemeral() : Number(x.patPort);
+
+        beforePacket = formatPacket({
+          srcIP: x.inLocalIP, srcPort: Number(x.inSrcPort),
+          dstIP: x.outIP, dstPort: Number(x.dstPort),
+          proto: x.proto, ttl, flags: x.flags
+        });
+
+        afterPacket = formatPacket({
+          srcIP: x.inGlobalIP, srcPort: allocated,
+          dstIP: x.outIP, dstPort: Number(x.dstPort),
+          proto: x.proto, ttl, flags: x.flags
+        });
+
+        table =
+`Translation Table Entry (PAT / Overload)
+- protocol: ${x.proto}
+- inside local:   ${x.inLocalIP}:${Number(x.inSrcPort)}
+- inside global:  ${x.inGlobalIP}:${allocated}
+- outside global: ${x.outIP}:${Number(x.dstPort)}
+- state: active (timer running)
+- notes: return traffic to ${x.inGlobalIP}:${allocated} maps back to ${x.inLocalIP}:${Number(x.inSrcPort)}`;
+
+      } else if(x.mode === 'static'){
+        // Static NAT: keep port same by default; allow optional port rewrite via patPort field if user wants
+        const mappedPort = x.patPort === "" ? Number(x.inSrcPort) : Number(x.patPort);
+
+        beforePacket = formatPacket({
+          srcIP: x.inLocalIP, srcPort: Number(x.inSrcPort),
+          dstIP: x.outIP, dstPort: Number(x.dstPort),
+          proto: x.proto, ttl, flags: x.flags
+        });
+
+        afterPacket = formatPacket({
+          srcIP: x.inGlobalIP, srcPort: mappedPort,
+          dstIP: x.outIP, dstPort: Number(x.dstPort),
+          proto: x.proto, ttl, flags: x.flags
+        });
+
+        table =
+`Translation Table Entry (Static NAT)
+- protocol: ${x.proto}
+- inside local:   ${x.inLocalIP}:${Number(x.inSrcPort)}
+- inside global:  ${x.inGlobalIP}:${mappedPort}
+- outside global: ${x.outIP}:${Number(x.dstPort)}
+- state: may be "always-on" mapping + session tracking
+- notes: port rewrite is not required for 1:1 NAT, but may occur by policy.`;
+
+      } else {
+        // Port forward / DNAT inbound: model an inbound connection from external client to public IP:publicPort
+        // Use inSrcPort as "external client source port" for this exercise.
+        const clientIP = x.outIP;
+        const clientPort = Number(x.inSrcPort);
+        const publicIP = x.pfPublicIP;
+        const publicPort = Number(x.pfPublicPort);
+        const insideIP = x.pfInsideIP;
+        const insidePort = Number(x.pfInsidePort);
+
+        beforePacket = formatPacket({
+          srcIP: clientIP, srcPort: clientPort,
+          dstIP: publicIP, dstPort: publicPort,
+          proto: x.proto, ttl, flags: x.flags
+        });
+
+        afterPacket = formatPacket({
+          srcIP: clientIP, srcPort: clientPort,
+          dstIP: insideIP, dstPort: insidePort,
+          proto: x.proto, ttl, flags: x.flags
+        });
+
+        table =
+`Translation Table Entry (DNAT / Port Forward)
+- protocol: ${x.proto}
+- outside global (client): ${clientIP}:${clientPort}
+- public service:          ${publicIP}:${publicPort}
+- inside service (target): ${insideIP}:${insidePort}
+- state: inbound session tracking (plus return-path SNAT typically applied)
+- notes: firewall policy must allow inbound to the published service; internal service must be listening.`;
+      }
+
+      $('#beforeOut').textContent = beforePacket;
+      $('#afterOut').textContent = afterPacket;
+      $('#tableOut').textContent = table;
+      localStorage.setItem('natpat_builder', JSON.stringify(x));
+    }
+
+    $('#btnBuild').addEventListener('click', build);
+
+    // Restore builder state if present
+    (function restoreBuilder(){
+      const raw = localStorage.getItem('natpat_builder');
+      if(!raw) return;
+      try{
+        const x = JSON.parse(raw);
+        Object.entries(x).forEach(([k,v]) => {
+          const el = document.getElementById(k);
+          if(el) el.value = v;
+        });
+      }catch(e){}
+    })();
+
+    // ---------- Skills ----------
+    const checklist =
+`Role-ready NAT/PAT Checklist
+1) Identify where NAT occurs (edge device) and map it to OSI layers (L3; PAT also L4).
+2) Explain inside local/global and outside local/global using a real tuple example.
+3) Configure SNAT/PAT for outbound Internet and verify rule hit counters.
+4) Configure DNAT (port forward) and pair it with a least-privilege firewall policy.
+5) Validate routing/return path (asymmetric routing breaks sessions).
+6) Read session/NAT tables to map public IP:port back to the internal host.
+7) Use packet capture: confirm pre/post translation tuples and TCP handshake correctness.
+8) Handle edge protocols (VoIP/SIP, IPsec NAT-T) and document the workaround or design choice.
+9) Enable logging sufficient for incident response and legal attribution (time-based NAT mappings).
+10) Capacity plan: sessions, CPU, NAT table size, and ephemeral port exhaustion risk.`;
+    $('#checklistOut').textContent = checklist;
+
+    function updateSkillSummary(){
+      const ratings = $$('.selfRate').map(s => Number(s.value));
+      const sum = ratings.reduce((a,b)=>a+b,0);
+      const max = ratings.length * 3;
+      const pct = Math.round((sum/max)*100);
+      if(sum === 0){
+        badge($('#skillBadge'),'neutral','Self-rating: not set');
+        $('#skillText').textContent = '';
+        return;
+      }
+      if(pct >= 80){
+        badge($('#skillBadge'),'ok',`Self-rating: ${pct}%`);
+        $('#skillText').textContent = 'You’re close to “ready to administer” NAT/PAT—validate by doing a port-forward + capture lab.';
+      }else if(pct >= 50){
+        badge($('#skillBadge'),'neutral',`Self-rating: ${pct}%`);
+        $('#skillText').textContent = 'You’re developing. Focus on tuple reasoning + reading NAT tables + troubleshooting order.';
+      }else{
+        badge($('#skillBadge'),'no',`Self-rating: ${pct}%`);
+        $('#skillText').textContent = 'Start with OSI mapping and the builder. Be able to explain exactly what changes in L3/L4.';
+      }
+      localStorage.setItem('natpat_self', JSON.stringify(ratings));
+    }
+    $$('.selfRate').forEach(s => s.addEventListener('change', updateSkillSummary));
+    (function restoreSelf(){
+      const raw = localStorage.getItem('natpat_self');
+      if(!raw) return;
+      try{
+        const arr = JSON.parse(raw);
+        $$('.selfRate').forEach((s,i) => { if(arr[i] != null) s.value = String(arr[i]); });
+        updateSkillSummary();
+      }catch(e){}
+    })();
+
+    // ---------- Troubleshooting helper ----------
+    function diagChecklist(symptom, env){
+      const base = [];
+      base.push(`Environment: ${env}`);
+      base.push(`Symptom: ${symptom}`);
+      base.push("");
+      base.push("First checks (tuple + policy + route):");
+
+      if(symptom === 'outbound'){
+        base.push("1) Confirm client default gateway and DNS resolution.");
+        base.push("2) Verify SNAT/PAT rule match + hit counters.");
+        base.push("3) Verify edge has correct default route/upstream.");
+        base.push("4) Check session table entries (created? timing out?).");
+        base.push("5) Capture on LAN + WAN: confirm srcIP/port rewrite and responses returning.");
+      }else if(symptom === 'inbound'){
+        base.push("1) Confirm public IP is correct and reachable from the Internet.");
+        base.push("2) Verify DNAT rule (public IP:port -> internal IP:port).");
+        base.push("3) Verify firewall allow rule for inbound to the service.");
+        base.push("4) Confirm internal service is listening and reachable internally.");
+        base.push("5) Capture on WAN: do SYN packets arrive? On LAN: are they forwarded to target?");
+        base.push("6) Check ISP blocks (common: 25, 445) and upstream NAT (double NAT).");
+      }else if(symptom === 'onehost'){
+        base.push("1) Compare host IP/gateway/DNS with a working host.");
+        base.push("2) Check local host firewall and application binding.");
+        base.push("3) Confirm no overlapping subnets or wrong VLAN assignment.");
+        base.push("4) Confirm NAT policy includes that internal subnet/object.");
+        base.push("5) Check for duplicate IP or ARP issues.");
+      }else if(symptom === 'voip'){
+        base.push("1) Check UDP timeouts and SIP/ALG settings (often harmful).");
+        base.push("2) Confirm STUN/TURN usage for clients (NAT traversal).");
+        base.push("3) Confirm return path symmetry (state tracking relies on it).");
+        base.push("4) Capture: look for one-way audio (RTP ports not pinholed).");
+        base.push("5) Consider using SBC, VPN, or dedicated traversal services.");
+      }
+
+      base.push("");
+      base.push("OSI-guided verification:");
+      base.push("- L1/L2: link/VLAN/ARP");
+      base.push("- L3: routes/public IP/return path");
+      base.push("- L4: ports/handshake/session timers");
+      base.push("- Policy: firewall + NAT rule ordering");
+      return base.join("\n");
+    }
+
+    $('#btnDiag').addEventListener('click', () => {
+      const s = $('#symptom').value;
+      const e = $('#env').value;
+
+      const prettyS = {
+        outbound:"Outbound traffic fails",
+        inbound:"Inbound port-forward fails",
+        onehost:"Only one internal host fails",
+        voip:"VoIP/Video issues through NAT"
+      }[s];
+
+      const prettyE = {
+        home:"Home/SMB router (PAT)",
+        fw:"Firewall appliance (zones/policies)",
+        cloud:"Cloud NAT gateway"
+      }[e];
+
+      badge($('#diagBadge'), 'ok', 'Generated');
+      $('#diagOut').textContent = diagChecklist(prettyS, prettyE);
+    });
+
+    // ---------- Quiz ----------
+    const quiz = [
+      {
+        q: "PAT (NAT overload) is primarily used to:",
+        a: ["Publish internal servers with dedicated public IPs", "Allow many internal hosts to share one public IP using ports", "Encrypt traffic between networks", "Replace DNS for internal clients"],
+        c: 1,
+        e: "PAT multiplexes multiple internal sessions onto a single public IP by allocating distinct source ports per flow."
+      },
+      {
+        q: "NAT (address translation) most directly operates at which OSI layer?",
+        a: ["Layer 2", "Layer 3", "Layer 5", "Layer 7"],
+        c: 1,
+        e: "NAT rewrites IP addresses (Network layer). PAT extends the rewrite to Layer 4 ports."
+      },
+      {
+        q: "In a typical outbound PAT flow, which fields are most commonly rewritten?",
+        a: ["Destination IP only", "Source IP and often source port", "Destination port only", "TCP flags"],
+        c: 1,
+        e: "Outbound PAT usually rewrites the source IP to the public IP and often rewrites the source port to keep tuples unique."
+      },
+      {
+        q: "Inside local refers to:",
+        a: ["Public IP of the NAT device", "Internal host’s private address", "External server’s public address", "MAC address of the switch"],
+        c: 1,
+        e: "Inside local is the internal (private) address of the host on the inside network."
+      },
+      {
+        q: "Which is a common reason inbound port-forwarding fails even when DNAT is configured correctly?",
+        a: ["TCP uses ports", "Firewall policy doesn’t allow inbound traffic to the service", "DNS uses UDP", "TTL is always 64"],
+        c: 1,
+        e: "DNAT alone is not enough; firewall rules/policies must explicitly permit the inbound flow."
+      },
+      {
+        q: "Why can NAT cause issues for some protocols?",
+        a: ["NAT changes the physical layer", "Some protocols embed IP/port info in the payload", "NAT disables routing", "NAT forces TLS"],
+        c: 1,
+        e: "If a protocol carries addressing info in application payload (e.g., older FTP/SIP behavior), simple address rewrite can break it without traversal/help."
+      },
+      {
+        q: "A solid troubleshooting order for NAT issues is typically:",
+        a: ["DNS → cables → TCP → VLAN", "Tuple → policy → route (then validate by capture)", "Replace device → reboot → blame ISP", "Application → presentation → session only"],
+        c: 1,
+        e: "Start with tuple correctness, confirm policy (NAT match + firewall allow), then validate routing/return path; packet captures confirm behavior."
+      },
+      {
+        q: "PAT capacity risk is most directly related to:",
+        a: ["MAC address exhaustion", "Ephemeral/source port exhaustion and session table limits", "ARP cache size only", "IPv6 hop limit"],
+        c: 1,
+        e: "PAT depends on available ports and session table capacity; extreme concurrency can exhaust ports/state."
+      }
+    ];
+    let qi = 0;
+    let score = 0;
+    let answered = false;
+
+    function renderQuiz(){
+      const host = $('#quizHost');
+      host.innerHTML = "";
+      const item = quiz[qi];
+
+      const box = document.createElement('div');
+      box.className = 'quizQ';
+      box.innerHTML = `<h4>${item.q}</h4><div class="choices" id="choices"></div><div class="resultLine" style="margin-top:10px">
+        <span class="badge neutral" id="qBadge">Pick an answer</span>
+        <span class="small" id="qExplain"></span>
+      </div>`;
+      host.appendChild(box);
+
+      const choices = $('#choices', box);
+      item.a.forEach((txt, idx) => {
+        const c = document.createElement('div');
+        c.className = 'choice';
+        c.innerHTML = `<div class="radio" aria-hidden="true"></div><div><div style="font-weight:650">${String.fromCharCode(65+idx)}.</div><div class="small" style="margin-top:2px;color:var(--ink)">${txt}</div></div>`;
+        c.addEventListener('click', () => {
+          if(answered) return;
+          $$('.choice', choices).forEach(x => x.classList.remove('selected'));
+          c.classList.add('selected');
+          answered = true;
+
+          if(idx === item.c){
+            score++;
+            badge($('#qBadge', box), 'ok', 'Correct');
+          }else{
+            badge($('#qBadge', box), 'no', `Incorrect (Correct: ${String.fromCharCode(65+item.c)})`);
+          }
+          $('#qExplain', box).textContent = item.e;
+          updateQuizHud();
+        });
+        choices.appendChild(c);
+      });
+
+      updateQuizHud();
+    }
+
+    function updateQuizHud(){
+      badge($('#quizBadge'), 'neutral', `Question ${qi+1} of ${quiz.length}`);
+      $('#quizScore').textContent = `Score: ${score} / ${quiz.length}`;
+    }
+
+    $('#btnNextQ').addEventListener('click', () => {
+      if(!answered) return;
+      qi = (qi + 1) % quiz.length;
+      answered = false;
+      renderQuiz();
+    });
+
+    renderQuiz();
+
+    // ---------- Buttons ----------
+    $('#btnPrint').addEventListener('click', () => window.print());
+
+    $('#btnReset').addEventListener('click', () => {
+      localStorage.removeItem('natpat_view');
+      localStorage.removeItem('natpat_builder');
+      localStorage.removeItem('natpat_self');
+      qi = 0; score = 0; answered = false;
+      // Reset selects/inputs to defaults by reloading page state safely
+      location.reload();
+    });
+
+    // ---------- Persist view ----------
+    (function restoreView(){
+      const v = localStorage.getItem('natpat_view');
+      if(v && viewMeta[v]) showView(v);
+    })();
+
+    // Build immediately once so outputs aren't blank if defaults are valid
+    build();
+
+    // Improve mode UX: show/hide relevant areas via notes (lightweight)
+    function modeHint(){
+      const mode = $('#natMode').value;
+      const note = (mode === 'pat')
+        ? "PAT typically rewrites source IP and source port outbound."
+        : (mode === 'static')
+          ? "Static NAT is 1:1; port rewrite is optional."
+          : "Port-forwarding (DNAT) rewrites destination IP:port inbound.";
+      $('#buildNote').textContent = note;
+      badge($('#buildBadge'), 'neutral', 'Ready');
+    }
+    $('#natMode').addEventListener('change', modeHint);
+    modeHint();
+  </script>
+</body>
+</html>
