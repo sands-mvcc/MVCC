@@ -1,203 +1,1313 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMTP Header Illustration</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            text-align: center;
-            color: #d9534f;
-        }
-        .description-box {
-            background-color: #f8f9fa;
-            border: 2px solid #333;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        h2 {
-            color: #d9534f;
-            border-bottom: 2px solid #333;
-            padding-bottom: 5px;
-            margin-top: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            border: 1px solid #000;
-            padding: 12px;
-            text-align: left;
-            background-color: #ffffff;
-        }
-        th {
-            background-color: #333;
-            color: #ffffff;
-        }
-        tr:nth-child(even) td {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(odd) td {
-            background-color: #ffffff;
-        }
-        a {
-            color: #d9534f;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .description {
-            margin-top: 20px;
-            background-color: #f8f9fa;
-            padding: 15px;
-            border: 2px solid #333;
-            border-radius: 5px;
-        }
-        .description a {
-            color: #d9534f;
-            text-decoration: none;
-        }
-        .description a:hover {
-            text-decoration: underline;
-        }
-    </style>
-    <script>
-        function showDescription(id) {
-            const descriptions = document.querySelectorAll('.description');
-            descriptions.forEach(description => {
-                description.style.display = 'none';
-            });
-            document.getElementById(id).style.display = 'block';
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMTP Protocol — Interactive Lesson</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Source+Code+Pro:wght@400;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f1eb;
+    --bg2: #eae6dd;
+    --surface: #ffffff;
+    --surface2: #faf9f6;
+    --accent: #c0392b;
+    --accent2: #e67e22;
+    --accent3: #2980b9;
+    --text: #1a1a2e;
+    --text2: #4a4a6a;
+    --text3: #7a7a9a;
+    --border: #ddd8cc;
+    --green: #27ae60;
+    --purple: #8e44ad;
+    --code-bg: #1e1e2e;
+    --code-text: #cdd6f4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Lato', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--text);
+    display: flex; align-items: center; gap: 0;
+    padding: 0 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.2);
+    overflow-x: auto;
+  }
+  .nav-brand {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1.1rem;
+    color: var(--accent);
+    white-space: nowrap; padding: 1rem 1.5rem 1rem 0;
+    border-right: 1px solid #333;
+    margin-right: .5rem;
+    letter-spacing: 1px;
+  }
+  nav a {
+    color: #ccc; text-decoration: none;
+    font-size: .85rem; font-weight: 700;
+    padding: 1rem .9rem;
+    white-space: nowrap;
+    transition: color .2s, background .2s;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  nav a:hover, nav a.active { color: #fff; background: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--text);
+    color: #fff;
+    padding: 5rem 2rem 4rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 40px,
+      rgba(192,57,43,.06) 40px,
+      rgba(192,57,43,.06) 80px
+    );
+  }
+  .hero-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff; font-size: .75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    padding: .4rem 1.2rem; border-radius: 2px;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800; line-height: 1.1;
+    margin-bottom: 1rem;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p { font-size: 1.15rem; color: #aaa; max-width: 600px; margin: 0 auto 2rem; }
+  .hero-stats {
+    display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
+    margin-top: 2.5rem;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--accent2); }
+  .stat-label { font-size: .8rem; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+  section { padding: 4rem 0; }
+  section + section { border-top: 2px solid var(--border); }
+
+  h2.section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem; font-weight: 800;
+    margin-bottom: .3rem; color: var(--text);
+  }
+  h2.section-title span { color: var(--accent); }
+  .section-sub { color: var(--text3); margin-bottom: 2.5rem; font-size: 1rem; }
+  h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.2rem; margin-bottom: .75rem; color: var(--text); }
+  p { margin-bottom: 1rem; color: var(--text2); }
+
+  /* ── CARDS ── */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.5rem; }
+  .card {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 8px; padding: 1.75rem;
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,.08); border-color: var(--accent); }
+  .card-icon {
+    width: 48px; height: 48px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; margin-bottom: 1rem;
+  }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: var(--code-bg); color: var(--code-text);
+    font-family: 'Source Code Pro', monospace;
+    font-size: .88rem; padding: 1.5rem;
+    border-radius: 8px; overflow-x: auto;
+    margin: 1rem 0; line-height: 1.8;
+    border-left: 4px solid var(--accent);
+  }
+  .code-block .cmd { color: #89b4fa; }
+  .code-block .resp { color: #a6e3a1; }
+  .code-block .comment { color: #6c7086; font-style: italic; }
+  .code-block .header-key { color: #f38ba8; }
+  .code-block .header-val { color: #fab387; }
+
+  /* ── PORT TABLE ── */
+  .port-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+  .port-table th {
+    background: var(--text); color: #fff;
+    font-family: 'Syne', sans-serif;
+    padding: .85rem 1rem; text-align: left; font-size: .9rem;
+  }
+  .port-table td { padding: .8rem 1rem; border-bottom: 1px solid var(--border); font-size: .95rem; }
+  .port-table tr:nth-child(even) td { background: var(--surface2); }
+  .port-table tr:hover td { background: #fff3f3; }
+  .badge {
+    display: inline-block; padding: .2rem .6rem;
+    border-radius: 4px; font-size: .75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .badge-red { background: #fde8e8; color: var(--accent); }
+  .badge-green { background: #e8f8e8; color: var(--green); }
+  .badge-blue { background: #e8f4fd; color: var(--accent3); }
+  .badge-orange { background: #fef0e6; color: var(--accent2); }
+
+  /* ── SMTP FLOW DIAGRAM ── */
+  .flow-diagram {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px; padding: 2rem;
+    margin: 2rem 0;
+  }
+  .flow-row {
+    display: flex; align-items: center; gap: 1rem;
+    margin: .5rem 0;
+  }
+  .flow-actor {
+    min-width: 110px; text-align: center;
+    background: var(--text); color: #fff;
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: .8rem; padding: .5rem; border-radius: 6px;
+  }
+  .flow-arrow {
+    flex: 1; display: flex; align-items: center;
+    gap: .5rem; position: relative;
+  }
+  .arrow-line {
+    flex: 1; height: 2px;
+    background: var(--accent);
+    position: relative;
+  }
+  .arrow-line::after {
+    content: '▶'; position: absolute; right: -10px;
+    top: 50%; transform: translateY(-50%);
+    color: var(--accent); font-size: 1rem;
+  }
+  .arrow-line.back { background: var(--accent3); }
+  .arrow-line.back::after { color: var(--accent3); }
+  .flow-label {
+    font-family: 'Source Code Pro', monospace;
+    font-size: .8rem; font-weight: 600;
+    white-space: nowrap;
+  }
+  .flow-label.cmd { color: var(--accent); }
+  .flow-label.resp { color: var(--accent3); }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid var(--border); }
+  .tab-btn {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: .9rem; padding: .85rem 1.5rem;
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); transition: color .2s, background .2s;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: #fff3f3; }
+  .tab-btn:hover:not(.active) { color: var(--text); background: var(--surface2); }
+  .tab-content { display: none; padding: 2rem; background: var(--surface); border: 2px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; }
+  .tab-content.active { display: block; }
+
+  /* ── HEADER BUILDER ── */
+  .builder-wrap {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 12px; padding: 2rem;
+  }
+  @media(max-width:700px){ .builder-wrap { grid-template-columns: 1fr; } }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label {
+    display: block; font-weight: 700; font-size: .85rem;
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: .4rem; color: var(--text);
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: .7rem 1rem;
+    border: 2px solid var(--border); border-radius: 6px;
+    font-family: 'Lato', sans-serif; font-size: .95rem;
+    background: var(--bg); color: var(--text);
+    transition: border-color .2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--accent);
+    background: #fff;
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .btn {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: .9rem; padding: .75rem 1.75rem;
+    border: none; border-radius: 6px; cursor: pointer;
+    transition: transform .15s, opacity .2s;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .btn:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--accent3); color: #fff; }
+  .btn-success { background: var(--green); color: #fff; }
+  .btn-row { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1rem; }
+  #header-output {
+    background: var(--code-bg); color: var(--code-text);
+    font-family: 'Source Code Pro', monospace;
+    font-size: .85rem; padding: 1.5rem;
+    border-radius: 8px; min-height: 300px;
+    white-space: pre-wrap; line-height: 1.8;
+    overflow-x: auto;
+  }
+  .output-label {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: .8rem; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: .5rem;
+  }
+  .copy-toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--green); color: #fff;
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    padding: .75rem 1.5rem; border-radius: 8px;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity .3s, transform .3s;
+    pointer-events: none; z-index: 999;
+  }
+  .copy-toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── SMTP SIMULATOR ── */
+  .simulator {
+    background: var(--code-bg); border-radius: 12px;
+    padding: 1.5rem; margin: 2rem 0;
+  }
+  .sim-title {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: .85rem; color: #89b4fa;
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .sim-title::before {
+    content: ''; width: 10px; height: 10px; border-radius: 50%;
+    background: #a6e3a1; display: inline-block;
+    box-shadow: 0 0 6px #a6e3a1;
+  }
+  #sim-output {
+    min-height: 200px; color: var(--code-text);
+    font-family: 'Source Code Pro', monospace;
+    font-size: .88rem; line-height: 1.8;
+    margin-bottom: 1rem; overflow-y: auto; max-height: 320px;
+  }
+  .sim-input-row { display: flex; gap: .75rem; }
+  #sim-input {
+    flex: 1; background: #313244; color: var(--code-text);
+    border: 1px solid #45475a; border-radius: 6px;
+    padding: .6rem 1rem; font-family: 'Source Code Pro', monospace;
+    font-size: .9rem;
+  }
+  #sim-input:focus { outline: none; border-color: #89b4fa; }
+  .sim-btn {
+    background: #89b4fa; color: #1e1e2e;
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: .85rem; padding: .6rem 1.2rem;
+    border: none; border-radius: 6px; cursor: pointer;
+    text-transform: uppercase;
+  }
+  .sim-quick { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+  .sim-quick-btn {
+    background: #313244; color: #cba6f7;
+    font-family: 'Source Code Pro', monospace; font-size: .8rem;
+    padding: .3rem .75rem; border: 1px solid #45475a;
+    border-radius: 4px; cursor: pointer;
+    transition: background .15s;
+  }
+  .sim-quick-btn:hover { background: #45475a; }
+
+  /* ── QUIZ ── */
+  .quiz-card {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 12px; padding: 2rem; margin: 1rem 0;
+  }
+  .quiz-q { font-weight: 700; font-size: 1.05rem; margin-bottom: 1.25rem; color: var(--text); }
+  .quiz-options { display: grid; gap: .6rem; }
+  .quiz-opt {
+    padding: .85rem 1.25rem;
+    border: 2px solid var(--border); border-radius: 8px;
+    cursor: pointer; transition: all .2s;
+    font-size: .95rem; background: var(--bg);
+    display: flex; align-items: center; gap: .75rem;
+  }
+  .quiz-opt:hover { border-color: var(--accent3); background: #e8f4fd; }
+  .quiz-opt.correct { border-color: var(--green); background: #e8f8e8; color: #155724; }
+  .quiz-opt.wrong { border-color: var(--accent); background: #fde8e8; color: #721c24; }
+  .quiz-opt::before {
+    content: attr(data-letter);
+    min-width: 28px; height: 28px;
+    background: var(--text3); color: #fff;
+    border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: .8rem;
+  }
+  .quiz-opt.correct::before { background: var(--green); }
+  .quiz-opt.wrong::before { background: var(--accent); }
+  .quiz-feedback {
+    margin-top: 1rem; padding: .75rem 1rem;
+    border-radius: 6px; font-weight: 600; font-size: .9rem;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.ok { background: #e8f8e8; color: #155724; border-left: 4px solid var(--green); }
+  .quiz-feedback.bad { background: #fde8e8; color: #721c24; border-left: 4px solid var(--accent); }
+  #quiz-score {
+    font-family: 'Syne', sans-serif; font-size: 1.5rem;
+    font-weight: 800; color: var(--accent); margin-bottom: .5rem;
+  }
+
+  /* ── GLOSSARY ── */
+  .glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .gloss-card {
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 8px; padding: 1.25rem;
+    transition: border-color .2s;
+  }
+  .gloss-card:hover { border-color: var(--accent3); }
+  .gloss-term {
+    font-family: 'Source Code Pro', monospace; font-weight: 600;
+    color: var(--accent); font-size: .95rem; margin-bottom: .4rem;
+  }
+  .gloss-def { font-size: .9rem; color: var(--text2); }
+
+  /* ── SEARCH ── */
+  .search-bar {
+    width: 100%; padding: .85rem 1.25rem;
+    border: 2px solid var(--border); border-radius: 8px;
+    font-size: 1rem; margin-bottom: 1.5rem;
+    background: var(--surface); color: var(--text);
+    font-family: 'Lato', sans-serif;
+  }
+  .search-bar:focus { outline: none; border-color: var(--accent3); }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:600px){
+    nav a { padding: 1rem .6rem; font-size: .75rem; }
+    .hero h1 { font-size: 2rem; }
+    .hero-stats { gap: 1.5rem; }
+  }
+  .highlight { background: #fff3cd; padding: .1em .3em; border-radius: 3px; }
+</style>
 </head>
 <body>
 
-<h1>SMTP Header Illustration</h1>
+<!-- NAV -->
+<nav id="main-nav">
+  <div class="nav-brand">SMTP</div>
+  <a href="#overview" class="active">Overview</a>
+  <a href="#how-it-works">How It Works</a>
+  <a href="#commands">Commands</a>
+  <a href="#ports">Ports & Security</a>
+  <a href="#headers">Headers</a>
+  <a href="#builder">Header Builder</a>
+  <a href="#simulator">Simulator</a>
+  <a href="#glossary">Glossary</a>
+  <a href="#quiz">Quiz</a>
+</nav>
 
-<div class="description-box">
-    <p>SMTP (Simple Mail Transfer Protocol) is an internet standard for email transmission. First defined by RFC 821 in 1982, it was last updated in 2008 with the Extended SMTP additions by RFC 5321, which is the protocol in widespread use today. SMTP provides a set of commands that authenticates and directs the transfer of email from one mail server to another.</p>
-</div>
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="hero-badge">Network Protocol Series</div>
+  <h1>Simple Mail <span>Transfer</span> Protocol</h1>
+  <p>A comprehensive interactive lesson for network administrators — from RFC 5321 fundamentals to modern security hardening.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">1982</div><div class="stat-label">RFC 821 Published</div></div>
+    <div class="stat"><div class="stat-num">25 / 587</div><div class="stat-label">Primary Ports</div></div>
+    <div class="stat"><div class="stat-num">TCP</div><div class="stat-label">Transport Layer</div></div>
+    <div class="stat"><div class="stat-num">7</div><div class="stat-label">Core Commands</div></div>
+  </div>
+</header>
 
-<h2>SMTP Commands</h2>
-<table>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-helo')">HELO</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-mail')">MAIL FROM</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-rcpt')">RCPT TO</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-data')">DATA</a> (Variable length)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-rset')">RSET</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-vrfy')">VRFY</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-expn')">EXPN</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-noop')">NOOP</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-quit')">QUIT</a> (Maximum 512 characters)</th>
-    </tr>
-</table>
+<!-- OVERVIEW -->
+<section id="overview">
+<div class="container">
+  <h2 class="section-title">Protocol <span>Overview</span></h2>
+  <p class="section-sub">Understanding what SMTP is, where it fits, and why it matters for network administration</p>
 
-<h2>SMTP Responses</h2>
-<table>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-220')">220</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-221')">221</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-250')">250</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-354')">354</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-421')">421</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-450')">450</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-451')">451</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-500')">500</a> (Maximum 512 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-code-550')">550</a> (Maximum 512 characters)</th>
-    </tr>
-</table>
+  <p>SMTP (Simple Mail Transfer Protocol) is the standard communication protocol for transmitting email messages across the Internet. Defined initially in RFC 821 (1982) and updated in RFC 5321 (2008), SMTP operates at the <strong>Application Layer (Layer 7)</strong> of the OSI model, using TCP for reliable transport at Layer 4.</p>
 
-<div class="description" id="desc-helo">
-    <h2>HELO (Maximum 512 characters)</h2>
-    <p>Identifies the client to the server. <a href="#desc-helo">Back to header</a></p>
-</div>
-<div class="description" id="desc-mail">
-    <h2>MAIL FROM (Maximum 512 characters)</h2>
-    <p>Specifies the sender's email address. <a href="#desc-mail">Back to header</a></p>
-</div>
-<div class="description" id="desc-rcpt">
-    <h2>RCPT TO (Maximum 512 characters)</h2>
-    <p>Specifies the recipient's email address. <a href="#desc-rcpt">Back to header</a></p>
-</div>
-<div class="description" id="desc-data">
-    <h2>DATA (Variable length)</h2>
-    <p>Indicates that the following lines constitute the message data. <a href="#desc-data">Back to header</a></p>
-</div>
-<div class="description" id="desc-rset">
-    <h2>RSET (Maximum 512 characters)</h2>
-    <p>Resets the current mail transaction. <a href="#desc-rset">Back to header</a></p>
-</div>
-<div class="description" id="desc-vrfy">
-    <h2>VRFY (Maximum 512 characters)</h2>
-    <p>Verifies the existence of a mailbox. <a href="#desc-vrfy">Back to header</a></p>
-</div>
-<div class="description" id="desc-expn">
-    <h2>EXPN (Maximum 512 characters)</h2>
-    <p>Expands a mailing list. <a href="#desc-expn">Back to header</a></p>
-</div>
-<div class="description" id="desc-noop">
-    <h2>NOOP (Maximum 512 characters)</h2>
-    <p>Requests a no-operation response from the server. <a href="#desc-noop">Back to header</a></p>
-</div>
-<div class="description" id="desc-quit">
-    <h2>QUIT (Maximum 512 characters)</h2>
-    <p>Terminates the SMTP session. <a href="#desc-quit">Back to header</a></p>
-</div>
+  <p>SMTP is a <em>push</em> protocol — it delivers mail from sender to receiver. It does not retrieve mail (that's the job of POP3 or IMAP). Network administrators must understand SMTP to configure mail servers, prevent spam relay, implement security hardening, and troubleshoot delivery failures.</p>
 
-<div class="description" id="desc-code-220">
-    <h2>220 (Maximum 512 characters)</h2>
-    <p>Service ready. <a href="#desc-code-220">Back to header</a></p>
+  <div class="card-grid" style="margin-top:2rem;">
+    <div class="card">
+      <div class="card-icon" style="background:#fde8e8;">📤</div>
+      <h3>Push Delivery</h3>
+      <p>SMTP <em>pushes</em> mail from the client (MUA) through the Mail Transfer Agent (MTA) to the destination server. Unlike POP3/IMAP, it never pulls messages.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e8f4fd;">🔗</div>
+      <h3>Connection-Oriented</h3>
+      <p>SMTP uses a reliable TCP connection. A full handshake is established before any mail transaction begins, ensuring message integrity and delivery confirmation.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e8f8e8;">🧩</div>
+      <h3>ASCII Command-Response</h3>
+      <p>Commands and server responses are human-readable ASCII text — a key advantage for troubleshooting with tools like Telnet or OpenSSL.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#f0e8fd;">🔐</div>
+      <h3>Extension Model</h3>
+      <p>ESMTP (Extended SMTP, RFC 1869) adds capabilities like AUTH, STARTTLS, SIZE, PIPELINING, and 8BITMIME through the EHLO command.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fef0e6;">📧</div>
+      <h3>MUA → MTA → MDA</h3>
+      <p>Mail flow: Mail User Agent submits to MTA (submission), MTA relays to destination MTA, then Mail Delivery Agent stores for recipient retrieval.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e8f8e8;">⚡</div>
+      <h3>Store-and-Forward</h3>
+      <p>MTAs queue messages for retry when a destination is unavailable. Retry intervals follow exponential backoff, typically for 4–5 days before generating NDRs.</p>
+    </div>
+  </div>
 </div>
-<div class="description" id="desc-code-221">
-    <h2>221 (Maximum 512 characters)</h2>
-    <p>Service closing transmission channel. <a href="#desc-code-221">Back to header</a></p>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works">
+<div class="container">
+  <h2 class="section-title">How SMTP <span>Works</span></h2>
+  <p class="section-sub">The mail delivery pipeline and protocol conversation flow</p>
+
+  <h3>The Mail Delivery Pipeline</h3>
+  <p>Understanding the complete mail delivery path is essential for diagnosing failures and configuring mail infrastructure correctly.</p>
+
+  <div class="flow-diagram">
+    <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:1.5rem;">
+      <div style="text-align:center;">
+        <div style="background:#e8f4fd;border:2px solid var(--accent3);border-radius:8px;padding:.75rem 1rem;font-weight:700;font-size:.9rem;min-width:100px;">📧 MUA<br><small style="font-weight:400;color:#666">Outlook/Gmail</small></div>
+      </div>
+      <div style="font-size:1.5rem;color:var(--accent);">→</div>
+      <div style="text-align:center;">
+        <div style="background:#fde8e8;border:2px solid var(--accent);border-radius:8px;padding:.75rem 1rem;font-weight:700;font-size:.9rem;min-width:100px;">🖥️ MTA<br><small style="font-weight:400;color:#666">Sending Server</small></div>
+        <div style="font-size:.75rem;color:#999;margin-top:.3rem;">Port 587 (SUBMISSION)</div>
+      </div>
+      <div style="font-size:1.5rem;color:var(--accent);">→</div>
+      <div style="text-align:center;">
+        <div style="background:#fde8e8;border:2px solid var(--accent);border-radius:8px;padding:.75rem 1rem;font-weight:700;font-size:.9rem;min-width:100px;">📡 DNS<br><small style="font-weight:400;color:#666">MX Lookup</small></div>
+      </div>
+      <div style="font-size:1.5rem;color:var(--accent);">→</div>
+      <div style="text-align:center;">
+        <div style="background:#fde8e8;border:2px solid var(--accent);border-radius:8px;padding:.75rem 1rem;font-weight:700;font-size:.9rem;min-width:100px;">🖥️ MTA<br><small style="font-weight:400;color:#666">Receiving Server</small></div>
+        <div style="font-size:.75rem;color:#999;margin-top:.3rem;">Port 25 (SMTP)</div>
+      </div>
+      <div style="font-size:1.5rem;color:var(--accent);">→</div>
+      <div style="text-align:center;">
+        <div style="background:#e8f8e8;border:2px solid var(--green);border-radius:8px;padding:.75rem 1rem;font-weight:700;font-size:.9rem;min-width:100px;">📥 MDA<br><small style="font-weight:400;color:#666">Mailbox Store</small></div>
+      </div>
+      <div style="font-size:1.5rem;color:var(--accent);">→</div>
+      <div style="text-align:center;">
+        <div style="background:#e8f4fd;border:2px solid var(--accent3);border-radius:8px;padding:.75rem 1rem;font-weight:700;font-size:.9rem;min-width:100px;">👤 MUA<br><small style="font-weight:400;color:#666">POP3/IMAP</small></div>
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--text3);font-size:.85rem;">Full email delivery pipeline from sender MUA to recipient MUA</p>
+  </div>
+
+  <h3 style="margin-top:2rem;">Protocol Conversation (RFC 5321 Session)</h3>
+  <p>Below is a complete SMTP session. The client issues commands; the server responds with 3-digit status codes.</p>
+
+  <div class="code-block">
+<span class="resp">220 mail.example.com ESMTP Postfix (Ubuntu)</span>  <span class="comment"># Server greeting</span>
+<span class="cmd">EHLO client.sender.org</span>                              <span class="comment"># Client identifies itself (ESMTP)</span>
+<span class="resp">250-mail.example.com Hello client.sender.org</span>
+<span class="resp">250-SIZE 52428800</span>
+<span class="resp">250-PIPELINING</span>
+<span class="resp">250-STARTTLS</span>
+<span class="resp">250-AUTH PLAIN LOGIN</span>
+<span class="resp">250 8BITMIME</span>                                           <span class="comment"># Server capabilities advertised</span>
+<span class="cmd">STARTTLS</span>                                               <span class="comment"># Initiate TLS upgrade</span>
+<span class="resp">220 2.0.0 Ready to start TLS</span>
+<span class="comment"># --- TLS Handshake occurs here ---</span>
+<span class="cmd">EHLO client.sender.org</span>                              <span class="comment"># Re-identify after TLS</span>
+<span class="resp">250-mail.example.com Hello client.sender.org</span>
+<span class="resp">250 AUTH PLAIN LOGIN</span>
+<span class="cmd">AUTH LOGIN</span>                                             <span class="comment"># Authenticate</span>
+<span class="resp">334 VXNlcm5hbWU6</span>                                       <span class="comment"># "Username:" in Base64</span>
+<span class="cmd">dXNlckBleGFtcGxlLmNvbQ==</span>                              <span class="comment"># Base64 encoded username</span>
+<span class="resp">334 UGFzc3dvcmQ6</span>                                       <span class="comment"># "Password:" in Base64</span>
+<span class="cmd">cGFzc3dvcmQxMjM=</span>                                       <span class="comment"># Base64 encoded password</span>
+<span class="resp">235 2.7.0 Authentication successful</span>
+<span class="cmd">MAIL FROM:&lt;alice@sender.org&gt;</span>                          <span class="comment"># Envelope sender</span>
+<span class="resp">250 2.1.0 Ok</span>
+<span class="cmd">RCPT TO:&lt;bob@example.com&gt;</span>                             <span class="comment"># Envelope recipient</span>
+<span class="resp">250 2.1.5 Ok</span>
+<span class="cmd">DATA</span>                                                    <span class="comment"># Begin message content</span>
+<span class="resp">354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;</span>
+<span class="header-key">From:</span> <span class="header-val">Alice &lt;alice@sender.org&gt;</span>
+<span class="header-key">To:</span> <span class="header-val">Bob &lt;bob@example.com&gt;</span>
+<span class="header-key">Subject:</span> <span class="header-val">Meeting Tomorrow</span>
+<span class="header-key">Date:</span> <span class="header-val">Tue, 21 Feb 2026 10:00:00 -0500</span>
+<span class="header-key">Message-ID:</span> <span class="header-val">&lt;abc123@sender.org&gt;</span>
+<span class="header-key">MIME-Version:</span> <span class="header-val">1.0</span>
+<span class="header-key">Content-Type:</span> <span class="header-val">text/plain; charset=UTF-8</span>
+
+Hello Bob, can we meet at 10am tomorrow?
+<span class="cmd">.</span>                                                       <span class="comment"># End of message (lone dot)</span>
+<span class="resp">250 2.0.0 Ok: queued as ABC123</span>
+<span class="cmd">QUIT</span>
+<span class="resp">221 2.0.0 Bye</span>
+  </div>
 </div>
-<div class="description" id="desc-code-250">
-    <h2>250 (Maximum 512 characters)</h2>
-    <p>Requested
+</section>
+
+<!-- COMMANDS -->
+<section id="commands">
+<div class="container">
+  <h2 class="section-title">SMTP <span>Commands</span></h2>
+  <p class="section-sub">Core commands, extended capabilities, and server response codes</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'tab-core')">Core Commands</button>
+    <button class="tab-btn" onclick="switchTab(this,'tab-esmtp')">ESMTP Extensions</button>
+    <button class="tab-btn" onclick="switchTab(this,'tab-codes')">Response Codes</button>
+  </div>
+
+  <div id="tab-core" class="tab-content active">
+    <table class="port-table">
+      <thead><tr><th>Command</th><th>Syntax</th><th>Description</th><th>RFC</th></tr></thead>
+      <tbody>
+        <tr><td><strong>HELO</strong></td><td><code>HELO domain</code></td><td>Opens SMTP session (legacy). Identifies sending client by domain name.</td><td><span class="badge badge-blue">5321</span></td></tr>
+        <tr><td><strong>EHLO</strong></td><td><code>EHLO domain</code></td><td>Opens ESMTP session. Server responds with supported extensions.</td><td><span class="badge badge-blue">5321</span></td></tr>
+        <tr><td><strong>MAIL FROM</strong></td><td><code>MAIL FROM:&lt;address&gt;</code></td><td>Specifies envelope sender address (return path). Starts mail transaction.</td><td><span class="badge badge-blue">5321</span></td></tr>
+        <tr><td><strong>RCPT TO</strong></td><td><code>RCPT TO:&lt;address&gt;</code></td><td>Specifies envelope recipient. May be repeated for multiple recipients.</td><td><span class="badge badge-blue">5321</span></td></tr>
+        <tr><td><strong>DATA</strong></td><td><code>DATA</code></td><td>Signals start of message content (headers + body). End with lone "." on a line.</td><td><span class="badge badge-blue">5321</span></td></tr>
+        <tr><td><strong>QUIT</strong></td><td><code>QUIT</code></td><td>Gracefully terminates SMTP session. Server sends 221 farewell.</td><td><span class="badge badge-blue">5321</span></td></tr>
+        <tr><td><strong>RSET</strong></td><td><code>RSET</code></td><td>Resets current mail transaction without closing connection.</td><td><span class="badge badge-blue">5321</span></td></tr>
+        <tr><td><strong>NOOP</strong></td><td><code>NOOP</code></td><td>No operation — keeps connection alive, tests server responsiveness.</td><td><span class="badge badge-blue">5321</span></td></tr>
+        <tr><td><strong>VRFY</strong></td><td><code>VRFY username</code></td><td>Verifies mailbox existence. Often disabled to prevent user enumeration.</td><td><span class="badge badge-orange">5321</span></td></tr>
+        <tr><td><strong>EXPN</strong></td><td><code>EXPN listname</code></td><td>Expands a mailing list. Usually disabled for security reasons.</td><td><span class="badge badge-orange">5321</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="tab-esmtp" class="tab-content">
+    <p>ESMTP extensions are advertised by the server in its EHLO response. Each extension adds new functionality beyond basic SMTP.</p>
+    <table class="port-table">
+      <thead><tr><th>Extension</th><th>Keyword</th><th>Description</th><th>RFC</th></tr></thead>
+      <tbody>
+        <tr><td><strong>TLS Upgrade</strong></td><td><code>STARTTLS</code></td><td>Upgrades a plaintext connection to TLS. Must re-EHLO after TLS handshake.</td><td><span class="badge badge-green">3207</span></td></tr>
+        <tr><td><strong>Authentication</strong></td><td><code>AUTH</code></td><td>Enables client authentication. Mechanisms: PLAIN, LOGIN, CRAM-MD5, OAUTH2.</td><td><span class="badge badge-green">4954</span></td></tr>
+        <tr><td><strong>Message Size</strong></td><td><code>SIZE</code></td><td>Declares max message size server accepts. Client can check before sending large messages.</td><td><span class="badge badge-blue">1870</span></td></tr>
+        <tr><td><strong>8-bit MIME</strong></td><td><code>8BITMIME</code></td><td>Allows 8-bit data in message body without encoding. Needed for UTF-8 content.</td><td><span class="badge badge-blue">6152</span></td></tr>
+        <tr><td><strong>Pipelining</strong></td><td><code>PIPELINING</code></td><td>Allows sending multiple commands without waiting for each response. Improves throughput.</td><td><span class="badge badge-blue">2920</span></td></tr>
+        <tr><td><strong>Delivery Status</strong></td><td><code>DSN</code></td><td>Delivery Status Notifications — success/failure reports back to sender.</td><td><span class="badge badge-blue">3461</span></td></tr>
+        <tr><td><strong>Enhanced Status</strong></td><td><code>ENHANCEDSTATUSCODES</code></td><td>Extended status codes (e.g., 2.0.0, 5.1.1) for better error diagnosis.</td><td><span class="badge badge-blue">2034</span></td></tr>
+        <tr><td><strong>UTF-8</strong></td><td><code>SMTPUTF8</code></td><td>Supports Unicode in email addresses and headers (internationalization).</td><td><span class="badge badge-orange">6531</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="tab-codes" class="tab-content">
+    <p>SMTP response codes are 3-digit numbers. The first digit indicates the category; the full code identifies the specific outcome.</p>
+    <div class="card-grid" style="margin-bottom:1.5rem;">
+      <div class="card" style="border-color:#27ae60;"><div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--green);">2xx</div><h3>Positive Completion</h3><p>The requested action completed successfully.</p></div>
+      <div class="card" style="border-color:var(--accent2);"><div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--accent2);">3xx</div><h3>Positive Intermediate</h3><p>Command accepted but more input needed to complete the action.</p></div>
+      <div class="card" style="border-color:var(--accent);"><div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--accent);">4xx</div><h3>Transient Negative</h3><p>Temporary failure. Sender should retry later (e.g., queue full).</p></div>
+      <div class="card" style="border-color:#8e44ad;"><div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--purple);">5xx</div><h3>Permanent Negative</h3><p>Permanent error. Do not retry without fixing the underlying problem.</p></div>
+    </div>
+    <table class="port-table">
+      <thead><tr><th>Code</th><th>Meaning</th><th>Common Cause</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-green">220</span></td><td>Service Ready</td><td>Server greeting after TCP connection established</td></tr>
+        <tr><td><span class="badge badge-green">221</span></td><td>Service Closing</td><td>Server acknowledges QUIT command</td></tr>
+        <tr><td><span class="badge badge-green">235</span></td><td>Authentication Succeeded</td><td>AUTH credentials accepted</td></tr>
+        <tr><td><span class="badge badge-green">250</span></td><td>Requested Action OK</td><td>EHLO, MAIL FROM, RCPT TO accepted</td></tr>
+        <tr><td><span class="badge badge-green">354</span></td><td>Start Input, End with "."</td><td>Server ready to receive message DATA</td></tr>
+        <tr><td><span class="badge badge-orange">421</span></td><td>Service Unavailable</td><td>Server temporarily unavailable, closing connection</td></tr>
+        <tr><td><span class="badge badge-orange">450</span></td><td>Mailbox Unavailable</td><td>Temporary — mailbox busy or locked</td></tr>
+        <tr><td><span class="badge badge-orange">451</span></td><td>Local Processing Error</td><td>Server error in processing — retry later</td></tr>
+        <tr><td><span class="badge badge-orange">452</span></td><td>Insufficient Storage</td><td>Disk quota exceeded, retry later</td></tr>
+        <tr><td><span class="badge badge-red">500</span></td><td>Syntax Error</td><td>Command not recognized</td></tr>
+        <tr><td><span class="badge badge-red">501</span></td><td>Syntax Error in Parameters</td><td>Malformed MAIL FROM or RCPT TO address</td></tr>
+        <tr><td><span class="badge badge-red">503</span></td><td>Bad Sequence</td><td>Commands sent out of order</td></tr>
+        <tr><td><span class="badge badge-red">530</span></td><td>Authentication Required</td><td>Client must authenticate before sending mail</td></tr>
+        <tr><td><span class="badge badge-red">550</span></td><td>Mailbox Unavailable</td><td>No such user / relay denied / blacklisted</td></tr>
+        <tr><td><span class="badge badge-red">552</span></td><td>Exceeded Storage</td><td>Recipient mailbox full — permanent</td></tr>
+        <tr><td><span class="badge badge-red">553</span></td><td>Mailbox Name Not Allowed</td><td>Invalid address syntax</td></tr>
+        <tr><td><span class="badge badge-red">554</span></td><td>Transaction Failed</td><td>Spam rejection, policy violation</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</section>
+
+<!-- PORTS & SECURITY -->
+<section id="ports">
+<div class="container">
+  <h2 class="section-title">Ports &amp; <span>Security</span></h2>
+  <p class="section-sub">Port assignments, TLS configurations, and anti-spam authentication mechanisms</p>
+
+  <table class="port-table">
+    <thead><tr><th>Port</th><th>Name</th><th>Encryption</th><th>Use Case</th><th>RFC</th></tr></thead>
+    <tbody>
+      <tr><td><strong>25</strong></td><td>SMTP</td><td>None / STARTTLS</td><td>MTA-to-MTA relay. Blocked by ISPs for residential users to prevent spam.</td><td>5321</td></tr>
+      <tr><td><strong>465</strong></td><td>SMTPS (legacy)</td><td>Implicit TLS (SSL)</td><td>Deprecated but still widely used. TLS wraps entire session from start.</td><td>N/A</td></tr>
+      <tr><td><strong>587</strong></td><td>Submission</td><td>STARTTLS (required)</td><td><strong>Recommended</strong> for MUA-to-MTA submission. Requires AUTH.</td><td>6409</td></tr>
+      <tr><td><strong>2525</strong></td><td>Alternate Submission</td><td>STARTTLS</td><td>Alternative when 587 is blocked. Non-standard, used by some cloud providers.</td><td>N/A</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:2rem;">Email Authentication Mechanisms</h3>
+  <p>Modern email security relies on three complementary DNS-based authentication systems that protect against spoofing, phishing, and spam.</p>
+
+  <div class="card-grid">
+    <div class="card" style="border-top:4px solid var(--accent);">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent);margin-bottom:.75rem;">SPF</div>
+      <h3>Sender Policy Framework</h3>
+      <p>A DNS TXT record that lists authorized mail servers for a domain. Receiving MTAs verify the sending IP is authorized.</p>
+      <div class="code-block" style="font-size:.8rem;padding:1rem;margin:.75rem 0 0;">v=spf1 ip4:192.0.2.0/24 include:_spf.google.com -all</div>
+    </div>
+    <div class="card" style="border-top:4px solid var(--accent3);">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent3);margin-bottom:.75rem;">DKIM</div>
+      <h3>DomainKeys Identified Mail</h3>
+      <p>Cryptographic signature added to outgoing messages. Receiving server verifies with public key from DNS. Ensures content integrity.</p>
+      <div class="code-block" style="font-size:.8rem;padding:1rem;margin:.75rem 0 0;">DKIM-Signature: v=1; a=rsa-sha256; d=example.com; s=mail; bh=...; b=...</div>
+    </div>
+    <div class="card" style="border-top:4px solid var(--green);">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--green);margin-bottom:.75rem;">DMARC</div>
+      <h3>Domain-based Message Authentication</h3>
+      <p>Policy layer on top of SPF and DKIM. Defines what to do when checks fail (none/quarantine/reject) and enables aggregate reporting.</p>
+      <div class="code-block" style="font-size:.8rem;padding:1rem;margin:.75rem 0 0;">v=DMARC1; p=reject; rua=mailto:reports@example.com; pct=100</div>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem;background:var(--surface);border:2px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:1.5rem;">
+    <h3 style="color:var(--accent);">⚠️ Open Relay: Critical Security Risk</h3>
+    <p>An <strong>open relay</strong> is an SMTP server misconfigured to forward mail from any source to any destination without authentication. Open relays are immediately exploited by spammers and will be added to blacklists (DNSBLs) within hours. Network administrators must configure servers to require AUTH for submission and restrict relay to trusted networks.</p>
+    <div class="code-block" style="font-size:.82rem;">
+<span class="comment"># Postfix: restrict relay to authenticated users only</span>
+<span class="header-key">smtpd_relay_restrictions</span> = <span class="header-val">permit_mynetworks permit_sasl_authenticated defer_unauth_destination</span>
+<span class="header-key">smtpd_recipient_restrictions</span> = <span class="header-val">permit_mynetworks permit_sasl_authenticated reject_unauth_destination</span>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- HEADERS -->
+<section id="headers">
+<div class="container">
+  <h2 class="section-title">Message <span>Headers</span></h2>
+  <p class="section-sub">Anatomy of an email message header — required fields, optional fields, and tracing headers</p>
+
+  <p>Email headers are structured name-value pairs separated from the message body by a blank line. Headers added by the originating MUA are called <em>originating headers</em>. Each MTA that handles the message prepends a <strong>Received:</strong> header, creating an audit trail.</p>
+
+  <div class="tabs" style="margin-top:1.5rem;">
+    <button class="tab-btn active" onclick="switchTab(this,'tab-required')">Required Headers</button>
+    <button class="tab-btn" onclick="switchTab(this,'tab-optional')">Optional Headers</button>
+    <button class="tab-btn" onclick="switchTab(this,'tab-received')">Received Headers</button>
+    <button class="tab-btn" onclick="switchTab(this,'tab-security')">Security Headers</button>
+  </div>
+
+  <div id="tab-required" class="tab-content active">
+    <table class="port-table">
+      <thead><tr><th>Header</th><th>Example</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>From:</code></td><td>From: Alice &lt;alice@example.com&gt;</td><td>Display name and email address of message author (RFC 5322 §3.6.2)</td></tr>
+        <tr><td><code>Date:</code></td><td>Date: Tue, 21 Feb 2026 10:00:00 -0500</td><td>Date and time message was composed (RFC 5322 format)</td></tr>
+        <tr><td><code>Message-ID:</code></td><td>Message-ID: &lt;abc123@sender.org&gt;</td><td>Globally unique identifier for the message. Format: local@domain</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="tab-optional" class="tab-content">
+    <table class="port-table">
+      <thead><tr><th>Header</th><th>Example</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>To:</code></td><td>To: Bob &lt;bob@example.com&gt;</td><td>Primary recipient(s) displayed to the reader</td></tr>
+        <tr><td><code>Cc:</code></td><td>Cc: Carol &lt;carol@example.com&gt;</td><td>Carbon copy recipients — visible to all recipients</td></tr>
+        <tr><td><code>Bcc:</code></td><td>Bcc: Dave &lt;dave@example.com&gt;</td><td>Blind carbon copy — removed before delivery to other recipients</td></tr>
+        <tr><td><code>Subject:</code></td><td>Subject: Meeting Tomorrow</td><td>Summary of message content</td></tr>
+        <tr><td><code>Reply-To:</code></td><td>Reply-To: noreply@example.com</td><td>Directs replies to a different address than From:</td></tr>
+        <tr><td><code>MIME-Version:</code></td><td>MIME-Version: 1.0</td><td>Declares MIME compliance (RFC 2045)</td></tr>
+        <tr><td><code>Content-Type:</code></td><td>Content-Type: text/html; charset=UTF-8</td><td>Media type of message body</td></tr>
+        <tr><td><code>Content-Transfer-Encoding:</code></td><td>Content-Transfer-Encoding: quoted-printable</td><td>Encoding of message body (7bit, 8bit, base64, quoted-printable)</td></tr>
+        <tr><td><code>In-Reply-To:</code></td><td>In-Reply-To: &lt;orig@example.com&gt;</td><td>Message-ID of the message being replied to (enables threading)</td></tr>
+        <tr><td><code>X-Mailer:</code></td><td>X-Mailer: Thunderbird 115.0</td><td>Identifies the sending MUA (informational)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="tab-received" class="tab-content">
+    <p>Each MTA prepends a <code>Received:</code> header. Reading them from <strong>bottom to top</strong> traces the message path from origin to destination.</p>
+    <div class="code-block" style="font-size:.82rem;">
+<span class="comment"># Most recent hop (destination) — READ FROM BOTTOM TO TOP</span>
+<span class="header-key">Received:</span> <span class="header-val">from mail.relay.org (mail.relay.org [10.1.2.3])
+        by mail.example.com with ESMTPS id x1234
+        for &lt;bob@example.com&gt;;
+        Tue, 21 Feb 2026 10:01:42 -0500 (EST)</span>
+
+<span class="header-key">Received:</span> <span class="header-val">from sender.org (sender.org [203.0.113.1])
+        by mail.relay.org with ESMTP id y5678
+        for &lt;bob@example.com&gt;;
+        Tue, 21 Feb 2026 10:01:38 -0500 (EST)</span>
+
+<span class="comment"># Earliest hop (origin) — start reading here</span>
+<span class="header-key">Received:</span> <span class="header-val">from [192.168.1.50] (alice-laptop.local)
+        by sender.org with ESMTPSA id z9012
+        for &lt;bob@example.com&gt;;
+        Tue, 21 Feb 2026 10:01:35 -0500 (EST)</span>
+    </div>
+    <p>Each <code>Received:</code> header contains: <strong>from</strong> (sending host), <strong>by</strong> (receiving host), <strong>with</strong> (protocol), <strong>for</strong> (recipient), and the timestamp. Analyzing these headers is critical for tracing spam and diagnosing delivery delays.</p>
+  </div>
+
+  <div id="tab-security" class="tab-content">
+    <table class="port-table">
+      <thead><tr><th>Header</th><th>Example</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>DKIM-Signature:</code></td><td>DKIM-Signature: v=1; a=rsa-sha256; d=example.com; s=mail; b=...</td><td>Cryptographic signature from sending domain</td></tr>
+        <tr><td><code>Authentication-Results:</code></td><td>Authentication-Results: mx.google.com; spf=pass; dkim=pass; dmarc=pass</td><td>Results of SPF, DKIM, DMARC checks by receiving MTA</td></tr>
+        <tr><td><code>Received-SPF:</code></td><td>Received-SPF: pass (google.com: domain of alice@example.com designates 192.0.2.1 as permitted sender)</td><td>SPF check result with details</td></tr>
+        <tr><td><code>X-Spam-Status:</code></td><td>X-Spam-Status: No, score=1.2 required=5.0</td><td>SpamAssassin or similar filter result</td></tr>
+        <tr><td><code>X-Spam-Score:</code></td><td>X-Spam-Score: 1.2</td><td>Numeric spam score — higher = more likely spam</td></tr>
+        <tr><td><code>ARC-Authentication-Results:</code></td><td>ARC-Authentication-Results: i=1; mx.google.com; ...</td><td>Authenticated Received Chain — preserves auth results through forwarding (RFC 8617)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</section>
+
+<!-- HEADER BUILDER -->
+<section id="builder">
+<div class="container">
+  <h2 class="section-title">Header <span>Builder</span></h2>
+  <p class="section-sub">Construct a complete SMTP message header — fill in the fields and generate your header in real time</p>
+
+  <div class="builder-wrap">
+    <!-- INPUTS -->
+    <div>
+      <div class="form-group">
+        <label>From (Display Name)</label>
+        <input type="text" id="b-from-name" placeholder="e.g. Alice Smith" oninput="buildHeader()">
+      </div>
+      <div class="form-group">
+        <label>From (Email Address)</label>
+        <input type="email" id="b-from-email" placeholder="alice@example.com" oninput="buildHeader()">
+      </div>
+      <div class="form-group">
+        <label>To (Display Name)</label>
+        <input type="text" id="b-to-name" placeholder="e.g. Bob Jones" oninput="buildHeader()">
+      </div>
+      <div class="form-group">
+        <label>To (Email Address)</label>
+        <input type="email" id="b-to-email" placeholder="bob@example.com" oninput="buildHeader()">
+      </div>
+      <div class="form-group">
+        <label>Cc (optional)</label>
+        <input type="email" id="b-cc" placeholder="carol@example.com" oninput="buildHeader()">
+      </div>
+      <div class="form-group">
+        <label>Reply-To (optional)</label>
+        <input type="email" id="b-replyto" placeholder="noreply@example.com" oninput="buildHeader()">
+      </div>
+      <div class="form-group">
+        <label>Subject</label>
+        <input type="text" id="b-subject" placeholder="Message subject line" oninput="buildHeader()">
+      </div>
+      <div class="form-group">
+        <label>Content-Type</label>
+        <select id="b-content-type" onchange="buildHeader()">
+          <option value="text/plain; charset=UTF-8">text/plain; charset=UTF-8</option>
+          <option value="text/html; charset=UTF-8">text/html; charset=UTF-8</option>
+          <option value="multipart/mixed; boundary=boundary_string">multipart/mixed</option>
+          <option value="multipart/alternative; boundary=boundary_string">multipart/alternative</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Transfer Encoding</label>
+        <select id="b-encoding" onchange="buildHeader()">
+          <option value="7bit">7bit (ASCII only)</option>
+          <option value="quoted-printable">quoted-printable</option>
+          <option value="base64">base64</option>
+          <option value="8bit">8bit</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Priority</label>
+        <select id="b-priority" onchange="buildHeader()">
+          <option value="">Normal (no header)</option>
+          <option value="1 (Highest)">1 — Highest</option>
+          <option value="2 (High)">2 — High</option>
+          <option value="3 (Normal)">3 — Normal</option>
+          <option value="4 (Low)">4 — Low</option>
+          <option value="5 (Lowest)">5 — Lowest</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Include Authentication Headers</label>
+        <select id="b-auth" onchange="buildHeader()">
+          <option value="none">No</option>
+          <option value="spf">SPF pass only</option>
+          <option value="all">SPF + DKIM + DMARC</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="buildHeader()">⚙ Generate Header</button>
+        <button class="btn btn-secondary" onclick="copyHeader()">⎘ Copy to Clipboard</button>
+        <button class="btn" style="background:var(--bg2);color:var(--text);" onclick="clearBuilder()">✕ Clear</button>
+      </div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div>
+      <div class="output-label">Generated Email Header</div>
+      <div id="header-output"># Fill in the fields to generate your SMTP header...</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- SIMULATOR -->
+<section id="simulator">
+<div class="container">
+  <h2 class="section-title">SMTP <span>Simulator</span></h2>
+  <p class="section-sub">Practice a live SMTP conversation — type commands and receive realistic server responses</p>
+
+  <div class="simulator">
+    <div class="sim-title">SMTP Terminal — mail.example.com</div>
+    <div id="sim-output"></div>
+    <div class="sim-input-row">
+      <input type="text" id="sim-input" placeholder="Type an SMTP command (e.g. EHLO myserver.com)..." onkeydown="simKeydown(event)" autocomplete="off" spellcheck="false">
+      <button class="sim-btn" onclick="simSend()">SEND ▶</button>
+    </div>
+    <div class="sim-quick">
+      <span style="font-size:.75rem;color:#6c7086;display:flex;align-items:center;">Quick commands:</span>
+      <button class="sim-quick-btn" onclick="simFill('EHLO myserver.com')">EHLO</button>
+      <button class="sim-quick-btn" onclick="simFill('STARTTLS')">STARTTLS</button>
+      <button class="sim-quick-btn" onclick="simFill('AUTH LOGIN')">AUTH LOGIN</button>
+      <button class="sim-quick-btn" onclick="simFill('MAIL FROM:<alice@sender.org>')">MAIL FROM</button>
+      <button class="sim-quick-btn" onclick="simFill('RCPT TO:<bob@example.com>')">RCPT TO</button>
+      <button class="sim-quick-btn" onclick="simFill('DATA')">DATA</button>
+      <button class="sim-quick-btn" onclick="simFill('RSET')">RSET</button>
+      <button class="sim-quick-btn" onclick="simFill('NOOP')">NOOP</button>
+      <button class="sim-quick-btn" onclick="simFill('QUIT')">QUIT</button>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- GLOSSARY -->
+<section id="glossary">
+<div class="container">
+  <h2 class="section-title">Key <span>Glossary</span></h2>
+  <p class="section-sub">Essential SMTP terms every network administrator must know</p>
+  <input type="text" class="search-bar" placeholder="🔍 Search terms..." oninput="filterGlossary(this.value)" id="gloss-search">
+  <div class="glossary-grid" id="glossary-grid">
+  </div>
+</div>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz">
+<div class="container">
+  <h2 class="section-title">Knowledge <span>Check</span></h2>
+  <p class="section-sub">Test your understanding of SMTP — 10 questions covering commands, ports, security, and headers</p>
+
+  <div style="background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:2rem;display:flex;align-items:center;gap:2rem;flex-wrap:wrap;">
+    <div><div id="quiz-score">0 / 0</div><div style="color:var(--text3);font-size:.85rem;">Correct Answers</div></div>
+    <div style="flex:1;min-width:200px;">
+      <div style="background:var(--bg2);border-radius:8px;height:12px;overflow:hidden;">
+        <div id="quiz-bar" style="background:var(--green);height:100%;width:0%;transition:width .4s;border-radius:8px;"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="resetQuiz()">↺ Reset Quiz</button>
+  </div>
+
+  <div id="quiz-container"></div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer style="background:var(--text);color:#aaa;padding:2.5rem;text-align:center;margin-top:2rem;">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent);margin-bottom:.5rem;">SMTP Protocol — Interactive Lesson</div>
+  <p style="font-size:.9rem;color:#666;">Based on RFC 5321 (SMTP), RFC 4954 (AUTH), RFC 3207 (STARTTLS), RFC 7208 (SPF), RFC 6376 (DKIM), RFC 7489 (DMARC)</p>
+  <p style="font-size:.8rem;color:#555;margin-top:.5rem;">Developed for Network Administration curriculum — Information Technology Department</p>
+</footer>
+
+<div class="copy-toast" id="copy-toast">✓ Header copied to clipboard!</div>
+
+<script>
+// ── NAV ACTIVE ──
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav a');
+window.addEventListener('scroll', () => {
+  let cur = '';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 100) cur = s.id; });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + cur);
+  });
+});
+
+// ── TABS ──
+function switchTab(btn, id) {
+  const parent = btn.closest('.container') || btn.parentElement.parentElement;
+  parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  parent.querySelector('#' + id)?.classList.add('active');
+}
+
+// ── HEADER BUILDER ──
+function buildHeader() {
+  const fromName  = document.getElementById('b-from-name').value.trim();
+  const fromEmail = document.getElementById('b-from-email').value.trim();
+  const toName    = document.getElementById('b-to-name').value.trim();
+  const toEmail   = document.getElementById('b-to-email').value.trim();
+  const cc        = document.getElementById('b-cc').value.trim();
+  const replyTo   = document.getElementById('b-replyto').value.trim();
+  const subject   = document.getElementById('b-subject').value.trim();
+  const ctype     = document.getElementById('b-content-type').value;
+  const enc       = document.getElementById('b-encoding').value;
+  const priority  = document.getElementById('b-priority').value;
+  const auth      = document.getElementById('b-auth').value;
+
+  if (!fromEmail && !toEmail && !subject) {
+    document.getElementById('header-output').textContent = '# Fill in the fields to generate your SMTP header...';
+    return;
+  }
+
+  const now = new Date();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const tz = -now.getTimezoneOffset();
+  const tzStr = (tz>=0?'+':'-') + String(Math.abs(Math.floor(tz/60))).padStart(2,'0') + String(Math.abs(tz%60)).padStart(2,'0');
+  const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} ${tzStr}`;
+  const msgId = `<${Date.now()}.${Math.floor(Math.random()*9999)}@${fromEmail.split('@')[1] || 'example.com'}>`;
+
+  let lines = [];
+
+  if (auth === 'spf' || auth === 'all') {
+    const fromDomain = fromEmail.split('@')[1] || 'example.com';
+    const results = auth === 'all'
+      ? `spf=pass (example.com: domain of ${fromEmail} designates 203.0.113.1 as permitted sender) smtp.mailfrom=${fromEmail};\n       dkim=pass header.i=@${fromDomain} header.s=20230601 header.b=AbCdEfGh;\n       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=${fromDomain}`
+      : `spf=pass (example.com: domain of ${fromEmail} designates 203.0.113.1 as permitted sender) smtp.mailfrom=${fromEmail}`;
+    lines.push(`Authentication-Results: mx.example.com;\n       ${results}`);
+    lines.push(`Received-SPF: pass (example.com: domain of ${fromEmail} designates 203.0.113.1 as\n  permitted sender) client-ip=203.0.113.1; helo=mail.${fromEmail.split('@')[1] || 'sender.org'};`);
+    if (auth === 'all') {
+      lines.push(`DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\n        d=${fromEmail.split('@')[1] || 'example.com'}; s=20230601;\n        h=from:to:subject:date:message-id:mime-version;\n        bh=AbCdEfGhIjKlMnOpQrStUvWxYz0123456789==;\n        b=AbCdEfGhIjKlMnOpQrStUvWxYz0123456789AbCdEfGhIjKl\n          MnOpQrStUvWxYz0123456789==`);
+    }
+  }
+
+  lines.push(`Received: from mail.${fromEmail.split('@')[1] || 'sender.org'} (mail.${fromEmail.split('@')[1] || 'sender.org'} [203.0.113.1])\n        by mx.example.com with ESMTPS id abc123\n        for <${toEmail}>;\n        ${dateStr}`);
+  lines.push(`MIME-Version: 1.0`);
+  lines.push(`Date: ${dateStr}`);
+  lines.push(`Message-ID: ${msgId}`);
+
+  if (fromEmail) {
+    lines.push(`From: ${fromName ? `${fromName} <${fromEmail}>` : fromEmail}`);
+  }
+  if (toEmail) {
+    lines.push(`To: ${toName ? `${toName} <${toEmail}>` : toEmail}`);
+  }
+  if (cc)      lines.push(`Cc: ${cc}`);
+  if (replyTo) lines.push(`Reply-To: ${replyTo}`);
+  if (subject) lines.push(`Subject: ${subject}`);
+  if (priority) lines.push(`X-Priority: ${priority}`);
+  lines.push(`Content-Type: ${ctype}`);
+  lines.push(`Content-Transfer-Encoding: ${enc}`);
+  lines.push(`X-Mailer: NetworkAdmin-Lesson/1.0`);
+
+  document.getElementById('header-output').textContent = lines.join('\n');
+}
+
+function copyHeader() {
+  const text = document.getElementById('header-output').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const t = document.getElementById('copy-toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  });
+}
+
+function clearBuilder() {
+  ['b-from-name','b-from-email','b-to-name','b-to-email','b-cc','b-replyto','b-subject'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('header-output').textContent = '# Fill in the fields to generate your SMTP header...';
+}
+
+// ── SIMULATOR ──
+const simState = {
+  stage: 'connected',
+  tls: false,
+  authed: false,
+  mailFrom: null,
+  rcptTo: [],
+  inData: false,
+  dataLines: [],
+  authStep: null,
+};
+
+const simResponses = {
+  '220': 'Service ready',
+};
+
+function simInit() {
+  const o = document.getElementById('sim-output');
+  o.innerHTML = '';
+  Object.assign(simState, { stage:'connected', tls:false, authed:false, mailFrom:null, rcptTo:[], inData:false, dataLines:[], authStep:null });
+  simPrint('resp', '220 mail.example.com ESMTP Postfix (Ubuntu 22.04) — Ready');
+  simPrint('info', '# Type EHLO to begin. Commands are case-insensitive.');
+}
+
+function simPrint(type, text) {
+  const o = document.getElementById('sim-output');
+  const div = document.createElement('div');
+  div.style.cssText = 'margin:.15rem 0;';
+  const colors = { cmd:'#89b4fa', resp:'#a6e3a1', err:'#f38ba8', info:'#6c7086', data:'#f9e2af' };
+  div.style.color = colors[type] || '#cdd6f4';
+  div.textContent = text;
+  o.appendChild(div);
+  o.scrollTop = o.scrollHeight;
+}
+
+function simSend() {
+  const inp = document.getElementById('sim-input');
+  const raw = inp.value.trim();
+  if (!raw) return;
+  simPrint('cmd', '> ' + raw);
+  inp.value = '';
+  processSimCommand(raw);
+}
+
+function simKeydown(e) { if (e.key === 'Enter') simSend(); }
+function simFill(cmd) { document.getElementById('sim-input').value = cmd; document.getElementById('sim-input').focus(); }
+
+function processSimCommand(raw) {
+  const upper = raw.toUpperCase();
+  const cmd = upper.split(' ')[0];
+
+  if (simState.inData) {
+    if (raw === '.') {
+      simState.inData = false;
+      simPrint('resp', `250 2.0.0 Ok: queued as ${Math.random().toString(36).substr(2,8).toUpperCase()}`);
+      simPrint('info', '# Message accepted. Use QUIT to end or MAIL FROM to send another.');
+    } else {
+      simState.dataLines.push(raw);
+      // Just echo nothing for data input
+    }
+    return;
+  }
+
+  if (simState.authStep === 'user') {
+    simState.authStep = 'pass';
+    simPrint('resp', '334 UGFzc3dvcmQ6');
+    simPrint('info', '# Send Base64-encoded password (e.g.: cGFzc3dvcmQ= )');
+    return;
+  }
+  if (simState.authStep === 'pass') {
+    simState.authStep = null;
+    simState.authed = true;
+    simPrint('resp', '235 2.7.0 Authentication successful');
+    return;
+  }
+
+  switch(cmd) {
+    case 'EHLO':
+    case 'HELO': {
+      const domain = raw.split(' ')[1] || 'unknown';
+      simState.stage = 'greeted';
+      if (cmd === 'EHLO') {
+        simPrint('resp', `250-mail.example.com Hello ${domain}, pleased to meet you`);
+        simPrint('resp', '250-SIZE 52428800');
+        simPrint('resp', '250-PIPELINING');
+        if (!simState.tls) simPrint('resp', '250-STARTTLS');
+        simPrint('resp', '250-AUTH PLAIN LOGIN');
+        simPrint('resp', '250-ENHANCEDSTATUSCODES');
+        simPrint('resp', '250 8BITMIME');
+      } else {
+        simPrint('resp', `250 mail.example.com Hello ${domain}`);
+        simPrint('info', '# Tip: Use EHLO instead of HELO to enable ESMTP extensions');
+      }
+      break;
+    }
+    case 'STARTTLS':
+      if (simState.tls) { simPrint('err', '503 5.5.0 TLS already active'); break; }
+      simPrint('resp', '220 2.0.0 Ready to start TLS');
+      simState.tls = true;
+      simPrint('info', '# TLS handshake complete. Re-issue EHLO to get updated capabilities.');
+      break;
+    case 'AUTH':
+      if (!simState.tls) { simPrint('err', '530 5.7.0 Must issue a STARTTLS command first'); break; }
+      if (simState.authed) { simPrint('err', '503 5.5.0 Already authenticated'); break; }
+      simState.authStep = 'user';
+      simPrint('resp', '334 VXNlcm5hbWU6');
+      simPrint('info', '# "Username:" in Base64. Send your Base64-encoded username.');
+      break;
+    case 'MAIL': {
+      if (!simState.authed) { simPrint('err', '530 5.7.0 Authentication required'); break; }
+      const m = raw.match(/FROM:<(.+)>/i) || raw.match(/FROM:\s*(.+)/i);
+      if (!m) { simPrint('err', '501 5.1.7 Bad sender address syntax'); break; }
+      simState.mailFrom = m[1];
+      simState.rcptTo = [];
+      simPrint('resp', `250 2.1.0 Ok`);
+      break;
+    }
+    case 'RCPT': {
+      if (!simState.mailFrom) { simPrint('err', '503 5.5.0 Need MAIL command first'); break; }
+      const r = raw.match(/TO:<(.+)>/i) || raw.match(/TO:\s*(.+)/i);
+      if (!r) { simPrint('err', '501 5.1.3 Bad recipient address syntax'); break; }
+      simState.rcptTo.push(r[1]);
+      simPrint('resp', `250 2.1.5 Ok`);
+      break;
+    }
+    case 'DATA':
+      if (!simState.rcptTo.length) { simPrint('err', '503 5.5.0 Need RCPT command first'); break; }
+      simState.inData = true;
+      simState.dataLines = [];
+      simPrint('resp', '354 End data with <CR><LF>.<CR><LF>');
+      simPrint('info', '# Type headers then body, then a lone . on a line to finish.');
+      break;
+    case 'RSET':
+      simState.mailFrom = null; simState.rcptTo = []; simState.inData = false;
+      simPrint('resp', '250 2.0.0 Ok, reset state');
+      break;
+    case 'NOOP':
+      simPrint('resp', '250 2.0.0 Ok');
+      break;
+    case 'VRFY':
+      simPrint('err', '252 2.5.2 Cannot VRFY user, but will accept message and attempt delivery');
+      simPrint('info', '# VRFY is often disabled to prevent user enumeration attacks');
+      break;
+    case 'QUIT':
+      simPrint('resp', '221 2.0.0 Bye');
+      simPrint('info', '# Session closed. Reload to start a new session.');
+      setTimeout(simInit, 3000);
+      break;
+    case 'HELP':
+      simPrint('resp', '214-Commands: EHLO HELO MAIL RCPT DATA RSET NOOP VRFY QUIT');
+      simPrint('resp', '214-Extensions: STARTTLS AUTH');
+      simPrint('resp', '214 End of HELP');
+      break;
+    default:
+      simPrint('err', `500 5.5.1 Command unrecognized: "${raw.split(' ')[0]}"`);
+  }
+}
+
+// ── GLOSSARY ──
+const terms = [
+  { term: 'MUA', def: 'Mail User Agent — the email client application (Outlook, Gmail, Thunderbird) that composes and reads email.' },
+  { term: 'MTA', def: 'Mail Transfer Agent — a server that receives and forwards email between hosts using SMTP (Postfix, Sendmail, Exchange).' },
+  { term: 'MDA', def: 'Mail Delivery Agent — delivers messages from the MTA to the recipient mailbox. Often uses LMTP.' },
+  { term: 'SMTP Relay', def: 'The process of an MTA forwarding mail to another MTA on its way to the final destination.' },
+  { term: 'Open Relay', def: 'An SMTP server that forwards mail from any source to any destination without authentication — a critical misconfiguration exploited for spam.' },
+  { term: 'ESMTP', def: 'Extended SMTP (RFC 5321) — adds capability negotiation via EHLO and extensions like AUTH, STARTTLS, SIZE, PIPELINING.' },
+  { term: 'STARTTLS', def: 'SMTP extension (RFC 3207) that upgrades a plaintext SMTP connection to TLS in-place. Requires re-EHLO after the TLS handshake.' },
+  { term: 'NDR', def: 'Non-Delivery Report — a "bounce" message generated when an email cannot be delivered after retry exhaustion.' },
+  { term: 'SPF', def: 'Sender Policy Framework (RFC 7208) — DNS TXT record that specifies which IP addresses are authorized to send mail for a domain.' },
+  { term: 'DKIM', def: 'DomainKeys Identified Mail (RFC 6376) — cryptographic signature added to messages, verifiable with a public key in DNS.' },
+  { term: 'DMARC', def: 'Domain-based Message Authentication, Reporting & Conformance (RFC 7489) — policy framework combining SPF/DKIM with reporting.' },
+  { term: 'MX Record', def: 'Mail Exchanger DNS record that specifies the mail server responsible for accepting email for a domain. Lower priority = higher preference.' },
+  { term: 'Envelope Sender', def: 'The MAIL FROM: address in the SMTP transaction — the technical return path, separate from the From: header seen by the user.' },
+  { term: 'Submission Port', def: 'Port 587 (RFC 6409) — the standard port for MUA-to-MTA mail submission, requiring STARTTLS and AUTH.' },
+  { term: 'PIPELINING', def: 'ESMTP extension (RFC 2920) allowing clients to send multiple commands without waiting for each individual response, improving throughput.' },
+  { term: 'ARC', def: 'Authenticated Received Chain (RFC 8617) — preserves SPF/DKIM/DMARC results through email forwarding chains.' },
+  { term: 'DNSBL', def: 'DNS Block List — a real-time database of IP addresses known to send spam, queried by receiving MTAs to reject or score messages.' },
+  { term: 'Message-ID', def: 'A globally unique identifier for an email message, in the format <local-part@domain>. Used for threading and deduplication.' },
+  { term: 'Store-and-Forward', def: 'SMTP delivery model where MTAs queue messages for retry if the destination is unavailable, using exponential backoff.' },
+  { term: 'Received Header', def: 'Trace header prepended by each MTA that handles a message. Reading bottom-to-top traces the full delivery path.' },
+];
+
+function renderGlossary(filter) {
+  const grid = document.getElementById('glossary-grid');
+  const f = (filter || '').toLowerCase();
+  grid.innerHTML = terms
+    .filter(t => !f || t.term.toLowerCase().includes(f) || t.def.toLowerCase().includes(f))
+    .map(t => `<div class="gloss-card"><div class="gloss-term">${t.term}</div><div class="gloss-def">${t.def}</div></div>`)
+    .join('');
+}
+function filterGlossary(v) { renderGlossary(v); }
+renderGlossary();
+
+// ── QUIZ ──
+const questions = [
+  { q: 'Which SMTP command opens an ESMTP session and requests the server\'s capability list?', opts: ['HELO', 'EHLO', 'HELLO', 'OPEN'], ans: 1, exp: 'EHLO (Extended HELO) is the ESMTP greeting command. The server responds with a list of supported extensions like STARTTLS, AUTH, and SIZE.' },
+  { q: 'What SMTP response code indicates the server is ready to start TLS negotiation?', opts: ['250', '220', '354', '334'], ans: 1, exp: '220 is the initial "Service Ready" greeting. When sent after STARTTLS, it means the server is ready to begin the TLS handshake.' },
+  { q: 'An SMTP server that forwards mail from any source to any destination without authentication is called a(n):', opts: ['Mail Relay', 'Open Relay', 'Secure Relay', 'Smart Host'], ans: 1, exp: 'An Open Relay forwards mail from any source to any destination. This is a critical misconfiguration that spammers immediately exploit.' },
+  { q: 'Which port is the recommended standard for MUA-to-MTA email submission?', opts: ['25', '110', '587', '993'], ans: 2, exp: 'Port 587 (RFC 6409) is the Submission port, designed for MUA-to-MTA submission. It requires STARTTLS and AUTH, unlike port 25.' },
+  { q: 'What does the "lone dot" on a line by itself signify in an SMTP DATA transaction?', opts: ['Start of message headers', 'End of message body', 'Authentication separator', 'Comment line'], ans: 1, exp: 'A single period (.) on a line by itself, preceded and followed by CRLF, signals the end of the message DATA. The server then accepts or rejects it.' },
+  { q: 'Which DNS-based mechanism uses cryptographic signatures to verify message content integrity?', opts: ['SPF', 'DMARC', 'DKIM', 'MX Record'], ans: 2, exp: 'DKIM (DomainKeys Identified Mail) adds a cryptographic signature to messages. The public key is published in DNS so receivers can verify it.' },
+  { q: 'What SMTP response code means a permanent delivery failure — do not retry?', opts: ['421', '452', '550', '354'], ans: 2, exp: '5xx codes are permanent failures. 550 specifically means "mailbox unavailable" and could indicate no such user, relay denied, or blacklisting.' },
+  { q: 'What is the correct order to read Received: headers to trace a message\'s delivery path?', opts: ['Top to bottom (oldest first)', 'Bottom to top (oldest first)', 'Alphabetically', 'By timestamp only'], ans: 1, exp: 'Each MTA prepends its Received: header, so the topmost is most recent. Reading bottom-to-top shows the chronological delivery path from origin to destination.' },
+  { q: 'After completing a STARTTLS handshake, what must the SMTP client do next?', opts: ['Send MAIL FROM immediately', 'Send AUTH immediately', 'Re-issue EHLO', 'Close and reconnect'], ans: 2, exp: 'After STARTTLS, the client must re-issue EHLO to renegotiate capabilities under the new TLS context. The server may offer different extensions over TLS.' },
+  { q: 'Which ESMTP extension allows sending multiple commands without waiting for individual responses?', opts: ['STARTTLS', 'PIPELINING', 'AUTH', 'DSN'], ans: 1, exp: 'PIPELINING (RFC 2920) lets the client batch multiple commands (like MAIL FROM, RCPT TO) without waiting for each response, reducing round-trip latency.' },
+];
+
+let quizAnswered = 0, quizCorrect = 0;
+
+function renderQuiz() {
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = questions.map((q, i) => `
+    <div class="quiz-card" id="quiz-card-${i}">
+      <div class="quiz-q">Q${i+1}. ${q.q}</div>
+      <div class="quiz-options">
+        ${q.opts.map((o, j) => `
+          <div class="quiz-opt" data-q="${i}" data-idx="${j}" data-letter="${String.fromCharCode(65+j)}" onclick="answerQuiz(${i},${j})">
+            ${o}
+          </div>
+        `).join('')}
+      </div>
+      <div class="quiz-feedback" id="fb-${i}"></div>
+    </div>
+  `).join('');
+}
+
+function answerQuiz(qi, choice) {
+  const card = document.getElementById('quiz-card-' + qi);
+  if (card.dataset.answered) return;
+  card.dataset.answered = '1';
+  quizAnswered++;
+  const q = questions[qi];
+  const opts = card.querySelectorAll('.quiz-opt');
+  opts.forEach((o, j) => {
+    o.style.pointerEvents = 'none';
+    if (j === q.ans) o.classList.add('correct');
+    else if (j === choice && choice !== q.ans) o.classList.add('wrong');
+  });
+  const fb = document.getElementById('fb-' + qi);
+  fb.classList.add('show');
+  if (choice === q.ans) {
+    quizCorrect++;
+    fb.classList.add('ok');
+    fb.textContent = '✓ Correct! ' + q.exp;
+  } else {
+    fb.classList.add('bad');
+    fb.textContent = '✗ Incorrect. ' + q.exp;
+  }
+  updateScore();
+}
+
+function updateScore() {
+  document.getElementById('quiz-score').textContent = `${quizCorrect} / ${quizAnswered}`;
+  const pct = quizAnswered > 0 ? (quizCorrect/quizAnswered*100) : 0;
+  document.getElementById('quiz-bar').style.width = pct + '%';
+  document.getElementById('quiz-bar').style.background = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--accent2)' : 'var(--accent)';
+}
+
+function resetQuiz() {
+  quizAnswered = 0; quizCorrect = 0;
+  updateScore();
+  renderQuiz();
+}
+
+renderQuiz();
+simInit();
+</script>
+</body>
+</html>
