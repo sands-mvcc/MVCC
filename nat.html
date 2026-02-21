@@ -3,1339 +3,1869 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NAT Translation Simulator | Network Security</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<title>NAT/PAT Interactive Lesson | Network Administration</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:         #f0f4f8;
-    --bg2:        #e2e9f0;
-    --surface:    #ffffff;
-    --surface2:   #f5f8fb;
-    --accent:     #0077aa;
-    --accent-lt:  rgba(0,119,170,0.10);
-    --accent2:    #d94f00;
-    --accent3:    #1a7f37;
-    --text:       #0f1e2e;
-    --text-muted: #4a6580;
-    --border:     #c4d4e2;
-    --danger:     #cc2233;
-    --warning:    #b07800;
-    --safe:       #1a7f37;
-    --private:    #0077aa;
-    --public:     #d94f00;
-    --nat:        #7744bb;
+    --bg: #ffffff;
+    --surface: #f8f9fb;
+    --surface2: #eef0f5;
+    --border: #dde1ea;
+    --text: #1a1d26;
+    --text-muted: #6b7280;
+    --primary: #1e40af;
+    --primary-light: #3b82f6;
+    --primary-bg: #eff6ff;
+    --accent: #0ea5e9;
+    --success: #059669;
+    --success-bg: #ecfdf5;
+    --warning: #d97706;
+    --warning-bg: #fffbeb;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'DM Serif Display', serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
+  
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--sans);
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
+    line-height: 1.65;
+    font-size: 15px;
   }
 
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image:
-      linear-gradient(rgba(0,100,160,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,100,160,0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
-    animation: gridMove 25s linear infinite;
-    pointer-events: none; z-index: 0;
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 56px;
   }
-  @keyframes gridMove { 0%{background-position:0 0} 100%{background-position:40px 40px} }
 
-  /* ── HERO ─────────────────────────────── */
+  .nav-brand {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    margin-right: 1rem;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex: 1;
+  }
+
+  .nav-links::-webkit-scrollbar { display: none; }
+
+  .nav-link {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: var(--sans);
+  }
+
+  .nav-link:hover, .nav-link.active {
+    background: var(--primary-bg);
+    color: var(--primary);
+  }
+
+  /* HERO */
   .hero {
-    position: relative; z-index: 1;
-    padding: 80px 40px 60px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%);
+    padding: 5rem 2rem 4rem;
     text-align: center;
-    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,119,170,0.10) 0%, transparent 70%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(59,130,246,0.2) 0%, transparent 70%),
+                radial-gradient(ellipse at 70% 50%, rgba(14,165,233,0.15) 0%, transparent 70%);
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
+
+  .hero-badge {
+    display: inline-block;
+    background: rgba(59,130,246,0.3);
+    border: 1px solid rgba(59,130,246,0.5);
+    color: #93c5fd;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 0.3rem 0.9rem;
+    border-radius: 20px;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    color: white;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .hero p {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-stat { text-align: center; }
+  .hero-stat .num { font-family: var(--mono); font-size: 2rem; font-weight: 700; color: #60a5fa; }
+  .hero-stat .lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* MAIN LAYOUT */
+  .container { max-width: 1000px; margin: 0 auto; padding: 0 2rem; }
+
+  section { padding: 4rem 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--primary-light);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .section-intro {
+    color: var(--text-muted);
+    max-width: 680px;
+    margin-bottom: 2.5rem;
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  /* CARDS */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.25s;
+  }
+
+  .card:hover { border-color: var(--primary-light); box-shadow: 0 4px 20px rgba(59,130,246,0.1); transform: translateY(-2px); }
+
+  .card-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-icon.blue { background: var(--primary-bg); }
+  .card-icon.green { background: var(--success-bg); }
+  .card-icon.orange { background: var(--warning-bg); }
+  .card-icon.red { background: var(--danger-bg); }
+
+  .card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .card p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; }
+
+  /* INFO BOX */
+  .info-box {
+    border-left: 3px solid;
+    padding: 1rem 1.25rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+
+  .info-box.blue { border-color: var(--primary-light); background: var(--primary-bg); }
+  .info-box.green { border-color: var(--success); background: var(--success-bg); }
+  .info-box.orange { border-color: var(--warning); background: var(--warning-bg); }
+  .info-box strong { display: block; margin-bottom: 0.25rem; }
+
+  /* TABS */
+  .tab-bar {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    padding: 0.65rem 1.1rem;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.2s;
+  }
+
+  .tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    height: 2px;
+    background: var(--primary);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+  }
+
+  .tab-btn.active { color: var(--primary); }
+  .tab-btn.active::after { transform: scaleX(1); }
+
+  .tab-panel { display: none; animation: fadeIn 0.3s ease; }
+  .tab-panel.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* NAT ANIMATION */
+  .nat-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+  }
+
+  .packet-flow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 1.5rem 0;
+  }
+
+  .pf-node {
+    text-align: center;
+    min-width: 100px;
+  }
+
+  .pf-box {
+    border: 2px solid;
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    position: relative;
+  }
+
+  .pf-box.client { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .pf-box.router { border-color: var(--primary); background: var(--primary-bg); color: var(--primary); }
+  .pf-box.server { border-color: var(--warning); background: var(--warning-bg); color: var(--warning); }
+
+  .pf-label { font-size: 10px; color: var(--text-muted); margin-top: 0.4rem; }
+
+  .pf-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 80px;
+  }
+
+  .arrow-line {
+    width: 100%;
+    height: 2px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .arrow-packet {
+    position: absolute;
+    top: -8px;
+    height: 16px;
+    padding: 0 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    transition: none;
+  }
+
+  .arrow-packet.before { background: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; }
+  .arrow-packet.after { background: #dbeafe; color: var(--primary); border: 1px solid #93c5fd; }
+
+  .arrow-desc { font-size: 10px; color: var(--text-muted); text-align: center; }
+
+  /* TABLE */
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .styled-table th {
+    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 0.75rem 1rem;
+    text-align: left;
     border-bottom: 1px solid var(--border);
   }
-  .hero-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0,119,170,0.08); border: 1px solid rgba(0,119,170,0.25);
-    border-radius: 100px; padding: 6px 16px;
-    font-family: 'Space Mono', monospace; font-size: 0.7rem;
-    color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase;
-    margin-bottom: 24px; animation: fadeInDown 0.6s ease both;
-  }
-  .hero-badge::before {
-    content:''; width:6px; height:6px; background:var(--accent);
-    border-radius:50%; animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
 
-  .hero-icon { display:block; font-size:3rem; margin-bottom:12px; animation: fadeInDown .5s ease both; }
-  h1 {
-    font-family: 'Syne', sans-serif; font-weight: 800;
-    font-size: clamp(2.5rem,6vw,4.5rem); line-height: 1.05;
-    letter-spacing: -0.03em; animation: fadeInDown 0.6s 0.1s ease both;
-  }
-  h1 span { background: linear-gradient(135deg,var(--accent),#3a6fd8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-  .hero p { max-width:700px; margin:20px auto 0; color:var(--text-muted); font-size:1.05rem; line-height:1.7; font-weight:300; animation:fadeInDown .6s .2s ease both; }
-  @keyframes fadeInDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
-
-  /* ── STATS BAR ────────────────────────── */
-  .stats-bar {
-    display:flex; justify-content:center; gap:40px; padding:24px 40px;
-    border-bottom:1px solid var(--border); background:var(--bg2);
-    position:relative; z-index:1; flex-wrap:wrap; animation:fadeInDown .6s .3s ease both;
-  }
-  .stat { text-align:center; }
-  .stat-num { font-family:'Space Mono',monospace; font-size:1.8rem; font-weight:700; color:var(--accent); display:block; line-height:1; }
-  .stat-num.green  { color:var(--safe); }
-  .stat-num.orange { color:var(--accent2); }
-  .stat-num.purple { color:var(--nat); }
-  .stat-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-top:4px; }
-
-  /* ── CONTAINER ────────────────────────── */
-  .container { max-width:1300px; margin:0 auto; padding:50px 30px; position:relative; z-index:1; }
-
-  .section-header { display:flex; align-items:center; gap:14px; margin-bottom:28px; }
-  .section-icon {
-    width:38px; height:38px; background:rgba(0,119,170,0.08); border:1px solid rgba(0,119,170,0.2);
-    border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;
-  }
-  .section-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:600; letter-spacing:-0.01em; }
-  .section-title small { display:block; font-family:'DM Sans',sans-serif; font-weight:300; font-size:0.8rem; color:var(--text-muted); margin-top:2px; }
-
-  /* ── NETWORK TOPOLOGY DIAGRAM ─────────── */
-  .topology-section { margin-bottom:60px; }
-
-  .topology-wrap {
-    background:var(--surface); border:1px solid var(--border); border-radius:18px;
-    overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.06);
-  }
-  .topology-toolbar {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 20px; background:var(--bg2); border-bottom:1px solid var(--border); flex-wrap:wrap; gap:10px;
-  }
-  .topology-toolbar-title { font-family:'Syne',sans-serif; font-weight:600; font-size:0.9rem; }
-
-  /* SVG topology */
-  .topology-svg-wrap { padding:28px 24px; overflow-x:auto; }
-  .topo-svg { width:100%; min-width:620px; height:220px; display:block; }
-
-  /* Device boxes */
-  .dev-box { rx:10; ry:10; }
-  .dev-private { fill:#e8f4fb; stroke:#0077aa; stroke-width:2; }
-  .dev-router  { fill:#f0eaf8; stroke:#7744bb; stroke-width:2; }
-  .dev-internet{ fill:#fef3ec; stroke:#d94f00; stroke-width:2; }
-  .dev-server  { fill:#eaf4ee; stroke:#1a7f37; stroke-width:2; }
-
-  .dev-label { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; text-anchor:middle; }
-  .dev-ip    { font-family:'Space Mono',monospace; font-size:9px;  text-anchor:middle; }
-  .dev-private-lbl { fill:#0077aa; }
-  .dev-router-lbl  { fill:#7744bb; }
-  .dev-internet-lbl{ fill:#d94f00; }
-  .dev-server-lbl  { fill:#1a7f37; }
-
-  .topo-line { stroke:#c4d4e2; stroke-width:2; stroke-dasharray:6,4; }
-  .topo-line-active { stroke:#0077aa; stroke-width:3; animation: dashFlow 1s linear infinite; }
-  @keyframes dashFlow { to { stroke-dashoffset: -20; } }
-
-  /* Animated packet dot */
-  .packet-dot {
-    r: 8; fill: var(--accent);
-    filter: drop-shadow(0 0 4px rgba(0,119,170,0.6));
-    opacity: 0;
+  .styled-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
   }
 
-  /* Zone labels */
-  .zone-label { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; }
-  .zone-private  { fill:rgba(0,119,170,0.07); stroke:rgba(0,119,170,0.2); stroke-width:1; stroke-dasharray:4,3; rx:12; }
-  .zone-internet { fill:rgba(217,79,0,0.07);  stroke:rgba(217,79,0,0.2);  stroke-width:1; stroke-dasharray:4,3; rx:12; }
+  .styled-table tr:last-child td { border-bottom: none; }
+  .styled-table tr:hover td { background: var(--surface); }
 
-  /* ── SIMULATOR CONTROLS ───────────────── */
-  .sim-controls {
-    padding:24px;
-    border-top:1px solid var(--border);
-    background:var(--surface2);
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-    gap:16px;
-    align-items:end;
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--mono);
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
-  .ctrl-group label {
-    display:block; font-family:'Space Mono',monospace; font-size:0.7rem; font-weight:700;
-    color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;
+  .badge-blue { background: var(--primary-bg); color: var(--primary); }
+  .badge-green { background: var(--success-bg); color: var(--success); }
+  .badge-orange { background: var(--warning-bg); color: var(--warning); }
+
+  /* HEADER BUILDER */
+  .builder-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
   }
 
-  .ctrl-select, .ctrl-input {
-    width:100%; padding:9px 12px;
-    background:var(--surface); border:1px solid var(--border); border-radius:9px;
-    color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.88rem; outline:none;
-    transition:border-color .2s;
-  }
-  .ctrl-select:focus, .ctrl-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,119,170,0.08); }
-
-  .btn {
-    display:inline-flex; align-items:center; justify-content:center; gap:6px;
-    padding:10px 18px; border-radius:10px;
-    font-family:'DM Sans',sans-serif; font-size:0.875rem; font-weight:600;
-    cursor:pointer; transition:all .2s; border:none; outline:none; white-space:nowrap;
-  }
-  .btn-primary   { background:var(--accent); color:#fff; }
-  .btn-primary:hover { background:#0060a0; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,119,170,0.25); }
-  .btn-secondary { background:rgba(217,79,0,0.10); color:var(--accent2); border:1px solid rgba(217,79,0,0.25); }
-  .btn-secondary:hover { background:rgba(217,79,0,0.18); transform:translateY(-1px); }
-  .btn-ghost     { background:transparent; color:var(--text-muted); border:1px solid var(--border); }
-  .btn-ghost:hover { color:var(--text); border-color:rgba(0,0,0,0.2); }
-  .btn-auto      { background:rgba(26,127,55,0.10); color:var(--safe); border:1px solid rgba(26,127,55,0.25); }
-  .btn-auto:hover { background:rgba(26,127,55,0.18); }
-  .btn-auto.running { background:rgba(204,34,51,0.10); color:var(--danger); border-color:rgba(204,34,51,0.25); }
-
-  /* ── PACKET LOG & NAT TABLE ───────────── */
-  .sim-panels {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px;
-    margin-bottom:60px;
+  .builder-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
   }
 
-  .panel {
-    background:var(--surface); border:1px solid var(--border); border-radius:16px;
-    overflow:hidden; box-shadow:0 4px 16px rgba(0,0,0,0.05);
-  }
-  .panel-header {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 18px; background:var(--bg2); border-bottom:1px solid var(--border);
-    gap:10px; flex-wrap:wrap;
-  }
-  .panel-title { font-family:'Syne',sans-serif; font-weight:600; font-size:0.9rem; }
-  .panel-badge {
-    font-family:'Space Mono',monospace; font-size:0.65rem; font-weight:700;
-    padding:3px 9px; border-radius:100px; text-transform:uppercase; letter-spacing:0.05em;
-  }
-  .badge-live { background:rgba(204,34,51,0.10); color:var(--danger); border:1px solid rgba(204,34,51,0.2); animation:badgePulse 2s infinite; }
-  @keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-  .badge-count { background:rgba(0,119,170,0.10); color:var(--accent); border:1px solid rgba(0,119,170,0.2); }
+  @media (max-width: 700px) { .builder-grid { grid-template-columns: 1fr; } }
 
-  .panel-body { overflow-y:auto; max-height:340px; }
-
-  /* Packet log */
-  .packet-log { font-family:'Space Mono',monospace; font-size:0.75rem; }
-  .log-entry {
-    display:grid; grid-template-columns:70px 1fr 24px 1fr 80px;
-    gap:6px; align-items:center;
-    padding:9px 16px; border-bottom:1px solid rgba(196,212,226,0.4);
-    animation:logSlideIn .3s ease;
-  }
-  .log-entry:last-child { border-bottom:none; }
-  @keyframes logSlideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-
-  .log-dir { font-size:0.65rem; font-weight:700; padding:2px 6px; border-radius:4px; text-align:center; white-space:nowrap; }
-  .log-out { background:rgba(0,119,170,0.10); color:var(--accent); border:1px solid rgba(0,119,170,0.2); }
-  .log-in  { background:rgba(217,79,0,0.10); color:var(--accent2); border:1px solid rgba(217,79,0,0.2); }
-
-  .log-src { color:var(--private); }
-  .log-dst { color:var(--accent2); }
-  .log-arrow { color:var(--text-muted); text-align:center; font-size:0.9rem; }
-
-  .log-proto { font-size:0.65rem; padding:2px 6px; border-radius:4px; text-align:center; }
-  .proto-http  { background:rgba(26,127,55,0.10); color:var(--safe); }
-  .proto-https { background:rgba(26,127,55,0.15); color:#156030; }
-  .proto-dns   { background:rgba(119,68,187,0.10); color:var(--nat); }
-  .proto-ftp   { background:rgba(176,120,0,0.10); color:var(--warning); }
-  .proto-ssh   { background:rgba(204,34,51,0.10); color:var(--danger); }
-
-  .log-empty { padding:40px 20px; text-align:center; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:0.88rem; }
-
-  /* NAT Table */
-  .nat-table-wrap { overflow-x:auto; }
-  table.nat-table { width:100%; border-collapse:collapse; font-size:0.75rem; font-family:'Space Mono',monospace; }
-  .nat-table th {
-    font-size:0.63rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
-    color:var(--text-muted); padding:9px 12px; text-align:left;
-    background:var(--bg2); border-bottom:1px solid var(--border); white-space:nowrap;
-  }
-  .nat-table td { padding:9px 12px; border-bottom:1px solid rgba(196,212,226,0.4); vertical-align:middle; }
-  .nat-table tr:last-child td { border-bottom:none; }
-  .nat-table tr { transition:background .15s; }
-  .nat-table tr:hover td { background:rgba(0,119,170,0.04); }
-  .nat-table tr.new-row td { animation:rowHighlight 1.5s ease; }
-  @keyframes rowHighlight { 0%{background:rgba(0,119,170,0.12)} 100%{background:transparent} }
-
-  .nat-private { color:var(--private); }
-  .nat-public  { color:var(--public); }
-  .nat-ttl     { color:var(--text-muted); font-size:0.68rem; }
-
-  .state-pill { font-size:0.62rem; padding:2px 7px; border-radius:100px; font-weight:700; }
-  .state-active   { background:rgba(26,127,55,0.12); color:var(--safe); border:1px solid rgba(26,127,55,0.25); }
-  .state-expired  { background:rgba(204,34,51,0.10); color:var(--danger); border:1px solid rgba(204,34,51,0.2); opacity:.6; }
-
-  .nat-empty { padding:40px 20px; text-align:center; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:0.88rem; }
-
-  /* ── PACKET INSPECTOR ─────────────────── */
-  .inspector-section { margin-bottom:60px; }
-
-  .inspector-wrap {
-    background:var(--surface); border:1px solid var(--border); border-radius:18px;
-    overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.06);
-  }
-  .inspector-header {
-    padding:16px 20px; background:var(--bg2); border-bottom:1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
-  }
-  .inspector-title { font-family:'Syne',sans-serif; font-weight:600; font-size:0.9rem; }
-
-  .inspector-body { padding:24px; }
-
-  .pkt-flow {
-    display:grid; grid-template-columns:1fr auto 1fr auto 1fr;
-    gap:0; align-items:center; margin-bottom:20px;
+  .builder-form label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+    margin-top: 1rem;
   }
 
-  .pkt-box {
-    border-radius:12px; padding:16px 14px; text-align:center;
-    border:2px solid transparent; transition:all .25s;
-  }
-  .pkt-box.private-box { background:rgba(0,119,170,0.07); border-color:rgba(0,119,170,0.25); }
-  .pkt-box.nat-box     { background:rgba(119,68,187,0.07); border-color:rgba(119,68,187,0.25); }
-  .pkt-box.server-box  { background:rgba(26,127,55,0.07);  border-color:rgba(26,127,55,0.25); }
+  .builder-form label:first-child { margin-top: 0; }
 
-  .pkt-box-icon  { font-size:1.8rem; margin-bottom:6px; }
-  .pkt-box-label { font-family:'Space Mono',monospace; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
-  .pkt-box-label.lbl-private { color:var(--private); }
-  .pkt-box-label.lbl-nat     { color:var(--nat); }
-  .pkt-box-label.lbl-server  { color:var(--safe); }
-  .pkt-box-ip { font-family:'Space Mono',monospace; font-size:0.8rem; font-weight:700; color:var(--text); margin-bottom:2px; }
-  .pkt-box-port { font-family:'Space Mono',monospace; font-size:0.7rem; color:var(--text-muted); }
-
-  .pkt-arrow {
-    display:flex; flex-direction:column; align-items:center; padding:0 8px;
-    font-family:'Space Mono',monospace; font-size:0.62rem; color:var(--text-muted); gap:4px;
-  }
-  .pkt-arrow-line {
-    width:60px; height:2px; background:linear-gradient(90deg,var(--border),var(--accent),var(--border));
-    position:relative;
-  }
-  .pkt-arrow-line::after { content:'▶'; position:absolute; right:-8px; top:-7px; font-size:0.7rem; color:var(--accent); }
-  .pkt-arrow-tag { font-size:0.6rem; background:var(--accent-lt); color:var(--accent); border:1px solid rgba(0,119,170,0.2); padding:2px 6px; border-radius:4px; white-space:nowrap; }
-
-  /* Packet fields breakdown */
-  .pkt-fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-
-  .pkt-field-card {
-    background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;
-  }
-  .pkt-field-title { font-family:'Space Mono',monospace; font-size:0.65rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
-  .pkt-field-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; gap:8px; }
-  .pkt-field-name { font-size:0.78rem; color:var(--text-muted); font-weight:300; }
-  .pkt-field-val  { font-family:'Space Mono',monospace; font-size:0.78rem; font-weight:700; }
-  .val-private { color:var(--private); }
-  .val-public  { color:var(--public); }
-  .val-nat     { color:var(--nat); }
-  .val-changed { background:rgba(119,68,187,0.10); color:var(--nat); border:1px solid rgba(119,68,187,0.25); border-radius:4px; padding:1px 5px; }
-
-  .inspect-empty { padding:40px; text-align:center; color:var(--text-muted); font-size:0.9rem; }
-
-  /* ── NAT TYPES SECTION ────────────────── */
-  .types-section { margin-bottom:60px; }
-
-  .types-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
-
-  .type-card {
-    background:var(--surface); border:1px solid var(--border); border-radius:14px;
-    padding:20px; transition:all .2s; border-left:4px solid transparent;
-    cursor:default;
-  }
-  .type-card:hover { box-shadow:0 6px 22px rgba(0,0,0,0.08); transform:translateY(-2px); }
-
-  .type-card.static  { border-left-color:#0077aa; }
-  .type-card.dynamic { border-left-color:#1a7f37; }
-  .type-card.pat     { border-left-color:#7744bb; }
-  .type-card.dnat    { border-left-color:#d94f00; }
-  .type-card.cgnat   { border-left-color:#b07800; }
-
-  .type-icon { font-size:1.8rem; margin-bottom:10px; }
-  .type-name {
-    font-family:'Syne',sans-serif; font-weight:700; font-size:1rem; margin-bottom:6px;
-  }
-  .static  .type-name { color:#0077aa; }
-  .dynamic .type-name { color:#1a7f37; }
-  .pat     .type-name { color:#7744bb; }
-  .dnat    .type-name { color:#d94f00; }
-  .cgnat   .type-name { color:#b07800; }
-
-  .type-desc { font-size:0.85rem; color:var(--text-muted); line-height:1.6; margin-bottom:10px; font-weight:300; }
-  .type-example {
-    background:var(--surface2); border:1px solid var(--border); border-radius:7px;
-    padding:8px 12px; font-family:'Space Mono',monospace; font-size:0.7rem; line-height:1.7;
-    color:var(--accent);
-  }
-  .type-badge {
-    display:inline-block; font-family:'Space Mono',monospace; font-size:0.62rem; font-weight:700;
-    padding:3px 9px; border-radius:100px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;
-  }
-  .badge-static  { background:rgba(0,119,170,0.10);  color:#0077aa; border:1px solid rgba(0,119,170,0.25); }
-  .badge-dynamic { background:rgba(26,127,55,0.10);  color:#1a7f37; border:1px solid rgba(26,127,55,0.25); }
-  .badge-pat     { background:rgba(119,68,187,0.10); color:#7744bb; border:1px solid rgba(119,68,187,0.25); }
-  .badge-dnat    { background:rgba(217,79,0,0.10);   color:#d94f00; border:1px solid rgba(217,79,0,0.25); }
-  .badge-cgnat   { background:rgba(176,120,0,0.10);  color:#b07800; border:1px solid rgba(176,120,0,0.25); }
-
-  /* ── COMPARISON TABLE ─────────────────── */
-  .compare-section { margin-bottom:60px; }
-  .compare-table {
-    width:100%; border-collapse:collapse; background:var(--surface);
-    border:1px solid var(--border); border-radius:16px; overflow:hidden;
-    box-shadow:0 4px 24px rgba(0,0,0,0.05); font-size:0.875rem;
-  }
-  .compare-table thead { background:var(--bg2); }
-  .compare-table th {
-    font-family:'Space Mono',monospace; font-size:0.7rem; font-weight:700;
-    text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted);
-    padding:13px 18px; text-align:left; border-bottom:1px solid var(--border);
-  }
-  .compare-table td {
-    padding:13px 18px; border-bottom:1px solid rgba(196,212,226,0.5);
-    vertical-align:top; line-height:1.55; color:var(--text-muted);
-  }
-  .compare-table tr:last-child td { border-bottom:none; }
-  .compare-table tr:hover td { background:rgba(0,119,170,0.03); }
-  .compare-table td:first-child { font-family:'Space Mono',monospace; font-size:0.75rem; font-weight:700; color:var(--text); white-space:nowrap; }
-  .good { color:var(--safe); font-weight:500; }
-  .bad  { color:var(--danger); font-weight:500; }
-  .warn { color:var(--warning); font-weight:500; }
-
-  /* ── QUIZ ─────────────────────────────── */
-  .quiz-section {
-    background:var(--surface); border:1px solid var(--border); border-radius:18px;
-    overflow:hidden; margin-bottom:60px; box-shadow:0 4px 24px rgba(0,0,0,0.05);
-  }
-  .quiz-header {
-    background:linear-gradient(135deg,rgba(0,119,170,0.07),rgba(119,68,187,0.07));
-    border-bottom:1px solid var(--border); padding:20px 24px;
-    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-  }
-  .quiz-title { font-family:'Syne',sans-serif; font-size:1.15rem; font-weight:600; }
-  .quiz-score { font-family:'Space Mono',monospace; font-size:0.85rem; color:var(--text-muted); }
-  .quiz-score span { color:var(--safe); font-weight:700; }
-  .quiz-body { padding:28px 24px; }
-  .progress-bar { height:3px; background:var(--border); border-radius:100px; overflow:hidden; margin-bottom:24px; }
-  .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),#5080dc); border-radius:100px; transition:width .4s ease; }
-  .question-text { font-size:1.05rem; font-weight:400; margin-bottom:20px; line-height:1.6; }
-  .question-text em { color:var(--accent); font-style:normal; font-family:'Space Mono',monospace; }
-  .options { display:flex; flex-direction:column; gap:10px; }
-  .option {
-    display:flex; align-items:center; gap:12px; padding:14px 18px;
-    background:var(--surface2); border:1px solid var(--border); border-radius:12px;
-    cursor:pointer; transition:all .2s; font-size:0.9rem; line-height:1.4; color:var(--text);
-  }
-  .option:hover:not(.disabled) { border-color:var(--accent); background:rgba(0,119,170,0.06); }
-  .option.correct { background:rgba(26,127,55,0.08); border-color:var(--safe); color:#145e2a; }
-  .option.wrong   { background:rgba(204,34,51,0.08);  border-color:var(--danger); color:#a01828; }
-  .option.disabled{ cursor:default; }
-  .option-letter {
-    width:28px; height:28px; background:rgba(0,0,0,0.06); border-radius:6px;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Space Mono',monospace; font-size:0.75rem; font-weight:700; flex-shrink:0; color:var(--text-muted);
-  }
-  .option.correct .option-letter { background:var(--safe); color:#fff; }
-  .option.wrong   .option-letter { background:var(--danger); color:#fff; }
-  .quiz-feedback { margin-top:18px; padding:14px 18px; border-radius:12px; font-size:0.88rem; line-height:1.6; display:none; }
-  .quiz-feedback.show    { display:block; animation:slideDown .2s ease; }
-  .quiz-feedback.correct { background:rgba(26,127,55,0.07); border:1px solid rgba(26,127,55,0.25); color:#145e2a; }
-  .quiz-feedback.wrong   { background:rgba(204,34,51,0.07); border:1px solid rgba(204,34,51,0.25); color:#a01828; }
-  .quiz-nav { display:flex; justify-content:space-between; align-items:center; margin-top:24px; }
-  .q-counter { font-family:'Space Mono',monospace; font-size:0.78rem; color:var(--text-muted); }
-
-  @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-
-  /* ── SCROLL REVEAL ────────────────────── */
-  .reveal { opacity:0; transform:translateY(24px); transition:opacity .5s ease,transform .5s ease; }
-  .reveal.visible { opacity:1; transform:translateY(0); }
-
-  footer {
-    text-align:center; padding:32px 20px; color:var(--text-muted); font-size:0.8rem;
-    border-top:1px solid var(--border); position:relative; z-index:1;
-    font-family:'Space Mono',monospace; background:var(--bg2);
+  .builder-form input, .builder-form select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    background: white;
+    transition: border-color 0.2s;
   }
 
-  @media(max-width:900px) { .sim-panels { grid-template-columns:1fr; } }
-  @media(max-width:700px) {
-    .hero{padding:50px 20px 40px}
-    .container{padding:30px 16px}
-    .pkt-flow{grid-template-columns:1fr;gap:8px}
-    .pkt-arrow{flex-direction:row}
-    .pkt-fields{grid-template-columns:1fr}
-    .types-grid{grid-template-columns:1fr}
-    .log-entry{grid-template-columns:60px 1fr 18px 1fr 60px;font-size:0.68rem}
+  .builder-form input:focus, .builder-form select:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
   }
+
+  .builder-form select { cursor: pointer; }
+
+  .build-btn {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .build-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,64,175,0.3); }
+
+  .header-output {
+    background: #0f172a;
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    overflow-x: auto;
+    min-height: 200px;
+  }
+
+  .header-section { margin-bottom: 1.25rem; }
+  .header-section-title { color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+  .header-field { display: flex; gap: 0.75rem; margin: 0.2rem 0; align-items: flex-start; }
+  .hf-name { color: #94a3b8; min-width: 140px; flex-shrink: 0; }
+  .hf-val { color: #34d399; }
+  .hf-bits { color: #f59e0b; font-size: 10px; margin-left: auto; }
+  .hf-changed { color: #f87171; }
+
+  .output-placeholder { color: #475569; text-align: center; padding-top: 4rem; font-size: 13px; }
+
+  /* TRANSLATION TABLE */
+  .trans-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .trans-table-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--primary);
+    margin-bottom: 1rem;
+  }
+
+  /* QUIZ */
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+    transition: all 0.25s;
+  }
+
+  .quiz-question {
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  .quiz-q-num {
+    font-family: var(--mono);
+    color: var(--primary);
+    font-size: 12px;
+    margin-bottom: 0.4rem;
+  }
+
+  .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+
+  @media (max-width: 600px) { .quiz-options { grid-template-columns: 1fr; } }
+
+  .quiz-option {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.87rem;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: left;
+    font-family: var(--sans);
+    color: var(--text);
+  }
+
+  .quiz-option:hover:not(:disabled) { border-color: var(--primary-light); background: var(--primary-bg); }
+
+  .quiz-option.correct { border-color: var(--success); background: var(--success-bg); color: var(--success); font-weight: 600; }
+  .quiz-option.incorrect { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+  .quiz-option.reveal { border-color: var(--success); background: var(--success-bg); color: var(--success); font-weight: 600; }
+  .quiz-option:disabled { cursor: default; }
+
+  .quiz-feedback {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.87rem;
+    display: none;
+  }
+
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.good { background: var(--success-bg); color: #065f46; border: 1px solid #a7f3d0; }
+  .quiz-feedback.bad { background: var(--danger-bg); color: #7f1d1d; border: 1px solid #fca5a5; }
+
+  .quiz-score-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .score-circle {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    border: 3px solid var(--primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .score-num { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; color: var(--primary); line-height: 1; }
+  .score-of { font-size: 10px; color: var(--text-muted); }
+
+  .score-label { font-size: 0.85rem; color: var(--text-muted); }
+  .score-label strong { display: block; font-size: 1rem; color: var(--text); }
+
+  /* GLOSSARY */
+  .glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+
+  .glossary-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    background: white;
+    transition: all 0.2s;
+  }
+
+  .glossary-item:hover { border-color: var(--primary-light); box-shadow: 0 2px 10px rgba(59,130,246,0.08); }
+  .glossary-term { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 0.35rem; }
+  .glossary-def { font-size: 0.85rem; color: var(--text-muted); line-height: 1.55; }
+
+  /* SCENARIO ANIMATOR */
+  .scenario-wrap {
+    background: #0f172a;
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  .scenario-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+
+  .scenario-title { color: #60a5fa; font-size: 14px; font-weight: 700; }
+
+  .scenario-controls { display: flex; gap: 0.5rem; }
+
+  .scn-btn {
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+  }
+
+  .scn-btn.play { background: #059669; border-color: #059669; color: white; }
+  .scn-btn.play:hover { background: #047857; }
+  .scn-btn.reset { background: transparent; border-color: #475569; color: #94a3b8; }
+  .scn-btn.reset:hover { border-color: #94a3b8; color: white; }
+
+  .scenario-log {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 1.25rem;
+    min-height: 180px;
+    overflow-y: auto;
+    max-height: 280px;
+  }
+
+  .log-entry { margin: 0.3rem 0; font-size: 12px; animation: slideIn 0.3s ease; }
+  .log-entry.info { color: #94a3b8; }
+  .log-entry.tx { color: #34d399; }
+  .log-entry.nat { color: #fbbf24; }
+  .log-entry.rx { color: #60a5fa; }
+  .log-entry.step { color: #c084fc; font-weight: 700; }
+  .log-entry.table { color: #f87171; }
+
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+  .scenario-nat-table {
+    margin-top: 1.25rem;
+  }
+
+  .nat-table-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid #1e293b;
+    font-size: 11px;
+  }
+
+  .nat-table-row.header { color: #64748b; font-weight: 700; border-bottom: 1px solid #334155; }
+  .nat-table-row.data { color: #e2e8f0; }
+  .nat-table-row.data:hover { background: #1e293b; border-radius: 4px; }
+
+  .nat-col-inside { color: #f87171; }
+  .nat-col-outside { color: #34d399; }
+  .nat-col-proto { color: #a78bfa; }
+  .nat-col-state { color: #fbbf24; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 0 1rem; }
+    .container { padding: 0 1rem; }
+    .hero { padding: 3rem 1rem; }
+    section { padding: 2.5rem 0; }
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  .prose p { margin-bottom: 1rem; line-height: 1.75; }
+  .prose h4 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text); }
+  .prose ul { padding-left: 1.25rem; }
+  .prose li { margin-bottom: 0.4rem; }
+  .prose code { background: var(--surface2); font-family: var(--mono); font-size: 12px; padding: 2px 6px; border-radius: 4px; color: var(--primary); }
+
+  .timeline { position: relative; padding-left: 2rem; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .tl-item { position: relative; margin-bottom: 1.5rem; }
+  .tl-dot { position: absolute; left: -1.75rem; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); border: 2px solid white; box-shadow: 0 0 0 2px var(--primary); }
+  .tl-content { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; }
+  .tl-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .tl-body { font-size: 0.85rem; color: var(--text-muted); }
+
+  .highlight-box {
+    background: linear-gradient(135deg, var(--primary-bg), #f0f9ff);
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .highlight-box h4 { color: var(--primary); font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .highlight-box p, .highlight-box li { font-size: 0.88rem; color: #1e3a5f; }
+  .highlight-box ul { padding-left: 1.2rem; }
+  .highlight-box li { margin-bottom: 0.3rem; }
 </style>
 </head>
 <body>
 
-<!-- HERO -->
-<header class="hero">
-  <div class="hero-badge">Network Layer · RFC 3022</div>
-  <span class="hero-icon">🔄</span>
-  <h1>Network Address <span>Translation</span></h1>
-  <p>NAT allows multiple devices on a private network to share a single public IP address. It maps private IP:port pairs to public IP:port pairs, enabling internet access while conserving IPv4 address space and adding a layer of network security.</p>
-</header>
+<!-- NAVIGATION -->
+<nav>
+  <div class="nav-brand">🔄 NAT/PAT</div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="scrollToSection('overview')">Overview</button>
+    <button class="nav-link" onclick="scrollToSection('concepts')">Core Concepts</button>
+    <button class="nav-link" onclick="scrollToSection('types')">Types of NAT</button>
+    <button class="nav-link" onclick="scrollToSection('simulator')">Live Simulator</button>
+    <button class="nav-link" onclick="scrollToSection('builder')">Header Builder</button>
+    <button class="nav-link" onclick="scrollToSection('config')">Configuration</button>
+    <button class="nav-link" onclick="scrollToSection('glossary')">Glossary</button>
+    <button class="nav-link" onclick="scrollToSection('quiz')">Quiz</button>
+  </div>
+</nav>
 
-<!-- STATS BAR -->
-<div class="stats-bar">
-  <div class="stat"><span class="stat-num">~4.3B</span><div class="stat-label">IPv4 Addresses</div></div>
-  <div class="stat"><span class="stat-num purple">PAT</span><div class="stat-label">Most Common Type</div></div>
-  <div class="stat"><span class="stat-num green">65,535</span><div class="stat-label">Max Port Mappings</div></div>
-  <div class="stat"><span class="stat-num orange">RFC 1918</span><div class="stat-label">Private Ranges</div></div>
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">Network Administration · IT 2450</div>
+    <h1>Network Address Translation<br>&amp; Port Address Translation</h1>
+    <p>Master NAT and PAT — the technologies that connect billions of private devices to the public internet through address reuse, port multiplexing, and dynamic translation tables.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">4.3B</div><div class="lbl">IPv4 Addresses Total</div></div>
+      <div class="hero-stat"><div class="num">65,535</div><div class="lbl">Available Ports</div></div>
+      <div class="hero-stat"><div class="num">3</div><div class="lbl">NAT Types</div></div>
+      <div class="hero-stat"><div class="num">RFC&nbsp;3022</div><div class="lbl">Standard</div></div>
+    </div>
+  </div>
 </div>
 
 <div class="container">
 
-  <!-- ═══ NETWORK TOPOLOGY + SIMULATOR ═══ -->
-  <div class="topology-section reveal">
-    <div class="section-header">
-      <div class="section-icon">🖧</div>
-      <div class="section-title">
-        Live NAT Traffic Simulator
-        <small>Generate outbound or inbound traffic and watch address translation happen in real time</small>
-      </div>
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="section-label">Module 1</div>
+  <div class="section-title">Why NAT/PAT Exists</div>
+  <p class="section-intro">The internet uses IPv4 addresses — and there aren't enough to go around. NAT and PAT are engineering solutions that allow organizations to use private (non-routable) addresses internally while sharing a small pool of public addresses for internet access.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon blue">🌐</div>
+      <h3>IPv4 Exhaustion</h3>
+      <p>IPv4 provides only ~4.3 billion addresses. With billions of devices online, NAT extends the effective address space by allowing multiple private devices to share a single public IP.</p>
     </div>
-
-    <div class="topology-wrap">
-      <div class="topology-toolbar">
-        <div class="topology-toolbar-title">Network Topology</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);font-style:italic;">Private 192.168.1.0/24 → NAT Router (203.0.113.1) → Internet</div>
-      </div>
-
-      <!-- SVG TOPOLOGY -->
-      <div class="topology-svg-wrap">
-        <svg class="topo-svg" viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg">
-          <!-- Zone backgrounds -->
-          <rect x="10" y="10" width="310" height="180" class="zone-private"/>
-          <rect x="590" y="10" width="300" height="180" class="zone-internet"/>
-          <text x="22" y="28" class="zone-label" fill="rgba(0,119,170,0.5)">Private Network</text>
-          <text x="602" y="28" class="zone-label" fill="rgba(217,79,0,0.5)">Internet</text>
-
-          <!-- Private clients -->
-          <rect x="30" y="40"  width="120" height="44" class="dev-box dev-private"/>
-          <text x="90" y="58"  class="dev-label dev-private-lbl">PC-1</text>
-          <text x="90" y="72"  class="dev-ip dev-private-lbl">192.168.1.10</text>
-
-          <rect x="30" y="96"  width="120" height="44" class="dev-box dev-private"/>
-          <text x="90" y="114" class="dev-label dev-private-lbl">PC-2</text>
-          <text x="90" y="128" class="dev-ip dev-private-lbl">192.168.1.20</text>
-
-          <rect x="30" y="152" width="120" height="36" class="dev-box dev-private"/>
-          <text x="90" y="167" class="dev-label dev-private-lbl">PC-3</text>
-          <text x="90" y="179" class="dev-ip dev-private-lbl">192.168.1.30</text>
-
-          <!-- Lines from clients to router -->
-          <line x1="150" y1="62"  x2="360" y2="96"  class="topo-line" id="line-pc1"/>
-          <line x1="150" y1="118" x2="360" y2="100" class="topo-line" id="line-pc2"/>
-          <line x1="150" y1="170" x2="360" y2="106" class="topo-line" id="line-pc3"/>
-
-          <!-- NAT Router -->
-          <rect x="340" y="60" width="140" height="80" class="dev-box dev-router"/>
-          <text x="410" y="90"  class="dev-label dev-router-lbl">NAT Router</text>
-          <text x="410" y="106" class="dev-ip dev-router-lbl">IN: 192.168.1.1</text>
-          <text x="410" y="120" class="dev-ip dev-router-lbl">OUT: 203.0.113.1</text>
-
-          <!-- Line router to internet -->
-          <line x1="480" y1="100" x2="600" y2="100" class="topo-line" id="line-wan" stroke-dasharray="8,4"/>
-
-          <!-- Internet servers -->
-          <rect x="610" y="40"  width="130" height="44" class="dev-box dev-server"/>
-          <text x="675" y="58"  class="dev-label dev-server-lbl">Web Server</text>
-          <text x="675" y="72"  class="dev-ip dev-server-lbl">93.184.216.34</text>
-
-          <rect x="610" y="96"  width="130" height="44" class="dev-box dev-internet"/>
-          <text x="675" y="114" class="dev-label dev-internet-lbl">DNS Server</text>
-          <text x="675" y="128" class="dev-ip dev-internet-lbl">8.8.8.8</text>
-
-          <rect x="610" y="152" width="130" height="36" class="dev-box dev-server"/>
-          <text x="675" y="168" class="dev-label dev-server-lbl">HTTPS Server</text>
-          <text x="675" y="180" class="dev-ip dev-server-lbl">172.217.14.78</text>
-
-          <!-- Animated packet dot -->
-          <circle class="packet-dot" id="anim-pkt" cx="90" cy="62" r="7"/>
-        </svg>
-      </div>
-
-      <!-- CONTROLS -->
-      <div class="sim-controls">
-        <div class="ctrl-group">
-          <label>Source Device</label>
-          <select class="ctrl-select" id="ctrl-src">
-            <option value="192.168.1.10">PC-1 (192.168.1.10)</option>
-            <option value="192.168.1.20">PC-2 (192.168.1.20)</option>
-            <option value="192.168.1.30">PC-3 (192.168.1.30)</option>
-          </select>
-        </div>
-        <div class="ctrl-group">
-          <label>Destination Server</label>
-          <select class="ctrl-select" id="ctrl-dst">
-            <option value="93.184.216.34">Web Server (93.184.216.34)</option>
-            <option value="8.8.8.8">DNS Server (8.8.8.8)</option>
-            <option value="172.217.14.78">HTTPS Server (172.217.14.78)</option>
-          </select>
-        </div>
-        <div class="ctrl-group">
-          <label>Protocol</label>
-          <select class="ctrl-select" id="ctrl-proto">
-            <option value="HTTP">HTTP (port 80)</option>
-            <option value="HTTPS">HTTPS (port 443)</option>
-            <option value="DNS">DNS (port 53)</option>
-            <option value="FTP">FTP (port 21)</option>
-            <option value="SSH">SSH (port 22)</option>
-          </select>
-        </div>
-        <div class="ctrl-group">
-          <label>Packet Count</label>
-          <input class="ctrl-input" type="number" id="ctrl-count" value="1" min="1" max="20">
-        </div>
-        <div class="ctrl-group" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-          <button class="btn btn-primary" onclick="sendPackets('out')">▶ Send Outbound</button>
-          <button class="btn btn-secondary" onclick="sendPackets('in')">◀ Receive Inbound</button>
-          <button class="btn btn-auto" id="auto-btn" onclick="toggleAuto()">⚡ Auto-Generate</button>
-          <button class="btn btn-ghost" onclick="clearAll()">✕ Clear</button>
-        </div>
-      </div>
+    <div class="card">
+      <div class="card-icon green">🔒</div>
+      <h3>Security by Obscurity</h3>
+      <p>NAT hides internal IP addresses from external networks, adding a layer of protection against direct targeting of internal hosts and reducing the attack surface.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon orange">⚙️</div>
+      <h3>Address Flexibility</h3>
+      <p>Organizations can change ISPs without renumbering internal devices. The internal network remains stable; only the external (public) address changes at the NAT boundary.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon red">💡</div>
+      <h3>Cost Reduction</h3>
+      <p>Fewer public IP addresses are needed — and registered IP addresses cost money. PAT allows thousands of hosts to share a single public IP, dramatically reducing costs.</p>
     </div>
   </div>
 
-  <!-- ═══ LIVE PANELS ═══ -->
-  <div class="sim-panels reveal">
-    <!-- Packet Log -->
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">📋 Packet Traffic Log</div>
-        <span class="panel-badge badge-live" id="log-live">● LIVE</span>
-      </div>
-      <div class="panel-body" id="packet-log">
-        <div class="log-empty">No traffic yet — send packets to begin</div>
+  <div class="info-box blue" style="margin-top:2rem">
+    <strong>📌 RFC 1918 — Private Address Ranges</strong>
+    Three blocks are reserved for private use and are non-routable on the public internet: <strong>10.0.0.0/8</strong> (Class A), <strong>172.16.0.0/12</strong> (Class B range), and <strong>192.168.0.0/16</strong> (Class C). These never appear as source addresses in packets routed on the public internet without NAT translation.
+  </div>
+
+  <div class="two-col" style="margin-top:2rem">
+    <div>
+      <h4 style="font-size:1rem;font-weight:700;margin-bottom:0.75rem">Without NAT</h4>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-content"><div class="tl-title">Every device needs a public IP</div><div class="tl-body">Each host requires a globally unique routable address — quickly depleting the IPv4 pool.</div></div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-content"><div class="tl-title">Internal topology exposed</div><div class="tl-body">External hosts can directly see and target internal machines by IP address.</div></div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-content"><div class="tl-title">ISP changes require renumbering</div><div class="tl-body">Switching providers means reassigning all public IPs and updating all DNS records.</div></div></div>
       </div>
     </div>
-
-    <!-- NAT Translation Table -->
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">🗂️ NAT Translation Table</div>
-        <span class="panel-badge badge-count" id="nat-count">0 entries</span>
-      </div>
-      <div class="panel-body nat-table-wrap" id="nat-table-wrap">
-        <div class="nat-empty">NAT table is empty — send outbound traffic to populate</div>
+    <div>
+      <h4 style="font-size:1rem;font-weight:700;margin-bottom:0.75rem">With NAT/PAT</h4>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot" style="background:var(--success)"></div><div class="tl-content"><div class="tl-title">Thousands of devices, one public IP</div><div class="tl-body">PAT distinguishes sessions by unique port numbers, multiplexing many hosts through one address.</div></div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--success)"></div><div class="tl-content"><div class="tl-title">Private addressing inside</div><div class="tl-body">RFC 1918 addresses are used internally. External parties see only the NAT router's public IP.</div></div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:var(--success)"></div><div class="tl-content"><div class="tl-title">ISP independence</div><div class="tl-body">Internal addressing stays constant. Only the NAT pool changes when switching providers.</div></div></div>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ═══ PACKET INSPECTOR ═══ -->
-  <div class="inspector-section reveal">
-    <div class="section-header">
-      <div class="section-icon">🔬</div>
-      <div class="section-title">
-        Packet Inspector
-        <small>Click any log entry to inspect how NAT rewrites the packet headers</small>
-      </div>
-    </div>
-    <div class="inspector-wrap">
-      <div class="inspector-header">
-        <div class="inspector-title">Header Rewrite Analysis</div>
-        <span id="inspect-proto-badge" style="font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--text-muted);">Select a packet from the log</span>
-      </div>
-      <div class="inspector-body" id="inspector-body">
-        <div class="inspect-empty">👆 Send some packets above, then click a log entry to inspect the NAT header rewrite</div>
-      </div>
-    </div>
+<!-- CORE CONCEPTS -->
+<section id="concepts">
+  <div class="section-label">Module 2</div>
+  <div class="section-title">Core Concepts &amp; Terminology</div>
+  <p class="section-intro">Understanding NAT requires precise vocabulary. Cisco's implementation distinguishes four address types and three operational directions.</p>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('addr-types', this)">Address Types</button>
+    <button class="tab-btn" onclick="showTab('translation', this)">Translation Process</button>
+    <button class="tab-btn" onclick="showTab('nat-table', this)">NAT Table</button>
+    <button class="tab-btn" onclick="showTab('pat-detail', this)">PAT Deep Dive</button>
   </div>
 
-  <!-- ═══ NAT TYPES ═══ -->
-  <div class="types-section reveal">
-    <div class="section-header">
-      <div class="section-icon">🗂️</div>
-      <div class="section-title">
-        NAT Types Explained
-        <small>Different NAT strategies for different use cases</small>
-      </div>
-    </div>
-    <div class="types-grid">
-
-      <div class="type-card static">
-        <div class="type-icon">📌</div>
-        <span class="type-badge badge-static">Static NAT</span>
-        <div class="type-name">One-to-One Mapping</div>
-        <div class="type-desc">A single private IP is permanently mapped to a single public IP. Used for servers that must always be reachable from the internet at the same address. Does not conserve IP addresses.</div>
-        <div class="type-example">192.168.1.10 ↔ 203.0.113.10<br>192.168.1.20 ↔ 203.0.113.20<br># Fixed, permanent mapping</div>
-      </div>
-
-      <div class="type-card dynamic">
-        <div class="type-icon">🔀</div>
-        <span class="type-badge badge-dynamic">Dynamic NAT</span>
-        <div class="type-name">Pool-Based Mapping</div>
-        <div class="type-desc">Private IPs are mapped to a pool of public IPs on a first-come, first-served basis. If the pool is exhausted, new connections are denied. Provides some IP conservation but still requires multiple public IPs.</div>
-        <div class="type-example">192.168.1.10 → 203.0.113.5  (from pool)<br>192.168.1.20 → 203.0.113.6  (from pool)<br># Dynamic, returns to pool on disconnect</div>
-      </div>
-
-      <div class="type-card pat">
-        <div class="type-icon">🔢</div>
-        <span class="type-badge badge-pat">PAT / NAT Overload</span>
-        <div class="type-name">Port Address Translation</div>
-        <div class="type-desc">The most common form — many private IPs share ONE public IP, differentiated by unique source port numbers. Also called NAT Overload or NAPT. This is how home routers work and is the simulator's default mode.</div>
-        <div class="type-example">192.168.1.10:5001 → 203.0.113.1:40001<br>192.168.1.20:5002 → 203.0.113.1:40002<br># Same public IP, different ports</div>
-      </div>
-
-      <div class="type-card dnat">
-        <div class="type-icon">📥</div>
-        <span class="type-badge badge-dnat">DNAT / Port Forwarding</span>
-        <div class="type-name">Destination NAT</div>
-        <div class="type-desc">Rewrites the destination IP (and optionally port) of incoming packets, redirecting them to an internal server. Used for hosting web servers, game servers, or remote desktop behind a NAT router.</div>
-        <div class="type-example">Incoming: 203.0.113.1:80<br>→ Forwarded: 192.168.1.100:80<br># Port forwarding to internal web server</div>
-      </div>
-
-      <div class="type-card cgnat">
-        <div class="type-icon">🌐</div>
-        <span class="type-badge badge-cgnat">CGNAT</span>
-        <div class="type-name">Carrier-Grade NAT</div>
-        <div class="type-desc">ISPs use CGNAT (RFC 6598) to apply NAT at the provider level, giving customers RFC 1918 addresses or the 100.64.0.0/10 range. Creates double-NAT situations and complicates peer-to-peer applications and port forwarding.</div>
-        <div class="type-example">Your Home IP: 100.64.0.5 (CGNAT range)<br>ISP NAT: 100.64.0.5 → 203.0.113.1<br># Double NAT — limits hosting</div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ═══ RFC 1918 PRIVATE RANGES ═══ -->
-  <div class="compare-section reveal">
-    <div class="section-header">
-      <div class="section-icon">📋</div>
-      <div class="section-title">
-        RFC 1918 Private Address Ranges
-        <small>These addresses are non-routable on the public internet — NAT translates them to public IPs</small>
-      </div>
-    </div>
-    <table class="compare-table">
+  <!-- Address Types -->
+  <div id="addr-types" class="tab-panel active">
+    <table class="styled-table">
       <thead>
         <tr>
-          <th>Range</th>
-          <th>CIDR Notation</th>
-          <th>Subnet Mask</th>
-          <th>Total Addresses</th>
-          <th>Typical Use</th>
+          <th>Term</th>
+          <th>Location</th>
+          <th>Type</th>
+          <th>Example</th>
           <th>Routable?</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>10.0.0.0 – 10.255.255.255</td>
-          <td>10.0.0.0/8</td>
-          <td>255.0.0.0</td>
-          <td>16,777,216</td>
-          <td>Large enterprises, ISPs</td>
-          <td><span class="bad">✗ Private only</span></td>
+          <td><strong>Inside Local</strong></td>
+          <td>Inside network</td>
+          <td><span class="badge badge-blue">Private</span></td>
+          <td>192.168.1.10</td>
+          <td>❌ No</td>
         </tr>
         <tr>
-          <td>172.16.0.0 – 172.31.255.255</td>
-          <td>172.16.0.0/12</td>
-          <td>255.240.0.0</td>
-          <td>1,048,576</td>
-          <td>Medium networks, cloud VPCs</td>
-          <td><span class="bad">✗ Private only</span></td>
+          <td><strong>Inside Global</strong></td>
+          <td>Outside perspective of inside host</td>
+          <td><span class="badge badge-green">Public</span></td>
+          <td>203.0.113.1</td>
+          <td>✅ Yes</td>
         </tr>
         <tr>
-          <td>192.168.0.0 – 192.168.255.255</td>
-          <td>192.168.0.0/16</td>
-          <td>255.255.0.0</td>
-          <td>65,536</td>
-          <td>Home & small office networks</td>
-          <td><span class="bad">✗ Private only</span></td>
+          <td><strong>Outside Local</strong></td>
+          <td>Inside perspective of outside host</td>
+          <td><span class="badge badge-orange">Usually Public</span></td>
+          <td>8.8.8.8</td>
+          <td>✅ Yes</td>
         </tr>
         <tr>
-          <td>100.64.0.0 – 100.127.255.255</td>
-          <td>100.64.0.0/10</td>
-          <td>255.192.0.0</td>
-          <td>4,194,304</td>
-          <td>CGNAT (ISP-level NAT, RFC 6598)</td>
-          <td><span class="warn">⚠ CGNAT only</span></td>
-        </tr>
-        <tr>
-          <td>127.0.0.0 – 127.255.255.255</td>
-          <td>127.0.0.0/8</td>
-          <td>255.0.0.0</td>
-          <td>16,777,216</td>
-          <td>Loopback (localhost)</td>
-          <td><span class="bad">✗ Loopback only</span></td>
+          <td><strong>Outside Global</strong></td>
+          <td>Outside network</td>
+          <td><span class="badge badge-green">Public</span></td>
+          <td>8.8.8.8</td>
+          <td>✅ Yes</td>
         </tr>
       </tbody>
     </table>
+    <div class="info-box orange" style="margin-top:1.5rem">
+      <strong>⚡ Memory Trick</strong>
+      <em>Inside/Outside</em> refers to the <strong>location</strong> relative to NAT. <em>Local/Global</em> refers to the <strong>type</strong> of address. "Inside Local" = private address of internal host as seen from inside. "Inside Global" = public address assigned to that same internal host as seen from outside.
+    </div>
   </div>
 
-  <!-- ═══ QUIZ ═══ -->
-  <div class="reveal">
-    <div class="section-header">
-      <div class="section-icon">🧠</div>
-      <div class="section-title">
-        Knowledge Check Quiz
-        <small>Test your understanding of NAT, PAT, and address translation</small>
-      </div>
+  <!-- Translation Process -->
+  <div id="translation" class="tab-panel">
+    <div class="prose">
+      <h4>Step-by-Step Outbound Translation (Inside → Outside)</h4>
+      <p>When an inside host initiates a session to an outside server, the NAT router intercepts the packet and performs translation:</p>
     </div>
-    <div class="quiz-section">
-      <div class="quiz-header">
-        <div class="quiz-title">NAT Protocol Quiz</div>
-        <div class="quiz-score">Score: <span id="score-display">0</span> / <span id="total-display">0</span></div>
+
+    <div class="nat-diagram">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
+        <strong style="font-size:14px">Packet Translation Flow</strong>
+        <button class="scn-btn play" onclick="animateFlow()">▶ Animate Packet</button>
       </div>
-      <div class="quiz-body">
-        <div class="progress-bar"><div class="progress-fill" id="quiz-progress" style="width:0%"></div></div>
-        <div class="question-text" id="question-text"></div>
-        <div class="options" id="options-container"></div>
-        <div class="quiz-feedback" id="quiz-feedback"></div>
-        <div class="quiz-nav">
-          <div class="q-counter" id="q-counter"></div>
-          <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none;">Next Question →</button>
+
+      <div class="packet-flow">
+        <div class="pf-node">
+          <div class="pf-box client">192.168.1.10<br>Port: 1024</div>
+          <div class="pf-label">Inside Host<br>(Inside Local)</div>
+        </div>
+
+        <div class="pf-arrow">
+          <div style="position:relative;width:100%">
+            <svg width="100%" height="4"><line x1="0" y1="2" x2="100%" y2="2" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)"/></svg>
+            <div id="pkt-out" class="arrow-packet before" style="left:5%;display:none">SRC: 192.168.1.10:1024</div>
+          </div>
+          <div class="arrow-desc">Original Packet</div>
+        </div>
+
+        <div class="pf-node">
+          <div class="pf-box router">NAT Router<br>203.0.113.1</div>
+          <div class="pf-label">Border Router<br>(Translates Here)</div>
+        </div>
+
+        <div class="pf-arrow">
+          <div style="position:relative;width:100%">
+            <svg width="100%" height="4"><line x1="0" y1="2" x2="100%" y2="2" stroke="#e2e8f0" stroke-width="2"/></svg>
+            <div id="pkt-in" class="arrow-packet after" style="right:5%;display:none">SRC: 203.0.113.1:49152</div>
+          </div>
+          <div class="arrow-desc">Translated Packet</div>
+        </div>
+
+        <div class="pf-node">
+          <div class="pf-box server">8.8.8.8<br>Port: 53</div>
+          <div class="pf-label">Outside Server<br>(Outside Global)</div>
+        </div>
+      </div>
+
+      <div id="flow-steps" style="font-size:12px;color:var(--text-muted);min-height:40px;font-family:var(--mono);text-align:center"></div>
+    </div>
+
+    <div class="highlight-box">
+      <h4>🔄 Return Traffic (Inbound Translation)</h4>
+      <p>When the outside server replies, it sends to <code>203.0.113.1:49152</code>. The NAT router looks up this <em>Inside Global</em> address and port in its translation table, finds the mapping to <code>192.168.1.10:1024</code>, replaces the destination with the Inside Local address, and forwards the packet to the internal host.</p>
+    </div>
+  </div>
+
+  <!-- NAT Table -->
+  <div id="nat-table" class="tab-panel">
+    <p class="section-intro" style="margin-bottom:1.5rem">The NAT translation table (maintained in router memory) is the heart of NAT. Each entry maps an inside session to an outside representation.</p>
+
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>Protocol</th>
+          <th>Inside Local (Src)</th>
+          <th>Inside Global (Translated)</th>
+          <th>Outside Global (Dest)</th>
+          <th>State</th>
+          <th>Timeout</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-blue">TCP</span></td>
+          <td>192.168.1.10:1024</td>
+          <td>203.0.113.1:49152</td>
+          <td>93.184.216.34:80</td>
+          <td><span class="badge badge-green">ESTABLISHED</span></td>
+          <td>86400s</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">TCP</span></td>
+          <td>192.168.1.11:2048</td>
+          <td>203.0.113.1:49153</td>
+          <td>93.184.216.34:443</td>
+          <td><span class="badge badge-green">ESTABLISHED</span></td>
+          <td>86400s</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-orange">UDP</span></td>
+          <td>192.168.1.12:1025</td>
+          <td>203.0.113.1:49154</td>
+          <td>8.8.8.8:53</td>
+          <td><span class="badge badge-orange">TRANSIENT</span></td>
+          <td>300s</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">TCP</span></td>
+          <td>192.168.1.10:3000</td>
+          <td>203.0.113.1:49155</td>
+          <td>151.101.1.140:443</td>
+          <td><span class="badge badge-orange">SYN_SENT</span></td>
+          <td>120s</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box green" style="margin-top:1.5rem">
+      <strong>✅ Key Point: Stateful Operation</strong>
+      NAT is stateful — the router must maintain this table for the lifetime of each session. Entries are created when an inside host initiates a connection and removed when the session ends or times out. This is why NAT does not natively support unsolicited inbound connections (a firewall benefit).
+    </div>
+  </div>
+
+  <!-- PAT Deep Dive -->
+  <div id="pat-detail" class="tab-panel">
+    <div class="prose">
+      <h4>Port Address Translation (PAT) — Also Called NAT Overload</h4>
+      <p>PAT is the most common form of NAT in home and enterprise networks. It maps multiple Inside Local addresses to a <em>single</em> Inside Global address by using unique source port numbers to distinguish sessions.</p>
+      <p>TCP and UDP support 65,535 ports each. A single public IP can theoretically support over 65,000 simultaneous PAT sessions — enough for any typical network.</p>
+    </div>
+
+    <div class="nat-diagram">
+      <strong style="font-size:14px;display:block;margin-bottom:1.25rem">PAT: Many-to-One Mapping</strong>
+      <table class="styled-table">
+        <thead>
+          <tr><th>Inside Local IP</th><th>Local Port</th><th>→</th><th>Inside Global IP</th><th>Global Port</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>192.168.1.10</td><td>1024</td><td style="text-align:center;font-size:1.2rem">→</td><td>203.0.113.1</td><td style="color:var(--primary);font-weight:700">49152</td></tr>
+          <tr><td>192.168.1.11</td><td>1025</td><td style="text-align:center;font-size:1.2rem">→</td><td>203.0.113.1</td><td style="color:var(--primary);font-weight:700">49153</td></tr>
+          <tr><td>192.168.1.12</td><td>1026</td><td style="text-align:center;font-size:1.2rem">→</td><td>203.0.113.1</td><td style="color:var(--primary);font-weight:700">49154</td></tr>
+          <tr><td>192.168.1.13</td><td>2048</td><td style="text-align:center;font-size:1.2rem">→</td><td>203.0.113.1</td><td style="color:var(--primary);font-weight:700">49155</td></tr>
+          <tr style="background:var(--primary-bg)"><td colspan="5" style="text-align:center;font-style:italic;color:var(--primary)">All use the SAME public IP — differentiated by unique port number</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight-box">
+      <h4>⚠️ PAT Port Selection Algorithm</h4>
+      <ul>
+        <li>The router first tries to preserve the original source port if it is available and &gt; 1024</li>
+        <li>If unavailable, it allocates the next available port in the ephemeral range (1024–65535)</li>
+        <li>Port numbers below 1024 (well-known ports) are generally not used as PAT ports</li>
+        <li>Cisco IOS allocates ports sequentially starting from 1024 within each protocol block</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TYPES -->
+<section id="types">
+  <div class="section-label">Module 3</div>
+  <div class="section-title">Types of NAT</div>
+  <p class="section-intro">NAT operates in three distinct modes, each suited to different network requirements and administrative goals.</p>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('static-nat', this)">Static NAT</button>
+    <button class="tab-btn" onclick="showTab('dynamic-nat', this)">Dynamic NAT</button>
+    <button class="tab-btn" onclick="showTab('pat-nat', this)">PAT (Overload)</button>
+    <button class="tab-btn" onclick="showTab('comparison', this)">Comparison</button>
+  </div>
+
+  <div id="static-nat" class="tab-panel active">
+    <div class="two-col">
+      <div class="prose">
+        <h4>Static NAT: One-to-One Permanent Mapping</h4>
+        <p>Static NAT creates a permanent, fixed mapping between one Inside Local address and one Inside Global address. The mapping exists whether or not any traffic is flowing.</p>
+        <p><strong>Primary Use Case:</strong> Hosting servers that must be reachable from the internet — web servers, mail servers, VPN concentrators, FTP servers.</p>
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Mapping is administratively configured (not automatic)</li>
+          <li>Bidirectional — inbound connections are supported</li>
+          <li>Requires one public IP per internal server</li>
+          <li>Entry persists until manually removed</li>
+          <li>DNS records can reliably point to the static Inside Global address</li>
+        </ul>
+      </div>
+      <div>
+        <div class="nat-diagram">
+          <div class="trans-table-title">Static NAT Table</div>
+          <table class="styled-table">
+            <thead><tr><th>Inside Local</th><th>Inside Global</th></tr></thead>
+            <tbody>
+              <tr><td>10.0.0.10</td><td>203.0.113.10</td></tr>
+              <tr><td>10.0.0.11</td><td>203.0.113.11</td></tr>
+              <tr><td>10.0.0.12</td><td>203.0.113.12</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-box orange">
+          <strong>📋 Cisco IOS Command</strong>
+          <code>ip nat inside source static 10.0.0.10 203.0.113.10</code>
         </div>
       </div>
     </div>
   </div>
 
-</div><!-- /.container -->
+  <div id="dynamic-nat" class="tab-panel">
+    <div class="two-col">
+      <div class="prose">
+        <h4>Dynamic NAT: Pool-Based Assignment</h4>
+        <p>Dynamic NAT maps Inside Local addresses to Inside Global addresses from a configured address pool. Mappings are created on-demand when a host initiates traffic and removed after a timeout period.</p>
+        <p><strong>Primary Use Case:</strong> Environments where internal hosts need occasional internet access and the pool is large enough to accommodate simultaneous users.</p>
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Requires a pool of public IP addresses</li>
+          <li>One-to-one mapping (no port multiplexing)</li>
+          <li>If pool is exhausted, new connections are denied</li>
+          <li>Mappings age out after configurable timeout</li>
+          <li>Does not support unsolicited inbound connections</li>
+        </ul>
+      </div>
+      <div>
+        <div class="nat-diagram">
+          <div class="trans-table-title">Dynamic NAT Pool + Bindings</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:0.75rem">Pool: 203.0.113.20 – 203.0.113.24 (5 addresses)</div>
+          <table class="styled-table">
+            <thead><tr><th>Inside Local</th><th>Inside Global</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>192.168.10.1</td><td>203.0.113.20</td><td><span class="badge badge-green">IN USE</span></td></tr>
+              <tr><td>192.168.10.5</td><td>203.0.113.21</td><td><span class="badge badge-green">IN USE</span></td></tr>
+              <tr><td>—</td><td>203.0.113.22</td><td><span class="badge badge-orange">AVAILABLE</span></td></tr>
+              <tr><td>—</td><td>203.0.113.23</td><td><span class="badge badge-orange">AVAILABLE</span></td></tr>
+              <tr><td>—</td><td>203.0.113.24</td><td><span class="badge badge-orange">AVAILABLE</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<footer>© 2024 NAT Translation Simulator · Moraine Valley Community College &nbsp;|&nbsp; Network Security Curriculum</footer>
+  <div id="pat-nat" class="tab-panel">
+    <div class="two-col">
+      <div class="prose">
+        <h4>PAT (NAT Overload): Many-to-One with Ports</h4>
+        <p>PAT extends dynamic NAT by using port numbers to differentiate sessions, allowing hundreds or thousands of internal hosts to share a single public IP address simultaneously.</p>
+        <p><strong>Primary Use Case:</strong> Home routers, small business networks, enterprise access networks — essentially every network that connects multiple devices through one ISP-assigned IP.</p>
+        <h4>Characteristics</h4>
+        <ul>
+          <li>Uses source port number as a differentiator</li>
+          <li>Supports 65,535+ simultaneous sessions per IP</li>
+          <li>Most memory- and resource-efficient NAT form</li>
+          <li>Outbound only (no unsolicited inbound)</li>
+          <li>Tracks: protocol + src IP + src port + dest IP + dest port</li>
+        </ul>
+      </div>
+      <div>
+        <div class="nat-diagram">
+          <div class="trans-table-title">PAT Translation Table (Abridged)</div>
+          <table class="styled-table">
+            <thead><tr><th>Inside Local:Port</th><th>Inside Global:Port</th></tr></thead>
+            <tbody>
+              <tr><td>192.168.1.10:<span style="color:var(--danger)">1500</span></td><td>203.0.113.1:<span style="color:var(--primary)">49152</span></td></tr>
+              <tr><td>192.168.1.11:<span style="color:var(--danger)">1500</span></td><td>203.0.113.1:<span style="color:var(--primary)">49153</span></td></tr>
+              <tr><td>192.168.1.10:<span style="color:var(--danger)">2000</span></td><td>203.0.113.1:<span style="color:var(--primary)">49154</span></td></tr>
+              <tr><td>192.168.1.12:<span style="color:var(--danger)">1500</span></td><td>203.0.113.1:<span style="color:var(--primary)">49155</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-box blue">
+          <strong>📋 Cisco IOS Command (PAT using interface)</strong>
+          <code>ip nat inside source list 1 interface g0/0 overload</code>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<!-- ══════════════════════════════════════════════
-     JAVASCRIPT — Simulator Engine
-══════════════════════════════════════════════ -->
+  <div id="comparison" class="tab-panel">
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Static NAT</th>
+          <th>Dynamic NAT</th>
+          <th>PAT (Overload)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Mapping Type</td><td>1:1 Fixed</td><td>1:1 From Pool</td><td>Many:1 With Ports</td></tr>
+        <tr><td>Public IPs Required</td><td>1 per host</td><td>1 per concurrent host</td><td>1 total (minimum)</td></tr>
+        <tr><td>Inbound Connections</td><td>✅ Supported</td><td>❌ Not supported</td><td>❌ Not supported</td></tr>
+        <tr><td>Port Translation</td><td>No</td><td>No</td><td>Yes</td></tr>
+        <tr><td>Mapping Persistence</td><td>Permanent</td><td>Dynamic (timeout)</td><td>Dynamic (session)</td></tr>
+        <tr><td>Best For</td><td>Servers</td><td>Medium-size orgs</td><td>Home/SMB/Enterprise</td></tr>
+        <tr><td>Cisco IOS Keyword</td><td><code>static</code></td><td><code>pool</code></td><td><code>overload</code></td></tr>
+        <tr><td>RFC Reference</td><td>RFC 3022</td><td>RFC 3022</td><td>RFC 3022 / RFC 4787</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SIMULATOR -->
+<section id="simulator">
+  <div class="section-label">Module 4</div>
+  <div class="section-title">Live NAT/PAT Simulator</div>
+  <p class="section-intro">Watch a live simulation of NAT/PAT in action. The simulator shows packet translation events, builds the translation table in real time, and illustrates the difference between outbound and inbound translation.</p>
+
+  <div class="scenario-wrap">
+    <div class="scenario-header">
+      <span class="scenario-title">⚡ PAT Simulation — 3 Internal Hosts, 1 Public IP</span>
+      <div class="scenario-controls">
+        <button class="scn-btn reset" onclick="resetSim()">↺ Reset</button>
+        <button class="scn-btn play" id="simPlayBtn" onclick="runSim()">▶ Start Simulation</button>
+      </div>
+    </div>
+
+    <div class="scenario-log" id="simLog">
+      <div class="log-entry info">→ Press "Start Simulation" to begin...</div>
+      <div class="log-entry info">→ Network: 192.168.1.0/24  |  NAT Router: 203.0.113.1  |  Mode: PAT</div>
+    </div>
+
+    <div class="scenario-nat-table" id="simTable">
+      <div class="nat-table-row header">
+        <div>INSIDE LOCAL</div>
+        <div>INSIDE GLOBAL</div>
+        <div>DESTINATION</div>
+        <div>STATE</div>
+      </div>
+      <div id="simTableBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- HEADER BUILDER -->
+<section id="builder">
+  <div class="section-label">Module 5</div>
+  <div class="section-title">NAT/PAT Header Builder</div>
+  <p class="section-intro">Construct a realistic NAT/PAT translation record by filling in the fields below. The builder generates both the <em>original</em> (pre-translation) and <em>translated</em> (post-translation) packet headers, highlighting what changes during NAT processing.</p>
+
+  <div class="builder-wrap">
+    <div class="builder-grid">
+      <div class="builder-form">
+        <div style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--primary);margin-bottom:1.25rem">📋 Original (Inside) Packet</div>
+
+        <label>Source IP (Inside Local)</label>
+        <input type="text" id="b-src-ip" value="192.168.1.50" placeholder="e.g. 192.168.1.50" />
+
+        <label>Source Port</label>
+        <input type="number" id="b-src-port" value="3200" min="1024" max="65535" />
+
+        <label>Destination IP (Outside Global)</label>
+        <input type="text" id="b-dst-ip" value="142.250.80.46" placeholder="e.g. 8.8.8.8" />
+
+        <label>Destination Port</label>
+        <input type="number" id="b-dst-port" value="443" min="1" max="65535" />
+
+        <label>Protocol</label>
+        <select id="b-proto">
+          <option value="TCP">TCP (6)</option>
+          <option value="UDP">UDP (17)</option>
+          <option value="ICMP">ICMP (1)</option>
+        </select>
+
+        <label>TTL</label>
+        <input type="number" id="b-ttl" value="64" min="1" max="255" />
+
+        <div style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--primary);margin:1.75rem 0 1.25rem">🔄 NAT Configuration</div>
+
+        <label>NAT Type</label>
+        <select id="b-nat-type">
+          <option value="pat">PAT (Overload)</option>
+          <option value="static">Static NAT</option>
+          <option value="dynamic">Dynamic NAT</option>
+        </select>
+
+        <label>Inside Global IP (Public)</label>
+        <input type="text" id="b-global-ip" value="203.0.113.1" placeholder="e.g. 203.0.113.1" />
+
+        <label>Assigned Global Port (PAT)</label>
+        <input type="number" id="b-global-port" value="49152" min="1024" max="65535" />
+
+        <label>New TTL (decremented by router)</label>
+        <input type="number" id="b-new-ttl" value="63" min="1" max="255" />
+
+        <button class="build-btn" onclick="buildHeader()">⚙️ Generate NAT Headers</button>
+      </div>
+
+      <div>
+        <div style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:1rem">📦 Generated Header Output</div>
+        <div class="header-output" id="headerOutput">
+          <div class="output-placeholder">Fill in the fields and click<br>"Generate NAT Headers"<br>to see the output</div>
+        </div>
+        <div style="margin-top:1rem;font-size:11px;color:var(--text-muted);font-family:var(--mono)">
+          <span style="background:#fee2e2;color:var(--danger);padding:2px 6px;border-radius:3px;margin-right:6px">ORIGINAL</span>
+          <span style="background:#dbeafe;color:var(--primary);padding:2px 6px;border-radius:3px;margin-right:6px">TRANSLATED</span>
+          <span style="background:#fef3c7;color:var(--warning);padding:2px 6px;border-radius:3px">CHANGED FIELD</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IP Header Diagram -->
+  <div style="margin-top:2.5rem">
+    <h4 style="font-size:1rem;font-weight:700;margin-bottom:1rem">IPv4 Header — Fields Affected by NAT</h4>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;text-align:center;min-width:600px">
+        <tr>
+          <td colspan="4" style="background:#dbeafe;border:1px solid #93c5fd;padding:6px 4px;color:var(--primary)">Version (4)</td>
+          <td colspan="4" style="background:#f1f5f9;border:1px solid var(--border);padding:6px 4px;">IHL</td>
+          <td colspan="8" style="background:#f1f5f9;border:1px solid var(--border);padding:6px 4px;">DSCP/ECN</td>
+          <td colspan="16" style="background:#f1f5f9;border:1px solid var(--border);padding:6px 4px;">Total Length</td>
+        </tr>
+        <tr>
+          <td colspan="16" style="background:#f1f5f9;border:1px solid var(--border);padding:6px 4px;">Identification</td>
+          <td colspan="3" style="background:#f1f5f9;border:1px solid var(--border);padding:6px 4px;">Flags</td>
+          <td colspan="13" style="background:#f1f5f9;border:1px solid var(--border);padding:6px 4px;">Fragment Offset</td>
+        </tr>
+        <tr>
+          <td colspan="8" style="background:#fee2e2;border:1px solid #fca5a5;padding:6px 4px;color:var(--danger)">TTL ⚡</td>
+          <td colspan="8" style="background:#f1f5f9;border:1px solid var(--border);padding:6px 4px;">Protocol</td>
+          <td colspan="16" style="background:#fef3c7;border:1px solid #fcd34d;padding:6px 4px;color:var(--warning)">Header Checksum 🔄</td>
+        </tr>
+        <tr>
+          <td colspan="32" style="background:#fef3c7;border:1px solid #fcd34d;padding:6px 4px;color:var(--warning);font-weight:700">Source IP Address — CHANGED by NAT 🔄</td>
+        </tr>
+        <tr>
+          <td colspan="32" style="background:#dbeafe;border:1px solid #93c5fd;padding:6px 4px;color:var(--primary)">Destination IP Address (unchanged for outbound)</td>
+        </tr>
+        <tr>
+          <td colspan="16" style="background:#fef3c7;border:1px solid #fcd34d;padding:6px 4px;color:var(--warning);font-weight:700">Source Port — CHANGED by PAT 🔄</td>
+          <td colspan="16" style="background:#dbeafe;border:1px solid #93c5fd;padding:6px 4px;color:var(--primary)">Destination Port (unchanged)</td>
+        </tr>
+      </table>
+      <div style="margin-top:0.75rem;font-size:11px;color:var(--text-muted);font-family:var(--mono)">
+        <span style="background:#fef3c7;color:var(--warning);padding:2px 6px;border-radius:3px;margin-right:8px">🔄 MODIFIED</span>
+        <span style="background:#fee2e2;color:var(--danger);padding:2px 6px;border-radius:3px;margin-right:8px">⚡ DECREMENTED</span>
+        <span style="background:#dbeafe;color:var(--primary);padding:2px 6px;border-radius:3px">UNCHANGED</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONFIGURATION -->
+<section id="config">
+  <div class="section-label">Module 6</div>
+  <div class="section-title">Cisco IOS Configuration</div>
+  <p class="section-intro">Network administrators must be proficient in configuring NAT on Cisco routers. The following examples cover the three primary NAT configurations used in production environments.</p>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('cfg-static', this)">Static NAT</button>
+    <button class="tab-btn" onclick="showTab('cfg-dynamic', this)">Dynamic NAT</button>
+    <button class="tab-btn" onclick="showTab('cfg-pat', this)">PAT Config</button>
+    <button class="tab-btn" onclick="showTab('cfg-verify', this)">Verification</button>
+    <button class="tab-btn" onclick="showTab('cfg-trouble', this)">Troubleshooting</button>
+  </div>
+
+  <div id="cfg-static" class="tab-panel active">
+    <div class="two-col">
+      <div>
+        <div style="background:#0f172a;border-radius:12px;padding:1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto">
+          <div style="color:#64748b;margin-bottom:0.75rem">! ── STATIC NAT CONFIGURATION ──</div>
+          <div><span style="color:#60a5fa">interface</span> <span style="color:#34d399">GigabitEthernet0/0</span></div>
+          <div style="padding-left:1.5rem"><span style="color:#fbbf24">ip address</span> <span style="color:#e2e8f0">10.0.0.1 255.255.255.0</span></div>
+          <div style="padding-left:1.5rem"><span style="color:#f87171">ip nat inside</span></div>
+          <div><span style="color:#60a5fa">interface</span> <span style="color:#34d399">GigabitEthernet0/1</span></div>
+          <div style="padding-left:1.5rem"><span style="color:#fbbf24">ip address</span> <span style="color:#e2e8f0">203.0.113.1 255.255.255.0</span></div>
+          <div style="padding-left:1.5rem"><span style="color:#a78bfa">ip nat outside</span></div>
+          <div>&nbsp;</div>
+          <div><span style="color:#64748b">! Map inside host to public IP</span></div>
+          <div><span style="color:#60a5fa">ip nat inside source static</span> <span style="color:#f87171">10.0.0.10</span> <span style="color:#a78bfa">203.0.113.10</span></div>
+          <div><span style="color:#60a5fa">ip nat inside source static</span> <span style="color:#f87171">10.0.0.11</span> <span style="color:#a78bfa">203.0.113.11</span></div>
+        </div>
+      </div>
+      <div class="prose">
+        <h4>Configuration Steps</h4>
+        <ul>
+          <li>Identify the inside interface (LAN-facing) with <code>ip nat inside</code></li>
+          <li>Identify the outside interface (WAN-facing) with <code>ip nat outside</code></li>
+          <li>Create static entries mapping Inside Local to Inside Global addresses</li>
+          <li>For port-forwarding (Static PAT): add <code>tcp</code> or <code>udp</code> and port numbers</li>
+        </ul>
+        <div class="info-box blue" style="margin-top:1rem">
+          <strong>Port Forwarding (Static PAT Example)</strong>
+          <code>ip nat inside source static tcp 10.0.0.10 80 203.0.113.10 80</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cfg-dynamic" class="tab-panel">
+    <div style="background:#0f172a;border-radius:12px;padding:1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto">
+      <div style="color:#64748b">! ── DYNAMIC NAT CONFIGURATION ──</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#64748b">! Step 1: Define the pool of public addresses</span></div>
+      <div><span style="color:#60a5fa">ip nat pool</span> <span style="color:#34d399">PUBLIC_POOL</span> <span style="color:#fbbf24">203.0.113.20</span> <span style="color:#fbbf24">203.0.113.24</span> <span style="color:#e2e8f0">netmask 255.255.255.0</span></div>
+      <div>&nbsp;</div>
+      <div><span style="color:#64748b">! Step 2: Define which inside hosts are permitted</span></div>
+      <div><span style="color:#60a5fa">access-list</span> <span style="color:#f87171">10</span> <span style="color:#e2e8f0">permit 192.168.10.0 0.0.0.255</span></div>
+      <div>&nbsp;</div>
+      <div><span style="color:#64748b">! Step 3: Link ACL to NAT pool</span></div>
+      <div><span style="color:#60a5fa">ip nat inside source list</span> <span style="color:#f87171">10</span> <span style="color:#e2e8f0">pool</span> <span style="color:#34d399">PUBLIC_POOL</span></div>
+      <div>&nbsp;</div>
+      <div><span style="color:#64748b">! Step 4: Mark interfaces</span></div>
+      <div><span style="color:#60a5fa">interface</span> <span style="color:#34d399">GigabitEthernet0/0</span></div>
+      <div style="padding-left:1.5rem"><span style="color:#f87171">ip nat inside</span></div>
+      <div><span style="color:#60a5fa">interface</span> <span style="color:#34d399">GigabitEthernet0/1</span></div>
+      <div style="padding-left:1.5rem"><span style="color:#a78bfa">ip nat outside</span></div>
+    </div>
+  </div>
+
+  <div id="cfg-pat" class="tab-panel">
+    <div style="background:#0f172a;border-radius:12px;padding:1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto">
+      <div style="color:#64748b">! ── PAT (NAT OVERLOAD) — Using Interface Address ──</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#60a5fa">access-list</span> <span style="color:#f87171">1</span> <span style="color:#e2e8f0">permit 192.168.1.0 0.0.0.255</span></div>
+      <div>&nbsp;</div>
+      <div><span style="color:#60a5fa">ip nat inside source list</span> <span style="color:#f87171">1</span> <span style="color:#e2e8f0">interface</span> <span style="color:#34d399">GigabitEthernet0/1</span> <span style="color:#fbbf24">overload</span></div>
+      <div>&nbsp;</div>
+      <div><span style="color:#60a5fa">interface</span> <span style="color:#34d399">GigabitEthernet0/0</span></div>
+      <div style="padding-left:1.5rem"><span style="color:#f87171">ip nat inside</span></div>
+      <div><span style="color:#60a5fa">interface</span> <span style="color:#34d399">GigabitEthernet0/1</span></div>
+      <div style="padding-left:1.5rem"><span style="color:#a78bfa">ip nat outside</span></div>
+      <div>&nbsp;</div>
+      <div style="color:#64748b">! ── PAT — Using Address Pool (Multiple IPs) ──</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#60a5fa">ip nat pool</span> <span style="color:#34d399">PAT_POOL</span> <span style="color:#fbbf24">203.0.113.1</span> <span style="color:#fbbf24">203.0.113.5</span> <span style="color:#e2e8f0">netmask 255.255.255.0</span></div>
+      <div><span style="color:#60a5fa">ip nat inside source list</span> <span style="color:#f87171">1</span> <span style="color:#e2e8f0">pool</span> <span style="color:#34d399">PAT_POOL</span> <span style="color:#fbbf24">overload</span></div>
+    </div>
+    <div class="info-box green" style="margin-top:1rem">
+      <strong>✅ Key: The "overload" keyword</strong>
+      Adding <code>overload</code> to the NAT source command enables PAT. Without it, dynamic NAT is configured (one-to-one from pool).
+    </div>
+  </div>
+
+  <div id="cfg-verify" class="tab-panel">
+    <div style="background:#0f172a;border-radius:12px;padding:1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto">
+      <div style="color:#64748b">! ── VERIFICATION COMMANDS ──</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#fbbf24">show ip nat translations</span></div>
+      <div style="color:#94a3b8;padding-left:1.5rem">! Displays the NAT translation table (all active entries)</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#fbbf24">show ip nat translations verbose</span></div>
+      <div style="color:#94a3b8;padding-left:1.5rem">! Shows timers, create time, use count per entry</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#fbbf24">show ip nat statistics</span></div>
+      <div style="color:#94a3b8;padding-left:1.5rem">! Translations: total, active, missed; hit counts</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#fbbf24">debug ip nat</span></div>
+      <div style="color:#94a3b8;padding-left:1.5rem">! Real-time translation events (caution: CPU intensive)</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#fbbf24">debug ip nat detailed</span></div>
+      <div style="color:#94a3b8;padding-left:1.5rem">! Includes packets that fail to translate</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#fbbf24">clear ip nat translation *</span></div>
+      <div style="color:#94a3b8;padding-left:1.5rem">! Clears all dynamic NAT entries (⚠️ drops active sessions)</div>
+      <div>&nbsp;</div>
+      <div><span style="color:#fbbf24">clear ip nat translation inside</span> <span style="color:#f87171">192.168.1.10</span> <span style="color:#34d399">203.0.113.1</span></div>
+      <div style="color:#94a3b8;padding-left:1.5rem">! Clears specific translation entry</div>
+    </div>
+  </div>
+
+  <div id="cfg-trouble" class="tab-panel">
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon red">⚠️</div>
+        <h3>NAT Not Translating</h3>
+        <p>Verify inside/outside interface designations. Check the ACL permits the source subnet. Confirm the route to the destination exists out the outside interface.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon orange">🔍</div>
+        <h3>Pool Exhaustion</h3>
+        <p>Dynamic NAT fails when the pool is full. Use <code>show ip nat statistics</code> to check "miss" count. Switch to PAT (overload) to fix the problem without adding IPs.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon blue">🔄</div>
+        <h3>Stale Entries</h3>
+        <p>Old NAT entries can block new connections using the same port. Use <code>clear ip nat translation *</code> to flush the table. Tune timeout values with <code>ip nat translation timeout</code>.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">📡</div>
+        <h3>ALG Issues</h3>
+        <p>Protocols like FTP, SIP, and H.323 embed IP addresses in the payload. NAT Application Layer Gateways (ALGs) must be enabled to handle these protocols correctly.</p>
+      </div>
+    </div>
+    <div class="info-box blue" style="margin-top:1.5rem">
+      <strong>🔧 Systematic Troubleshooting Approach</strong>
+      1) Verify interface NAT directionality (<code>show ip interface brief</code>) → 2) Check ACL matches (<code>show access-lists</code>) → 3) Inspect translation table (<code>show ip nat translations</code>) → 4) Use debug (<code>debug ip nat</code>) → 5) Check routing (<code>show ip route</code>)
+    </div>
+  </div>
+</section>
+
+<!-- GLOSSARY -->
+<section id="glossary">
+  <div class="section-label">Reference</div>
+  <div class="section-title">Key Terms &amp; Glossary</div>
+  <p class="section-intro">A comprehensive reference of NAT/PAT terminology for certification exam preparation and professional reference.</p>
+
+  <div class="glossary-grid">
+    <div class="glossary-item"><div class="glossary-term">NAT (Network Address Translation)</div><div class="glossary-def">The process of modifying IP address information in packet headers while in transit, allowing private addresses to communicate on the public internet.</div></div>
+    <div class="glossary-item"><div class="glossary-term">PAT (Port Address Translation)</div><div class="glossary-def">An extension of NAT that uses port numbers to allow multiple inside hosts to share a single public IP address. Also called NAT Overload.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Inside Local Address</div><div class="glossary-def">The actual private IP address of an internal host as configured on its NIC. Typically an RFC 1918 address.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Inside Global Address</div><div class="glossary-def">The public IP address that the NAT router assigns to represent an internal host to the outside world.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Outside Local Address</div><div class="glossary-def">The IP address of an external host as seen from inside the network. Usually the same as the Outside Global address unless NAT is also applied to the destination.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Outside Global Address</div><div class="glossary-def">The actual public IP address of an external host as it exists on the internet.</div></div>
+    <div class="glossary-item"><div class="glossary-term">NAT Table / Translation Table</div><div class="glossary-def">A stateful lookup table maintained by the router containing all current NAT/PAT bindings, including protocol, ports, and IP address mappings.</div></div>
+    <div class="glossary-item"><div class="glossary-term">RFC 1918</div><div class="glossary-def">IETF standard defining three blocks of non-routable private address space: 10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Static NAT</div><div class="glossary-def">A permanently configured one-to-one mapping between an inside local and inside global address. Supports inbound connections.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Dynamic NAT</div><div class="glossary-def">Automatically assigns Inside Global addresses from a pool to Inside Local addresses on demand. Entries expire after timeout.</div></div>
+    <div class="glossary-item"><div class="glossary-term">NAT Overload</div><div class="glossary-def">Cisco term for PAT — enabling multiple hosts to share a single public IP by tracking unique source port numbers. Enabled with the <code>overload</code> keyword.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Ephemeral Port</div><div class="glossary-def">A temporary port number (typically 1024–65535) assigned by the OS or NAT router for a session. Released when the connection ends.</div></div>
+    <div class="glossary-item"><div class="glossary-term">ALG (Application Layer Gateway)</div><div class="glossary-def">A NAT component that inspects and modifies application-layer protocols (FTP, SIP, H.323) that embed IP addresses in their payloads.</div></div>
+    <div class="glossary-item"><div class="glossary-term">NAT Traversal</div><div class="glossary-def">Techniques allowing protocols like IPSec and VoIP to function through NAT devices, which would otherwise block or corrupt their headers.</div></div>
+    <div class="glossary-item"><div class="glossary-term">ip nat inside</div><div class="glossary-def">Cisco IOS interface command designating the LAN-facing (private) side of NAT operation.</div></div>
+    <div class="glossary-item"><div class="glossary-term">ip nat outside</div><div class="glossary-def">Cisco IOS interface command designating the WAN-facing (public) side of NAT operation.</div></div>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz">
+  <div class="section-label">Assessment</div>
+  <div class="section-title">Knowledge Check</div>
+  <p class="section-intro">Test your understanding of NAT and PAT concepts. Select the best answer for each question.</p>
+
+  <div id="quiz-container"></div>
+
+  <div class="quiz-score-bar" id="scoreBar" style="display:none">
+    <div class="score-circle">
+      <div class="score-num" id="scoreNum">0</div>
+      <div class="score-of" id="scoreOf">/ 8</div>
+    </div>
+    <div>
+      <div class="score-label"><strong id="scoreMsg">Quiz Complete!</strong>Review the sections above for any missed concepts.</div>
+    </div>
+    <button onclick="resetQuiz()" style="margin-left:auto;padding:0.5rem 1.25rem;background:var(--primary);color:white;border:none;border-radius:8px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer">↺ Retake Quiz</button>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<footer style="background:var(--surface);border-top:1px solid var(--border);padding:2rem;text-align:center;margin-top:3rem">
+  <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">
+    NAT/PAT Interactive Lesson · Network Administration · IT Department<br>
+    Based on RFC 3022, RFC 4787 | Cisco IOS Reference | CompTIA Network+ · CCNA Objectives
+  </div>
+</footer>
+
 <script>
-// ── CONFIG ──────────────────────────────────────────
-const ROUTER_IP   = '203.0.113.1';
-const PORT_BASE   = 40000;
-const TTL_DEFAULT = 300; // seconds
-
-const PROTO_PORTS = { HTTP:80, HTTPS:443, DNS:53, FTP:21, SSH:22 };
-
-const DEVICES = {
-  '192.168.1.10': { name:'PC-1', svgY:62 },
-  '192.168.1.20': { name:'PC-2', svgY:118 },
-  '192.168.1.30': { name:'PC-3', svgY:170 }
-};
-
-const SERVERS = {
-  '93.184.216.34': { name:'Web Server',   svgY:62 },
-  '8.8.8.8':       { name:'DNS Server',   svgY:118 },
-  '172.217.14.78': { name:'HTTPS Server', svgY:170 }
-};
-
-// ── STATE ────────────────────────────────────────────
-let natTable   = {};   // key: "privateIP:privatePort" → { publicPort, dstIP, dstPort, proto, ttl, ts }
-let packetLog  = [];   // array of packet objects
-let portCounter = PORT_BASE;
-let autoTimer   = null;
-let logSeq      = 0;
-
-// ── HELPERS ──────────────────────────────────────────
-function randPort(min=1024, max=65535) {
-  return Math.floor(Math.random() * (max - min)) + min;
+// ─── NAVIGATION ───────────────────────────────────────────────
+function scrollToSection(id) {
+  document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function nextPublicPort() {
-  portCounter++;
-  if (portCounter > 65535) portCounter = PORT_BASE + 1;
-  return portCounter;
-}
-
-function protoClass(p) {
-  return 'proto-' + p.toLowerCase();
-}
-
-function dirClass(d) { return d === 'out' ? 'log-out' : 'log-in'; }
-function dirLabel(d) { return d === 'out' ? '▶ OUT' : '◀ IN'; }
-
-function timeStr() {
-  const d = new Date();
-  return d.getHours().toString().padStart(2,'0') + ':' +
-         d.getMinutes().toString().padStart(2,'0') + ':' +
-         d.getSeconds().toString().padStart(2,'0');
-}
-
-// ── NAT TABLE OPERATIONS ──────────────────────────────
-function getNatEntry(privateIP, privatePort, dstIP, proto) {
-  const key = `${privateIP}:${privatePort}:${dstIP}:${proto}`;
-  if (!natTable[key]) {
-    natTable[key] = {
-      privateIP, privatePort,
-      publicPort: nextPublicPort(),
-      dstIP, proto,
-      state: 'active',
-      ts: timeStr(),
-      pktCount: 0
-    };
-  }
-  natTable[key].pktCount++;
-  return natTable[key];
-}
-
-// ── RENDER NAT TABLE ──────────────────────────────────
-function renderNatTable() {
-  const wrap = document.getElementById('nat-table-wrap');
-  const entries = Object.values(natTable);
-  document.getElementById('nat-count').textContent = entries.length + ' entr' + (entries.length===1?'y':'ies');
-
-  if (!entries.length) {
-    wrap.innerHTML = '<div class="nat-empty">NAT table is empty — send outbound traffic to populate</div>';
-    return;
-  }
-
-  let html = `<table class="nat-table"><thead><tr>
-    <th>Private IP : Port</th>
-    <th>Protocol</th>
-    <th>Public IP : Port</th>
-    <th>Destination</th>
-    <th>Pkts</th>
-    <th>State</th>
-    <th>Created</th>
-  </tr></thead><tbody>`;
-
-  entries.forEach((e, i) => {
-    html += `<tr class="${i === entries.length-1 ? 'new-row' : ''}">
-      <td class="nat-private">${e.privateIP}:${e.privatePort}</td>
-      <td><span class="log-proto ${protoClass(e.proto)}">${e.proto}</span></td>
-      <td class="nat-public">${ROUTER_IP}:${e.publicPort}</td>
-      <td class="nat-private" style="color:var(--text-muted)">${e.dstIP}:${PROTO_PORTS[e.proto]}</td>
-      <td class="nat-ttl">${e.pktCount}</td>
-      <td><span class="state-pill state-${e.state}">${e.state}</span></td>
-      <td class="nat-ttl">${e.ts}</td>
-    </tr>`;
+// Update active nav on scroll
+const sections = ['overview','concepts','types','simulator','builder','config','glossary','quiz'];
+window.addEventListener('scroll', () => {
+  const pos = window.scrollY + 100;
+  sections.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const top = el.offsetTop;
+    const bot = i + 1 < sections.length ? document.getElementById(sections[i+1]).offsetTop : Infinity;
+    const links = document.querySelectorAll('.nav-link');
+    if (pos >= top && pos < bot) links[i] && links[i].classList.add('active');
+    else links[i] && links[i].classList.remove('active');
   });
-  html += '</tbody></table>';
-  wrap.innerHTML = html;
+});
+
+// ─── TABS ─────────────────────────────────────────────────────
+function showTab(id, btn) {
+  const parent = btn.closest('section') || document.body;
+  parent.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById(id);
+  if (panel) panel.classList.add('active');
+  btn.classList.add('active');
 }
 
-// ── RENDER PACKET LOG ─────────────────────────────────
-function renderPacketLog() {
-  const logEl = document.getElementById('packet-log');
-  if (!packetLog.length) {
-    logEl.innerHTML = '<div class="log-empty">No traffic yet — send packets to begin</div>';
-    return;
-  }
-  logEl.innerHTML = [...packetLog].reverse().map((p, idx) => {
-    const isOut = p.dir === 'out';
-    const srcDisplay = isOut
-      ? `<span class="log-src">${p.privateIP}:${p.privatePort}</span>`
-      : `<span class="log-dst">${p.dstIP}:${PROTO_PORTS[p.proto]}</span>`;
-    const dstDisplay = isOut
-      ? `<span class="log-dst">${p.dstIP}:${PROTO_PORTS[p.proto]}</span>`
-      : `<span class="log-src">${p.privateIP}:${p.privatePort}</span>`;
+// ─── PACKET FLOW ANIMATION ────────────────────────────────────
+function animateFlow() {
+  const pktOut = document.getElementById('pkt-out');
+  const pktIn = document.getElementById('pkt-in');
+  const steps = document.getElementById('flow-steps');
 
-    return `<div class="log-entry" style="cursor:pointer" onclick="inspectPacket(${p.seq})" title="Click to inspect">
-      <span class="log-dir ${dirClass(p.dir)}">${dirLabel(p.dir)}</span>
-      ${srcDisplay}
-      <span class="log-arrow">→</span>
-      ${dstDisplay}
-      <span class="log-proto ${protoClass(p.proto)}">${p.proto}</span>
-    </div>`;
-  }).join('');
+  pktOut.style.display = 'none';
+  pktIn.style.display = 'none';
+  steps.textContent = '';
+
+  const messages = [
+    '① Inside host 192.168.1.10:1024 sends packet to 8.8.8.8:53...',
+    '② NAT router receives packet on inside interface...',
+    '③ Router checks NAT table — no existing entry for this flow...',
+    '④ Router translates SRC: 192.168.1.10:1024 → 203.0.113.1:49152...',
+    '⑤ Router creates new NAT table entry and forwards packet...',
+    '⑥ Outside server sees packet from 203.0.113.1:49152 only ✓'
+  ];
+
+  pktOut.style.display = 'flex';
+  pktOut.style.left = '5%';
+  pktOut.style.transition = 'left 1.5s linear';
+
+  setTimeout(() => { pktOut.style.left = '45%'; }, 50);
+
+  messages.forEach((msg, i) => {
+    setTimeout(() => { steps.textContent = msg; }, i * 700);
+  });
+
+  setTimeout(() => {
+    pktIn.style.display = 'flex';
+    pktIn.style.right = '5%';
+    pktIn.style.transition = 'right 0s';
+    setTimeout(() => {
+      pktIn.style.transition = 'right 1.5s linear';
+      pktIn.style.right = '45%';
+    }, 50);
+  }, 2500);
 }
 
-// ── PACKET INSPECTOR ──────────────────────────────────
-function inspectPacket(seq) {
-  const p = packetLog.find(x => x.seq === seq);
-  if (!p) return;
+// ─── SIMULATOR ────────────────────────────────────────────────
+const simEvents = [
+  { delay: 300, type: 'step', text: '═══ SIMULATION START ══════════════════════════════' },
+  { delay: 600, type: 'info', text: 'Network: 192.168.1.0/24 | NAT Router: 203.0.113.1 | Mode: PAT (Overload)' },
+  { delay: 1000, type: 'step', text: '── Packet 1: Host A initiates HTTP session ──' },
+  { delay: 1400, type: 'tx', text: '→ TX: 192.168.1.10:3200  →  93.184.216.34:80  [TCP SYN]' },
+  { delay: 1800, type: 'nat', text: '⚡ NAT: 192.168.1.10:3200  ↔  203.0.113.1:49152  [NEW ENTRY]' },
+  { delay: 2200, type: 'table', text: '📋 Table Entry #1 created: IN 192.168.1.10:3200 | OUT 203.0.113.1:49152' },
+  { delay: 2800, type: 'step', text: '── Packet 2: Host B initiates HTTPS session ──' },
+  { delay: 3200, type: 'tx', text: '→ TX: 192.168.1.11:4100  →  151.101.1.140:443  [TCP SYN]' },
+  { delay: 3600, type: 'nat', text: '⚡ NAT: 192.168.1.11:4100  ↔  203.0.113.1:49153  [NEW ENTRY]' },
+  { delay: 4000, type: 'table', text: '📋 Table Entry #2 created: IN 192.168.1.11:4100 | OUT 203.0.113.1:49153' },
+  { delay: 4600, type: 'step', text: '── Packet 3: Host A makes DNS query ──' },
+  { delay: 5000, type: 'tx', text: '→ TX: 192.168.1.10:5500  →  8.8.8.8:53  [UDP]' },
+  { delay: 5400, type: 'nat', text: '⚡ NAT: 192.168.1.10:5500  ↔  203.0.113.1:49154  [NEW ENTRY]' },
+  { delay: 5800, type: 'table', text: '📋 Table Entry #3 created: IN 192.168.1.10:5500 | OUT 203.0.113.1:49154' },
+  { delay: 6400, type: 'step', text: '── Reply Arrives for Host A HTTP ──' },
+  { delay: 6800, type: 'rx', text: '← RX: 93.184.216.34:80  →  203.0.113.1:49152  [TCP ACK]' },
+  { delay: 7200, type: 'nat', text: '⚡ NAT LOOKUP: 203.0.113.1:49152 → 192.168.1.10:3200 [TABLE HIT]' },
+  { delay: 7600, type: 'rx', text: '← FORWARD: 93.184.216.34:80  →  192.168.1.10:3200  ✓' },
+  { delay: 8200, type: 'step', text: '── Packet 4: Host C initiates new connection ──' },
+  { delay: 8600, type: 'tx', text: '→ TX: 192.168.1.12:6000  →  172.217.10.46:80  [TCP SYN]' },
+  { delay: 9000, type: 'nat', text: '⚡ NAT: 192.168.1.12:6000  ↔  203.0.113.1:49155  [NEW ENTRY]' },
+  { delay: 9400, type: 'table', text: '📋 Table Entry #4 created: IN 192.168.1.12:6000 | OUT 203.0.113.1:49155' },
+  { delay: 10200, type: 'step', text: '══════════════════════════════════════════════════' },
+  { delay: 10500, type: 'info', text: '✓ SIMULATION COMPLETE — 4 PAT entries active — All using 203.0.113.1' },
+];
 
-  document.getElementById('inspect-proto-badge').textContent =
-    `${p.proto} · ${p.dir.toUpperCase()} · ${p.ts}`;
+const simTableData = [
+  { ins: '192.168.1.10:3200', out: '203.0.113.1:49152', dst: '93.184.216.34:80', state: 'ESTABLISHED' },
+  { ins: '192.168.1.11:4100', out: '203.0.113.1:49153', dst: '151.101.1.140:443', state: 'ESTABLISHED' },
+  { ins: '192.168.1.10:5500', out: '203.0.113.1:49154', dst: '8.8.8.8:53', state: 'UDP' },
+  { ins: '192.168.1.12:6000', out: '203.0.113.1:49155', dst: '172.217.10.46:80', state: 'SYN_SENT' },
+];
 
-  const isOut = p.dir === 'out';
-  const srcIP   = isOut ? p.privateIP  : ROUTER_IP;
-  const srcPort = isOut ? p.privatePort: p.publicPort;
-  const dstIP   = p.dstIP;
-  const dstPort = PROTO_PORTS[p.proto];
+let simTimeouts = [];
+let simRunning = false;
 
-  const natSrcIP   = isOut ? ROUTER_IP    : p.privateIP;
-  const natSrcPort = isOut ? p.publicPort : p.privatePort;
+function runSim() {
+  if (simRunning) return;
+  simRunning = true;
+  document.getElementById('simPlayBtn').disabled = true;
+  document.getElementById('simPlayBtn').textContent = '⏳ Running...';
+  const log = document.getElementById('simLog');
+  const tableBody = document.getElementById('simTableBody');
+  log.innerHTML = '';
+  tableBody.innerHTML = '';
+  let tableIdx = 0;
 
-  const body = document.getElementById('inspector-body');
-  body.innerHTML = `
-    <div class="pkt-flow">
-      <div class="pkt-box ${isOut ? 'private-box' : 'server-box'}">
-        <div class="pkt-box-icon">${isOut ? '💻' : '🌐'}</div>
-        <div class="pkt-box-label ${isOut ? 'lbl-private' : 'lbl-server'}">${isOut ? DEVICES[p.privateIP]?.name||'Client' : SERVERS[p.dstIP]?.name||'Server'}</div>
-        <div class="pkt-box-ip">${srcIP}</div>
-        <div class="pkt-box-port">Port: ${srcPort}</div>
-      </div>
-      <div class="pkt-arrow">
-        <div class="pkt-arrow-line"></div>
-        <div class="pkt-arrow-tag">Before NAT</div>
-      </div>
-      <div class="pkt-box nat-box">
-        <div class="pkt-box-icon">🔄</div>
-        <div class="pkt-box-label lbl-nat">NAT Router</div>
-        <div class="pkt-box-ip">${ROUTER_IP}</div>
-        <div class="pkt-box-port">Rewrites headers</div>
-      </div>
-      <div class="pkt-arrow">
-        <div class="pkt-arrow-line"></div>
-        <div class="pkt-arrow-tag">After NAT</div>
-      </div>
-      <div class="pkt-box ${isOut ? 'server-box' : 'private-box'}">
-        <div class="pkt-box-icon">${isOut ? '🌐' : '💻'}</div>
-        <div class="pkt-box-label ${isOut ? 'lbl-server' : 'lbl-private'}">${isOut ? SERVERS[p.dstIP]?.name||'Server' : DEVICES[p.privateIP]?.name||'Client'}</div>
-        <div class="pkt-box-ip">${dstIP}</div>
-        <div class="pkt-box-port">Port: ${dstPort}</div>
-      </div>
-    </div>
+  simEvents.forEach(ev => {
+    const t = setTimeout(() => {
+      const div = document.createElement('div');
+      div.className = `log-entry ${ev.type}`;
+      div.textContent = ev.text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
 
-    <div class="pkt-fields">
-      <div class="pkt-field-card">
-        <div class="pkt-field-title">📤 Packet Before NAT (${isOut ? 'Outbound from Client' : 'Reply from Server'})</div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Source IP</span>
-          <span class="pkt-field-val val-private">${srcIP}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Source Port</span>
-          <span class="pkt-field-val val-private">${srcPort}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Destination IP</span>
-          <span class="pkt-field-val val-public">${isOut ? dstIP : ROUTER_IP}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Destination Port</span>
-          <span class="pkt-field-val val-public">${isOut ? dstPort : p.publicPort}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Protocol</span>
-          <span class="pkt-field-val">${p.proto} / ${dstPort === 53 ? 'UDP' : 'TCP'}</span>
-        </div>
-      </div>
+      if (ev.type === 'table' && tableIdx < simTableData.length) {
+        const row = document.createElement('div');
+        row.className = 'nat-table-row data';
+        const d = simTableData[tableIdx++];
+        row.innerHTML = `<div class="nat-col-inside">${d.ins}</div><div class="nat-col-outside">${d.out}</div><div>${d.dst}</div><div class="nat-col-state">${d.state}</div>`;
+        tableBody.appendChild(row);
+      }
 
-      <div class="pkt-field-card">
-        <div class="pkt-field-title">📥 Packet After NAT (${isOut ? 'Seen by Internet Server' : 'Delivered to Client'})</div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Source IP</span>
-          <span class="pkt-field-val ${isOut ? 'val-nat' : 'val-public'}">${isOut ? ROUTER_IP : dstIP} ${isOut ? '<span class="val-changed">CHANGED</span>' : ''}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Source Port</span>
-          <span class="pkt-field-val ${isOut ? 'val-nat' : 'val-public'}">${isOut ? p.publicPort : dstPort} ${isOut ? '<span class="val-changed">CHANGED</span>' : ''}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Destination IP</span>
-          <span class="pkt-field-val val-public">${isOut ? dstIP : p.privateIP} ${!isOut ? '<span class="val-changed">CHANGED</span>' : ''}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Destination Port</span>
-          <span class="pkt-field-val val-public">${isOut ? dstPort : p.privatePort} ${!isOut ? '<span class="val-changed">CHANGED</span>' : ''}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Protocol</span>
-          <span class="pkt-field-val">${p.proto} / ${dstPort === 53 ? 'UDP' : 'TCP'}</span>
-        </div>
-      </div>
-
-      <div class="pkt-field-card" style="grid-column:1/-1">
-        <div class="pkt-field-title">🔄 NAT Translation Entry Used</div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Private Endpoint</span>
-          <span class="pkt-field-val val-private">${p.privateIP}:${p.privatePort}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Public Endpoint</span>
-          <span class="pkt-field-val val-nat">${ROUTER_IP}:${p.publicPort}</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">Translation Type</span>
-          <span class="pkt-field-val val-nat">PAT (Port Address Translation)</span>
-        </div>
-        <div class="pkt-field-row">
-          <span class="pkt-field-name">What Changed</span>
-          <span class="pkt-field-val">${isOut
-            ? 'Source IP ' + p.privateIP + ' → ' + ROUTER_IP + ' · Source Port ' + p.privatePort + ' → ' + p.publicPort
-            : 'Dest IP ' + ROUTER_IP + ':' + p.publicPort + ' → ' + p.privateIP + ':' + p.privatePort
-          }</span>
-        </div>
-      </div>
-    </div>`;
+      if (ev.text.includes('SIMULATION COMPLETE')) {
+        document.getElementById('simPlayBtn').textContent = '✓ Done';
+        simRunning = false;
+      }
+    }, ev.delay);
+    simTimeouts.push(t);
+  });
 }
 
-// ── SEND PACKETS ──────────────────────────────────────
-function sendPackets(dir) {
-  const srcIP   = document.getElementById('ctrl-src').value;
-  const dstIP   = document.getElementById('ctrl-dst').value;
-  const proto   = document.getElementById('ctrl-proto').value;
-  const count   = Math.min(20, Math.max(1, parseInt(document.getElementById('ctrl-count').value)||1));
-
-  for (let i = 0; i < count; i++) {
-    setTimeout(() => emitPacket(dir, srcIP, dstIP, proto), i * 180);
-  }
+function resetSim() {
+  simTimeouts.forEach(clearTimeout);
+  simTimeouts = [];
+  simRunning = false;
+  document.getElementById('simPlayBtn').disabled = false;
+  document.getElementById('simPlayBtn').textContent = '▶ Start Simulation';
+  document.getElementById('simLog').innerHTML = '<div class="log-entry info">→ Press "Start Simulation" to begin...</div><div class="log-entry info">→ Network: 192.168.1.0/24  |  NAT Router: 203.0.113.1  |  Mode: PAT</div>';
+  document.getElementById('simTableBody').innerHTML = '';
 }
 
-function emitPacket(dir, srcIP, dstIP, proto) {
-  const privatePort = randPort();
-  const nat = getNatEntry(srcIP, privatePort, dstIP, proto);
+// ─── HEADER BUILDER ───────────────────────────────────────────
+function buildHeader() {
+  const srcIp = document.getElementById('b-src-ip').value || '192.168.1.50';
+  const srcPort = document.getElementById('b-src-port').value || '3200';
+  const dstIp = document.getElementById('b-dst-ip').value || '8.8.8.8';
+  const dstPort = document.getElementById('b-dst-port').value || '443';
+  const proto = document.getElementById('b-proto').value;
+  const ttl = document.getElementById('b-ttl').value || '64';
+  const natType = document.getElementById('b-nat-type').value;
+  const globalIp = document.getElementById('b-global-ip').value || '203.0.113.1';
+  const globalPort = document.getElementById('b-global-port').value || '49152';
+  const newTtl = document.getElementById('b-new-ttl').value || '63';
 
-  const pkt = {
-    seq: ++logSeq,
-    dir, proto,
-    privateIP: srcIP, privatePort,
-    dstIP, dstPort: PROTO_PORTS[proto],
-    publicPort: nat.publicPort,
-    ts: timeStr()
-  };
+  const protoNum = { TCP: '6', UDP: '17', ICMP: '1' }[proto];
+  const isPAT = natType === 'pat';
 
-  packetLog.push(pkt);
-  if (packetLog.length > 200) packetLog.shift();
+  const checksum1 = '0x' + Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+  const checksum2 = '0x' + Math.floor(Math.random() * 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
 
-  renderPacketLog();
-  renderNatTable();
-  animatePacket(dir, srcIP, dstIP);
+  const out = document.getElementById('headerOutput');
+  out.innerHTML = `
+<div class="header-section">
+  <div class="header-section-title">── ORIGINAL PACKET (Pre-NAT / Inside Local) ──────────────────</div>
+  <div style="background:#1e293b;border-radius:6px;padding:0.75rem;margin:0.5rem 0">
+    <div class="header-section-title" style="color:#f87171">▌ IPv4 Header</div>
+    <div class="header-field"><span class="hf-name">Version:</span><span class="hf-val">4</span><span class="hf-bits">4 bits</span></div>
+    <div class="header-field"><span class="hf-name">IHL:</span><span class="hf-val">5 (20 bytes)</span><span class="hf-bits">4 bits</span></div>
+    <div class="header-field"><span class="hf-name">DSCP/ECN:</span><span class="hf-val">0x00</span><span class="hf-bits">8 bits</span></div>
+    <div class="header-field"><span class="hf-name">Total Length:</span><span class="hf-val">68 bytes</span><span class="hf-bits">16 bits</span></div>
+    <div class="header-field"><span class="hf-name">Identification:</span><span class="hf-val">0x4A2F</span><span class="hf-bits">16 bits</span></div>
+    <div class="header-field"><span class="hf-name">Flags:</span><span class="hf-val">DF=1, MF=0</span><span class="hf-bits">3 bits</span></div>
+    <div class="header-field"><span class="hf-name">Fragment Offset:</span><span class="hf-val">0</span><span class="hf-bits">13 bits</span></div>
+    <div class="header-field"><span class="hf-name">TTL:</span><span class="hf-val" style="color:#fbbf24">${ttl}</span><span class="hf-bits">8 bits</span></div>
+    <div class="header-field"><span class="hf-name">Protocol:</span><span class="hf-val">${proto} (${protoNum})</span><span class="hf-bits">8 bits</span></div>
+    <div class="header-field"><span class="hf-name">Header Checksum:</span><span class="hf-val" style="color:#fbbf24">${checksum1}</span><span class="hf-bits">16 bits</span></div>
+    <div class="header-field"><span class="hf-name">Source IP:</span><span class="hf-val" style="background:#7f1d1d;padding:1px 6px;border-radius:3px;color:#fca5a5">${srcIp} ← INSIDE LOCAL</span><span class="hf-bits">32 bits</span></div>
+    <div class="header-field"><span class="hf-name">Destination IP:</span><span class="hf-val">${dstIp}</span><span class="hf-bits">32 bits</span></div>
+  </div>
+  ${proto !== 'ICMP' ? `<div style="background:#1e293b;border-radius:6px;padding:0.75rem;margin:0.5rem 0">
+    <div class="header-section-title" style="color:#f87171">▌ ${proto} Header</div>
+    <div class="header-field"><span class="hf-name">Source Port:</span><span class="hf-val" style="background:#7f1d1d;padding:1px 6px;border-radius:3px;color:#fca5a5">${srcPort} ← ORIGINAL PORT</span><span class="hf-bits">16 bits</span></div>
+    <div class="header-field"><span class="hf-name">Destination Port:</span><span class="hf-val">${dstPort}</span><span class="hf-bits">16 bits</span></div>
+    ${proto === 'TCP' ? `<div class="header-field"><span class="hf-name">Sequence Number:</span><span class="hf-val">0x7A3F9C21</span><span class="hf-bits">32 bits</span></div>
+    <div class="header-field"><span class="hf-name">Ack Number:</span><span class="hf-val">0x00000000</span><span class="hf-bits">32 bits</span></div>
+    <div class="header-field"><span class="hf-name">Flags:</span><span class="hf-val">SYN</span><span class="hf-bits">9 bits</span></div>
+    <div class="header-field"><span class="hf-name">Window Size:</span><span class="hf-val">65535</span><span class="hf-bits">16 bits</span></div>` : ''}
+    <div class="header-field"><span class="hf-name">Checksum:</span><span class="hf-val" style="color:#fbbf24">${checksum1}</span><span class="hf-bits">16 bits</span></div>
+  </div>` : ''}
+</div>
 
-  // Auto-inspect the latest packet
-  inspectPacket(pkt.seq);
+<div class="header-section">
+  <div style="color:#fbbf24;font-size:11px;text-align:center;margin:0.5rem 0;letter-spacing:0.1em">
+    ▼ ▼ ▼  NAT ROUTER PROCESSES PACKET  ▼ ▼ ▼<br>
+    <span style="color:#64748b;font-size:10px">Type: ${natType.toUpperCase()} | ${srcIp}:${srcPort} → ${globalIp}:${isPAT ? globalPort : '(same)'}</span>
+  </div>
+</div>
+
+<div class="header-section">
+  <div class="header-section-title">── TRANSLATED PACKET (Post-NAT / Inside Global) ─────────────</div>
+  <div style="background:#1e293b;border-radius:6px;padding:0.75rem;margin:0.5rem 0">
+    <div class="header-section-title" style="color:#34d399">▌ IPv4 Header (MODIFIED)</div>
+    <div class="header-field"><span class="hf-name">Version:</span><span class="hf-val">4</span><span class="hf-bits">4 bits</span></div>
+    <div class="header-field"><span class="hf-name">IHL:</span><span class="hf-val">5 (20 bytes)</span><span class="hf-bits">4 bits</span></div>
+    <div class="header-field"><span class="hf-name">DSCP/ECN:</span><span class="hf-val">0x00</span><span class="hf-bits">8 bits</span></div>
+    <div class="header-field"><span class="hf-name">Total Length:</span><span class="hf-val">68 bytes</span><span class="hf-bits">16 bits</span></div>
+    <div class="header-field"><span class="hf-name">Identification:</span><span class="hf-val">0x4A2F</span><span class="hf-bits">16 bits</span></div>
+    <div class="header-field"><span class="hf-name">Flags:</span><span class="hf-val">DF=1, MF=0</span><span class="hf-bits">3 bits</span></div>
+    <div class="header-field"><span class="hf-name">Fragment Offset:</span><span class="hf-val">0</span><span class="hf-bits">13 bits</span></div>
+    <div class="header-field"><span class="hf-name">TTL:</span><span class="hf-val hf-changed">⬇ ${newTtl} (decremented)</span><span class="hf-bits">8 bits</span></div>
+    <div class="header-field"><span class="hf-name">Protocol:</span><span class="hf-val">${proto} (${protoNum})</span><span class="hf-bits">8 bits</span></div>
+    <div class="header-field"><span class="hf-name">Header Checksum:</span><span class="hf-val hf-changed">⬇ ${checksum2} (recalculated)</span><span class="hf-bits">16 bits</span></div>
+    <div class="header-field"><span class="hf-name">Source IP:</span><span class="hf-val" style="background:#064e3b;padding:1px 6px;border-radius:3px;color:#6ee7b7">⬇ ${globalIp} ← INSIDE GLOBAL</span><span class="hf-bits">32 bits</span></div>
+    <div class="header-field"><span class="hf-name">Destination IP:</span><span class="hf-val">${dstIp}</span><span class="hf-bits">32 bits</span></div>
+  </div>
+  ${proto !== 'ICMP' ? `<div style="background:#1e293b;border-radius:6px;padding:0.75rem;margin:0.5rem 0">
+    <div class="header-section-title" style="color:#34d399">▌ ${proto} Header (MODIFIED)</div>
+    <div class="header-field"><span class="hf-name">Source Port:</span><span class="hf-val" style="background:#064e3b;padding:1px 6px;border-radius:3px;color:#6ee7b7">${isPAT ? `⬇ ${globalPort} ← PAT ASSIGNED` : srcPort + ' (unchanged)'}</span><span class="hf-bits">16 bits</span></div>
+    <div class="header-field"><span class="hf-name">Destination Port:</span><span class="hf-val">${dstPort}</span><span class="hf-bits">16 bits</span></div>
+    ${proto === 'TCP' ? `<div class="header-field"><span class="hf-name">Sequence Number:</span><span class="hf-val">0x7A3F9C21</span><span class="hf-bits">32 bits</span></div>
+    <div class="header-field"><span class="hf-name">Flags:</span><span class="hf-val">SYN</span><span class="hf-bits">9 bits</span></div>
+    <div class="header-field"><span class="hf-name">Window Size:</span><span class="hf-val">65535</span><span class="hf-bits">16 bits</span></div>` : ''}
+    <div class="header-field"><span class="hf-name">Checksum:</span><span class="hf-val hf-changed">⬇ ${checksum2} (recalculated)</span><span class="hf-bits">16 bits</span></div>
+  </div>` : ''}
+</div>
+
+<div style="background:#0f2027;border:1px solid #1e3a5f;border-radius:6px;padding:0.75rem;margin-top:0.5rem;font-size:10px;color:#64748b">
+  ● NAT TABLE ENTRY: ${srcIp}:${srcPort} ↔ ${globalIp}:${isPAT ? globalPort : '(n/a)'} | DST: ${dstIp}:${dstPort} | PROTO: ${proto} | TTL: Session
+</div>`;
 }
 
-// ── AUTO-GENERATE ─────────────────────────────────────
-const AUTO_SRCS   = ['192.168.1.10','192.168.1.20','192.168.1.30'];
-const AUTO_DSTS   = ['93.184.216.34','8.8.8.8','172.217.14.78'];
-const AUTO_PROTOS = ['HTTP','HTTPS','DNS','FTP','SSH'];
-
-function toggleAuto() {
-  const btn = document.getElementById('auto-btn');
-  if (autoTimer) {
-    clearInterval(autoTimer);
-    autoTimer = null;
-    btn.textContent = '⚡ Auto-Generate';
-    btn.classList.remove('running');
-  } else {
-    btn.textContent = '⏹ Stop Auto';
-    btn.classList.add('running');
-    autoTimer = setInterval(() => {
-      const src   = AUTO_SRCS[Math.floor(Math.random()*AUTO_SRCS.length)];
-      const dst   = AUTO_DSTS[Math.floor(Math.random()*AUTO_DSTS.length)];
-      const proto = AUTO_PROTOS[Math.floor(Math.random()*AUTO_PROTOS.length)];
-      const dir   = Math.random() > 0.35 ? 'out' : 'in';
-      emitPacket(dir, src, dst, proto);
-    }, 900);
-  }
-}
-
-// ── CLEAR ALL ─────────────────────────────────────────
-function clearAll() {
-  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; document.getElementById('auto-btn').textContent='⚡ Auto-Generate'; document.getElementById('auto-btn').classList.remove('running'); }
-  natTable  = {};
-  packetLog = [];
-  portCounter = PORT_BASE;
-  logSeq = 0;
-  renderPacketLog();
-  renderNatTable();
-  document.getElementById('inspector-body').innerHTML = '<div class="inspect-empty">👆 Send some packets above, then click a log entry to inspect the NAT header rewrite</div>';
-  document.getElementById('inspect-proto-badge').textContent = 'Select a packet from the log';
-}
-
-// ── SVG PACKET ANIMATION ──────────────────────────────
-function animatePacket(dir, srcIP, dstIP) {
-  const dot = document.getElementById('anim-pkt');
-  const devY = DEVICES[srcIP]?.svgY || 100;
-  const srvY = SERVERS[dstIP]?.svgY || 100;
-
-  // Waypoints: client → router left → router right → server
-  const pts = dir === 'out'
-    ? [ [90, devY], [390, 100], [470, 100], [675, srvY] ]
-    : [ [675, srvY], [470, 100], [390, 100], [90, devY] ];
-
-  dot.setAttribute('opacity', '1');
-  dot.setAttribute('fill', dir==='out' ? '#0077aa' : '#d94f00');
-
-  let step = 0;
-  const STEPS = 30;
-
-  function lerp(a, b, t) { return a + (b-a)*t; }
-
-  function tick() {
-    if (step > STEPS * (pts.length-1)) {
-      dot.setAttribute('opacity','0');
-      return;
-    }
-    const seg  = Math.floor(step / STEPS);
-    const t    = (step % STEPS) / STEPS;
-    const from = pts[Math.min(seg, pts.length-2)];
-    const to   = pts[Math.min(seg+1, pts.length-1)];
-    dot.setAttribute('cx', lerp(from[0], to[0], t));
-    dot.setAttribute('cy', lerp(from[1], to[1], t));
-    step++;
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
-
-// ── QUIZ ──────────────────────────────────────────────
+// ─── QUIZ ─────────────────────────────────────────────────────
 const questions = [
   {
-    q: "What is the <em>primary purpose</em> of Network Address Translation (NAT)?",
-    opts: [
-      "Encrypt network traffic between hosts",
-      "Allow multiple private IP devices to share one public IP address",
-      "Assign IP addresses dynamically using DHCP",
-      "Route packets between different autonomous systems"
-    ],
-    ans: 1,
-    exp: "NAT allows many private IP devices (e.g., 192.168.x.x) to share a single public IP address, conserving the limited IPv4 address space while enabling internet access."
+    q: "What does 'Inside Local' refer to in NAT terminology?",
+    options: ["The public IP address seen by outside hosts", "The private IP address of the internal host", "The router's WAN interface address", "The destination address in the NAT table"],
+    correct: 1,
+    exp: "Inside Local is the actual private (RFC 1918) IP address configured on the internal host — it is not routable on the public internet."
   },
   {
-    q: "In <em>PAT (Port Address Translation)</em>, what differentiates connections from multiple private hosts sharing one public IP?",
-    opts: [
-      "Different public IP addresses",
-      "Different VLAN tags",
-      "Different source port numbers assigned by the NAT router",
-      "Different TTL values in the IP header"
-    ],
-    ans: 2,
-    exp: "PAT (also called NAT Overload) uses unique source port numbers to distinguish between sessions from different private hosts, all sharing one public IP address."
+    q: "Which Cisco IOS keyword enables PAT (NAT Overload) on a dynamic NAT configuration?",
+    options: ["static", "pool", "overload", "inside"],
+    correct: 2,
+    exp: "The 'overload' keyword appended to the 'ip nat inside source list' command enables PAT, allowing multiple hosts to share a single public IP via port multiplexing."
   },
   {
-    q: "A host at <em>192.168.1.10:5050</em> sends a packet to 93.184.216.34:80. After PAT, what does the internet server see as the source?",
-    opts: [
-      "192.168.1.10:5050 — the original private address",
-      "The router's public IP and an assigned public port (e.g., 203.0.113.1:40001)",
-      "192.168.1.1:80 — the gateway's private IP",
-      "0.0.0.0:0 — NAT removes the source"
-    ],
-    ans: 1,
-    exp: "The internet server sees the NAT router's public IP (e.g., 203.0.113.1) with an assigned public port. The original private IP is hidden, replaced by the router's public endpoint."
+    q: "A company has 500 internal hosts and one public IP address from their ISP. Which NAT type is most appropriate?",
+    options: ["Static NAT", "Dynamic NAT", "PAT (NAT Overload)", "Twice NAT"],
+    correct: 2,
+    exp: "PAT (NAT Overload) is the correct choice — it uses unique source port numbers to allow all 500 hosts to share a single public IP address simultaneously."
   },
   {
-    q: "Which address range is defined by <em>RFC 1918</em> as a private address space?",
-    opts: [
-      "172.217.0.0/16 (Google)",
-      "192.0.2.0/24 (documentation)",
-      "192.168.0.0/16 (home networks)",
-      "100.64.0.0/10 (CGNAT)"
-    ],
-    ans: 2,
-    exp: "RFC 1918 defines three private ranges: 10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16. These are non-routable on the public internet and require NAT to reach it."
+    q: "Which NAT type supports unsolicited inbound connections from the internet?",
+    options: ["Dynamic NAT", "PAT", "Static NAT", "NAT Overload"],
+    correct: 2,
+    exp: "Static NAT creates a permanent 1:1 mapping that allows inbound connections since the Inside Global address always maps to the same internal host. PAT and Dynamic NAT do not support this by default."
   },
   {
-    q: "What does <em>DNAT (Destination NAT)</em> or port forwarding accomplish?",
-    opts: [
-      "It translates source IP addresses for outbound traffic",
-      "It redirects incoming internet traffic to a specific internal server",
-      "It compresses packet headers to save bandwidth",
-      "It encrypts the destination IP address"
-    ],
-    ans: 1,
-    exp: "DNAT rewrites the destination IP (and often port) of incoming packets, redirecting them to an internal host. This is how web servers and game servers behind NAT are made reachable from the internet."
+    q: "What happens when the port number range for PAT is exhausted?",
+    options: ["The router reboots automatically", "New connections from internal hosts are dropped", "The router switches to static NAT", "Old entries are deleted immediately"],
+    correct: 1,
+    exp: "When all available ports (typically up to 65,535 per public IP) are in use, new connection attempts from inside hosts are rejected — this is a resource exhaustion condition."
   },
   {
-    q: "An ISP assigns your home router <em>100.72.4.5</em> as its WAN IP. What type of NAT is the ISP using?",
-    opts: [
-      "Static NAT — one-to-one mapping",
-      "Dynamic NAT — pool-based mapping",
-      "CGNAT (Carrier-Grade NAT) — RFC 6598",
-      "DNAT — port forwarding"
-    ],
-    ans: 2,
-    exp: "The 100.64.0.0/10 range is defined by RFC 6598 for CGNAT (Carrier-Grade NAT). ISPs use this when they apply NAT at the provider level, giving customers non-public addresses."
+    q: "Which RFC defines the private IPv4 address ranges used with NAT?",
+    options: ["RFC 791", "RFC 1918", "RFC 3022", "RFC 4787"],
+    correct: 1,
+    exp: "RFC 1918 defines the three private address blocks: 10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16. These addresses are non-routable on the public internet."
   },
   {
-    q: "When a web server replies to a NAT-translated request, how does the <em>NAT router know</em> which private host to forward the reply to?",
-    opts: [
-      "It broadcasts to all private hosts and lets them sort it out",
-      "The web server includes the private IP in its response",
-      "The NAT router maintains a translation table mapping public port → private IP:port",
-      "The TTL field decrements until it reaches the correct host"
-    ],
-    ans: 2,
-    exp: "The NAT router maintains a stateful translation table. When the server's reply arrives at the public port, the router looks up that port in the table and rewrites the destination to the matching private IP:port."
+    q: "When a NAT router receives an inbound packet destined for 203.0.113.1:49152, what does it do?",
+    options: ["Drops it (inbound unsolicited)", "Looks up port 49152 in the NAT table and forwards to the mapped inside host", "Broadcasts it to all internal hosts", "Sends it to the default gateway"],
+    correct: 1,
+    exp: "For PAT, the router checks the NAT table for the Inside Global address:port combination. If a matching entry exists, it translates the destination to the Inside Local address:port and forwards the packet inward."
   },
   {
-    q: "Which NAT type uses a <em>fixed, permanent</em> one-to-one mapping between a private IP and a public IP?",
-    opts: [
-      "PAT / NAT Overload",
-      "Dynamic NAT",
-      "CGNAT",
-      "Static NAT"
-    ],
-    ans: 3,
-    exp: "Static NAT creates a permanent, one-to-one mapping between a private IP and a public IP. It does not conserve addresses but is used for servers that must always be reachable at the same public IP."
+    q: "Which Cisco show command displays all current active NAT translations?",
+    options: ["show ip nat statistics", "show ip interface brief", "show ip nat translations", "debug ip nat"],
+    correct: 2,
+    exp: "'show ip nat translations' displays the current translation table showing protocol, Inside Local, Inside Global, and Outside Global mappings for all active sessions."
   }
 ];
 
-let current=0, score=0, answered=0;
+let answeredCount = 0;
+let correctCount = 0;
 
-function renderQuestion() {
-  const q = questions[current];
-  document.getElementById('question-text').innerHTML = `<strong>Q${current+1}.</strong> ${q.q}`;
-  document.getElementById('q-counter').textContent = `Question ${current+1} of ${questions.length}`;
-  document.getElementById('quiz-progress').style.width = `${(current/questions.length)*100}%`;
-  document.getElementById('next-btn').style.display = 'none';
-  const fb = document.getElementById('quiz-feedback');
-  fb.className = 'quiz-feedback'; fb.textContent = '';
-  const container = document.getElementById('options-container');
+function renderQuiz() {
+  const container = document.getElementById('quiz-container');
   container.innerHTML = '';
-  ['A','B','C','D'].forEach((ltr,i) => {
-    if (!q.opts[i] && q.opts[i]!=='') return;
-    const btn = document.createElement('div');
-    btn.className = 'option';
-    btn.innerHTML = `<span class="option-letter">${ltr}</span><span>${q.opts[i]}</span>`;
-    btn.onclick = () => selectAnswer(i, q.ans, q.exp);
-    container.appendChild(btn);
+  answeredCount = 0;
+  correctCount = 0;
+
+  questions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'quiz-card';
+    div.id = `q-${i}`;
+    div.innerHTML = `
+      <div class="quiz-q-num">Question ${i+1} of ${questions.length}</div>
+      <div class="quiz-question">${q.q}</div>
+      <div class="quiz-options">
+        ${q.options.map((opt, j) => `<button class="quiz-option" onclick="answerQ(${i}, ${j})">${opt}</button>`).join('')}
+      </div>
+      <div class="quiz-feedback" id="fb-${i}"></div>
+    `;
+    container.appendChild(div);
   });
 }
 
-function selectAnswer(sel, correct, exp) {
-  document.querySelectorAll('.option').forEach((o,i) => {
-    o.classList.add('disabled'); o.onclick = null;
-    if (i===correct) o.classList.add('correct');
-    else if (i===sel) o.classList.add('wrong');
-  });
-  answered++;
-  if (sel===correct) score++;
-  document.getElementById('score-display').textContent = score;
-  document.getElementById('total-display').textContent = answered;
-  const fb = document.getElementById('quiz-feedback');
-  fb.className = `quiz-feedback show ${sel===correct?'correct':'wrong'}`;
-  fb.textContent = (sel===correct ? '✓ Correct! ' : '✗ Incorrect. ') + exp;
-  document.getElementById('quiz-progress').style.width = `${((current+1)/questions.length)*100}%`;
-  const nb = document.getElementById('next-btn');
-  nb.textContent = current < questions.length-1 ? 'Next Question →' : '🏁 View Results';
-  nb.onclick = current < questions.length-1 ? nextQuestion : showResults;
-  nb.style.display = '';
+function answerQ(qi, choice) {
+  const q = questions[qi];
+  const card = document.getElementById(`q-${qi}`);
+  const btns = card.querySelectorAll('.quiz-option');
+  const fb = document.getElementById(`fb-${qi}`);
+
+  if (btns[0].disabled) return;
+
+  btns.forEach(b => b.disabled = true);
+  btns[choice].classList.add(choice === q.correct ? 'correct' : 'incorrect');
+  if (choice !== q.correct) btns[q.correct].classList.add('reveal');
+
+  fb.textContent = (choice === q.correct ? '✅ Correct! ' : '❌ Incorrect. ') + q.exp;
+  fb.className = `quiz-feedback show ${choice === q.correct ? 'good' : 'bad'}`;
+
+  if (choice === q.correct) correctCount++;
+  answeredCount++;
+
+  if (answeredCount === questions.length) {
+    const bar = document.getElementById('scoreBar');
+    bar.style.display = 'flex';
+    document.getElementById('scoreNum').textContent = correctCount;
+    document.getElementById('scoreOf').textContent = `/ ${questions.length}`;
+    const pct = Math.round(correctCount / questions.length * 100);
+    const msgs = { 100: '🏆 Perfect Score! Excellent mastery!', 87: '🌟 Great job! Strong understanding.', 75: '👍 Good work. Review a few areas.', 50: '📚 Keep studying — review the lesson.', 0: '🔁 Revisit the modules and try again.' };
+    const key = Object.keys(msgs).reverse().find(k => pct >= k);
+    document.getElementById('scoreMsg').textContent = msgs[key];
+    bar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
-function nextQuestion() { current++; renderQuestion(); }
-
-function showResults() {
-  const pct = Math.round((score/questions.length)*100);
-  const grade = pct>=90?'Excellent! 🏆':pct>=70?'Good Job! 👍':pct>=50?'Keep Studying! 📚':'Review the NAT materials 🔍';
-  document.querySelector('.quiz-body').innerHTML = `
-    <div style="text-align:center;padding:30px 0">
-      <div style="font-size:3.5rem;margin-bottom:16px">${pct>=80?'🎉':pct>=60?'👍':'📚'}</div>
-      <div style="font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;color:var(--accent);margin-bottom:8px">${pct}%</div>
-      <div style="font-size:1.1rem;color:var(--text);margin-bottom:8px">${grade}</div>
-      <div style="color:var(--text-muted);font-size:0.9rem;margin-bottom:28px">You scored ${score} out of ${questions.length} questions correctly.</div>
-      <button class="btn btn-primary" onclick="restartQuiz()">↺ Retake Quiz</button>
-    </div>`;
+function resetQuiz() {
+  document.getElementById('scoreBar').style.display = 'none';
+  renderQuiz();
 }
 
-function restartQuiz() {
-  current=0;score=0;answered=0;
-  document.getElementById('score-display').textContent='0';
-  document.getElementById('total-display').textContent='0';
-  document.querySelector('.quiz-body').innerHTML=`
-    <div class="progress-bar"><div class="progress-fill" id="quiz-progress" style="width:0%"></div></div>
-    <div class="question-text" id="question-text"></div>
-    <div class="options" id="options-container"></div>
-    <div class="quiz-feedback" id="quiz-feedback"></div>
-    <div class="quiz-nav">
-      <div class="q-counter" id="q-counter"></div>
-      <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none;">Next Question →</button>
-    </div>`;
-  renderQuestion();
-}
-
-renderQuestion();
-
-// ── SCROLL REVEAL ─────────────────────────────────────
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.05 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+// Init
+renderQuiz();
 </script>
 </body>
 </html>
