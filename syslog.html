@@ -1,148 +1,1643 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYSLOG Header Illustration</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #ffffff;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            text-align: center;
-            color: #d9534f;
-        }
-        .description-box {
-            background-color: #f8f9fa;
-            border: 2px solid #333;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        h2 {
-            color: #d9534f;
-            border-bottom: 2px solid #333;
-            padding-bottom: 5px;
-            margin-top: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            border: 1px solid #000;
-            padding: 12px;
-            text-align: left;
-            background-color: #ffffff;
-        }
-        th {
-            background-color: #333;
-            color: #ffffff;
-        }
-        tr:nth-child(even) td {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(odd) td {
-            background-color: #ffffff;
-        }
-        a {
-            color: #d9534f;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .description {
-            margin-top: 20px;
-            background-color: #f8f9fa;
-            padding: 15px;
-            border: 2px solid #333;
-            border-radius: 5px;
-        }
-        .description a {
-            color: #d9534f;
-            text-decoration: none;
-        }
-        .description a:hover {
-            text-decoration: underline;
-        }
-    </style>
-    <script>
-        function showDescription(id) {
-            const descriptions = document.querySelectorAll('.description');
-            descriptions.forEach(description => {
-                description.style.display = 'none';
-            });
-            document.getElementById(id).style.display = 'block';
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYSLOG: Network Logging Protocol — Interactive Lesson</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #ffffff;
+    --off-white: #f8f9fa;
+    --light-gray: #f1f3f5;
+    --border: #e2e6ea;
+    --text: #1a1a2e;
+    --text-secondary: #495057;
+    --text-light: #868e96;
+    --accent: #0d6efd;
+    --accent-dark: #0a58ca;
+    --accent-light: #e7f1ff;
+    --green: #198754;
+    --green-light: #d1e7dd;
+    --orange: #fd7e14;
+    --orange-light: #fff3cd;
+    --red: #dc3545;
+    --red-light: #f8d7da;
+    --purple: #6f42c1;
+    --purple-light: #e2d9f3;
+    --teal: #0dcaf0;
+    --teal-light: #cff4fc;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'Libre Baskerville', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--white);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 16px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--white);
+    border-bottom: 2px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; gap: 0;
+    height: 60px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .nav-brand {
+    font-family: var(--mono);
+    font-size: 1.1rem; font-weight: 600;
+    color: var(--accent);
+    margin-right: 2rem;
+    white-space: nowrap;
+  }
+  .nav-tabs {
+    display: flex; gap: 0; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .nav-tab {
+    padding: 0.5rem 1.1rem;
+    font-size: 0.85rem; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer; border: none; background: none;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-tab:hover { color: var(--accent); }
+  .nav-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+  .progress-bar-wrap {
+    margin-left: auto; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .progress-label { font-size: 0.75rem; color: var(--text-light); font-family: var(--mono); }
+  .progress-bar {
+    width: 120px; height: 6px; background: var(--light-gray);
+    border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent);
+    border-radius: 3px; transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 2.5rem 2rem; max-width: 1100px; margin: 0 auto; }
+  .section.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── TYPOGRAPHY ── */
+  h1 { font-family: var(--serif); font-size: 2.2rem; font-weight: 700; margin-bottom: 0.4rem; line-height: 1.25; }
+  h2 { font-family: var(--serif); font-size: 1.6rem; font-weight: 700; margin-bottom: 1rem; color: var(--text); }
+  h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  p { margin-bottom: 1rem; color: var(--text-secondary); }
+  code, .mono { font-family: var(--mono); }
+
+  .lead { font-size: 1.05rem; color: var(--text-secondary); max-width: 720px; }
+  .section-hero {
+    background: linear-gradient(135deg, #e7f1ff 0%, #f8f9fa 100%);
+    border-radius: 12px; padding: 2rem 2.5rem; margin-bottom: 2.5rem;
+    border-left: 5px solid var(--accent);
+  }
+  .section-hero .tag {
+    display: inline-block; font-family: var(--mono); font-size: 0.7rem;
+    background: var(--accent); color: white; border-radius: 4px;
+    padding: 0.2rem 0.5rem; margin-bottom: 0.5rem; letter-spacing: 0.05em;
+  }
+
+  /* ── CARDS ── */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin: 1.5rem 0; }
+  .card {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.5rem;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
+  .card-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+  .card-tag {
+    display: inline-block; font-family: var(--mono); font-size: 0.68rem;
+    padding: 0.15rem 0.4rem; border-radius: 3px; margin-bottom: 0.5rem;
+    font-weight: 600; letter-spacing: 0.04em;
+  }
+  .tag-blue { background: var(--accent-light); color: var(--accent-dark); }
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-orange { background: var(--orange-light); color: #e65100; }
+  .tag-red { background: var(--red-light); color: var(--red); }
+  .tag-purple { background: var(--purple-light); color: var(--purple); }
+  .tag-teal { background: var(--teal-light); color: #055160; }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th {
+    background: var(--text); color: white; text-align: left;
+    padding: 0.75rem 1rem; font-weight: 600; font-size: 0.8rem;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--off-white); }
+  .sev-0 { background: #1a1a2e; color: #fff; font-weight: 700; }
+  .sev-1 { background: #dc3545; color: #fff; font-weight: 700; }
+  .sev-2 { background: #c0392b; color: #fff; }
+  .sev-3 { background: #e74c3c; color: #fff; }
+  .sev-4 { background: #e65100; color: #fff; }
+  .sev-5 { background: #fd7e14; color: #fff; }
+  .sev-6 { background: #198754; color: #fff; }
+  .sev-7 { background: #6c757d; color: #fff; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: #1a1a2e; color: #e8f4f8;
+    font-family: var(--mono); font-size: 0.82rem;
+    padding: 1.25rem 1.5rem; border-radius: 8px;
+    margin: 1.25rem 0; overflow-x: auto; line-height: 1.8;
+  }
+  .code-block .c-pri { color: #ffd166; }
+  .code-block .c-ver { color: #06d6a0; }
+  .code-block .c-ts { color: #74c7f0; }
+  .code-block .c-host { color: #f4a261; }
+  .code-block .c-app { color: #c77dff; }
+  .code-block .c-proc { color: #90e0ef; }
+  .code-block .c-msg { color: #ffb4a2; }
+  .code-block .c-sd { color: #b7e4c7; }
+  .code-block .c-text { color: #e8f4f8; }
+  .code-block .c-comment { color: #6c757d; font-style: italic; }
+
+  /* ── PACKET DIAGRAM ── */
+  .packet-diagram { display: flex; gap: 2px; margin: 1.5rem 0; flex-wrap: nowrap; overflow-x: auto; }
+  .packet-field {
+    flex: 1; min-width: 60px; text-align: center;
+    border-radius: 6px; padding: 0.6rem 0.4rem; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .packet-field:hover { transform: translateY(-4px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2; }
+  .packet-field .pf-label { font-family: var(--mono); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.03em; }
+  .packet-field .pf-val { font-family: var(--mono); font-size: 0.7rem; margin-top: 0.25rem; opacity: 0.85; }
+  .pf-pri { background: #ffd166; color: #1a1a2e; }
+  .pf-ver { background: #06d6a0; color: #1a1a2e; }
+  .pf-ts { background: #74c7f0; color: #1a1a2e; }
+  .pf-host { background: #f4a261; color: #1a1a2e; }
+  .pf-app { background: #c77dff; color: #1a1a2e; }
+  .pf-proc { background: #90e0ef; color: #1a1a2e; }
+  .pf-msgid { background: #ffb4a2; color: #1a1a2e; }
+  .pf-sd { background: #b7e4c7; color: #1a1a2e; }
+  .pf-msg { background: #e2d9f3; color: #1a1a2e; flex: 2; }
+  .field-tooltip {
+    display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    background: #1a1a2e; color: #e8f4f8; font-size: 0.75rem;
+    padding: 0.5rem 0.75rem; border-radius: 6px; width: 200px; z-index: 10;
+    text-align: left; line-height: 1.5; pointer-events: none;
+    font-family: var(--sans);
+  }
+  .field-tooltip::after {
+    content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #1a1a2e;
+  }
+  .packet-field:hover .field-tooltip { display: block; }
+
+  /* ── HEADER BUILDER ── */
+  .builder-container {
+    background: var(--off-white); border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem; margin: 1.5rem 0;
+  }
+  .builder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media(max-width: 640px) { .builder-grid { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-group label {
+    font-size: 0.8rem; font-weight: 600; color: var(--text);
+    font-family: var(--mono); letter-spacing: 0.03em;
+  }
+  .form-group label span { color: var(--text-light); font-weight: 400; font-size: 0.75rem; }
+  .form-group select, .form-group input {
+    padding: 0.55rem 0.75rem; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 0.9rem; font-family: var(--sans);
+    background: white; color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-group select:focus, .form-group input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.15);
+  }
+  .output-area {
+    background: #1a1a2e; border-radius: 8px; padding: 1.25rem 1.5rem;
+    font-family: var(--mono); font-size: 0.82rem; color: #e8f4f8;
+    line-height: 1.8; min-height: 80px; word-break: break-all;
+    margin-bottom: 1rem;
+  }
+  .output-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.4rem; }
+  .btn {
+    padding: 0.6rem 1.4rem; border-radius: 6px; border: none;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    font-family: var(--sans); transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
+  .btn-secondary { background: var(--light-gray); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #157347; }
+  .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+
+  /* PRI calc display */
+  .pri-calc {
+    background: var(--accent-light); border: 1px solid #b6d4fe;
+    border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .pri-calc .formula { font-family: var(--mono); font-size: 0.85rem; }
+  .pri-calc .result { font-family: var(--mono); font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+
+  /* ── ACCORDION ── */
+  .accordion { margin: 1.5rem 0; }
+  .accordion-item { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.5rem; overflow: hidden; }
+  .accordion-header {
+    padding: 1rem 1.25rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    background: white; transition: background 0.2s;
+    user-select: none;
+  }
+  .accordion-header:hover { background: var(--off-white); }
+  .accordion-header .acc-icon { font-size: 0.85rem; transition: transform 0.2s; color: var(--accent); }
+  .accordion-header.open .acc-icon { transform: rotate(180deg); }
+  .accordion-body { display: none; padding: 0 1.25rem 1.25rem; }
+  .accordion-body.open { display: block; animation: fadeIn 0.2s ease; }
+
+  /* ── QUIZ ── */
+  .quiz-container { max-width: 760px; }
+  .quiz-q {
+    background: white; border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.5rem; margin-bottom: 1.25rem;
+  }
+  .quiz-q .q-text { font-weight: 600; margin-bottom: 1rem; font-size: 0.95rem; }
+  .quiz-q .q-num {
+    font-family: var(--mono); font-size: 0.72rem; background: var(--accent);
+    color: white; border-radius: 3px; padding: 0.1rem 0.4rem;
+    margin-right: 0.5rem;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.5rem; }
+  .quiz-opt {
+    padding: 0.65rem 1rem; border: 1.5px solid var(--border);
+    border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+    transition: all 0.2s; background: white;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .quiz-opt:hover { border-color: var(--accent); background: var(--accent-light); }
+  .quiz-opt.correct { border-color: var(--green); background: var(--green-light); color: var(--green); }
+  .quiz-opt.incorrect { border-color: var(--red); background: var(--red-light); color: var(--red); }
+  .quiz-opt .opt-bullet {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+  }
+  .quiz-opt.correct .opt-bullet { border-color: var(--green); background: var(--green); color: white; }
+  .quiz-opt.incorrect .opt-bullet { border-color: var(--red); background: var(--red); color: white; }
+  .quiz-feedback {
+    margin-top: 0.75rem; padding: 0.75rem 1rem;
+    border-radius: 6px; font-size: 0.87rem; display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--green-light); color: var(--green); }
+  .quiz-feedback.incorrect { background: var(--red-light); color: var(--red); }
+  .quiz-score {
+    background: var(--accent); color: white; border-radius: 10px;
+    padding: 1.5rem; text-align: center; display: none; margin-top: 1.5rem;
+  }
+  .quiz-score .score-num { font-size: 2.5rem; font-weight: 700; font-family: var(--mono); }
+
+  /* ── FACILITY TABLE TABS ── */
+  .inner-tabs { display: flex; gap: 0.4rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .inner-tab {
+    padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; border: 1.5px solid var(--border); background: white;
+    transition: all 0.2s; color: var(--text-secondary);
+  }
+  .inner-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .inner-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .inner-panel { display: none; }
+  .inner-panel.active { display: block; animation: fadeIn 0.2s; }
+
+  /* ── HIGHLIGHT BOX ── */
+  .highlight-box {
+    border-left: 4px solid var(--accent); background: var(--accent-light);
+    padding: 1rem 1.25rem; border-radius: 0 8px 8px 0; margin: 1.25rem 0;
+  }
+  .highlight-box.warn { border-left-color: var(--orange); background: var(--orange-light); }
+  .highlight-box.success { border-left-color: var(--green); background: var(--green-light); }
+  .highlight-box.danger { border-left-color: var(--red); background: var(--red-light); }
+  .highlight-box p { margin: 0; font-size: 0.9rem; }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin: 1.5rem 0; }
+  .flow-node {
+    background: white; border: 2px solid var(--border);
+    border-radius: 8px; padding: 0.75rem 1.1rem;
+    text-align: center; font-size: 0.85rem; font-weight: 600;
+    min-width: 110px; transition: all 0.2s;
+  }
+  .flow-node:hover { border-color: var(--accent); background: var(--accent-light); }
+  .flow-arrow { color: var(--text-light); font-size: 1.2rem; padding: 0 0.3rem; }
+
+  /* ── COPY BUTTON ── */
+  .copy-btn {
+    float: right; padding: 0.3rem 0.6rem; font-size: 0.72rem;
+    background: rgba(255,255,255,0.15); color: #e8f4f8;
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+    cursor: pointer; font-family: var(--mono);
+    transition: background 0.2s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* ── FOOTER NAV ── */
+  .section-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 2rem 0; margin-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .section-footer .btn { min-width: 120px; }
+
+  /* MISC */
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .badge {
+    display: inline-block; padding: 0.2rem 0.55rem; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 600; margin: 0 0.15rem;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.25rem 0; }
+  @media(max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+  ul.styled { padding-left: 1.25rem; }
+  ul.styled li { margin-bottom: 0.4rem; color: var(--text-secondary); font-size: 0.92rem; }
+  ul.styled li strong { color: var(--text); }
+
+  /* Severity badge colors */
+  .sev-badge {
+    display: inline-block; padding: 0.2rem 0.55rem;
+    border-radius: 4px; font-family: var(--mono); font-size: 0.72rem;
+    font-weight: 700; margin-right: 0.3rem;
+  }
+
+  /* Copy notification */
+  .copy-toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--green); color: white; padding: 0.75rem 1.25rem;
+    border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s; z-index: 9999;
+    pointer-events: none;
+  }
+  .copy-toast.show { opacity: 1; }
+</style>
 </head>
 <body>
 
-<h1>SYSLOG Header Illustration</h1>
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">SYSLOG</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection(0)">① Overview</button>
+    <button class="nav-tab" onclick="showSection(1)">② Message Format</button>
+    <button class="nav-tab" onclick="showSection(2)">③ Facilities &amp; Severity</button>
+    <button class="nav-tab" onclick="showSection(3)">④ Header Builder</button>
+    <button class="nav-tab" onclick="showSection(4)">⑤ Architecture</button>
+    <button class="nav-tab" onclick="showSection(5)">⑥ Security</button>
+    <button class="nav-tab" onclick="showSection(6)">⑦ Quiz</button>
+  </div>
+  <div class="progress-bar-wrap">
+    <span class="progress-label" id="progressLabel">0%</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+</nav>
 
-<div class="description-box">
-    <p>SYSLOG is a standard protocol used to send system log or event messages to a specific server, known as a SYSLOG server. It is primarily used for computer system management and security auditing, allowing the collection and analysis of log data from different systems in a centralized location. SYSLOG messages contain various fields including priority, version, timestamp, hostname, application name, process ID, message ID, and the actual log message.</p>
+<div class="copy-toast" id="copyToast">✓ Copied to clipboard!</div>
+
+<!-- ══════════════ SECTION 0: OVERVIEW ══════════════ -->
+<div class="section active" id="sec0">
+  <div class="section-hero">
+    <div class="tag">UNIT 1 · INTRODUCTION</div>
+    <h1>SYSLOG Protocol</h1>
+    <p class="lead">The universal standard for message logging across network devices, servers, and applications — defined in <strong>RFC 5424</strong>.</p>
+  </div>
+
+  <h2>What is SYSLOG?</h2>
+  <p>SYSLOG is a standard protocol that allows network devices, operating systems, and applications to send event messages to a centralized logging server. Originally developed for BSD Unix, it is now the de facto standard for log management across routers, switches, firewalls, servers, and virtually every networked device.</p>
+  <p>The protocol operates on a <strong>client-server model</strong>: devices (originators) generate log messages and transmit them to a syslog server (collector). Syslog is defined in <strong>RFC 5424</strong> (2009), which superseded the older <strong>RFC 3164</strong> (BSD syslog).</p>
+
+  <div class="highlight-box">
+    <p><strong>📌 Key Fact:</strong> By default, syslog uses <strong>UDP port 514</strong>. For reliable delivery, TCP port 514 or TLS/TCP port 6514 may be used. UDP offers no delivery guarantee — messages can be lost silently.</p>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">📋</div>
+      <div class="card-tag tag-blue">RFC 5424</div>
+      <h3>Structured Logging</h3>
+      <p>The modern IETF standard provides a consistent, parseable format with clearly defined fields for priority, timestamp, hostname, application, and structured data.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <div class="card-tag tag-green">Transport</div>
+      <h3>Multiple Transport Options</h3>
+      <p>Syslog messages can travel over UDP (unreliable, low overhead), TCP (reliable), or TLS-encrypted TCP for secure transmission in compliance environments.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔍</div>
+      <div class="card-tag tag-orange">Use Cases</div>
+      <h3>Security &amp; Monitoring</h3>
+      <p>Used for security auditing, compliance (PCI DSS, HIPAA, SOX), troubleshooting, performance monitoring, and SIEM integration across enterprise environments.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚙️</div>
+      <div class="card-tag tag-purple">Priority System</div>
+      <h3>Facility + Severity = PRI</h3>
+      <p>Every message carries a Priority (PRI) value, mathematically derived from a <em>Facility</em> code (source type) and a <em>Severity</em> level (urgency), giving 192 possible combinations.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌐</div>
+      <div class="card-tag tag-teal">Scope</div>
+      <h3>Universal Device Support</h3>
+      <p>Routers, switches, firewalls, Linux/Unix servers, Windows (via agents), printers, and IoT devices all speak syslog — making it the lingua franca of network logging.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🏛️</div>
+      <div class="card-tag tag-red">Standards</div>
+      <h3>Key RFCs</h3>
+      <ul class="styled" style="margin-top:0.5rem">
+        <li><strong>RFC 3164</strong> — Original BSD syslog</li>
+        <li><strong>RFC 5424</strong> — Modern syslog standard</li>
+        <li><strong>RFC 5425</strong> — TLS transport</li>
+        <li><strong>RFC 5426</strong> — UDP transport</li>
+        <li><strong>RFC 6587</strong> — TCP transport</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Why Network Admins Must Master SYSLOG</h2>
+  <div class="two-col">
+    <div>
+      <h3>📌 Operational Visibility</h3>
+      <p>Syslog messages reveal device status, interface changes, routing protocol events, authentication attempts, and system errors in near real-time.</p>
+      <h3>🔐 Security Incident Detection</h3>
+      <p>Failed login attempts, ACL violations, port scans, and firewall rule triggers all generate syslog messages. Without syslog, these events are invisible.</p>
+      <h3>📊 Compliance Requirements</h3>
+      <p>PCI DSS, HIPAA, SOX, and NIST SP 800-92 all mandate centralized log management. Syslog is typically the mechanism for collecting those logs.</p>
+    </div>
+    <div>
+      <h3>🔧 Troubleshooting</h3>
+      <p>Network outages, routing loops, spanning tree topology changes, and hardware failures all leave traces in syslog — often before users even notice.</p>
+      <h3>📈 Capacity Planning</h3>
+      <p>Traffic spikes, memory exhaustion warnings, and interface error rates surfaced in syslog data inform infrastructure planning decisions.</p>
+      <h3>🔗 SIEM Integration</h3>
+      <p>Security Information and Event Management (SIEM) platforms like Splunk, IBM QRadar, and Microsoft Sentinel ingest syslog as a primary data source.</p>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <div></div>
+    <button class="btn btn-primary" onclick="showSection(1)">Next: Message Format →</button>
+  </div>
 </div>
 
-<h2>SYSLOG Header</h2>
-<table>
-    <tr>
-        <th colspan="8"><a onclick="showDescription('desc-priority')">Priority</a> (8 bits)</th>
-        <th colspan="8"><a onclick="showDescription('desc-version')">Version</a> (8 bits)</th>
-        <th colspan="16"><a onclick="showDescription('desc-timestamp')">Timestamp</a> (32 bits)</th>
-    </tr>
-    <tr>
-        <th colspan="16"><a onclick="showDescription('desc-hostname')">Hostname</a> (255 characters)</th>
-        <th colspan="16"><a onclick="showDescription('desc-appname')">Application Name</a> (48 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="16"><a onclick="showDescription('desc-procid')">Process ID</a> (128 characters)</th>
-        <th colspan="16"><a onclick="showDescription('desc-msgid')">Message ID</a> (32 characters)</th>
-    </tr>
-    <tr>
-        <th colspan="32"><a onclick="showDescription('desc-msg')">Message</a> (Variable length)</th>
-    </tr>
-</table>
+<!-- ══════════════ SECTION 1: MESSAGE FORMAT ══════════════ -->
+<div class="section" id="sec1">
+  <div class="section-hero">
+    <div class="tag">UNIT 2 · STRUCTURE</div>
+    <h1>Syslog Message Format</h1>
+    <p class="lead">Understanding the anatomy of a syslog message — from the PRI value to structured data and the message body.</p>
+  </div>
 
-<div class="description" id="desc-priority">
-    <h2>Priority (8 bits)</h2>
-    <p>Indicates the importance of the message. The priority is calculated using the facility and severity of the message. <a href="#desc-priority">Back to header</a></p>
-</div>
-<div class="description" id="desc-version">
-    <h2>Version (8 bits)</h2>
-    <p>Indicates the version of the SYSLOG protocol used. <a href="#desc-version">Back to header</a></p>
-</div>
-<div class="description" id="desc-timestamp">
-    <h2>Timestamp (32 bits)</h2>
-    <p>Indicates the date and time when the message was generated. <a href="#desc-timestamp">Back to header</a></p>
-</div>
-<div class="description" id="desc-hostname">
-    <h2>Hostname (255 characters)</h2>
-    <p>Indicates the hostname or IP address of the device that sent the SYSLOG message. <a href="#desc-hostname">Back to header</a></p>
-</div>
-<div class="description" id="desc-appname">
-    <h2>Application Name (48 characters)</h2>
-    <p>Indicates the name of the application that generated the message. <a href="#desc-appname">Back to header</a></p>
-</div>
-<div class="description" id="desc-procid">
-    <h2>Process ID (128 characters)</h2>
-    <p>Indicates the process ID of the application that generated the message. <a href="#desc-procid">Back to header</a></p>
-</div>
-<div class="description" id="desc-msgid">
-    <h2>Message ID (32 characters)</h2>
-    <p>Indicates the ID of the message. <a href="#desc-msgid">Back to header</a></p>
-</div>
-<div class="description" id="desc-msg">
-    <h2>Message (Variable length)</h2>
-    <p>The actual log message content. <a href="#desc-msg">Back to header</a></p>
+  <h2>RFC 5424 Message Structure</h2>
+  <p>A complete syslog message has three top-level components. Hover over each field below for details:</p>
+
+  <div class="packet-diagram">
+    <div class="packet-field pf-pri">
+      <div class="pf-label">PRI</div>
+      <div class="pf-val">&lt;34&gt;</div>
+      <div class="field-tooltip"><strong>PRIORITY (PRI)</strong><br>Encodes both Facility and Severity. Format: &lt;PRIVAL&gt; where PRIVAL = (Facility × 8) + Severity. Range: 0–191.</div>
+    </div>
+    <div class="packet-field pf-ver">
+      <div class="pf-label">VER</div>
+      <div class="pf-val">1</div>
+      <div class="field-tooltip"><strong>VERSION</strong><br>Syslog protocol version. Currently "1" for RFC 5424. Incremented when the protocol changes.</div>
+    </div>
+    <div class="packet-field pf-ts">
+      <div class="pf-label">TIMESTAMP</div>
+      <div class="pf-val">2024-03-15T…</div>
+      <div class="field-tooltip"><strong>TIMESTAMP</strong><br>ISO 8601 / RFC 3339 format. Includes date, time, optional fractional seconds (up to 6 digits), and timezone offset. Example: 2024-03-15T14:22:05.003Z</div>
+    </div>
+    <div class="packet-field pf-host">
+      <div class="pf-label">HOSTNAME</div>
+      <div class="pf-val">router01</div>
+      <div class="field-tooltip"><strong>HOSTNAME</strong><br>FQDN, IPv4, or IPv6 address of the originating device. Max 255 chars. Use "-" (NILVALUE) if unavailable.</div>
+    </div>
+    <div class="packet-field pf-app">
+      <div class="pf-label">APP-NAME</div>
+      <div class="pf-val">sshd</div>
+      <div class="field-tooltip"><strong>APP-NAME</strong><br>Name of the application or device generating the message. Max 48 chars. Use "-" if unknown.</div>
+    </div>
+    <div class="packet-field pf-proc">
+      <div class="pf-label">PROCID</div>
+      <div class="pf-val">12345</div>
+      <div class="field-tooltip"><strong>PROCID</strong><br>Process ID or name generating the message. Max 128 chars. Indicates a discontinuity in reporting if it changes.</div>
+    </div>
+    <div class="packet-field pf-msgid">
+      <div class="pf-label">MSGID</div>
+      <div class="pf-val">ID47</div>
+      <div class="field-tooltip"><strong>MSGID</strong><br>Identifies the type/category of message. Messages with the same semantics share the same MSGID. Max 32 chars.</div>
+    </div>
+    <div class="packet-field pf-sd">
+      <div class="pf-label">STRUCT-DATA</div>
+      <div class="pf-val">[sd@123…]</div>
+      <div class="field-tooltip"><strong>STRUCTURED-DATA</strong><br>Key-value pairs in a defined format: [SD-ID param="value"]. Allows machine-parseable data. Use "-" if none.</div>
+    </div>
+    <div class="packet-field pf-msg">
+      <div class="pf-label">MESSAGE</div>
+      <div class="pf-val">Login failed for user admin</div>
+      <div class="field-tooltip"><strong>MSG</strong><br>Free-form human-readable message text. UTF-8 encoded. No length limit enforced by RFC 5424, but transport may limit size.</div>
+    </div>
+  </div>
+
+  <div class="highlight-box" style="margin-top:0.5rem">
+    <p><strong>💡 Hover over each colored field</strong> in the diagram above to learn about that field's purpose, format, and constraints.</p>
+  </div>
+
+  <h2 style="margin-top:2rem">Live Message Example</h2>
+  <p>This is a fully-formed RFC 5424 syslog message. Each color corresponds to a field in the diagram above:</p>
+
+  <div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this, '<34>1 2024-03-15T14:22:05.003Z router01.corp.com sshd 12345 ID47 [exampleSDID@32473 iut=\\\"3\\\" eventSource=\\\"Application\\\"] Login failed for user admin from 192.168.1.100')">Copy</button>
+    <span class="c-pri">&lt;34&gt;</span><span class="c-ver">1</span> <span class="c-ts">2024-03-15T14:22:05.003Z</span> <span class="c-host">router01.corp.com</span> <span class="c-app">sshd</span> <span class="c-proc">12345</span> <span class="c-msg">ID47</span> <span class="c-sd">[exampleSDID@32473 iut="3" eventSource="Application"]</span> <span class="c-text">Login failed for user admin from 192.168.1.100</span>
+    <br><br>
+    <span class="c-comment">─────────────────────────────────────────────────────────────</span>
+    <br>
+    <span class="c-comment">PRI=34 → Facility=4 (AUTH), Severity=2 (CRITICAL)  | Facility=(34÷8)=4, Severity=(34%8)=2</span>
+  </div>
+
+  <h2>RFC 3164 vs RFC 5424 Comparison</h2>
+  <div class="inner-tabs">
+    <button class="inner-tab active" onclick="showPanel('formatPanel','fp0')">RFC 3164 (Legacy BSD)</button>
+    <button class="inner-tab" onclick="showPanel('formatPanel','fp1')">RFC 5424 (Modern IETF)</button>
+    <button class="inner-tab" onclick="showPanel('formatPanel','fp2')">Side-by-Side</button>
+  </div>
+  <div id="formatPanel">
+    <div class="inner-panel active" id="fp0">
+      <p><strong>RFC 3164</strong> (2001) is the original BSD syslog format. It's widely implemented but has inconsistencies and is harder to parse automatically.</p>
+      <div class="code-block">
+        <span class="c-pri">&lt;34&gt;</span><span class="c-ts">Mar 15 14:22:05</span> <span class="c-host">router01</span> <span class="c-app">sshd[12345]</span><span class="c-text">: Login failed for user admin</span>
+      </div>
+      <p><strong>Limitations of RFC 3164:</strong></p>
+      <ul class="styled">
+        <li>No year in timestamp (makes log correlation difficult)</li>
+        <li>No timezone information (ambiguous log ordering)</li>
+        <li>No structured data field</li>
+        <li>No message ID field</li>
+        <li>TAG/CONTENT split is ambiguous</li>
+        <li>Maximum message size limited to 1024 bytes</li>
+      </ul>
+    </div>
+    <div class="inner-panel" id="fp1">
+      <p><strong>RFC 5424</strong> (2009) addresses all legacy limitations with a fully structured, parseable format.</p>
+      <div class="code-block">
+        <span class="c-pri">&lt;34&gt;</span><span class="c-ver">1</span> <span class="c-ts">2024-03-15T14:22:05.003Z</span> <span class="c-host">router01.corp.com</span> <span class="c-app">sshd</span> <span class="c-proc">12345</span> <span class="c-msg">ID47</span> <span class="c-sd">[timeQuality tzKnown="1"]</span> <span class="c-text">Login failed for user admin</span>
+      </div>
+      <p><strong>Improvements in RFC 5424:</strong></p>
+      <ul class="styled">
+        <li><strong>Full ISO 8601 timestamp</strong> — includes year, timezone, microseconds</li>
+        <li><strong>HOSTNAME</strong> should be FQDN for uniqueness</li>
+        <li><strong>APP-NAME, PROCID, MSGID</strong> are separate header fields</li>
+        <li><strong>STRUCTURED-DATA</strong> allows key-value metadata</li>
+        <li><strong>UTF-8 encoding</strong> explicitly supported for MSG</li>
+        <li>No enforced maximum message length</li>
+      </ul>
+    </div>
+    <div class="inner-panel" id="fp2">
+      <div class="table-wrap">
+        <table>
+          <tr><th>Feature</th><th>RFC 3164 (BSD)</th><th>RFC 5424 (IETF)</th></tr>
+          <tr><td>Year in timestamp</td><td>❌ No</td><td>✅ Yes</td></tr>
+          <tr><td>Timezone support</td><td>❌ No</td><td>✅ Yes (UTC/offset)</td></tr>
+          <tr><td>Microsecond precision</td><td>❌ No</td><td>✅ Up to 6 digits</td></tr>
+          <tr><td>Structured data</td><td>❌ No</td><td>✅ Yes</td></tr>
+          <tr><td>Message ID field</td><td>❌ No</td><td>✅ Yes (MSGID)</td></tr>
+          <tr><td>APP-NAME field</td><td>Partial (TAG)</td><td>✅ Explicit</td></tr>
+          <tr><td>Max message size</td><td>1024 bytes</td><td>No hard limit (RFC)</td></tr>
+          <tr><td>Character encoding</td><td>ASCII assumed</td><td>✅ UTF-8 explicit</td></tr>
+          <tr><td>NILVALUE support</td><td>❌ No</td><td>✅ Yes ("-")</td></tr>
+          <tr><td>Status</td><td>Informational/Legacy</td><td>Standards Track</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:2rem">ABNF Grammar (RFC 5424)</h2>
+  <p>The Augmented Backus-Naur Form (ABNF) definition shows the exact message structure:</p>
+  <div class="code-block" style="font-size:0.77rem; line-height:1.9">
+    <button class="copy-btn" onclick="copyCode(this, 'SYSLOG-MSG = HEADER SP STRUCTURED-DATA [SP MSG]')">Copy</button>
+    <span class="c-comment">; Complete RFC 5424 SYSLOG message grammar</span><br>
+    <span class="c-ver">SYSLOG-MSG</span>  = <span class="c-pri">HEADER</span> SP <span class="c-sd">STRUCTURED-DATA</span> [SP <span class="c-text">MSG</span>]<br>
+    <span class="c-pri">HEADER</span>      = PRI VERSION SP TIMESTAMP SP HOSTNAME SP APP-NAME SP PROCID SP MSGID<br>
+    <span class="c-comment">PRI         = "&lt;" PRIVAL "&gt;"</span><br>
+    <span class="c-comment">PRIVAL      = 1*3DIGIT   ; range 0..191</span><br>
+    <span class="c-ver">VERSION</span>     = NONZERO-DIGIT 0*2DIGIT<br>
+    <span class="c-ts">TIMESTAMP</span>   = NILVALUE / FULL-DATE "T" FULL-TIME<br>
+    <span class="c-host">HOSTNAME</span>    = NILVALUE / 1*255PRINTUSASCII<br>
+    <span class="c-app">APP-NAME</span>    = NILVALUE / 1*48PRINTUSASCII<br>
+    <span class="c-proc">PROCID</span>      = NILVALUE / 1*128PRINTUSASCII<br>
+    <span class="c-msg">MSGID</span>       = NILVALUE / 1*32PRINTUSASCII<br>
+    <span class="c-sd">STRUCT-DATA</span> = NILVALUE / 1*SD-ELEMENT<br>
+    <span class="c-comment">SD-ELEMENT  = "[" SD-ID *(SP SD-PARAM) "]"</span><br>
+    <span class="c-text">MSG</span>         = MSG-ANY / MSG-UTF8
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-secondary" onclick="showSection(0)">← Overview</button>
+    <button class="btn btn-primary" onclick="showSection(2)">Next: Facilities &amp; Severity →</button>
+  </div>
 </div>
 
+<!-- ══════════════ SECTION 2: FACILITIES & SEVERITY ══════════════ -->
+<div class="section" id="sec2">
+  <div class="section-hero">
+    <div class="tag">UNIT 3 · PRIORITY SYSTEM</div>
+    <h1>Facilities &amp; Severity Levels</h1>
+    <p class="lead">The PRI value encodes both the message source (Facility) and urgency (Severity) into a single number using a simple formula.</p>
+  </div>
+
+  <h2>The PRI Formula</h2>
+  <div style="background:var(--accent-light);border-radius:10px;padding:1.5rem 2rem;margin:1rem 0 2rem;text-align:center">
+    <div style="font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--accent-dark)">
+      PRI = (Facility × 8) + Severity
+    </div>
+    <p style="margin:0.5rem 0 0;font-size:0.9rem;color:var(--text-secondary)">Range: 0 (KERN/EMERG) to 191 (LOCAL7/DEBUG)</p>
+  </div>
+
+  <p>The PRI value is always enclosed in angle brackets in the message, e.g., <code>&lt;34&gt;</code>. To decode it: Facility = ⌊PRI ÷ 8⌋, Severity = PRI mod 8.</p>
+
+  <div class="inner-tabs">
+    <button class="inner-tab active" onclick="showPanel('priPanel','pp0')">Facility Codes</button>
+    <button class="inner-tab" onclick="showPanel('priPanel','pp1')">Severity Levels</button>
+    <button class="inner-tab" onclick="showPanel('priPanel','pp2')">PRI Calculator</button>
+  </div>
+  <div id="priPanel">
+    <!-- Facility Codes -->
+    <div class="inner-panel active" id="pp0">
+      <div class="table-wrap">
+        <table>
+          <tr><th>Code</th><th>Facility</th><th>Description</th><th>Typical Source</th></tr>
+          <tr><td><code>0</code></td><td>kern</td><td>Kernel messages</td><td>Linux/Unix kernel</td></tr>
+          <tr><td><code>1</code></td><td>user</td><td>User-level messages</td><td>User processes</td></tr>
+          <tr><td><code>2</code></td><td>mail</td><td>Mail system</td><td>sendmail, postfix</td></tr>
+          <tr><td><code>3</code></td><td>daemon</td><td>System daemons</td><td>Various system services</td></tr>
+          <tr><td><code>4</code></td><td>auth</td><td>Security/authorization</td><td>SSH, sudo, login</td></tr>
+          <tr><td><code>5</code></td><td>syslog</td><td>Syslog internal messages</td><td>syslogd itself</td></tr>
+          <tr><td><code>6</code></td><td>lpr</td><td>Line printer subsystem</td><td>Print services</td></tr>
+          <tr><td><code>7</code></td><td>news</td><td>Network news subsystem</td><td>NNTP services</td></tr>
+          <tr><td><code>8</code></td><td>uucp</td><td>UUCP subsystem</td><td>UUCP protocol</td></tr>
+          <tr><td><code>9</code></td><td>cron</td><td>Clock daemon</td><td>cron, at</td></tr>
+          <tr><td><code>10</code></td><td>authpriv</td><td>Security (private)</td><td>PAM, private auth logs</td></tr>
+          <tr><td><code>11</code></td><td>ftp</td><td>FTP daemon</td><td>FTP servers</td></tr>
+          <tr><td><code>12</code></td><td>ntp</td><td>NTP subsystem</td><td>NTP synchronization</td></tr>
+          <tr><td><code>13</code></td><td>audit</td><td>Log audit</td><td>Security audit logs</td></tr>
+          <tr><td><code>14</code></td><td>alert</td><td>Log alert</td><td>Alert generation</td></tr>
+          <tr><td><code>15</code></td><td>clock</td><td>Clock daemon</td><td>Clock/time services</td></tr>
+          <tr><td><code>16–23</code></td><td>local0–local7</td><td>Local use</td><td>Custom device/app logs (Cisco, Juniper, etc.)</td></tr>
+        </table>
+      </div>
+      <div class="highlight-box" style="margin-top:1rem">
+        <p><strong>📌 Network Admin Tip:</strong> Cisco IOS and Junos devices use <strong>local6</strong> or <strong>local7</strong> (codes 22–23) by default for their syslog messages. Always confirm the facility your network devices are configured to use.</p>
+      </div>
+    </div>
+
+    <!-- Severity Levels -->
+    <div class="inner-panel" id="pp1">
+      <div class="table-wrap">
+        <table>
+          <tr><th>Level</th><th>Name</th><th>Keyword</th><th>Description</th><th>Action Required</th></tr>
+          <tr><td class="sev-0">0</td><td>Emergency</td><td><code>emerg</code></td><td>System is unusable</td><td>🚨 Immediate action required</td></tr>
+          <tr><td class="sev-1">1</td><td>Alert</td><td><code>alert</code></td><td>Action must be taken immediately</td><td>🚨 Immediate action required</td></tr>
+          <tr><td class="sev-2">2</td><td>Critical</td><td><code>crit</code></td><td>Critical conditions</td><td>🔴 Urgent response needed</td></tr>
+          <tr><td class="sev-3">3</td><td>Error</td><td><code>err</code></td><td>Error conditions</td><td>🔴 Fix required</td></tr>
+          <tr><td class="sev-4">4</td><td>Warning</td><td><code>warning</code></td><td>Warning conditions</td><td>🟡 Monitor and investigate</td></tr>
+          <tr><td class="sev-5">5</td><td>Notice</td><td><code>notice</code></td><td>Normal but significant condition</td><td>🟡 Note for review</td></tr>
+          <tr><td class="sev-6">6</td><td>Informational</td><td><code>info</code></td><td>Informational messages</td><td>🟢 Normal operations</td></tr>
+          <tr><td>7</td><td>Debug</td><td><code>debug</code></td><td>Debug-level messages</td><td>⚪ Development/troubleshooting</td></tr>
+        </table>
+      </div>
+      <div class="highlight-box warn" style="margin-top:1rem">
+        <p><strong>⚠️ Cisco Note:</strong> Cisco IOS uses <em>reversed severity naming</em> in some contexts. In Cisco's logging levels command: level 0 = emergencies, level 7 = debugging — which matches RFC 5424. Set <code>logging trap warnings</code> to send levels 0–4 to the syslog server.</p>
+      </div>
+    </div>
+
+    <!-- PRI Calculator -->
+    <div class="inner-panel" id="pp2">
+      <p>Use this interactive calculator to encode or decode any PRI value.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:700px">
+        <div>
+          <h3>🔢 Encode (Facility + Severity → PRI)</h3>
+          <div class="form-group" style="margin-bottom:0.75rem">
+            <label>Facility Code (0–23)</label>
+            <select id="calcFacility" onchange="calcPRI()">
+              <option value="0">0 — kern (Kernel)</option>
+              <option value="1">1 — user (User-level)</option>
+              <option value="2">2 — mail (Mail system)</option>
+              <option value="3">3 — daemon (System daemons)</option>
+              <option value="4" selected>4 — auth (Authorization)</option>
+              <option value="5">5 — syslog (Internal)</option>
+              <option value="6">6 — lpr (Line printer)</option>
+              <option value="7">7 — news (Network news)</option>
+              <option value="8">8 — uucp (UUCP)</option>
+              <option value="9">9 — cron (Cron/at)</option>
+              <option value="10">10 — authpriv (Private auth)</option>
+              <option value="11">11 — ftp (FTP daemon)</option>
+              <option value="16">16 — local0</option>
+              <option value="17">17 — local1</option>
+              <option value="18">18 — local2</option>
+              <option value="19">19 — local3</option>
+              <option value="20">20 — local4</option>
+              <option value="21">21 — local5</option>
+              <option value="22">22 — local6</option>
+              <option value="23">23 — local7</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0.75rem">
+            <label>Severity Level (0–7)</label>
+            <select id="calcSeverity" onchange="calcPRI()">
+              <option value="0">0 — Emergency</option>
+              <option value="1">1 — Alert</option>
+              <option value="2" selected>2 — Critical</option>
+              <option value="3">3 — Error</option>
+              <option value="4">4 — Warning</option>
+              <option value="5">5 — Notice</option>
+              <option value="6">6 — Informational</option>
+              <option value="7">7 — Debug</option>
+            </select>
+          </div>
+          <div id="priResult" style="background:var(--accent);color:white;border-radius:8px;padding:1rem;text-align:center;font-family:var(--mono)">
+            <div style="font-size:0.8rem;opacity:0.8">PRI VALUE</div>
+            <div style="font-size:2rem;font-weight:700">&lt;34&gt;</div>
+            <div style="font-size:0.78rem;opacity:0.8">(4 × 8) + 2 = 34</div>
+          </div>
+        </div>
+        <div>
+          <h3>🔍 Decode (PRI → Facility + Severity)</h3>
+          <div class="form-group" style="margin-bottom:0.75rem">
+            <label>Enter PRI Value (0–191)</label>
+            <input type="number" id="decodePRI" min="0" max="191" value="34" oninput="decodePRI()" placeholder="Enter 0-191">
+          </div>
+          <div id="decodeResult" style="background:var(--off-white);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:var(--mono);font-size:0.85rem;line-height:1.8;min-height:120px">
+            <div><strong>Facility:</strong> 4 (auth)</div>
+            <div><strong>Severity:</strong> 2 (Critical)</div>
+            <div><strong>Formula:</strong> 34 ÷ 8 = 4 rem 2</div>
+            <div style="margin-top:0.5rem;font-size:0.78rem;color:var(--text-light)">PRI &lt;34&gt; = Security/Authorization + Critical</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-secondary" onclick="showSection(1)">← Message Format</button>
+    <button class="btn btn-primary" onclick="showSection(3)">Next: Header Builder →</button>
+  </div>
+</div>
+
+<!-- ══════════════ SECTION 3: HEADER BUILDER ══════════════ -->
+<div class="section" id="sec3">
+  <div class="section-hero">
+    <div class="tag">UNIT 4 · INTERACTIVE TOOL</div>
+    <h1>Syslog Header Builder</h1>
+    <p class="lead">Build a valid RFC 5424 syslog message by filling in each field. The message updates in real time as you type.</p>
+  </div>
+
+  <div class="builder-container">
+    <h3 style="margin-bottom:1.25rem">⚙️ Configure Header Fields</h3>
+
+    <!-- PRI Section -->
+    <div style="background:white;border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem">
+      <h3 style="margin-bottom:1rem;color:var(--accent)">① Priority (PRI)</h3>
+      <div class="builder-grid">
+        <div class="form-group">
+          <label>Facility Code <span>— Source of the message</span></label>
+          <select id="bFacility" onchange="buildHeader()">
+            <option value="0">0 — kern (Kernel)</option>
+            <option value="1">1 — user (User-level)</option>
+            <option value="2">2 — mail (Mail system)</option>
+            <option value="3">3 — daemon (System daemons)</option>
+            <option value="4">4 — auth (Security/Authorization)</option>
+            <option value="5">5 — syslog (Syslog internal)</option>
+            <option value="6">6 — lpr (Line printer)</option>
+            <option value="7">7 — news (Network news)</option>
+            <option value="8">8 — uucp (UUCP subsystem)</option>
+            <option value="9">9 — cron (Clock daemon)</option>
+            <option value="10">10 — authpriv (Private auth)</option>
+            <option value="11">11 — ftp (FTP daemon)</option>
+            <option value="16">16 — local0 (Custom)</option>
+            <option value="17">17 — local1 (Custom)</option>
+            <option value="18">18 — local2 (Custom)</option>
+            <option value="19">19 — local3 (Custom)</option>
+            <option value="20">20 — local4 (Custom)</option>
+            <option value="21">21 — local5 (Custom)</option>
+            <option value="22" selected>22 — local6 (Custom/Cisco)</option>
+            <option value="23">23 — local7 (Custom/Cisco)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Severity Level <span>— Message urgency</span></label>
+          <select id="bSeverity" onchange="buildHeader()">
+            <option value="0">0 — Emergency (System unusable)</option>
+            <option value="1">1 — Alert (Immediate action needed)</option>
+            <option value="2">2 — Critical (Critical condition)</option>
+            <option value="3">3 — Error (Error condition)</option>
+            <option value="4">4 — Warning (Warning condition)</option>
+            <option value="5" selected>5 — Notice (Significant event)</option>
+            <option value="6">6 — Informational (Info message)</option>
+            <option value="7">7 — Debug (Debug data)</option>
+          </select>
+        </div>
+      </div>
+      <div class="pri-calc" id="priCalcDisplay">
+        <div class="formula">PRI = (Facility <span id="bFacVal">22</span> × 8) + Severity <span id="bSevVal">5</span> = </div>
+        <div class="result" id="bPriVal">&lt;181&gt;</div>
+      </div>
+    </div>
+
+    <!-- Header Fields -->
+    <div style="background:white;border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem">
+      <h3 style="margin-bottom:1rem;color:var(--accent)">② Header Fields</h3>
+      <div class="builder-grid">
+        <div class="form-group">
+          <label>HOSTNAME <span>— FQDN or IP (max 255 chars)</span></label>
+          <input type="text" id="bHostname" value="firewall01.corp.local" oninput="buildHeader()" placeholder="e.g. router01.corp.com or 192.168.1.1">
+        </div>
+        <div class="form-group">
+          <label>TIMESTAMP <span>— RFC 3339 format</span></label>
+          <input type="datetime-local" id="bTimestamp" oninput="buildHeader()" step="1">
+        </div>
+        <div class="form-group">
+          <label>APP-NAME <span>— Application (max 48 chars)</span></label>
+          <input type="text" id="bAppName" value="firewalld" oninput="buildHeader()" placeholder="e.g. sshd, nginx, snmpd">
+        </div>
+        <div class="form-group">
+          <label>PROCID <span>— Process ID (max 128 chars, or - )</span></label>
+          <input type="text" id="bProcId" value="8472" oninput="buildHeader()" placeholder="e.g. 1234 or - (NILVALUE)">
+        </div>
+        <div class="form-group">
+          <label>MSGID <span>— Message type ID (max 32 chars, or - )</span></label>
+          <input type="text" id="bMsgId" value="BLOCK" oninput="buildHeader()" placeholder="e.g. ID47 or BLOCK or -">
+        </div>
+      </div>
+    </div>
+
+    <!-- Structured Data -->
+    <div style="background:white;border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem">
+      <h3 style="margin-bottom:1rem;color:var(--accent)">③ Structured Data <span style="font-weight:400;font-size:0.85rem;color:var(--text-light)">(optional — use "-" for none)</span></h3>
+      <div class="builder-grid">
+        <div class="form-group">
+          <label>SD-ID <span>— Structured data element ID</span></label>
+          <input type="text" id="bSdId" value="firewall@12345" oninput="buildHeader()" placeholder="e.g. origin@123 or - ">
+        </div>
+        <div class="form-group">
+          <label>SD Parameters <span>— key="value" pairs (space-separated)</span></label>
+          <input type="text" id="bSdParams" value='action="DROP" srcIP="10.0.0.5" dstPort="22"' oninput="buildHeader()" placeholder='key1="val1" key2="val2"'>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message -->
+    <div style="background:white;border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem">
+      <h3 style="margin-bottom:1rem;color:var(--accent)">④ Message Body</h3>
+      <div class="form-group">
+        <label>MSG <span>— Human-readable log message</span></label>
+        <input type="text" id="bMsg" value="Inbound connection blocked from 10.0.0.5 targeting port 22/tcp" oninput="buildHeader()" placeholder="Enter your log message text here...">
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="output-label">📤 GENERATED SYSLOG MESSAGE (RFC 5424)</div>
+    <div class="output-area" id="builderOutput">
+      Building…
+    </div>
+    <div class="output-label" style="margin-top:1rem">📊 FIELD BREAKDOWN</div>
+    <div id="fieldBreakdown" style="font-family:var(--mono);font-size:0.8rem;background:var(--off-white);border:1px solid var(--border);border-radius:8px;padding:1rem;line-height:2;overflow-x:auto;margin-bottom:1rem"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="copyBuilder()">📋 Copy Message</button>
+      <button class="btn btn-primary" onclick="setNow()">🕐 Set Timestamp to Now</button>
+      <button class="btn btn-secondary" onclick="loadExample('ssh')">Example: SSH Failure</button>
+      <button class="btn btn-secondary" onclick="loadExample('fw')">Example: Firewall Block</button>
+      <button class="btn btn-secondary" onclick="loadExample('ospf')">Example: OSPF Event</button>
+      <button class="btn btn-secondary" onclick="resetBuilder()">↩ Reset</button>
+    </div>
+  </div>
+
+  <div class="highlight-box success">
+    <p><strong>✅ Validation Rules:</strong> HOSTNAME max 255 chars · APP-NAME max 48 chars · PROCID max 128 chars · MSGID max 32 chars · Use <code>-</code> (NILVALUE) for any optional field with no data · Facility 0–23 · Severity 0–7</p>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-secondary" onclick="showSection(2)">← Facilities &amp; Severity</button>
+    <button class="btn btn-primary" onclick="showSection(4)">Next: Architecture →</button>
+  </div>
+</div>
+
+<!-- ══════════════ SECTION 4: ARCHITECTURE ══════════════ -->
+<div class="section" id="sec4">
+  <div class="section-hero">
+    <div class="tag">UNIT 5 · DEPLOYMENT</div>
+    <h1>Syslog Architecture &amp; Deployment</h1>
+    <p class="lead">How syslog messages flow from devices through the network to collectors, and how administrators configure enterprise logging infrastructure.</p>
+  </div>
+
+  <h2>Syslog Architecture Components</h2>
+  <div class="flow">
+    <div class="flow-node" style="border-color:var(--orange);background:#fff3cd">
+      📡 Originator<br><small style="font-weight:400;color:var(--text-light)">Router, Switch, Firewall, Server</small>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color:var(--accent);background:var(--accent-light)">
+      🔀 Relay<br><small style="font-weight:400;color:var(--text-light)">(Optional) Log Aggregator</small>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color:var(--green);background:var(--green-light)">
+      💾 Collector<br><small style="font-weight:400;color:var(--text-light)">Syslog Server / SIEM</small>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color:var(--purple);background:var(--purple-light)">
+      🔍 Analyzer<br><small style="font-weight:400;color:var(--text-light)">Dashboard / Alerts</small>
+    </div>
+  </div>
+
+  <div class="card-grid" style="margin-top:1rem">
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <div class="card-tag tag-orange">ORIGINATOR</div>
+      <h3>Message Sources</h3>
+      <p>Any device generating log data. Configuring an originator involves setting the syslog server IP, port, transport protocol, and the minimum severity level to transmit.</p>
+      <div class="code-block" style="font-size:0.75rem;margin-top:0.75rem;padding:0.75rem 1rem">
+        <span class="c-comment"># Cisco IOS Configuration</span><br>
+        <span class="c-ver">logging host</span> <span class="c-host">192.168.1.100</span><br>
+        <span class="c-ver">logging trap</span> <span class="c-msg">warnings</span><br>
+        <span class="c-ver">logging facility</span> <span class="c-app">local7</span><br>
+        <span class="c-ver">service timestamps log</span> <span class="c-ts">datetime msec</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔀</div>
+      <div class="card-tag tag-blue">RELAY</div>
+      <h3>Log Aggregation</h3>
+      <p>Relays receive syslog from multiple sources, optionally filter/transform messages, and forward to a central collector. Tools like rsyslog and syslog-ng act as relays.</p>
+      <div class="code-block" style="font-size:0.75rem;margin-top:0.75rem;padding:0.75rem 1rem">
+        <span class="c-comment"># rsyslog forwarding rule</span><br>
+        <span class="c-ver">*.warning</span> <span class="c-host">@@192.168.1.200:514</span><br>
+        <span class="c-comment"># @@ = TCP, @ = UDP</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">💾</div>
+      <div class="card-tag tag-green">COLLECTOR</div>
+      <h3>Log Servers &amp; SIEM</h3>
+      <p>Central repository for all syslog data. Common solutions include Splunk, Graylog, ELK Stack (Elasticsearch), IBM QRadar, and Microsoft Sentinel.</p>
+    </div>
+  </div>
+
+  <h2 style="margin-top:2rem">Transport Protocol Comparison</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Transport</th><th>RFC</th><th>Port</th><th>Delivery</th><th>Security</th><th>Use Case</th></tr>
+      <tr><td><strong>UDP</strong></td><td>RFC 5426</td><td>514</td><td>Best-effort (unreliable)</td><td>None</td><td>LAN environments, high-volume, low-overhead logging</td></tr>
+      <tr><td><strong>TCP</strong></td><td>RFC 6587</td><td>514</td><td>Reliable (guaranteed delivery)</td><td>None</td><td>Critical logs, WAN environments where loss is unacceptable</td></tr>
+      <tr><td><strong>TLS/TCP</strong></td><td>RFC 5425</td><td>6514</td><td>Reliable</td><td>Encryption + Authentication</td><td>Compliance environments (PCI, HIPAA), internet transmission</td></tr>
+    </table>
+  </div>
+
+  <h2 style="margin-top:2rem">Common Syslog Tools &amp; Daemons</h2>
+  <div class="accordion">
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAcc(this)">
+        <span>🐧 rsyslog — Rocket-fast System for Log Processing</span>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p>The most widely deployed syslog daemon on Linux systems (Ubuntu, CentOS, RHEL). Supports both RFC 3164 and RFC 5424, TCP/UDP/TLS, and complex filtering rules.</p>
+        <div class="code-block" style="font-size:0.78rem">
+          <span class="c-comment"># /etc/rsyslog.conf — Enable TCP syslog server</span><br>
+          <span class="c-ver">module</span>(load="<span class="c-app">imtcp</span>")<br>
+          <span class="c-ver">input</span>(type="<span class="c-app">imtcp</span>" port="<span class="c-ts">514</span>")<br><br>
+          <span class="c-comment"># Forward to remote server</span><br>
+          *.* <span class="c-host">@@192.168.1.200:514</span>
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAcc(this)">
+        <span>🔧 syslog-ng — Next-Generation Syslog Daemon</span>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p>Advanced syslog daemon with powerful message routing, filtering, and transformation capabilities. Popular in enterprise environments requiring complex log processing pipelines.</p>
+        <div class="code-block" style="font-size:0.78rem">
+          <span class="c-comment"># syslog-ng.conf example</span><br>
+          <span class="c-ver">source</span> s_net { <span class="c-app">network</span>(transport("udp") port(514)); };<br>
+          <span class="c-ver">destination</span> d_file { <span class="c-host">file</span>("/var/log/network.log"); };<br>
+          <span class="c-ver">log</span> { source(s_net); destination(d_file); };
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAcc(this)">
+        <span>📊 Splunk — Enterprise Log Analysis Platform</span>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p>Industry-leading platform for ingesting, indexing, and analyzing syslog and other log data. Uses the Splunk Processing Language (SPL) for searching and correlation. Widely used for security operations (SIEM).</p>
+        <ul class="styled">
+          <li>Accepts syslog directly via UDP/TCP on customizable ports</li>
+          <li>Built-in syslog field extraction (Facility, Severity, Hostname)</li>
+          <li>Real-time dashboards and alerting</li>
+          <li>Correlates syslog with other data sources (Netflow, SNMP, etc.)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAcc(this)">
+        <span>🟢 Graylog — Open Source Log Management</span>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="accordion-body">
+        <p>Open-source centralized log management platform built on Elasticsearch. Natively understands RFC 5424 structured data and provides powerful search and alerting capabilities at lower cost than Splunk.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Cisco IOS Syslog Configuration Reference</h2>
+  <div class="code-block" style="font-size:0.79rem;line-height:1.9">
+    <button class="copy-btn" onclick="copyCode(this, 'logging host 192.168.100.50\nlogging trap informational\nlogging facility local7\nservice timestamps log datetime msec year show-timezone\nlogging buffered 64000 debugging')">Copy</button>
+    <span class="c-comment">! ── Cisco IOS Syslog Best-Practice Configuration ──</span><br>
+    <span class="c-ver">logging host</span> <span class="c-host">192.168.100.50</span>          <span class="c-comment">! Syslog server IP</span><br>
+    <span class="c-ver">logging trap</span> <span class="c-msg">informational</span>           <span class="c-comment">! Send severity 0-6</span><br>
+    <span class="c-ver">logging facility</span> <span class="c-app">local7</span>               <span class="c-comment">! Use local7 (code 23)</span><br>
+    <span class="c-ver">service timestamps log</span> <span class="c-ts">datetime msec year show-timezone</span><br>
+    <span class="c-ver">logging buffered</span> <span class="c-proc">64000</span> <span class="c-msg">debugging</span>   <span class="c-comment">! Local buffer size</span><br>
+    <span class="c-comment">!</span><br>
+    <span class="c-comment">! Optional: Use source interface for consistent logging IP</span><br>
+    <span class="c-ver">logging source-interface</span> <span class="c-host">Loopback0</span>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-secondary" onclick="showSection(3)">← Header Builder</button>
+    <button class="btn btn-primary" onclick="showSection(5)">Next: Security →</button>
+  </div>
+</div>
+
+<!-- ══════════════ SECTION 5: SECURITY ══════════════ -->
+<div class="section" id="sec5">
+  <div class="section-hero">
+    <div class="tag">UNIT 6 · SECURITY</div>
+    <h1>Syslog Security Considerations</h1>
+    <p class="lead">Syslog carries critical security event data, yet the protocol itself has no built-in authentication, integrity checking, or confidentiality by default.</p>
+  </div>
+
+  <div class="highlight-box danger">
+    <p><strong>🔴 Critical Vulnerability:</strong> Default UDP syslog has NO authentication, NO encryption, and NO delivery guarantee. Any host on the network can forge syslog messages and spoof the source address.</p>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">🎭</div>
+      <div class="card-tag tag-red">THREAT</div>
+      <h3>Log Spoofing</h3>
+      <p>An attacker can send forged syslog messages to a collector, injecting false events, hiding malicious activity, or framing legitimate systems as attackers.</p>
+      <p><strong>Mitigation:</strong> Use TLS (RFC 5425) with mutual certificate authentication, or restrict accepted source IPs on the collector.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🕵️</div>
+      <div class="card-tag tag-red">THREAT</div>
+      <h3>Log Replay Attacks</h3>
+      <p>An attacker records legitimate syslog messages and replays them later to obscure an ongoing attack or confuse timeline analysis.</p>
+      <p><strong>Mitigation:</strong> RFC 5848 (Signed Syslog Messages) provides cryptographic signing with sequence numbers to detect replay.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌊</div>
+      <div class="card-tag tag-orange">THREAT</div>
+      <h3>Log Flooding (DoS)</h3>
+      <p>An attacker generates massive volumes of syslog messages to overwhelm the collector's storage, CPU, or network bandwidth, potentially causing legitimate messages to be dropped.</p>
+      <p><strong>Mitigation:</strong> Rate limiting, dedicated logging networks, and syslog server capacity planning.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔓</div>
+      <div class="card-tag tag-orange">THREAT</div>
+      <h3>Eavesdropping</h3>
+      <p>UDP syslog messages traverse the network in cleartext. Any network device or attacker with packet capture capability can read all log entries.</p>
+      <p><strong>Mitigation:</strong> TLS/TCP (RFC 5425) on port 6514 encrypts the syslog stream. Use a dedicated VLAN for logging traffic.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📝</div>
+      <div class="card-tag tag-blue">BEST PRACTICE</div>
+      <h3>Log Integrity &amp; Tampering</h3>
+      <p>Logs stored on compromised systems can be modified to cover attacker tracks. Log-forwarding to an out-of-band system ensures tamper-evident records.</p>
+      <p><strong>Mitigation:</strong> Forward logs in real-time to a write-once or immutable storage system. Use WORM (Write Once Read Many) media.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⏰</div>
+      <div class="card-tag tag-blue">BEST PRACTICE</div>
+      <h3>Time Synchronization</h3>
+      <p>Log correlation across multiple devices requires accurate, synchronized timestamps. Unsynchronized clocks make incident timeline reconstruction impossible.</p>
+      <p><strong>Mitigation:</strong> NTP on all devices. Configure NTP before logging. The TIMESTAMP field in RFC 5424 includes timezone, making cross-timezone correlation feasible.</p>
+    </div>
+  </div>
+
+  <h2 style="margin-top:2rem">Compliance &amp; Log Retention Requirements</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Framework/Regulation</th><th>Log Retention</th><th>Key Requirement</th></tr>
+      <tr><td><strong>PCI DSS</strong></td><td>12 months (3 months online)</td><td>Centralized logging of all system components; daily log review</td></tr>
+      <tr><td><strong>HIPAA</strong></td><td>6 years</td><td>Audit controls, information activity review, access logs</td></tr>
+      <tr><td><strong>SOX (Sarbanes-Oxley)</strong></td><td>7 years</td><td>Financial system logs to prevent tampering and ensure accountability</td></tr>
+      <tr><td><strong>NIST SP 800-92</strong></td><td>Varies (90 days minimum typical)</td><td>Guide for computer security log management; defines log management infrastructure</td></tr>
+      <tr><td><strong>ISO 27001</strong></td><td>Defined by risk assessment</td><td>Event logging, monitoring system use, protecting log information</td></tr>
+      <tr><td><strong>FISMA / FedRAMP</strong></td><td>90+ days online, 3 years total</td><td>Centralized logging, automated log analysis, incident response integration</td></tr>
+    </table>
+  </div>
+
+  <h2 style="margin-top:2rem">Security Best Practices Checklist</h2>
+  <div class="accordion">
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAcc(this)">
+        <span>✅ Transport Security — Encrypt your syslog</span>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="accordion-body">
+        <ul class="styled">
+          <li>Use <strong>TLS/TCP on port 6514</strong> (RFC 5425) for all syslog transmission across untrusted networks</li>
+          <li>Deploy <strong>mutual TLS (mTLS)</strong> so both client and server authenticate with certificates</li>
+          <li>Place logging traffic on a <strong>dedicated management VLAN</strong></li>
+          <li>Apply <strong>ACLs/firewall rules</strong> restricting syslog traffic to known device IPs only</li>
+        </ul>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAcc(this)">
+        <span>✅ Log Integrity — Ensure logs cannot be altered</span>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="accordion-body">
+        <ul class="styled">
+          <li>Forward logs in <strong>real-time</strong> to a separate, hardened logging server</li>
+          <li>Consider <strong>RFC 5848 signed syslog</strong> for cryptographic message integrity and non-repudiation</li>
+          <li>Store logs on <strong>WORM media or immutable object storage</strong> (AWS S3 Object Lock, etc.)</li>
+          <li>Restrict write access to log files — <strong>only the syslog daemon should write</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAcc(this)">
+        <span>✅ Monitoring — Act on what you collect</span>
+        <span class="acc-icon">▼</span>
+      </div>
+      <div class="accordion-body">
+        <ul class="styled">
+          <li>Configure <strong>real-time alerts</strong> for Severity 0–3 (Emergency through Error) events</li>
+          <li>Integrate with a <strong>SIEM</strong> for correlation across multiple log sources</li>
+          <li>Establish a <strong>log review process</strong> — daily for security-critical systems</li>
+          <li>Create <strong>dashboards</strong> tracking top talkers, error rates, authentication failures</li>
+          <li>Monitor for <strong>syslog server availability</strong> — configure devices to alert on logging failures</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-secondary" onclick="showSection(4)">← Architecture</button>
+    <button class="btn btn-primary" onclick="showSection(6)">Next: Quiz →</button>
+  </div>
+</div>
+
+<!-- ══════════════ SECTION 6: QUIZ ══════════════ -->
+<div class="section" id="sec6">
+  <div class="section-hero">
+    <div class="tag">UNIT 7 · ASSESSMENT</div>
+    <h1>Knowledge Check</h1>
+    <p class="lead">Test your understanding of syslog concepts. Select the best answer for each question.</p>
+  </div>
+
+  <div class="quiz-container">
+    <!-- Q1 -->
+    <div class="quiz-q" id="q1">
+      <p class="q-text"><span class="q-num">Q1</span> What is the default transport protocol and port number used by syslog?</p>
+      <div class="quiz-options">
+        <div class="quiz-opt" onclick="answerQ('q1','a',false,'TCP is used with syslog but it is not the default. UDP port 514 is the default.')"><div class="opt-bullet">A</div>TCP port 514</div>
+        <div class="quiz-opt" onclick="answerQ('q1','b',true,'Correct! Syslog defaults to UDP port 514. UDP provides no delivery guarantee, but is low-overhead and widely supported.')"><div class="opt-bullet">B</div>UDP port 514</div>
+        <div class="quiz-opt" onclick="answerQ('q1','c',false,'TLS/TCP port 6514 is used for encrypted syslog (RFC 5425), but it is not the default.')"><div class="opt-bullet">C</div>TLS/TCP port 6514</div>
+        <div class="quiz-opt" onclick="answerQ('q1','d',false,'UDP port 162 is used for SNMP traps, not syslog.')"><div class="opt-bullet">D</div>UDP port 162</div>
+      </div>
+      <div class="quiz-feedback" id="q1-fb"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-q" id="q2">
+      <p class="q-text"><span class="q-num">Q2</span> A syslog message has a PRI value of &lt;165&gt;. What is the Facility code and Severity level?</p>
+      <div class="quiz-options">
+        <div class="quiz-opt" onclick="answerQ('q2','a',false,'Incorrect. 165 ÷ 8 = 20 remainder 5. Facility = 20 (local4), Severity = 5 (Notice).')"><div class="opt-bullet">A</div>Facility 21, Severity 3 (Error)</div>
+        <div class="quiz-opt" onclick="answerQ('q2','b',true,'Correct! 165 ÷ 8 = 20 with remainder 5. Facility 20 = local4, Severity 5 = Notice.')"><div class="opt-bullet">B</div>Facility 20 (local4), Severity 5 (Notice)</div>
+        <div class="quiz-opt" onclick="answerQ('q2','c',false,'Incorrect calculation. Use: Facility = floor(165/8) = 20, Severity = 165 mod 8 = 5.')"><div class="opt-bullet">C</div>Facility 16, Severity 5 (Notice)</div>
+        <div class="quiz-opt" onclick="answerQ('q2','d',false,'Incorrect. Facility 23 × 8 = 184. 184 + 4 = 188, not 165.')"><div class="opt-bullet">D</div>Facility 23 (local7), Severity 4 (Warning)</div>
+      </div>
+      <div class="quiz-feedback" id="q2-fb"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-q" id="q3">
+      <p class="q-text"><span class="q-num">Q3</span> Which RFC defines the modern, structured syslog protocol standard currently in use?</p>
+      <div class="quiz-options">
+        <div class="quiz-opt" onclick="answerQ('q3','a',false,'RFC 3164 is the original BSD syslog format from 2001. It is now considered legacy and has been superseded.')"><div class="opt-bullet">A</div>RFC 3164</div>
+        <div class="quiz-opt" onclick="answerQ('q3','b',false,'RFC 3195 defines reliable syslog delivery using BEEP protocol, but is not the primary format standard.')"><div class="opt-bullet">B</div>RFC 3195</div>
+        <div class="quiz-opt" onclick="answerQ('q3','c',true,'Correct! RFC 5424, published in March 2009, is the current IETF Standards Track document defining the syslog protocol.')"><div class="opt-bullet">C</div>RFC 5424</div>
+        <div class="quiz-opt" onclick="answerQ('q3','d',false,'RFC 5425 defines TLS transport mapping for syslog, not the message format itself.')"><div class="opt-bullet">D</div>RFC 5425</div>
+      </div>
+      <div class="quiz-feedback" id="q3-fb"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-q" id="q4">
+      <p class="q-text"><span class="q-num">Q4</span> What does a Severity level of 0 indicate in the syslog priority system?</p>
+      <div class="quiz-options">
+        <div class="quiz-opt" onclick="answerQ('q4','a',false,'Debug is the lowest priority (highest number) in syslog, with Severity level 7.')"><div class="opt-bullet">A</div>Debug — lowest priority, verbose logging</div>
+        <div class="quiz-opt" onclick="answerQ('q4','b',false,'Informational is Severity level 6, not 0.')"><div class="opt-bullet">B</div>Informational — routine system messages</div>
+        <div class="quiz-opt" onclick="answerQ('q4','c',false,'Warning is Severity level 4. Level 0 is more critical than a warning.')"><div class="opt-bullet">C</div>Warning — potential issue detected</div>
+        <div class="quiz-opt" onclick="answerQ('q4','d',true,'Correct! Severity 0 = Emergency. The system is unusable and immediate action is required. This is the highest-priority syslog level.')"><div class="opt-bullet">D</div>Emergency — system is unusable</div>
+      </div>
+      <div class="quiz-feedback" id="q4-fb"></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz-q" id="q5">
+      <p class="q-text"><span class="q-num">Q5</span> Which field in an RFC 5424 syslog header provides key-value structured metadata about the event?</p>
+      <div class="quiz-options">
+        <div class="quiz-opt" onclick="answerQ('q5','a',false,'MSGID identifies the type of message, but it is a single short identifier, not key-value structured data.')"><div class="opt-bullet">A</div>MSGID</div>
+        <div class="quiz-opt" onclick="answerQ('q5','b',false,'APP-NAME identifies the application, not structured event metadata.')"><div class="opt-bullet">B</div>APP-NAME</div>
+        <div class="quiz-opt" onclick="answerQ('q5','c',true,'Correct! STRUCTURED-DATA contains SD-ELEMENTs with key-value pairs in the format [SD-ID param="value"]. This is a major RFC 5424 improvement over RFC 3164.')"><div class="opt-bullet">C</div>STRUCTURED-DATA</div>
+        <div class="quiz-opt" onclick="answerQ('q5','d',false,'PROCID contains the process identifier or name, not structured key-value metadata.')"><div class="opt-bullet">D</div>PROCID</div>
+      </div>
+      <div class="quiz-feedback" id="q5-fb"></div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="quiz-q" id="q6">
+      <p class="q-text"><span class="q-num">Q6</span> A Cisco router is configured with <code>logging trap warnings</code>. Which severity levels will be sent to the syslog server?</p>
+      <div class="quiz-options">
+        <div class="quiz-opt" onclick="answerQ('q6','a',false,'Only levels 0–4 are sent. Levels 5 (Notice), 6 (Info), and 7 (Debug) are NOT forwarded when trap is set to warnings.')"><div class="opt-bullet">A</div>Severity levels 0–7 (all messages)</div>
+        <div class="quiz-opt" onclick="answerQ('q6','b',true,'Correct! "logging trap warnings" (level 4) sends all messages at level 4 and below: Emergency (0), Alert (1), Critical (2), Error (3), and Warning (4).')"><div class="opt-bullet">B</div>Severity levels 0–4 (Emergency through Warning)</div>
+        <div class="quiz-opt" onclick="answerQ('q6','c',false,'Only level 4 (Warning) alone is not correct — the trap level sends that level AND all more severe levels (0-3).')"><div class="opt-bullet">C</div>Only Severity level 4 (Warning only)</div>
+        <div class="quiz-opt" onclick="answerQ('q6','d',false,'Severity 5 (Notice), 6 (Info), and 7 (Debug) are less severe than Warning and are excluded.')"><div class="opt-bullet">D</div>Severity levels 4–7 (Warning through Debug)</div>
+      </div>
+      <div class="quiz-feedback" id="q6-fb"></div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="quiz-q" id="q7">
+      <p class="q-text"><span class="q-num">Q7</span> What is the primary security concern with using default UDP syslog for transmitting sensitive network events?</p>
+      <div class="quiz-options">
+        <div class="quiz-opt" onclick="answerQ('q7','a',false,'UDP syslog does not require authentication but it does not cause message fragmentation as a security concern.')"><div class="opt-bullet">A</div>UDP causes message fragmentation that corrupts log data</div>
+        <div class="quiz-opt" onclick="answerQ('q7','b',false,'UDP overhead is actually lower than TCP, not higher. This is not the primary security concern.')"><div class="opt-bullet">B</div>UDP has higher overhead than TCP syslog</div>
+        <div class="quiz-opt" onclick="answerQ('q7','c',true,'Correct! Default UDP syslog has no authentication, no encryption, and no integrity checking. Messages can be intercepted (eavesdropping) or forged (spoofing) by anyone on the network path.')"><div class="opt-bullet">C</div>No authentication, encryption, or integrity checking — messages can be intercepted or forged</div>
+        <div class="quiz-opt" onclick="answerQ('q7','d',false,'UDP syslog does not enforce message ordering, but this is a reliability concern, not the primary security concern.')"><div class="opt-bullet">D</div>UDP syslog enforces strict ordering that attackers can exploit</div>
+      </div>
+      <div class="quiz-feedback" id="q7-fb"></div>
+    </div>
+
+    <div class="quiz-score" id="quizScore">
+      <div style="font-size:1.1rem;margin-bottom:0.5rem">Quiz Complete!</div>
+      <div class="score-num" id="scoreNum">0/7</div>
+      <div id="scoreMsg" style="margin-top:0.5rem;font-size:0.95rem"></div>
+      <button class="btn btn-secondary" style="margin-top:1.25rem" onclick="resetQuiz()">↩ Retake Quiz</button>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-secondary" onclick="showSection(5)">← Security</button>
+    <button class="btn btn-primary" onclick="showSection(0)">↑ Return to Overview</button>
+  </div>
+</div>
+
+<script>
+// ── NAVIGATION ──
+const tabs = document.querySelectorAll('.nav-tab');
+const sections = document.querySelectorAll('.section');
+let visitedSections = new Set([0]);
+
+function showSection(idx) {
+  tabs.forEach(t => t.classList.remove('active'));
+  sections.forEach(s => s.classList.remove('active'));
+  tabs[idx].classList.add('active');
+  sections[idx].classList.add('active');
+  visitedSections.add(idx);
+  updateProgress();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function updateProgress() {
+  const pct = Math.round((visitedSections.size / 7) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = pct + '%';
+}
+
+// ── INNER TABS ──
+function showPanel(containerId, panelId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  // Find all inner-tabs near this container
+  const parentEl = container.previousElementSibling;
+  if (parentEl && parentEl.classList.contains('inner-tabs')) {
+    parentEl.querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'));
+    // Activate the clicked tab
+    const allTabs = parentEl.querySelectorAll('.inner-tab');
+    allTabs.forEach(t => {
+      if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(panelId)) {
+        t.classList.add('active');
+      }
+    });
+  }
+  container.querySelectorAll('.inner-panel').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(panelId);
+  if (target) target.classList.add('active');
+}
+
+// ── ACCORDION ──
+function toggleAcc(header) {
+  const body = header.nextElementSibling;
+  const isOpen = header.classList.contains('open');
+  header.classList.toggle('open', !isOpen);
+  body.classList.toggle('open', !isOpen);
+}
+
+// ── PRI CALCULATOR ──
+function calcPRI() {
+  const f = parseInt(document.getElementById('calcFacility').value);
+  const s = parseInt(document.getElementById('calcSeverity').value);
+  const pri = (f * 8) + s;
+  document.getElementById('priResult').innerHTML = `
+    <div style="font-size:0.8rem;opacity:0.8">PRI VALUE</div>
+    <div style="font-size:2rem;font-weight:700">&lt;${pri}&gt;</div>
+    <div style="font-size:0.78rem;opacity:0.8">(${f} × 8) + ${s} = ${pri}</div>
+  `;
+}
+
+function decodePRI() {
+  const pri = parseInt(document.getElementById('decodePRI').value) || 0;
+  const clamped = Math.max(0, Math.min(191, pri));
+  const facility = Math.floor(clamped / 8);
+  const severity = clamped % 8;
+  const facilityNames = ['kern','user','mail','daemon','auth','syslog','lpr','news','uucp','cron','authpriv','ftp','ntp','audit','alert','clock','local0','local1','local2','local3','local4','local5','local6','local7'];
+  const severityNames = ['Emergency','Alert','Critical','Error','Warning','Notice','Informational','Debug'];
+  document.getElementById('decodeResult').innerHTML = `
+    <div><strong>Facility:</strong> ${facility} (${facilityNames[facility] || 'unknown'})</div>
+    <div><strong>Severity:</strong> ${severity} (${severityNames[severity]})</div>
+    <div><strong>Formula:</strong> ${clamped} ÷ 8 = ${facility} rem ${severity}</div>
+    <div style="margin-top:0.5rem;font-size:0.78rem;color:var(--text-light)">PRI &lt;${clamped}&gt; = ${facilityNames[facility] || '?'} + ${severityNames[severity]}</div>
+  `;
+}
+
+// ── HEADER BUILDER ──
+function setNow() {
+  const now = new Date();
+  // datetime-local needs YYYY-MM-DDTHH:mm:ss
+  const local = new Date(now - now.getTimezoneOffset() * 60000).toISOString().slice(0, 19);
+  document.getElementById('bTimestamp').value = local;
+  buildHeader();
+}
+
+function buildHeader() {
+  const facility = parseInt(document.getElementById('bFacility').value);
+  const severity = parseInt(document.getElementById('bSeverity').value);
+  const pri = (facility * 8) + severity;
+  const version = 1;
+
+  const tsInput = document.getElementById('bTimestamp').value;
+  let timestamp = '-';
+  if (tsInput) {
+    // Convert to ISO 8601 with Z
+    try {
+      const d = new Date(tsInput);
+      timestamp = d.toISOString().replace(/\.\d+Z$/, '.000Z');
+    } catch(e) { timestamp = tsInput + 'Z'; }
+  }
+
+  const hostname = sanitize(document.getElementById('bHostname').value, 255) || '-';
+  const appName  = sanitize(document.getElementById('bAppName').value, 48) || '-';
+  const procId   = sanitize(document.getElementById('bProcId').value, 128) || '-';
+  const msgId    = sanitize(document.getElementById('bMsgId').value, 32) || '-';
+
+  const sdId     = document.getElementById('bSdId').value.trim();
+  const sdParams = document.getElementById('bSdParams').value.trim();
+  let structData = '-';
+  if (sdId && sdId !== '-') {
+    structData = '[' + sdId + (sdParams ? ' ' + sdParams : '') + ']';
+  }
+
+  const msg = document.getElementById('bMsg').value;
+
+  const fullMsg = `<${pri}>${version} ${timestamp} ${hostname} ${appName} ${procId} ${msgId} ${structData} ${msg}`;
+
+  // Color-coded output
+  document.getElementById('builderOutput').innerHTML =
+    `<span style="color:#ffd166">&lt;${pri}&gt;</span>` +
+    `<span style="color:#06d6a0">${version}</span> ` +
+    `<span style="color:#74c7f0">${timestamp}</span> ` +
+    `<span style="color:#f4a261">${hostname}</span> ` +
+    `<span style="color:#c77dff">${appName}</span> ` +
+    `<span style="color:#90e0ef">${procId}</span> ` +
+    `<span style="color:#ffb4a2">${msgId}</span> ` +
+    `<span style="color:#b7e4c7">${escHtml(structData)}</span> ` +
+    `<span style="color:#e8f4f8">${escHtml(msg)}</span>`;
+
+  const facilityNames = ['kern','user','mail','daemon','auth','syslog','lpr','news','uucp','cron','authpriv','ftp','ntp','audit','alert','clock','local0','local1','local2','local3','local4','local5','local6','local7'];
+  const severityNames = ['Emergency','Alert','Critical','Error','Warning','Notice','Informational','Debug'];
+
+  document.getElementById('fieldBreakdown').innerHTML =
+    `<span style="color:#ffd166">PRI=&lt;${pri}&gt;</span>  → Facility=${facility} (${facilityNames[facility]||'?'}), Severity=${severity} (${severityNames[severity]})\n` +
+    `<span style="color:#06d6a0">VERSION</span>   → ${version} (RFC 5424)\n` +
+    `<span style="color:#74c7f0">TIMESTAMP</span> → ${timestamp}\n` +
+    `<span style="color:#f4a261">HOSTNAME</span>  → ${hostname}\n` +
+    `<span style="color:#c77dff">APP-NAME</span>  → ${appName}\n` +
+    `<span style="color:#90e0ef">PROCID</span>    → ${procId}\n` +
+    `<span style="color:#ffb4a2">MSGID</span>     → ${msgId}\n` +
+    `<span style="color:#b7e4c7">STRUCT-DATA</span>→ ${escHtml(structData)}\n` +
+    `<span style="color:#e8f4f8">MSG</span>       → ${escHtml(msg)}`;
+
+  // Update PRI display
+  document.getElementById('bFacVal').textContent = facility;
+  document.getElementById('bSevVal').textContent = severity;
+  document.getElementById('bPriVal').textContent = `<${pri}>`;
+  
+  // Store for copy
+  window._lastBuiltMsg = fullMsg;
+}
+
+function sanitize(val, maxLen) {
+  if (!val || val.trim() === '') return null;
+  return val.trim().substring(0, maxLen);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyBuilder() {
+  if (window._lastBuiltMsg) {
+    navigator.clipboard.writeText(window._lastBuiltMsg).then(() => showToast());
+  }
+}
+
+function loadExample(type) {
+  setNow();
+  if (type === 'ssh') {
+    document.getElementById('bFacility').value = '4';    // auth
+    document.getElementById('bSeverity').value = '4';    // warning
+    document.getElementById('bHostname').value = 'webserver01.corp.local';
+    document.getElementById('bAppName').value = 'sshd';
+    document.getElementById('bProcId').value = '23841';
+    document.getElementById('bMsgId').value = 'AUTHFAIL';
+    document.getElementById('bSdId').value = 'auth@12345';
+    document.getElementById('bSdParams').value = 'user="admin" srcIP="203.0.113.42" attempts="5"';
+    document.getElementById('bMsg').value = 'Failed password for admin from 203.0.113.42 port 55234 ssh2';
+  } else if (type === 'fw') {
+    document.getElementById('bFacility').value = '22';   // local6
+    document.getElementById('bSeverity').value = '4';    // warning
+    document.getElementById('bHostname').value = 'fw01.corp.local';
+    document.getElementById('bAppName').value = 'iptables';
+    document.getElementById('bProcId').value = '-';
+    document.getElementById('bMsgId').value = 'BLOCK';
+    document.getElementById('bSdId').value = 'firewall@99999';
+    document.getElementById('bSdParams').value = 'action="DROP" proto="TCP" srcIP="10.5.0.99" dstIP="172.16.1.10" dstPort="3389"';
+    document.getElementById('bMsg').value = 'Inbound connection blocked: RDP attempt to internal server';
+  } else if (type === 'ospf') {
+    document.getElementById('bFacility').value = '23';   // local7
+    document.getElementById('bSeverity').value = '5';    // notice
+    document.getElementById('bHostname').value = 'core-router.corp.local';
+    document.getElementById('bAppName').value = 'OSPF';
+    document.getElementById('bProcId').value = '1';
+    document.getElementById('bMsgId').value = 'ADJ-CHANGE';
+    document.getElementById('bSdId').value = 'routing@11111';
+    document.getElementById('bSdParams').value = 'neighbor="10.0.0.2" interface="GigabitEthernet0/1" state="FULL"';
+    document.getElementById('bMsg').value = 'OSPF neighbor 10.0.0.2 on GigabitEthernet0/1 is now FULL';
+  }
+  buildHeader();
+}
+
+function resetBuilder() {
+  document.getElementById('bFacility').value = '22';
+  document.getElementById('bSeverity').value = '5';
+  document.getElementById('bHostname').value = 'firewall01.corp.local';
+  document.getElementById('bAppName').value = 'firewalld';
+  document.getElementById('bProcId').value = '8472';
+  document.getElementById('bMsgId').value = 'BLOCK';
+  document.getElementById('bSdId').value = 'firewall@12345';
+  document.getElementById('bSdParams').value = 'action="DROP" srcIP="10.0.0.5" dstPort="22"';
+  document.getElementById('bMsg').value = 'Inbound connection blocked from 10.0.0.5 targeting port 22/tcp';
+  setNow();
+}
+
+// ── QUIZ ──
+let quizAnswers = {};
+let quizCorrect = 0;
+
+function answerQ(qId, opt, isCorrect, explanation) {
+  if (quizAnswers[qId] !== undefined) return; // already answered
+  quizAnswers[qId] = isCorrect;
+  if (isCorrect) quizCorrect++;
+
+  const qEl = document.getElementById(qId);
+  const opts = qEl.querySelectorAll('.quiz-opt');
+  opts.forEach((o, i) => {
+    const letter = ['a','b','c','d'][i];
+    if (letter === opt) {
+      o.classList.add(isCorrect ? 'correct' : 'incorrect');
+      o.querySelector('.opt-bullet').textContent = isCorrect ? '✓' : '✗';
+    }
+    // Reveal correct answer if wrong
+    if (!isCorrect && o.getAttribute('onclick') && o.getAttribute('onclick').includes('true')) {
+      o.classList.add('correct');
+    }
+    o.onclick = null; // Disable further clicking
+  });
+
+  const fb = document.getElementById(qId + '-fb');
+  fb.textContent = (isCorrect ? '✓ Correct! ' : '✗ Incorrect. ') + explanation;
+  fb.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+
+  // Check if all answered
+  if (Object.keys(quizAnswers).length === 7) {
+    showScore();
+  }
+}
+
+function showScore() {
+  const score = document.getElementById('quizScore');
+  score.style.display = 'block';
+  document.getElementById('scoreNum').textContent = `${quizCorrect}/7`;
+  const pct = (quizCorrect / 7) * 100;
+  let msg = '';
+  if (pct === 100) msg = '🏆 Perfect score! You have mastered syslog fundamentals.';
+  else if (pct >= 71) msg = '👍 Great work! Review any missed questions to strengthen your knowledge.';
+  else if (pct >= 57) msg = '📚 Good effort. Review the lesson sections and try again.';
+  else msg = '📖 Keep studying! Return to the lesson sections to reinforce these concepts.';
+  document.getElementById('scoreMsg').textContent = msg;
+  visitedSections.add(6);
+  updateProgress();
+}
+
+function resetQuiz() {
+  quizAnswers = {};
+  quizCorrect = 0;
+  document.getElementById('quizScore').style.display = 'none';
+  ['q1','q2','q3','q4','q5','q6','q7'].forEach(qId => {
+    const qEl = document.getElementById(qId);
+    const opts = qEl.querySelectorAll('.quiz-opt');
+    opts.forEach((o, i) => {
+      o.className = 'quiz-opt';
+      o.querySelector('.opt-bullet').textContent = ['A','B','C','D'][i];
+      // Restore onclick
+    });
+    const fb = document.getElementById(qId + '-fb');
+    fb.className = 'quiz-feedback';
+    fb.textContent = '';
+  });
+  // Re-bind quiz clicks by reloading the page section
+  location.reload();
+}
+
+// ── COPY CODE ──
+function copyCode(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+    showToast();
+  });
+}
+
+function showToast() {
+  const t = document.getElementById('copyToast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── INIT ──
+window.onload = function() {
+  setNow();
+  buildHeader();
+  calcPRI();
+  decodePRI();
+};
+</script>
 </body>
 </html>
