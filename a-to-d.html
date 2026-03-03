@@ -1,223 +1,873 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8-bit ADC Simulator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Custom styles for the voltage scale gradient */
-        .voltage-scale {
-            background: linear-gradient(to right, #1d4ed8, #3b82f6, #ef4444);
-        }
-        
-        /* Custom range slider styling */
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 8px;
-            border-radius: 4px;
-            background: #e5e7eb;
-            outline: none;
-        }
-        
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #3b82f6;
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #3b82f6;
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADC · DAC Learning Lab — Moraine Valley</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080c10; --panel:#0d1219; --surface:#111a24; --border:#1c2d3e;
+  --glow:#00ffe0; --glow2:#ff6a00; --glow3:#9b59ff; --amber:#ffb300;
+  --red:#ff3b5c; --green:#39ff85; --text:#d6eaf8; --muted:#4a6a80;
+  --mono:'Share Tech Mono',monospace; --sans:'Exo 2',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 20% 10%,rgba(0,255,224,0.04) 0%,transparent 70%),radial-gradient(ellipse 50% 30% at 80% 80%,rgba(155,89,255,0.04) 0%,transparent 70%);pointer-events:none;z-index:0}
+.page{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:20px 18px 60px}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;position:relative;overflow:hidden}
+header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--glow),var(--glow3),var(--glow2))}
+.hdr-left h1{font-family:var(--mono);font-size:clamp(1rem,2.2vw,1.35rem);color:var(--glow);letter-spacing:2px}
+.hdr-left h1 em{color:var(--glow2);font-style:normal}
+.hdr-left p{font-size:0.72rem;color:var(--muted);margin-top:3px;letter-spacing:1px}
+.status-pill{font-family:var(--mono);font-size:0.68rem;letter-spacing:1px;padding:4px 12px;border-radius:100px;border:1px solid;display:flex;align-items:center;gap:6px}
+.status-pill .dot{width:7px;height:7px;border-radius:50%;animation:blink 1.4s infinite}
+.status-pill.active{border-color:rgba(57,255,133,0.4);color:var(--green)}
+.status-pill.active .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* TABS */
+.mode-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:5px}
+.mode-tab{flex:1;padding:10px 12px;border:none;background:transparent;color:var(--muted);font-family:var(--sans);font-size:0.82rem;font-weight:600;cursor:pointer;border-radius:7px;transition:all .2s;letter-spacing:0.5px}
+.mode-tab.active{background:var(--surface);color:var(--glow);border:1px solid rgba(0,255,224,0.2);text-shadow:0 0 12px rgba(0,255,224,0.5)}
+.mode-tab:hover:not(.active){color:var(--text)}
+.tab-pane{display:none}
+.tab-pane.active{display:block;animation:reveal .3s ease}
+@keyframes reveal{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* GRID */
+.lab-grid{display:grid;grid-template-columns:340px 1fr;gap:18px}
+@media(max-width:960px){.lab-grid{grid-template-columns:1fr}}
+
+/* INSTRUMENT PANEL */
+.instrument-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:18px}
+.panel-section{border-bottom:1px solid var(--border);padding-bottom:18px}
+.panel-section:last-child{border-bottom:none;padding-bottom:0}
+.section-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* SEGMENTS */
+.seg-row{display:flex;gap:6px;flex-wrap:wrap}
+.seg{padding:7px 14px;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:0.78rem;transition:all .18s;user-select:none}
+.seg:hover{border-color:var(--glow);color:var(--glow)}
+.seg.on{background:rgba(0,255,224,0.1);border-color:var(--glow);color:var(--glow);box-shadow:0 0 8px rgba(0,255,224,0.15)}
+.seg.amber.on{background:rgba(255,179,0,0.1);border-color:var(--amber);color:var(--amber);box-shadow:0 0 8px rgba(255,179,0,0.15)}
+
+/* SLIDER */
+.ctrl-row{margin-top:10px}
+.ctrl-row label{font-size:0.72rem;color:var(--muted);font-family:var(--mono);letter-spacing:1px;display:block;margin-bottom:10px}
+input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:10px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--glow);box-shadow:0 0 12px rgba(0,255,224,0.6);cursor:grab;transition:box-shadow .2s}
+input[type=range]:active::-webkit-slider-thumb{cursor:grabbing;box-shadow:0 0 22px rgba(0,255,224,0.9)}
+.range-labels{display:flex;justify-content:space-between;font-size:0.65rem;color:var(--muted);font-family:var(--mono);margin-top:6px}
+.readout-row{display:flex;align-items:center;gap:10px;margin-top:12px}
+.readout-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-family:var(--mono);font-size:1.05rem;color:var(--glow);display:flex;align-items:center;gap:8px;flex:1}
+.readout-box input{background:transparent;border:none;outline:none;color:var(--glow);font-family:var(--mono);font-size:1.05rem;width:100%}
+.readout-unit{font-size:0.72rem;color:var(--muted);white-space:nowrap}
+.convert-btn{width:100%;padding:13px;margin-top:6px;background:linear-gradient(135deg,rgba(0,255,224,0.15),rgba(0,255,224,0.05));border:1px solid rgba(0,255,224,0.4);border-radius:8px;color:var(--glow);font-family:var(--mono);font-size:0.9rem;letter-spacing:2px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.convert-btn:hover{background:linear-gradient(135deg,rgba(0,255,224,0.25),rgba(0,255,224,0.12));box-shadow:0 0 20px rgba(0,255,224,0.2)}
+.convert-btn:active{transform:scale(0.98)}
+
+/* SCOPE */
+.scope-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:18px}
+.scope-screen{background:#030a06;border:2px solid var(--border);border-radius:8px;position:relative;overflow:hidden;height:260px}
+.scope-screen::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,224,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,224,0.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.scope-screen::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(0,255,224,0.03) 0%,transparent 70%);pointer-events:none}
+#scopeCanvas,#dacCanvas{width:100%;height:100%;display:block;position:relative;z-index:1}
+.scope-labels{position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:0.62rem;color:rgba(0,255,224,0.4);pointer-events:none;display:flex;flex-direction:column;gap:3px;z-index:2}
+.scope-volt-axis{position:absolute;right:8px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-between;padding:6px 0;pointer-events:none;z-index:2}
+.scope-volt-axis span{font-family:var(--mono);font-size:0.6rem;color:rgba(0,255,224,0.35)}
+
+/* OUTPUT CARDS */
+.output-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:700px){.output-row{grid-template-columns:1fr 1fr}}
+.out-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.out-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 10px 10px}
+.out-card.cyan::after{background:var(--glow)} .out-card.amber::after{background:var(--amber)}
+.out-card.violet::after{background:var(--glow3)} .out-card.orange::after{background:var(--glow2)}
+.out-card.green::after{background:var(--green)}
+.out-label{font-family:var(--mono);font-size:0.62rem;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.out-value{font-family:var(--mono);font-size:clamp(0.9rem,1.8vw,1.2rem);font-weight:700;transition:all .3s}
+.out-card.cyan .out-value{color:var(--glow)} .out-card.amber .out-value{color:var(--amber)}
+.out-card.violet .out-value{color:var(--glow3)} .out-card.orange .out-value{color:var(--glow2)}
+.out-card.green .out-value{color:var(--green)}
+.out-sub{font-size:0.62rem;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+
+/* BITS */
+.bits-section{}
+.bits-header{font-family:var(--mono);font-size:0.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.bits-wrap{display:flex;gap:3px;flex-wrap:wrap}
+.bit-cell{width:36px;height:36px;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.85rem;font-weight:700;transition:all .25s;border:1px solid;position:relative}
+.bit-cell.one{background:rgba(0,255,224,0.14);border-color:rgba(0,255,224,0.5);color:var(--glow);box-shadow:0 0 10px rgba(0,255,224,0.2)}
+.bit-cell.zero{background:rgba(255,255,255,0.02);border-color:var(--border);color:var(--muted)}
+.bit-cell .bit-pos{position:absolute;bottom:2px;font-size:0.42rem;color:var(--muted);opacity:0.6}
+.bit-cell.msb{border-top:2px solid var(--amber)} .bit-cell.lsb{border-top:2px solid var(--glow3)}
+
+/* HISTORY */
+.history-header{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:0.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.clear-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:0.62rem;padding:3px 10px;border-radius:4px;cursor:pointer;letter-spacing:1px;transition:all .2s}
+.clear-btn:hover{border-color:var(--red);color:var(--red)}
+.history-table-wrap{max-height:200px;overflow-y:auto}
+.history-table-wrap::-webkit-scrollbar{width:4px}
+.history-table-wrap::-webkit-scrollbar-track{background:var(--bg)}
+.history-table-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.72rem}
+thead tr{border-bottom:1px solid var(--border)}
+th{padding:7px 10px;text-align:left;color:var(--muted);font-weight:400;letter-spacing:1px;font-size:0.65rem}
+tbody tr{border-bottom:1px solid rgba(28,45,62,0.5);transition:background .15s}
+tbody tr:hover{background:rgba(0,255,224,0.03)}
+tbody tr.new-row td{animation:rowIn .4s ease}
+@keyframes rowIn{from{opacity:0;background:rgba(0,255,224,0.1)}to{opacity:1;background:transparent}}
+td{padding:7px 10px}
+td.v-cyan{color:var(--glow)} td.v-amber{color:var(--amber)} td.v-violet{color:var(--glow3)} td.v-orange{color:var(--glow2)} td.v-green{color:var(--green)}
+
+/* THEORY */
+.theory-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:800px){.theory-grid{grid-template-columns:1fr}}
+.theory-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px}
+.theory-card h3{font-family:var(--mono);font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;color:var(--glow);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.theory-card p,.theory-card li{font-size:0.82rem;line-height:1.7;color:#8eafc0;margin-bottom:10px}
+.theory-card ul{list-style:none;padding:0}
+.theory-card li::before{content:'▶ ';color:var(--glow);font-size:0.65rem}
+.theory-card strong{color:var(--text)}
+.formula-box{background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:6px;padding:12px 16px;margin:12px 0;font-family:var(--mono);font-size:0.8rem;color:var(--amber);line-height:1.9}
+.competency-list{counter-reset:comp}
+.competency-list li{counter-increment:comp;padding-left:28px;position:relative;margin-bottom:8px;color:#8eafc0}
+.competency-list li::before{content:counter(comp,decimal-leading-zero);position:absolute;left:0;color:var(--glow3);font-family:var(--mono);font-size:0.72rem}
+.live-formula{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:14px}
+.live-formula .lf-title{font-family:var(--mono);font-size:0.65rem;letter-spacing:2px;color:var(--muted);margin-bottom:10px;text-transform:uppercase}
+.lf-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.lf-val{font-family:var(--mono);font-size:0.8rem}
+.lf-val.c{color:var(--glow)} .lf-val.a{color:var(--amber)} .lf-val.v{color:var(--glow3)}
+.lf-op{color:var(--muted);font-family:var(--mono);font-size:0.9rem}
+
+/* QUIZ */
+.quiz-wrap{max-width:760px;margin:0 auto}
+.quiz-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:18px}
+.quiz-q{font-size:0.92rem;font-weight:600;color:var(--text);margin-bottom:18px;line-height:1.6}
+.quiz-q .q-num{font-family:var(--mono);color:var(--glow);margin-right:8px}
+.quiz-options{display:flex;flex-direction:column;gap:8px}
+.quiz-opt{padding:11px 16px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:0.83rem;transition:all .18s;display:flex;align-items:center;gap:10px;text-align:left}
+.quiz-opt:hover:not([disabled]){border-color:var(--glow);color:var(--glow);background:rgba(0,255,224,0.05)}
+.quiz-opt.correct{background:rgba(57,255,133,0.1);border-color:var(--green);color:var(--green)}
+.quiz-opt.wrong{background:rgba(255,59,92,0.1);border-color:var(--red);color:var(--red)}
+.quiz-opt .opt-key{font-family:var(--mono);font-size:0.75rem;color:var(--muted);min-width:20px}
+.quiz-feedback{margin-top:14px;padding:12px 16px;border-radius:7px;font-size:0.8rem;line-height:1.6;display:none}
+.quiz-feedback.show{display:block}
+.quiz-feedback.correct-fb{background:rgba(57,255,133,0.08);border:1px solid rgba(57,255,133,0.3);color:var(--green)}
+.quiz-feedback.wrong-fb{background:rgba(255,59,92,0.08);border:1px solid rgba(255,59,92,0.3);color:#ff7a8a}
+.quiz-score-bar{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 24px;display:flex;align-items:center;gap:20px;margin-bottom:18px}
+.score-num{font-family:var(--mono);font-size:1.6rem;color:var(--glow)}
+.score-label{font-size:0.75rem;color:var(--muted)}
+.progress-track{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--glow),var(--glow3));border-radius:4px;transition:width .4s ease}
+.reset-quiz-btn{padding:8px 20px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;font-family:var(--mono);font-size:0.75rem;cursor:pointer;transition:all .2s;letter-spacing:1px}
+.reset-quiz-btn:hover{border-color:var(--amber);color:var(--amber)}
+.pop{animation:pop .35s ease}
+@keyframes pop{0%,100%{transform:scale(1)}40%{transform:scale(1.05)}}
+</style>
 </head>
-<body class="bg-gray-100">
-    <div id="adc-simulator" class="p-6 max-w-3xl mx-auto bg-gray-50 rounded-xl shadow-md">
-        <h1 class="text-2xl font-bold mb-6 text-center text-blue-800">8-bit Analog-to-Digital Converter</h1>
-        
-        <!-- Input section -->
-        <div class="mb-8">
-            <h2 class="text-lg font-semibold mb-2">Analog Input</h2>
-            <div class="flex items-center mb-2">
-                <input
-                    type="range"
-                    id="analogInput"
-                    min="-12"
-                    max="12"
-                    step="0.01"
-                    value="0"
-                    class="w-full"
-                />
-            </div>
-            <div class="flex justify-between text-sm text-gray-600">
-                <span>-12V</span>
-                <span>0V</span>
-                <span>12V</span>
-            </div>
-            <div class="mt-2 text-center font-mono bg-white p-2 rounded border">
-                Input Voltage: <span id="inputVoltage" class="font-bold text-blue-700">0.000V</span>
-            </div>
+<body>
+<div class="page">
+
+<header>
+  <div class="hdr-left">
+    <h1>ADC<em> · </em>DAC<em> · </em>LEARNING LAB</h1>
+    <p>ANALOG ↔ DIGITAL CONVERSION · INTERACTIVE INSTRUMENT SIMULATOR · MORAINE VALLEY COMMUNITY COLLEGE</p>
+  </div>
+  <div class="hdr-right">
+    <div class="status-pill active"><div class="dot"></div>SYSTEM READY</div>
+  </div>
+</header>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="switchTab('converter')">⚡ ADC Converter</button>
+  <button class="mode-tab" onclick="switchTab('dac')">🔊 DAC Converter</button>
+  <button class="mode-tab" onclick="switchTab('theory')">📐 Theory &amp; Concepts</button>
+  <button class="mode-tab" onclick="switchTab('quiz')">🎯 Knowledge Check</button>
+</div>
+
+<!-- ══ TAB 1: ADC ══ -->
+<div id="tab-converter" class="tab-pane active">
+  <div class="lab-grid">
+    <div class="instrument-panel">
+      <div class="panel-section">
+        <div class="section-label">ADC Resolution</div>
+        <div class="seg-row">
+          <button class="seg" onclick="setBits(8,this)">8-BIT</button>
+          <button class="seg on" onclick="setBits(10,this)">10-BIT</button>
+          <button class="seg" onclick="setBits(12,this)">12-BIT</button>
+          <button class="seg" onclick="setBits(16,this)">16-BIT</button>
         </div>
-        
-        <!-- Conversion Visualization -->
-        <div class="mb-8 p-4 bg-white rounded-lg border">
-            <h2 class="text-lg font-semibold mb-3">Conversion Process</h2>
-            
-            <!-- Voltage scale visualization -->
-            <div class="relative h-12 voltage-scale rounded-md mb-2">
-                <div id="voltageMarker" class="absolute top-0 bottom-0 w-1 bg-black" style="left: 50%"></div>
-                <div id="voltageLabel" class="absolute top-full mt-1 transform -translate-x-1/2 text-sm font-mono" style="left: 50%">
-                    0.000V
-                </div>
-            </div>
-            
-            <!-- Quantization effect visualization -->
-            <div class="mt-8 bg-gray-100 p-3 rounded-md">
-                <p class="mb-2">Quantization:</p>
-                <ul class="list-disc pl-5 text-sm">
-                    <li>Voltage Range: -12V to 12V (Total: 24V)</li>
-                    <li>Digital Range: 0 to 255 (8-bit resolution)</li>
-                    <li>Voltage per Step: 0.09375V</li>
-                    <li>
-                        Quantized Voltage: <span id="quantizedVoltage" class="font-mono font-bold">0.000V</span>
-                        <span id="quantizationError" class="text-red-500"></span>
-                    </li>
-                </ul>
-            </div>
+        <div style="margin-top:12px;font-family:var(--mono);font-size:0.72rem;color:var(--muted)">
+          Levels: <span id="levelCount" style="color:var(--amber)">1024</span> &nbsp;|&nbsp; Max code: <span id="maxCode" style="color:var(--amber)">1023</span>
         </div>
-        
-        <!-- Output section -->
-        <div class="mb-6">
-            <h2 class="text-lg font-semibold mb-2">Digital Output</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white p-3 rounded border">
-                    <p class="text-sm text-gray-500 mb-1">Decimal</p>
-                    <p id="decimalOutput" class="font-mono text-2xl text-center font-bold">128</p>
-                </div>
-                <div class="bg-white p-3 rounded border">
-                    <p class="text-sm text-gray-500 mb-1">Binary</p>
-                    <p id="binaryOutput" class="font-mono text-2xl text-center font-bold">10000000</p>
-                </div>
-            </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-label">Analog Voltage Range</div>
+        <div class="seg-row">
+          <button class="seg amber on" onclick="setRange(-12,12,this)">±12 V</button>
+          <button class="seg amber" onclick="setRange(0,48,this)">0–48 V</button>
+          <button class="seg amber" onclick="setRange(0,5,this)">0–5 V</button>
         </div>
-        
-        <!-- Technical explanation -->
-        <div class="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <h2 class="text-lg font-semibold mb-2">How This ADC Works</h2>
-            <p class="mb-2">This simulator demonstrates an 8-bit ADC converting voltages from -12V to +12V:</p>
-            <ol class="list-decimal pl-5 space-y-1 text-sm">
-                <li>The input range (-12V to +12V) is divided into 256 equal steps</li>
-                <li>Each step represents approximately 0.09375V (24V ÷ 256)</li>
-                <li>The analog input is normalized to calculate which of the 256 levels it falls into</li>
-                <li>Quantization error occurs because continuous values are rounded to discrete steps</li>
-                <li>The digital output is represented in both decimal (0-255) and binary formats</li>
-            </ol>
+        <div style="margin-top:10px;font-family:var(--mono);font-size:0.72rem;color:var(--muted)">
+          Full-scale: <span id="rangeSpan" style="color:var(--amber)">24 V</span>
         </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-label">Analog Input Voltage</div>
+        <div class="ctrl-row">
+          <label id="sliderRangeLabel">INPUT: -12 V → +12 V</label>
+          <input type="range" id="analogSlider" min="-12" max="12" step="0.01" value="0" oninput="onSliderInput(this)">
+          <div class="range-labels"><span id="sliderMin">-12 V</span><span id="sliderMax">+12 V</span></div>
+        </div>
+        <div class="readout-row">
+          <div class="readout-box">
+            <input type="number" id="analogInput" value="0" step="0.01" oninput="onNumInput(this)" onkeydown="if(event.key==='Enter')doConvert()">
+          </div>
+          <span class="readout-unit">VOLTS</span>
+        </div>
+      </div>
+      <button class="convert-btn" onclick="doConvert()">▶ CONVERT  [ ENTER ]</button>
     </div>
 
-    <script>
-        class ADCSimulator {
-            constructor() {
-                // ADC configuration
-                this.MIN_VOLTAGE = -12;
-                this.MAX_VOLTAGE = 12;
-                this.VOLTAGE_RANGE = this.MAX_VOLTAGE - this.MIN_VOLTAGE;
-                this.BIT_DEPTH = 8;
-                this.MAX_DIGITAL_VALUE = Math.pow(2, this.BIT_DEPTH) - 1; // 255
-                this.VOLTAGE_STEP = this.VOLTAGE_RANGE / this.MAX_DIGITAL_VALUE; // ~0.09375V per step
-                
-                // Get DOM elements
-                this.analogInput = document.getElementById('analogInput');
-                this.inputVoltage = document.getElementById('inputVoltage');
-                this.voltageMarker = document.getElementById('voltageMarker');
-                this.voltageLabel = document.getElementById('voltageLabel');
-                this.quantizedVoltage = document.getElementById('quantizedVoltage');
-                this.quantizationError = document.getElementById('quantizationError');
-                this.decimalOutput = document.getElementById('decimalOutput');
-                this.binaryOutput = document.getElementById('binaryOutput');
-                
-                // Initialize
-                this.init();
-            }
-            
-            init() {
-                // Add event listener for input change
-                this.analogInput.addEventListener('input', (e) => {
-                    this.updateADC(parseFloat(e.target.value));
-                });
-                
-                // Initial update
-                this.updateADC(0);
-            }
-            
-            updateADC(analogValue) {
-                // Ensure input is within range
-                const clampedInput = Math.max(this.MIN_VOLTAGE, Math.min(this.MAX_VOLTAGE, analogValue));
-                
-                // Scale the input voltage to 0-255 range
-                const normalized = clampedInput - this.MIN_VOLTAGE; // Shift to 0-24V range
-                const rawDigital = Math.round(normalized / this.VOLTAGE_STEP);
-                
-                // Convert to 8-bit binary representation
-                const binary = rawDigital.toString(2).padStart(8, '0');
-                
-                // Calculate the actual voltage represented by the digital value
-                const quantizedVolt = this.getQuantizedVoltage(rawDigital);
-                
-                // Update display
-                this.updateDisplay(clampedInput, rawDigital, binary, quantizedVolt);
-            }
-            
-            getQuantizedVoltage(digitalValue) {
-                const normalized = digitalValue * this.VOLTAGE_STEP;
-                return normalized + this.MIN_VOLTAGE;
-            }
-            
-            updateDisplay(analogValue, digitalValue, binaryValue, quantizedVolt) {
-                // Update input voltage display
-                this.inputVoltage.textContent = `${analogValue.toFixed(3)}V`;
-                
-                // Update voltage marker position
-                const percentage = ((analogValue - this.MIN_VOLTAGE) / this.VOLTAGE_RANGE) * 100;
-                const markerPosition = Math.max(0, Math.min(100, percentage));
-                this.voltageMarker.style.left = `${markerPosition}%`;
-                this.voltageLabel.style.left = `${markerPosition}%`;
-                this.voltageLabel.textContent = `${analogValue.toFixed(3)}V`;
-                
-                // Update quantized voltage and error
-                this.quantizedVoltage.textContent = `${quantizedVolt.toFixed(3)}V`;
-                
-                const error = analogValue - quantizedVolt;
-                if (Math.abs(error) > 0.001) {
-                    this.quantizationError.textContent = ` (Quantization error: ${error.toFixed(5)}V)`;
-                    this.quantizationError.style.display = 'inline';
-                } else {
-                    this.quantizationError.style.display = 'none';
-                }
-                
-                // Update digital outputs
-                this.decimalOutput.textContent = digitalValue.toString();
-                this.binaryOutput.textContent = binaryValue;
-            }
-        }
-        
-        // Initialize the ADC simulator when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new ADCSimulator();
-        });
-    </script>
+    <div class="scope-panel">
+      <div style="position:relative">
+        <div class="scope-screen">
+          <canvas id="scopeCanvas"></canvas>
+          <div class="scope-labels">
+            <span style="color:rgba(0,255,224,0.6)">── CH1 ANALOG INPUT</span>
+            <span style="color:rgba(255,179,0,0.7)">── CH2 QUANTIZED</span>
+          </div>
+          <div class="scope-volt-axis" id="voltAxis"></div>
+        </div>
+      </div>
+
+      <div class="output-row">
+        <div class="out-card cyan">
+          <div class="out-label">Digital Value (Dec)</div>
+          <div class="out-value" id="outDecimal">—</div>
+          <div class="out-sub">Integer code</div>
+        </div>
+        <div class="out-card amber">
+          <div class="out-label">Hex Value</div>
+          <div class="out-value" id="outHex">—</div>
+          <div class="out-sub">Base 16</div>
+        </div>
+        <div class="out-card violet">
+          <div class="out-label">Octal Value</div>
+          <div class="out-value" id="outOctal">—</div>
+          <div class="out-sub">Base 8</div>
+        </div>
+        <div class="out-card orange">
+          <div class="out-label">Step Size (LSB)</div>
+          <div class="out-value" id="outLSB">—</div>
+          <div class="out-sub">V per count</div>
+        </div>
+        <div class="out-card green">
+          <div class="out-label">Quant. Error</div>
+          <div class="out-value" id="outQerr">—</div>
+          <div class="out-sub">±½ LSB max</div>
+        </div>
+        <div class="out-card cyan" style="--glow:var(--glow3)">
+          <div class="out-label">% Full Scale</div>
+          <div class="out-value" style="color:var(--glow3)" id="outPct">—</div>
+          <div class="out-sub">Input position</div>
+        </div>
+      </div>
+
+      <div class="bits-section">
+        <div class="bits-header">BINARY WORD — <span id="bitsHeader">10-BIT OUTPUT</span> &nbsp;<span style="font-size:0.6rem;color:var(--amber)">▲ MSB</span> <span style="font-size:0.6rem;color:var(--glow3)">▲ LSB</span></div>
+        <div class="bits-wrap" id="bitsWrap"></div>
+      </div>
+
+      <div>
+        <div class="history-header">Conversion History <button class="clear-btn" onclick="clearHistory()">CLEAR</button></div>
+        <div class="history-table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Analog (V)</th><th>Decimal</th><th>Hex</th><th>Binary</th><th>LSB (mV)</th></tr></thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 2: DAC ══ -->
+<div id="tab-dac" class="tab-pane">
+  <div class="lab-grid">
+    <div class="instrument-panel">
+      <div class="panel-section">
+        <div class="section-label">DAC Resolution</div>
+        <div class="seg-row">
+          <button class="seg" onclick="setDacBits(8,this)">8-BIT</button>
+          <button class="seg on" onclick="setDacBits(10,this)">10-BIT</button>
+          <button class="seg" onclick="setDacBits(12,this)">12-BIT</button>
+          <button class="seg" onclick="setDacBits(16,this)">16-BIT</button>
+        </div>
+        <div style="margin-top:12px;font-family:var(--mono);font-size:0.72rem;color:var(--muted)">
+          Levels: <span id="dacLevels" style="color:var(--amber)">1024</span> &nbsp;|&nbsp; Max code: <span id="dacMax" style="color:var(--amber)">1023</span>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-label">Output Voltage Range</div>
+        <div class="seg-row">
+          <button class="seg amber on" onclick="setDacRange(-12,12,this)">±12 V</button>
+          <button class="seg amber" onclick="setDacRange(0,48,this)">0–48 V</button>
+          <button class="seg amber" onclick="setDacRange(0,5,this)">0–5 V</button>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-label">Digital Input Code (Decimal)</div>
+        <div class="ctrl-row">
+          <label id="dacSliderLabel">CODE: 0 → 1023</label>
+          <input type="range" id="dacSlider" min="0" max="1023" step="1" value="512" oninput="onDacSlider(this)">
+          <div class="range-labels"><span>0</span><span id="dacSliderMaxLabel">1023</span></div>
+        </div>
+        <div class="readout-row">
+          <div class="readout-box">
+            <input type="number" id="dacDecInput" value="512" min="0" max="1023" oninput="onDacInput(this)" onkeydown="if(event.key==='Enter')doDacConvert()">
+          </div>
+          <span class="readout-unit">DEC</span>
+        </div>
+        <div style="margin-top:10px">
+          <label style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:1px;display:block;margin-bottom:6px">HEX CODE INPUT</label>
+          <div class="readout-row" style="margin-top:0">
+            <div class="readout-box">
+              <input type="text" id="dacHexInput" value="200" placeholder="e.g. 1FF" oninput="onDacHex(this)" style="text-transform:uppercase">
+            </div>
+            <span class="readout-unit">0x</span>
+          </div>
+        </div>
+      </div>
+      <button class="convert-btn" onclick="doDacConvert()">▶ DAC CONVERT  [ ENTER ]</button>
+    </div>
+
+    <div class="scope-panel">
+      <div style="position:relative">
+        <div class="scope-screen">
+          <canvas id="dacCanvas"></canvas>
+          <div class="scope-labels">
+            <span style="color:rgba(57,255,133,0.7)">── CH1 ANALOG OUTPUT (STAIRCASE)</span>
+            <span style="color:rgba(255,106,0,0.5)">- - IDEAL ENVELOPE</span>
+          </div>
+          <div class="scope-volt-axis" id="dacVoltAxis"></div>
+        </div>
+      </div>
+
+      <div class="output-row">
+        <div class="out-card green">
+          <div class="out-label">Analog Output (V)</div>
+          <div class="out-value" id="dacOutV">—</div>
+          <div class="out-sub">Reconstructed voltage</div>
+        </div>
+        <div class="out-card amber">
+          <div class="out-label">Decimal Code</div>
+          <div class="out-value" id="dacOutDec">—</div>
+          <div class="out-sub">Input code</div>
+        </div>
+        <div class="out-card violet">
+          <div class="out-label">Hex Code</div>
+          <div class="out-value" id="dacOutHex">—</div>
+          <div class="out-sub">Base 16</div>
+        </div>
+        <div class="out-card cyan">
+          <div class="out-label">Binary Word</div>
+          <div class="out-value" id="dacOutBin" style="font-size:0.72rem;word-break:break-all">—</div>
+          <div class="out-sub">Bit pattern</div>
+        </div>
+        <div class="out-card orange">
+          <div class="out-label">Step Size (LSB)</div>
+          <div class="out-value" id="dacOutLSB">—</div>
+          <div class="out-sub">mV per code</div>
+        </div>
+        <div class="out-card green" style="--green:var(--glow3)">
+          <div class="out-label">% Full Scale</div>
+          <div class="out-value" style="color:var(--glow3)" id="dacOutPct">—</div>
+          <div class="out-sub">Code utilization</div>
+        </div>
+      </div>
+
+      <div class="bits-section">
+        <div class="bits-header">BINARY WORD — <span id="dacBitsHeader">10-BIT INPUT</span></div>
+        <div class="bits-wrap" id="dacBitsWrap"></div>
+      </div>
+
+      <div>
+        <div class="history-header">DAC History <button class="clear-btn" onclick="clearDacHistory()">CLEAR</button></div>
+        <div class="history-table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Dec Code</th><th>Hex</th><th>Analog Out (V)</th><th>% FS</th></tr></thead>
+            <tbody id="dacHistoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 3: THEORY ══ -->
+<div id="tab-theory" class="tab-pane">
+  <div class="theory-grid">
+    <div class="theory-card">
+      <h3>🔌 What is an ADC?</h3>
+      <p>An <strong>Analog-to-Digital Converter (ADC)</strong> samples a continuous analog voltage and converts it to a discrete binary number. Every ADC performs two core operations:</p>
+      <ul>
+        <li><strong>Sampling</strong> — capturing the signal at uniform time intervals (must satisfy Nyquist: f<sub>s</sub> ≥ 2f<sub>max</sub>)</li>
+        <li><strong>Quantization</strong> — mapping the sample to the nearest of 2ᴺ discrete voltage levels</li>
+      </ul>
+      <p>Higher bit depth = more levels = finer resolution = less quantization error. Each added bit improves dynamic range by ~6 dB and halves the step size.</p>
+      <div class="formula-box">
+        Digital Code = floor[ (V_in − V_min) / (V_max − V_min) × (2ᴺ − 1) ]<br>
+        Step Size (LSB) = (V_max − V_min) / (2ᴺ − 1)<br>
+        Max Quant. Error = ±½ × LSB<br>
+        Dynamic Range ≈ 6.02 × N + 1.76  dB
+      </div>
+      <div class="live-formula">
+        <div class="lf-title">Live Formula — Current ADC Settings</div>
+        <div class="lf-row">
+          <span class="lf-val c">Step Size</span>
+          <span class="lf-op">=</span>
+          <span class="lf-val a" id="tf_range">24</span>
+          <span class="lf-op">V ÷</span>
+          <span class="lf-val v" id="tf_levels">1023</span>
+          <span class="lf-op">=</span>
+          <span class="lf-val c" id="tf_lsb">23.46 mV</span>
+        </div>
+        <div class="lf-row">
+          <span class="lf-val c">Max Error</span>
+          <span class="lf-op">=</span>
+          <span class="lf-val c" id="tf_err">±11.73 mV</span>
+        </div>
+        <div class="lf-row">
+          <span class="lf-val c">Dyn. Range</span>
+          <span class="lf-op">=</span>
+          <span class="lf-val c" id="tf_dr">62.0 dB</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="theory-card">
+      <h3>🔊 What is a DAC?</h3>
+      <p>A <strong>Digital-to-Analog Converter (DAC)</strong> reconstructs a continuous voltage from a binary code. DACs are essential in audio playback, motor control, RF signal generation, and industrial process control.</p>
+      <ul>
+        <li><strong>R-2R Ladder</strong> — uses a precision resistor network; low cost, widely used</li>
+        <li><strong>Weighted Resistor</strong> — each bit drives a differently weighted resistor</li>
+        <li><strong>Delta-Sigma (ΔΣ)</strong> — oversampling + noise shaping for 16–24 bit audio</li>
+        <li><strong>PWM-based</strong> — pulse width modulated output + low-pass filter</li>
+      </ul>
+      <div class="formula-box">
+        V_out = V_min + Code × [(V_max − V_min) / (2ᴺ − 1)]<br>
+        Resolution = (V_max − V_min) / (2ᴺ − 1)<br>
+        % Full Scale = (Code / (2ᴺ − 1)) × 100
+      </div>
+      <p>The characteristic <strong>staircase waveform</strong> of a DAC output is smoothed by a reconstruction (low-pass) filter to recover the original continuous signal.</p>
+    </div>
+
+    <div class="theory-card">
+      <h3>📊 Resolution Comparison Table</h3>
+      <table style="width:100%;font-family:var(--mono);font-size:0.72rem;margin-top:4px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:6px 8px;color:var(--muted)">Bits</th>
+          <th style="padding:6px 8px;color:var(--muted)">Levels</th>
+          <th style="padding:6px 8px;color:var(--muted)">LSB @ 5V</th>
+          <th style="padding:6px 8px;color:var(--muted)">LSB @ 24V</th>
+          <th style="padding:6px 8px;color:var(--muted)">Dyn Range</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:6px 8px;color:var(--glow)">8</td><td style="padding:6px 8px;color:var(--amber)">256</td><td style="padding:6px 8px">19.6 mV</td><td style="padding:6px 8px">94.1 mV</td><td style="padding:6px 8px;color:var(--glow3)">49.9 dB</td></tr>
+          <tr><td style="padding:6px 8px;color:var(--glow)">10</td><td style="padding:6px 8px;color:var(--amber)">1,024</td><td style="padding:6px 8px">4.89 mV</td><td style="padding:6px 8px">23.5 mV</td><td style="padding:6px 8px;color:var(--glow3)">61.9 dB</td></tr>
+          <tr><td style="padding:6px 8px;color:var(--glow)">12</td><td style="padding:6px 8px;color:var(--amber)">4,096</td><td style="padding:6px 8px">1.22 mV</td><td style="padding:6px 8px">5.86 mV</td><td style="padding:6px 8px;color:var(--glow3)">73.9 dB</td></tr>
+          <tr><td style="padding:6px 8px;color:var(--glow)">16</td><td style="padding:6px 8px;color:var(--amber)">65,536</td><td style="padding:6px 8px">76 µV</td><td style="padding:6px 8px">366 µV</td><td style="padding:6px 8px;color:var(--glow3)">97.8 dB</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:14px">Each additional bit <strong>doubles resolution</strong> and adds ~6 dB of dynamic range. Choosing bit depth is a trade-off between precision, speed, power, and cost.</p>
+      <p><strong>Bipolar ranges</strong> (e.g., ±12V) require offset encoding; <strong>unipolar ranges</strong> (e.g., 0–5V) use straight binary coding.</p>
+    </div>
+
+    <div class="theory-card">
+      <h3>🎓 Learning Competencies</h3>
+      <p>Upon completing this module, students will be able to:</p>
+      <ul class="competency-list">
+        <li>Explain the difference between analog and digital signals and why conversion is necessary in modern systems</li>
+        <li>Calculate the number of quantization levels for any N-bit ADC/DAC (2ᴺ levels)</li>
+        <li>Apply the ADC conversion formula to map a voltage to its correct digital code</li>
+        <li>Calculate step size (LSB) and maximum quantization error for any given configuration</li>
+        <li>Explain the trade-off between bit resolution, conversion speed, power, and cost</li>
+        <li>Describe flash, successive approximation (SAR), and delta-sigma ADC architectures</li>
+        <li>Perform DAC reconstruction and calculate the expected analog output voltage from a code</li>
+        <li>Interpret binary, hexadecimal, octal, and decimal representations of converter codes</li>
+        <li>Analyze the effect of bipolar vs. unipolar voltage ranges on code mapping</li>
+        <li>Apply Nyquist's theorem to determine minimum sampling rates for given signals</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB 4: QUIZ ══ -->
+<div id="tab-quiz" class="tab-pane">
+  <div class="quiz-wrap">
+    <div class="quiz-score-bar">
+      <div>
+        <div class="score-num"><span id="quizScore">0</span>/<span id="quizTotal">8</span></div>
+        <div class="score-label">SCORE</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="quizProgress" style="width:0%"></div></div>
+      <button class="reset-quiz-btn" onclick="resetQuiz()">↺ RESET</button>
+    </div>
+    <div id="quizContainer"></div>
+  </div>
+</div>
+
+</div><!-- /page -->
+<script>
+/* ── STATE ── */
+let adcBits=10, adcMin=-12, adcMax=12;
+let dacBits=10, dacMin=-12, dacMax=12;
+let histCount=0, dacHistCount=0;
+let scopePoints=[], dacScopePoints=[];
+
+/* ── TAB ── */
+function switchTab(name){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  ['converter','dac','theory','quiz'].forEach((t,i)=>{
+    if(t===name) document.querySelectorAll('.mode-tab')[i].classList.add('active');
+  });
+  if(name==='converter') setTimeout(drawScope,50);
+  if(name==='dac') setTimeout(drawDacScope,50);
+}
+
+/* ── ADC CONTROLS ── */
+function setBits(n,el){
+  adcBits=n;
+  document.querySelectorAll('#tab-converter .seg:not(.amber)').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  const lv=Math.pow(2,n);
+  document.getElementById('levelCount').textContent=lv.toLocaleString();
+  document.getElementById('maxCode').textContent=(lv-1).toLocaleString();
+  document.getElementById('bitsHeader').textContent=n+'-BIT OUTPUT';
+  updateTheoryFormula();
+  buildBitCells(0,n,'bitsWrap');
+}
+function setRange(mn,mx,el){
+  adcMin=mn; adcMax=mx;
+  document.querySelectorAll('#tab-converter .seg.amber').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  const sl=document.getElementById('analogSlider');
+  sl.min=mn; sl.max=mx;
+  if(+sl.value<mn) sl.value=mn;
+  if(+sl.value>mx) sl.value=mx;
+  document.getElementById('sliderMin').textContent=mn+' V';
+  document.getElementById('sliderMax').textContent='+'+mx+' V';
+  document.getElementById('sliderRangeLabel').textContent='INPUT: '+mn+' V → +'+mx+' V';
+  document.getElementById('rangeSpan').textContent=(mx-mn)+' V';
+  updateSliderGradient(sl);
+  updateTheoryFormula();
+}
+function onSliderInput(el){
+  document.getElementById('analogInput').value=parseFloat(el.value).toFixed(3);
+  updateSliderGradient(el);
+}
+function onNumInput(el){
+  let v=parseFloat(el.value)||0;
+  v=Math.min(Math.max(v,adcMin),adcMax);
+  document.getElementById('analogSlider').value=v;
+  updateSliderGradient(document.getElementById('analogSlider'));
+}
+function updateSliderGradient(el){
+  const mn=+el.min,mx=+el.max,v=+el.value;
+  const pct=((v-mn)/(mx-mn))*100;
+  el.style.background=`linear-gradient(90deg,var(--glow) 0%,var(--glow) ${pct}%,var(--border) ${pct}%)`;
+}
+
+/* ── ADC CONVERT ── */
+function doConvert(){
+  const vin=parseFloat(document.getElementById('analogInput').value)||0;
+  const N=adcBits, levels=Math.pow(2,N), maxCode=levels-1;
+  const range=adcMax-adcMin, lsb=range/maxCode;
+  const code=Math.min(maxCode,Math.max(0,Math.round((vin-adcMin)/lsb)));
+  const vOut=adcMin+code*lsb, qErr=vin-vOut;
+  const pct=((vin-adcMin)/range*100).toFixed(2);
+  const hexPad=Math.ceil(N/4);
+  animVal('outDecimal',code.toLocaleString());
+  animVal('outHex','0x'+code.toString(16).toUpperCase().padStart(hexPad,'0'));
+  animVal('outOctal','0o'+code.toString(8));
+  animVal('outLSB',(lsb*1000).toFixed(4)+' mV');
+  animVal('outQerr',(qErr*1000).toFixed(3)+' mV');
+  animVal('outPct',pct+'%');
+  buildBitCells(code,N,'bitsWrap');
+  scopePoints.push({vin,code,lsb,vOut,N,range});
+  if(scopePoints.length>64) scopePoints.shift();
+  drawScope();
+  addHistory(vin,code,N,lsb);
+  updateTheoryFormula();
+}
+function animVal(id,val){
+  const el=document.getElementById(id);
+  el.classList.remove('pop'); void el.offsetWidth;
+  el.textContent=val; el.classList.add('pop');
+}
+
+/* ── BINARY CELLS ── */
+function buildBitCells(code,N,wrapperId){
+  const wrap=document.getElementById(wrapperId);
+  wrap.innerHTML='';
+  const bin=code.toString(2).padStart(N,'0');
+  for(let i=0;i<N;i++){
+    const c=document.createElement('div');
+    c.className='bit-cell '+(bin[i]==='1'?'one':'zero');
+    if(i===0) c.classList.add('msb');
+    if(i===N-1) c.classList.add('lsb');
+    const pos=N-1-i;
+    c.innerHTML=bin[i]+'<span class="bit-pos">'+pos+'</span>';
+    c.title='Bit '+pos+(i===0?' (MSB)':i===N-1?' (LSB)':'')+(bin[i]==='1'?' = 2^'+pos+' = '+Math.pow(2,pos):'');
+    wrap.appendChild(c);
+  }
+}
+
+/* ── SCOPE DRAW (ADC) ── */
+function drawScope(){
+  const canvas=document.getElementById('scopeCanvas');
+  const par=canvas.parentElement;
+  canvas.width=par.offsetWidth||700; canvas.height=par.offsetHeight||260;
+  const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const mn=adcMin, mx=adcMax, range=mx-mn;
+  // volt axis
+  const axis=document.getElementById('voltAxis'); axis.innerHTML='';
+  for(let i=0;i<=5;i++){
+    const v=(mx-(range/5)*i).toFixed(1);
+    const s=document.createElement('span'); s.textContent=v+'V'; axis.appendChild(s);
+  }
+  if(scopePoints.length<1){
+    ctx.fillStyle='rgba(0,255,224,0.15)'; ctx.font='12px Share Tech Mono,monospace';
+    ctx.fillText('[ NO DATA — PRESS CONVERT ]',W/2-120,H/2); return;
+  }
+  const pts=scopePoints;
+  const xStep=W/Math.max(pts.length,16);
+  const toY=v=>H-(((v-mn)/range)*H*0.82+H*0.09);
+  // analog line
+  ctx.beginPath(); ctx.strokeStyle='rgba(0,255,224,0.75)'; ctx.lineWidth=2;
+  ctx.shadowBlur=8; ctx.shadowColor='#00ffe0';
+  pts.forEach((p,i)=>{
+    const x=i*xStep+xStep/2;
+    i===0?ctx.moveTo(x,toY(p.vin)):ctx.lineTo(x,toY(p.vin));
+  });
+  ctx.stroke(); ctx.shadowBlur=0;
+  // staircase
+  ctx.beginPath(); ctx.strokeStyle='rgba(255,179,0,0.85)'; ctx.lineWidth=2;
+  ctx.shadowBlur=6; ctx.shadowColor='#ffb300';
+  pts.forEach((p,i)=>{
+    const x=i*xStep+xStep/2, xN=(i+1)*xStep+xStep/2, y=toY(p.vOut);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    if(i<pts.length-1) ctx.lineTo(xN,y);
+  });
+  ctx.stroke(); ctx.shadowBlur=0;
+  // dots
+  pts.forEach((p,i)=>{
+    const x=i*xStep+xStep/2;
+    ctx.beginPath(); ctx.arc(x,toY(p.vin),3,0,Math.PI*2);
+    ctx.fillStyle='#00ffe0'; ctx.shadowBlur=8; ctx.shadowColor='#00ffe0'; ctx.fill();
+  });
+  ctx.shadowBlur=0;
+}
+
+/* ── HISTORY (ADC) ── */
+function addHistory(vin,code,N,lsb){
+  histCount++;
+  const tbody=document.getElementById('historyBody');
+  const bin=code.toString(2).padStart(N,'0');
+  const tr=document.createElement('tr'); tr.className='new-row';
+  tr.innerHTML=`<td>${histCount}</td><td class="v-cyan">${vin.toFixed(4)}</td><td class="v-amber">${code}</td><td class="v-violet">0x${code.toString(16).toUpperCase().padStart(Math.ceil(N/4),'0')}</td><td class="v-green" style="font-size:0.62rem">${bin.match(/.{1,4}/g).join(' ')}</td><td class="v-orange">${(lsb*1000).toFixed(3)}</td>`;
+  tbody.insertBefore(tr,tbody.firstChild);
+  if(tbody.rows.length>20) tbody.deleteRow(tbody.rows.length-1);
+}
+function clearHistory(){ document.getElementById('historyBody').innerHTML=''; histCount=0; scopePoints=[]; drawScope(); }
+
+/* ── THEORY FORMULA ── */
+function updateTheoryFormula(){
+  const range=adcMax-adcMin, maxCode=Math.pow(2,adcBits)-1;
+  const lsb=range/maxCode, dr=6.02*adcBits+1.76;
+  document.getElementById('tf_range').textContent=range;
+  document.getElementById('tf_levels').textContent=maxCode;
+  document.getElementById('tf_lsb').textContent=(lsb*1000).toFixed(4)+' mV';
+  document.getElementById('tf_err').textContent='±'+(lsb*500).toFixed(4)+' mV';
+  document.getElementById('tf_dr').textContent=dr.toFixed(1)+' dB';
+}
+
+/* ── DAC CONTROLS ── */
+function setDacBits(n,el){
+  dacBits=n;
+  document.querySelectorAll('#tab-dac .seg:not(.amber)').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  const maxCode=Math.pow(2,n)-1;
+  document.getElementById('dacLevels').textContent=Math.pow(2,n).toLocaleString();
+  document.getElementById('dacMax').textContent=maxCode.toLocaleString();
+  document.getElementById('dacSlider').max=maxCode;
+  document.getElementById('dacSliderMaxLabel').textContent=maxCode;
+  document.getElementById('dacDecInput').max=maxCode;
+  document.getElementById('dacBitsHeader').textContent=n+'-BIT INPUT';
+  if(+document.getElementById('dacDecInput').value>maxCode) document.getElementById('dacDecInput').value=maxCode;
+  buildBitCells(+document.getElementById('dacDecInput').value,dacBits,'dacBitsWrap');
+}
+function setDacRange(mn,mx,el){
+  dacMin=mn; dacMax=mx;
+  document.querySelectorAll('#tab-dac .seg.amber').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+function onDacSlider(el){
+  document.getElementById('dacDecInput').value=el.value;
+  document.getElementById('dacHexInput').value=parseInt(el.value).toString(16).toUpperCase();
+  updateSliderGradient(el);
+}
+function onDacInput(el){
+  const v=Math.min(Math.max(parseInt(el.value)||0,0),Math.pow(2,dacBits)-1);
+  document.getElementById('dacSlider').value=v;
+  document.getElementById('dacHexInput').value=v.toString(16).toUpperCase();
+  updateSliderGradient(document.getElementById('dacSlider'));
+}
+function onDacHex(el){
+  const v=Math.min(parseInt(el.value,16)||0,Math.pow(2,dacBits)-1);
+  document.getElementById('dacDecInput').value=v;
+  document.getElementById('dacSlider').value=v;
+  updateSliderGradient(document.getElementById('dacSlider'));
+}
+
+/* ── DAC CONVERT ── */
+function doDacConvert(){
+  const code=Math.min(parseInt(document.getElementById('dacDecInput').value)||0,Math.pow(2,dacBits)-1);
+  const N=dacBits, maxCode=Math.pow(2,N)-1;
+  const range=dacMax-dacMin, lsb=range/maxCode;
+  const vout=dacMin+code*lsb, pct=(code/maxCode*100).toFixed(2);
+  animVal('dacOutV',vout.toFixed(5)+' V');
+  animVal('dacOutDec',code.toLocaleString());
+  animVal('dacOutHex','0x'+code.toString(16).toUpperCase().padStart(Math.ceil(N/4),'0'));
+  animVal('dacOutBin',code.toString(2).padStart(N,'0').match(/.{1,4}/g).join(' '));
+  animVal('dacOutLSB',(lsb*1000).toFixed(4)+' mV');
+  animVal('dacOutPct',pct+'%');
+  buildBitCells(code,N,'dacBitsWrap');
+  dacScopePoints.push({code,vout,maxCode,N});
+  if(dacScopePoints.length>64) dacScopePoints.shift();
+  drawDacScope();
+  addDacHistory(code,N,vout,pct);
+}
+
+/* ── SCOPE DRAW (DAC) ── */
+function drawDacScope(){
+  const canvas=document.getElementById('dacCanvas');
+  const par=canvas.parentElement;
+  canvas.width=par.offsetWidth||700; canvas.height=par.offsetHeight||260;
+  const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const mn=dacMin, mx=dacMax, range=mx-mn;
+  const axis=document.getElementById('dacVoltAxis'); axis.innerHTML='';
+  for(let i=0;i<=5;i++){
+    const v=(mx-(range/5)*i).toFixed(1);
+    const s=document.createElement('span'); s.textContent=v+'V'; axis.appendChild(s);
+  }
+  if(dacScopePoints.length<1){
+    ctx.fillStyle='rgba(57,255,133,0.15)'; ctx.font='12px Share Tech Mono,monospace';
+    ctx.fillText('[ NO DATA — PRESS DAC CONVERT ]',W/2-150,H/2); return;
+  }
+  const pts=dacScopePoints;
+  const xStep=W/Math.max(pts.length,16);
+  const toY=v=>H-(((v-mn)/range)*H*0.82+H*0.09);
+  // staircase
+  ctx.beginPath(); ctx.strokeStyle='rgba(57,255,133,0.85)'; ctx.lineWidth=2.5;
+  ctx.shadowBlur=8; ctx.shadowColor='#39ff85';
+  pts.forEach((p,i)=>{
+    const x=i*xStep+xStep/2, xN=(i+1)*xStep+xStep/2, y=toY(p.vout);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    if(i<pts.length-1) ctx.lineTo(xN,y);
+  });
+  ctx.stroke(); ctx.shadowBlur=0;
+  // ideal envelope
+  ctx.beginPath(); ctx.strokeStyle='rgba(255,106,0,0.4)'; ctx.lineWidth=1.5;
+  ctx.setLineDash([5,5]);
+  pts.forEach((p,i)=>{
+    const x=i*xStep+xStep/2;
+    i===0?ctx.moveTo(x,toY(p.vout)):ctx.lineTo(x,toY(p.vout));
+  });
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+/* ── HISTORY (DAC) ── */
+function addDacHistory(code,N,vout,pct){
+  dacHistCount++;
+  const tbody=document.getElementById('dacHistoryBody');
+  const tr=document.createElement('tr'); tr.className='new-row';
+  tr.innerHTML=`<td>${dacHistCount}</td><td class="v-amber">${code}</td><td class="v-violet">0x${code.toString(16).toUpperCase().padStart(Math.ceil(N/4),'0')}</td><td class="v-green">${vout.toFixed(5)}</td><td class="v-orange">${pct}%</td>`;
+  tbody.insertBefore(tr,tbody.firstChild);
+  if(tbody.rows.length>20) tbody.deleteRow(tbody.rows.length-1);
+}
+function clearDacHistory(){ document.getElementById('dacHistoryBody').innerHTML=''; dacHistCount=0; dacScopePoints=[]; drawDacScope(); }
+
+/* ── QUIZ ── */
+const QUESTIONS=[
+  {q:"An 8-bit ADC operating over a 0–5V range has how many discrete quantization levels?",opts:["128","255","256","512"],ans:2,fb:"An N-bit ADC produces 2ᴺ levels. For 8 bits: 2⁸ = 256 discrete output codes (0 through 255)."},
+  {q:"What is the step size (LSB) of a 10-bit ADC with a ±12V bipolar range (24V full scale)?",opts:["23.46 mV","4.89 mV","46.9 mV","11.73 mV"],ans:0,fb:"LSB = Full-Scale Range ÷ (2ᴺ−1) = 24V ÷ 1023 ≈ 23.46 mV. The ±12V range gives a 24V full-scale span."},
+  {q:"A 12-bit ADC measures 3.3V on a 0–5V range. What is the decimal output code (nearest integer)?",opts:["2703","2048","3300","1651"],ans:0,fb:"Code = (V_in / V_max) × (2ᴺ−1) = (3.3/5) × 4095 = 0.66 × 4095 ≈ 2703."},
+  {q:"What is the maximum possible quantization error for any ADC?",opts:["±1 LSB","±½ LSB","±1 bit","±2 LSB"],ans:1,fb:"The maximum quantization error is ±½ LSB. The ADC rounds to the nearest discrete level, so the worst-case error is half a step."},
+  {q:"A 12-bit DAC with a 0–5V range receives the decimal code 2048. What is the analog output?",opts:["2.500 V","2.499 V","2.501 V","1.250 V"],ans:1,fb:"V_out = 0 + 2048 × (5/4095) = 2048 × 0.001221 ≈ 2.499 V. Note: max code is 4095, not 4096."},
+  {q:"Going from 8-bit to 9-bit resolution (same voltage range) has what effect on step size?",opts:["Doubles step size","Halves step size","Quadruples step size","No change"],ans:1,fb:"Each additional bit halves the step size by dividing the same range into twice as many levels, improving dynamic range by ~6 dB."},
+  {q:"Which ADC architecture uses an array of 2ᴺ−1 comparators for extremely fast parallel conversion?",opts:["Successive Approximation (SAR)","Delta-Sigma","Flash (Parallel)","Dual-Slope"],ans:2,fb:"Flash ADCs use 2ᴺ−1 simultaneous comparators — fastest architecture but power-intensive, practical only to ~8-bit resolution."},
+  {q:"An analog signal has a maximum frequency of 10 kHz. Per Nyquist's theorem, what is the minimum sampling rate?",opts:["5 kHz","10 kHz","20 kHz","40 kHz"],ans:2,fb:"Nyquist's theorem: sampling rate ≥ 2 × f_max = 2 × 10 kHz = 20 kHz minimum to avoid aliasing artifacts."}
+];
+let quizState=[];
+function buildQuiz(){
+  quizState=QUESTIONS.map(()=>({answered:false,correct:false}));
+  const cont=document.getElementById('quizContainer'); cont.innerHTML='';
+  document.getElementById('quizScore').textContent='0';
+  document.getElementById('quizTotal').textContent=QUESTIONS.length;
+  document.getElementById('quizProgress').style.width='0%';
+  QUESTIONS.forEach((q,qi)=>{
+    const card=document.createElement('div'); card.className='quiz-card';
+    const keys=['A','B','C','D'];
+    card.innerHTML=`<div class="quiz-q"><span class="q-num">Q${qi+1}.</span>${q.q}</div>
+      <div class="quiz-options">${q.opts.map((o,oi)=>`<button class="quiz-opt" id="opt-${qi}-${oi}" onclick="answerQ(${qi},${oi})"><span class="opt-key">${keys[oi]}</span>${o}</button>`).join('')}</div>
+      <div class="quiz-feedback" id="fb-${qi}"></div>`;
+    cont.appendChild(card);
+  });
+}
+function answerQ(qi,oi){
+  if(quizState[qi].answered) return;
+  quizState[qi].answered=true;
+  const correct=oi===QUESTIONS[qi].ans;
+  quizState[qi].correct=correct;
+  document.querySelectorAll(`[id^="opt-${qi}-"]`).forEach((btn,i)=>{
+    btn.disabled=true;
+    if(i===QUESTIONS[qi].ans) btn.classList.add('correct');
+    else if(i===oi&&!correct) btn.classList.add('wrong');
+  });
+  const fb=document.getElementById('fb-'+qi);
+  fb.textContent=(correct?'✓ Correct! ':'✗ Incorrect. ')+QUESTIONS[qi].fb;
+  fb.className='quiz-feedback show '+(correct?'correct-fb':'wrong-fb');
+  const score=quizState.filter(s=>s.correct).length;
+  const answered=quizState.filter(s=>s.answered).length;
+  document.getElementById('quizScore').textContent=score;
+  document.getElementById('quizProgress').style.width=(answered/QUESTIONS.length*100)+'%';
+}
+function resetQuiz(){ buildQuiz(); }
+
+/* ── INIT ── */
+window.addEventListener('load',()=>{
+  updateSliderGradient(document.getElementById('analogSlider'));
+  updateSliderGradient(document.getElementById('dacSlider'));
+  buildBitCells(0,adcBits,'bitsWrap');
+  buildBitCells(512,dacBits,'dacBitsWrap');
+  updateTheoryFormula();
+  buildQuiz();
+  drawScope();
+  drawDacScope();
+});
+window.addEventListener('resize',()=>{ drawScope(); drawDacScope(); });
+</script>
 </body>
 </html>
