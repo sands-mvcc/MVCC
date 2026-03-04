@@ -1,214 +1,1749 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thermostat Control Simulation</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            flex-direction: column;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Closed-Loop Control Systems — Interactive Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #060c14;
+    --bg-panel: #0b1422;
+    --bg-card: #0f1c30;
+    --bg-lift: #132238;
+    --accent-cyan: #00e5ff;
+    --accent-teal: #00bcd4;
+    --accent-green: #00e676;
+    --accent-amber: #ffab00;
+    --accent-red: #ff1744;
+    --accent-violet: #d500f9;
+    --text-primary: #e8f4f8;
+    --text-secondary: #7eb8d0;
+    --text-muted: #3a6478;
+    --border: rgba(0,229,255,0.15);
+    --glow-cyan: 0 0 20px rgba(0,229,255,0.4);
+    --glow-green: 0 0 20px rgba(0,230,118,0.4);
+    --glow-red: 0 0 20px rgba(255,23,68,0.4);
+    --glow-amber: 0 0 20px rgba(255,171,0,0.4);
+  }
 
-        .control-panel {
-            background-color: #333;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            width: 350px;
-            margin-bottom: 20px;
-        }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .control-panel h2 {
-            margin: 0 0 20px 0;
-            font-size: 24px;
-            color: #f44336;
-        }
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-        .control-panel label {
-            font-size: 14px;
-            color: #ccc;
-        }
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-        .control-panel select, 
-        .control-panel input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: none;
-            border-radius: 5px;
-            background-color: #444;
-            color: white;
-            font-size: 16px;
-        }
+  .page-wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 20px 60px; }
 
-        .control-panel button {
-            background-color: #f44336;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: background-color 0.3s;
-        }
+  /* ─── HEADER ─── */
+  header {
+    padding: 30px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .header-icon {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    box-shadow: var(--glow-cyan);
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    color: var(--accent-cyan);
+    text-shadow: var(--glow-cyan);
+    line-height: 1;
+  }
+  header p { color: var(--text-secondary); font-size: 1rem; margin-top: 4px; font-weight: 400; letter-spacing: 0.05em; }
+  .badge {
+    margin-left: auto;
+    background: rgba(0,229,255,0.1);
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
 
-        .control-panel button:hover {
-            background-color: #d32f2f;
-        }
+  /* ─── TABS ─── */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--bg-panel);
+    border-radius: 12px;
+    padding: 6px;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1; padding: 10px 16px;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-muted);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem; font-weight: 600;
+    letter-spacing: 0.06em;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(213,0,249,0.1));
+    color: var(--accent-cyan);
+    box-shadow: 0 0 12px rgba(0,229,255,0.2);
+    border: 1px solid rgba(0,229,255,0.25);
+  }
+  .tab-btn:hover:not(.active) { color: var(--text-secondary); background: rgba(255,255,255,0.04); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
 
-        .status-indicator {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 18px;
-        }
+  /* ─── GRID ─── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 
-        .status-on {
-            color: #4caf50;
-        }
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    opacity: 0.6;
+  }
+  .card-title {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.8rem; font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-teal);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before {
+    content: ''; width: 3px; height: 14px;
+    background: var(--accent-cyan);
+    border-radius: 2px;
+    box-shadow: var(--glow-cyan);
+  }
 
-        .status-off {
-            color: #f44336;
-        }
+  /* ─── CONTROL BLOCK DIAGRAM ─── */
+  .block-diagram {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: wrap;
+    padding: 20px 0; overflow-x: auto;
+  }
+  .bd-node {
+    background: var(--bg-lift);
+    border: 1.5px solid var(--accent-cyan);
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-cyan);
+    white-space: nowrap;
+    min-width: 80px;
+    box-shadow: 0 0 10px rgba(0,229,255,0.15);
+    transition: all 0.3s ease;
+  }
+  .bd-node.highlight { box-shadow: 0 0 20px rgba(0,229,255,0.5); border-color: #fff; color: #fff; }
+  .bd-node.sum-node {
+    width: 40px; height: 40px; border-radius: 50%;
+    padding: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; font-weight: bold;
+    min-width: unset;
+  }
+  .bd-arrow {
+    color: var(--accent-cyan); font-size: 1.1rem;
+    padding: 0 6px; opacity: 0.7;
+    flex-shrink: 0;
+  }
+  .bd-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
 
-        .temperature-display {
-            margin-top: 20px;
-            font-size: 36px;
-            font-weight: bold;
-            color: #2196F3;
-        }
+  /* ─── SLIDERS ─── */
+  .slider-group { margin-bottom: 18px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .slider-label { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.05em; }
+  .slider-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+    color: var(--accent-cyan);
+    background: rgba(0,229,255,0.08);
+    padding: 2px 8px; border-radius: 4px;
+    border: 1px solid rgba(0,229,255,0.2);
+    min-width: 60px; text-align: right;
+  }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--accent-cyan) var(--pct,50%), rgba(0,229,255,0.15) var(--pct,50%));
+    outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--bg-deep);
+    border: 2px solid var(--accent-cyan);
+    box-shadow: 0 0 8px rgba(0,229,255,0.6);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-        .fan-motor-indicator {
-            margin-top: 10px;
-            font-size: 18px;
-            color: #ccc;
-        }
+  /* ─── SELECT ─── */
+  .select-wrap { position: relative; }
+  select {
+    width: 100%; padding: 10px 14px;
+    background: var(--bg-lift);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif; font-size: 0.95rem;
+    appearance: none; cursor: pointer;
+    outline: none;
+  }
+  select:focus { border-color: var(--accent-cyan); box-shadow: 0 0 10px rgba(0,229,255,0.2); }
+  .select-wrap::after {
+    content: '▾'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--accent-cyan); pointer-events: none;
+  }
 
-        /* Square Shape to Represent Heating/Cooling System */
-        .system-status {
-            width: 100px;
-            height: 100px;
-            margin-top: 20px;
-            background-color: white;
-            border: 2px solid #333;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
+  /* ─── BUTTONS ─── */
+  .btn {
+    padding: 11px 22px;
+    border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Exo 2', sans-serif; font-size: 0.9rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    transition: all 0.2s ease;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-teal));
+    color: var(--bg-deep);
+    box-shadow: 0 4px 15px rgba(0,229,255,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,229,255,0.5); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-danger {
+    background: linear-gradient(135deg, var(--accent-red), #c62828);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(255,23,68,0.25);
+  }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 
-        .heating-active {
-            background-color: red;
-        }
+  /* ─── CANVAS ─── */
+  canvas {
+    width: 100%; border-radius: 10px;
+    background: var(--bg-deep);
+    border: 1px solid rgba(0,229,255,0.1);
+    display: block;
+  }
 
-        .cooling-active {
-            background-color: blue;
-        }
+  /* ─── STATUS METERS ─── */
+  .meters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .meter-box {
+    background: var(--bg-lift);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .meter-label { font-size: 0.7rem; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; }
+  .meter-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 4px 0;
+    line-height: 1;
+  }
+  .meter-unit { font-size: 0.7rem; color: var(--text-muted); }
+  .cv { color: var(--accent-amber); text-shadow: var(--glow-amber); }
+  .sp { color: var(--accent-cyan); text-shadow: var(--glow-cyan); }
+  .err-pos { color: var(--accent-red); text-shadow: var(--glow-red); }
+  .err-neg { color: var(--accent-green); text-shadow: var(--glow-green); }
+  .op { color: var(--accent-violet); }
 
-    </style>
+  /* ─── STATUS BAR ─── */
+  .status-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-lift); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 16px;
+    font-family: 'Share Tech Mono', monospace; font-size: 0.8rem;
+    color: var(--text-secondary); margin-bottom: 16px;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: var(--glow-green);
+    animation: pulse 1.5s infinite;
+  }
+  .status-dot.idle { background: var(--text-muted); animation: none; box-shadow: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ─── CONCEPT CARDS ─── */
+  .concept-card {
+    background: var(--bg-lift);
+    border-left: 3px solid var(--accent-cyan);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .concept-card h4 {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.9rem; font-weight: 700;
+    color: var(--accent-cyan);
+    margin-bottom: 6px;
+  }
+  .concept-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+  .concept-card.amber { border-left-color: var(--accent-amber); }
+  .concept-card.amber h4 { color: var(--accent-amber); }
+  .concept-card.green { border-left-color: var(--accent-green); }
+  .concept-card.green h4 { color: var(--accent-green); }
+  .concept-card.red { border-left-color: var(--accent-red); }
+  .concept-card.red h4 { color: var(--accent-red); }
+  .concept-card.violet { border-left-color: var(--accent-violet); }
+  .concept-card.violet h4 { color: var(--accent-violet); }
+
+  /* ─── PROGRESS BARS (for output display) ─── */
+  .prog-bar-wrap { margin-top: 10px; }
+  .prog-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+  .prog-track { height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 5px; transition: width 0.3s ease; }
+  .prog-fill.cyan { background: linear-gradient(90deg, var(--accent-teal), var(--accent-cyan)); }
+  .prog-fill.amber { background: linear-gradient(90deg, #ff6f00, var(--accent-amber)); }
+  .prog-fill.green { background: linear-gradient(90deg, #00c853, var(--accent-green)); }
+  .prog-fill.red { background: linear-gradient(90deg, #b71c1c, var(--accent-red)); }
+
+  /* ─── THERMOSTAT VISUAL ─── */
+  #thermostat-visual {
+    display: flex; align-items: center; justify-content: center;
+    padding: 10px 0 5px;
+  }
+  .thermo-container { position: relative; width: 120px; height: 260px; }
+  .thermo-tube {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 28px; height: 200px; top: 0;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 14px 14px 0 0;
+    overflow: hidden;
+  }
+  .thermo-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, #ff1744, #ffab00, #00e676);
+    transition: height 0.5s ease;
+    border-radius: 12px 12px 0 0;
+  }
+  .thermo-bulb {
+    position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
+    width: 42px; height: 42px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ff4040, #b71c1c);
+    border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: 0 0 12px rgba(255,23,68,0.5);
+  }
+  .thermo-scale {
+    position: absolute; right: -45px; top: 0; height: 200px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; color: var(--text-muted);
+  }
+  .setpoint-line {
+    position: absolute; left: 0; right: -45px; height: 2px;
+    background: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan);
+    transition: top 0.4s ease;
+  }
+  .setpoint-line::after {
+    content: 'SP'; position: absolute; right: -30px; top: -8px;
+    font-family: 'Share Tech Mono', monospace; font-size: 0.65rem; color: var(--accent-cyan);
+  }
+  .thermo-readout {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: -75px; text-align: center; white-space: nowrap;
+    font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; color: var(--text-secondary);
+  }
+  .thermo-readout span { color: var(--accent-amber); font-size: 1.1rem; font-weight: bold; }
+
+  /* ─── EQUATION BOX ─── */
+  .equation-box {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 8px; padding: 12px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem; color: var(--accent-cyan);
+    margin: 12px 0; text-align: center; letter-spacing: 0.05em;
+  }
+
+  /* ─── TOGGLE SWITCH ─── */
+  .toggle-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .toggle-label { font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; }
+  .toggle {
+    position: relative; width: 48px; height: 26px; cursor: pointer;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: var(--bg-deep); border: 1px solid var(--border);
+    border-radius: 13px; transition: all 0.25s ease;
+  }
+  .toggle input:checked + .toggle-track { background: var(--accent-cyan); border-color: var(--accent-cyan); box-shadow: var(--glow-cyan); }
+  .toggle-thumb {
+    position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; transition: transform 0.25s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(22px); }
+
+  /* ─── PHASE DIAGRAM ─── */
+  #phase-canvas { border-radius: 10px; }
+
+  /* ─── INFO TOOLTIP ─── */
+  .info-tip {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: rgba(0,229,255,0.15); border: 1px solid rgba(0,229,255,0.3);
+    color: var(--accent-cyan); font-size: 0.65rem; font-weight: 700;
+    cursor: help; position: relative;
+  }
+  .info-tip:hover .tip-popup {
+    display: block;
+  }
+  .tip-popup {
+    display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #0a1929; border: 1px solid var(--accent-cyan);
+    border-radius: 6px; padding: 8px 12px; white-space: normal;
+    width: 220px; font-size: 0.75rem; color: var(--text-secondary);
+    z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    line-height: 1.5;
+  }
+
+  /* ─── QUIZ ─── */
+  .quiz-q { margin-bottom: 20px; }
+  .quiz-q p { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
+  .quiz-opt {
+    display: block; width: 100%; text-align: left;
+    background: var(--bg-lift); border: 1px solid var(--border);
+    color: var(--text-secondary); border-radius: 8px; padding: 10px 14px;
+    margin-bottom: 6px; cursor: pointer;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.95rem;
+    transition: all 0.2s;
+  }
+  .quiz-opt:hover { border-color: var(--accent-cyan); color: var(--text-primary); }
+  .quiz-opt.correct { background: rgba(0,230,118,0.15); border-color: var(--accent-green); color: var(--accent-green); }
+  .quiz-opt.wrong { background: rgba(255,23,68,0.1); border-color: var(--accent-red); color: var(--accent-red); }
+  .quiz-feedback { font-size: 0.85rem; margin-top: 6px; padding: 8px 12px; border-radius: 6px; }
+  .quiz-feedback.ok { background: rgba(0,230,118,0.1); color: var(--accent-green); }
+  .quiz-feedback.bad { background: rgba(255,23,68,0.1); color: var(--accent-red); }
+
+  /* ─── SCORE ─── */
+  #score-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem; color: var(--accent-amber);
+    text-align: right; margin-top: 10px;
+  }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .tag-cyan { background: rgba(0,229,255,0.12); color: var(--accent-cyan); border: 1px solid rgba(0,229,255,0.25); }
+  .tag-amber { background: rgba(255,171,0,0.12); color: var(--accent-amber); border: 1px solid rgba(255,171,0,0.25); }
+
+  .section-title {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 1.2rem; font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .num {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 1.4rem;
+  }
+</style>
 </head>
 <body>
-    <h1>Example of Closed Loop Control</h1>
+<div class="page-wrap">
 
-    <div class="control-panel">
-        <h2>Thermostat Control</h2>
+  <!-- HEADER -->
+  <header>
+    <div class="header-icon">⚙️</div>
+    <div>
+      <h1>CLOSED-LOOP CONTROL SYSTEMS</h1>
+      <p>Interactive Process Control Laboratory &nbsp;|&nbsp; PID Dynamics &amp; Nonlinear Response</p>
+    </div>
+    <div class="badge">MVCC · CSSIA · v3.0</div>
+  </header>
 
-        <label for="modeSelect">Mode:</label>
-        <select id="modeSelect">
-            <option value="cooling">Cooling</option>
-            <option value="heating">Heating</option>
-        </select>
-        <br><br>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('concepts')">📘 Concepts</button>
+    <button class="tab-btn" onclick="switchTab('simulator')">🔬 PID Simulator</button>
+    <button class="tab-btn" onclick="switchTab('thermostat')">🌡️ Thermostat Lab</button>
+    <button class="tab-btn" onclick="switchTab('quiz')">🎯 Knowledge Check</button>
+  </div>
 
-        <label for="currentTemp">Current Temperature (°F):</label>
-        <input type="number" id="currentTemp" min="0" max="100" readonly>
-        <br><br>
+  <!-- ═══════════ TAB: CONCEPTS ═══════════ -->
+  <div id="tab-concepts" class="tab-content active">
 
-        <label for="desiredTemp">Desired Temperature (°F):</label>
-        <input type="number" id="desiredTemp" min="0" max="100" value="70">
-        <br><br>
+    <div class="section-title"><span class="num">01</span> The Closed-Loop Control Architecture</div>
 
-        <button id="startStopButton" onclick="toggleThermostat()">Power On</button>
-
-        <div id="temperatureDisplay" class="temperature-display">--°F</div>
-        <div id="fanMotorIndicator" class="fan-motor-indicator">Fan Motor: Off</div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">System Block Diagram</div>
+      <div class="block-diagram" id="block-diagram">
+        <div>
+          <div class="bd-node" id="bd-ref">Reference<br><span class="bd-label">Setpoint (SP)</span></div>
+        </div>
+        <div class="bd-arrow">→</div>
+        <div>
+          <div class="bd-node sum-node" id="bd-sum">Σ<br><span class="bd-label" style="font-size:0.5rem">error</span></div>
+        </div>
+        <div class="bd-arrow">→</div>
+        <div>
+          <div class="bd-node" id="bd-ctrl">PID<br>Controller<br><span class="bd-label">Kp · Ki · Kd</span></div>
+        </div>
+        <div class="bd-arrow">→</div>
+        <div>
+          <div class="bd-node" id="bd-act">Actuator<br><span class="bd-label">Control Output</span></div>
+        </div>
+        <div class="bd-arrow">→</div>
+        <div>
+          <div class="bd-node" id="bd-proc">Process<br><span class="bd-label">Plant / System</span></div>
+        </div>
+        <div class="bd-arrow">→</div>
+        <div>
+          <div class="bd-node" id="bd-out">Output (PV)<br><span class="bd-label">Process Variable</span></div>
+        </div>
+      </div>
+      <!-- Feedback arrow label -->
+      <div style="text-align:center; font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:var(--accent-violet); margin-top:4px;">
+        ↑&nbsp;&nbsp;←&nbsp;←&nbsp;←&nbsp;←&nbsp; FEEDBACK (Sensor Measurement) &nbsp;←&nbsp;←&nbsp;←&nbsp;←&nbsp;←&nbsp;↑
+      </div>
+      <p style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:6px;">
+        Error&nbsp;=&nbsp;Setpoint&nbsp;−&nbsp;Measured Output &nbsp;·&nbsp; The controller continuously minimizes error through feedback
+      </p>
     </div>
 
-    <div id="systemStatus" class="system-status"></div>
+    <div class="grid-2" style="margin-bottom:20px">
+      <div>
+        <div class="concept-card">
+          <h4>🔄 What Is Closed-Loop Control?</h4>
+          <p>A closed-loop (feedback) control system continuously compares the <strong>actual output</strong> against the <strong>desired setpoint</strong>. The difference—called the <strong>error signal</strong>—drives corrective action. Unlike open-loop systems, it automatically compensates for disturbances and nonlinearities.</p>
+        </div>
+        <div class="concept-card amber">
+          <h4>⚡ Proportional (P) Action</h4>
+          <p>Produces an output proportional to current error. A higher gain <strong>Kp</strong> speeds response but risks overshoot. P-only control always leaves a <strong>steady-state error</strong> (offset).</p>
+          <div class="equation-box">u_P = Kp × e(t)</div>
+        </div>
+        <div class="concept-card green">
+          <h4>∫ Integral (I) Action</h4>
+          <p><strong>Integrates error over time</strong>, eliminating steady-state offset. Too much Ki causes <strong>integral windup</strong>—accumulated error that drives excessive overshoot. The I-term captures the history of the process.</p>
+          <div class="equation-box">u_I = Ki × ∫e(t) dt</div>
+        </div>
+      </div>
+      <div>
+        <div class="concept-card violet">
+          <h4>∂ Derivative (D) Action</h4>
+          <p>Responds to the <strong>rate of change</strong> of error—anticipating future error. Acts like a damper, reducing overshoot and settling time. Sensitive to measurement noise.</p>
+          <div class="equation-box">u_D = Kd × de(t)/dt</div>
+        </div>
+        <div class="concept-card red">
+          <h4>🌊 Overshoot &amp; Nonlinearity</h4>
+          <p>Overshoot occurs when the process variable <strong>exceeds the setpoint</strong> before settling. Nonlinear systems (e.g., valves with dead bands, temperature asymmetry) worsen this. The derivative term and gain scheduling are key countermeasures.</p>
+        </div>
+        <div class="concept-card">
+          <h4>📊 Key Performance Metrics</h4>
+          <p>
+            <strong style="color:var(--accent-cyan)">Rise Time</strong> — Time to reach 10%→90% of setpoint<br>
+            <strong style="color:var(--accent-amber)">% Overshoot</strong> — Peak above setpoint / setpoint × 100<br>
+            <strong style="color:var(--accent-green)">Settling Time</strong> — Time to stay within ±5% of SP<br>
+            <strong style="color:var(--accent-red)">Steady-State Error</strong> — Final residual offset
+          </p>
+        </div>
+      </div>
+    </div>
 
-    <script>
-        let isRunning = false;
-        let temperature = Math.floor(Math.random() * 31) + 50; // Random temp between 50-80°F
-        let interval;
-        const coolingSpeed = 5000; // 5 seconds for cooling
-        const heatingSpeed = 3000; // 3 seconds for heating
+    <div class="section-title"><span class="num">02</span> PID Tuning Effects Reference</div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title">Increase Kp</div>
+        <div class="prog-bar-wrap">
+          <div class="prog-label"><span>Rise Time</span><span>▼ Faster</span></div>
+          <div class="prog-track"><div class="prog-fill cyan" style="width:80%"></div></div>
+          <div class="prog-label" style="margin-top:6px"><span>Overshoot</span><span>▲ More</span></div>
+          <div class="prog-track"><div class="prog-fill red" style="width:75%"></div></div>
+          <div class="prog-label" style="margin-top:6px"><span>Steady-State Error</span><span>▼ Less</span></div>
+          <div class="prog-track"><div class="prog-fill amber" style="width:40%"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Increase Ki</div>
+        <div class="prog-bar-wrap">
+          <div class="prog-label"><span>Rise Time</span><span>▼ Faster</span></div>
+          <div class="prog-track"><div class="prog-fill cyan" style="width:65%"></div></div>
+          <div class="prog-label" style="margin-top:6px"><span>Overshoot</span><span>▲ More</span></div>
+          <div class="prog-track"><div class="prog-fill red" style="width:85%"></div></div>
+          <div class="prog-label" style="margin-top:6px"><span>Steady-State Error</span><span>▼ Eliminates</span></div>
+          <div class="prog-track"><div class="prog-fill green" style="width:95%"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Increase Kd</div>
+        <div class="prog-bar-wrap">
+          <div class="prog-label"><span>Rise Time</span><span>– Slight effect</span></div>
+          <div class="prog-track"><div class="prog-fill cyan" style="width:20%"></div></div>
+          <div class="prog-label" style="margin-top:6px"><span>Overshoot</span><span>▼ Less</span></div>
+          <div class="prog-track"><div class="prog-fill green" style="width:80%"></div></div>
+          <div class="prog-label" style="margin-top:6px"><span>Settling Time</span><span>▼ Faster</span></div>
+          <div class="prog-track"><div class="prog-fill amber" style="width:70%"></div></div>
+        </div>
+      </div>
+    </div>
 
-        document.getElementById('currentTemp').value = temperature;
-        document.getElementById('temperatureDisplay').textContent = `${temperature}°F`;
+    <div style="margin-top:16px; background:rgba(255,171,0,0.06); border:1px solid rgba(255,171,0,0.2); border-radius:10px; padding:14px 18px;">
+      <strong style="color:var(--accent-amber)">⚠️ Nonlinear Systems:</strong>
+      <span style="color:var(--text-secondary); font-size:0.9rem;"> PID parameters tuned at one operating point may not perform well at another. Techniques such as <em>gain scheduling</em>, <em>anti-windup</em>, and <em>setpoint prefiltering</em> are used to handle nonlinear behavior and prevent destructive overshoot.</span>
+    </div>
+  </div>
 
-        function toggleThermostat() {
-            const mode = document.getElementById('modeSelect').value;
-            const desiredTemp = parseInt(document.getElementById('desiredTemp').value);
-            const startStopButton = document.getElementById('startStopButton');
-            const fanMotorIndicator = document.getElementById('fanMotorIndicator');
-            const systemStatus = document.getElementById('systemStatus');
+  <!-- ═══════════ TAB: PID SIMULATOR ═══════════ -->
+  <div id="tab-simulator" class="tab-content">
+    <div class="grid-2">
+      <!-- Controls -->
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">System Configuration</div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Setpoint (SP)
+                <span class="info-tip">?<span class="tip-popup">The target value you want the process variable to reach and maintain.</span></span>
+              </span>
+              <span class="slider-value" id="sp-val">50</span>
+            </div>
+            <input type="range" id="sp-slider" min="10" max="100" value="50" oninput="updateSlider(this,'sp-val','%')">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Proportional Gain (Kp)
+                <span class="info-tip">?<span class="tip-popup">Controls how strongly the controller responds to current error. Higher = faster but more overshoot risk.</span></span>
+              </span>
+              <span class="slider-value" id="kp-val">1.5</span>
+            </div>
+            <input type="range" id="kp-slider" min="0" max="5" step="0.1" value="1.5" oninput="updateSlider(this,'kp-val','')">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Integral Gain (Ki)
+                <span class="info-tip">?<span class="tip-popup">Eliminates steady-state error by integrating past errors. Too high causes windup and overshoot.</span></span>
+              </span>
+              <span class="slider-value" id="ki-val">0.3</span>
+            </div>
+            <input type="range" id="ki-slider" min="0" max="2" step="0.05" value="0.3" oninput="updateSlider(this,'ki-val','')">
+          </div>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Derivative Gain (Kd)
+                <span class="info-tip">?<span class="tip-popup">Anticipates future error using rate of change. Reduces overshoot — the damper of the system.</span></span>
+              </span>
+              <span class="slider-value" id="kd-val">0.8</span>
+            </div>
+            <input type="range" id="kd-slider" min="0" max="5" step="0.1" value="0.8" oninput="updateSlider(this,'kd-val','')">
+          </div>
 
-            if (!isRunning) {
-                isRunning = true;
-                startStopButton.textContent = 'Power Off';
-                fanMotorIndicator.textContent = 'Fan Motor: On';
-                fanMotorIndicator.className = 'fan-motor-indicator status-on';
+          <hr class="divider">
 
-                if (mode === 'cooling') {
-                    systemStatus.className = 'system-status cooling-active';
-                    interval = setInterval(() => {
-                        if (temperature > desiredTemp) {
-                            temperature--;
-                            updateTemperatureDisplay();
-                        } else {
-                            stopThermostat();
-                        }
-                    }, coolingSpeed);
-                } else if (mode === 'heating') {
-                    systemStatus.className = 'system-status heating-active';
-                    interval = setInterval(() => {
-                        if (temperature < desiredTemp) {
-                            temperature++;
-                            updateTemperatureDisplay();
-                        } else {
-                            stopThermostat();
-                        }
-                    }, heatingSpeed);
-                }
-            } else {
-                stopThermostat();
-            }
-        }
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Process Delay (τ)
+                <span class="info-tip">?<span class="tip-popup">Dead time in the process — delay between control action and measured effect. Makes control harder.</span></span>
+              </span>
+              <span class="slider-value" id="delay-val">2</span>
+            </div>
+            <input type="range" id="delay-slider" min="0" max="10" step="1" value="2" oninput="updateSlider(this,'delay-val','s')">
+          </div>
 
-        function stopThermostat() {
-            isRunning = false;
-            clearInterval(interval);
-            document.getElementById('startStopButton').textContent = 'Power On';
-            document.getElementById('fanMotorIndicator').textContent = 'Fan Motor: Off';
-            document.getElementById('fanMotorIndicator').className = 'fan-motor-indicator status-off';
-            document.getElementById('systemStatus').className = 'system-status'; // Reset to white
-        }
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Process Nonlinearity
+                <span class="info-tip">?<span class="tip-popup">Simulates valve dead-band, saturation, or asymmetric plant behavior that makes PID tuning harder.</span></span>
+              </span>
+              <span class="slider-value" id="nl-val">0.3</span>
+            </div>
+            <input type="range" id="nl-slider" min="0" max="1" step="0.05" value="0.3" oninput="updateSlider(this,'nl-val','')">
+          </div>
 
-        function updateTemperatureDisplay() {
-            document.getElementById('currentTemp').value = temperature;
-            document.getElementById('temperatureDisplay').textContent = `${temperature}°F`;
-        }
-    </script>
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Disturbance Magnitude
+                <span class="info-tip">?<span class="tip-popup">External upsets to the process (e.g., load changes, supply variations). Tests disturbance rejection.</span></span>
+              </span>
+              <span class="slider-value" id="dist-val">5</span>
+            </div>
+            <input type="range" id="dist-slider" min="0" max="30" step="1" value="5" oninput="updateSlider(this,'dist-val','')">
+          </div>
+
+          <div class="toggle-row" style="margin-top:12px">
+            <label class="toggle">
+              <input type="checkbox" id="antiwindup-toggle" checked>
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+            <span class="toggle-label">Anti-Windup Protection
+              <span class="info-tip">?<span class="tip-popup">Prevents the integrator from accumulating error when the output is saturated, avoiding excessive overshoot.</span></span>
+            </span>
+          </div>
+
+          <div class="toggle-row">
+            <label class="toggle">
+              <input type="checkbox" id="setpoint-filter-toggle">
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+            <span class="toggle-label">Setpoint Pre-Filter
+              <span class="info-tip">?<span class="tip-popup">Smooths setpoint step changes to reduce sudden large errors that cause windup and overshoot.</span></span>
+            </span>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="startSim()">▶ RUN SIMULATION</button>
+            <button class="btn btn-ghost" onclick="resetSim()">↺ RESET</button>
+            <button class="btn btn-ghost" onclick="injectDisturbance()">⚡ DISTURBANCE</button>
+          </div>
+          <div style="margin-top:12px">
+            <div class="card-title" style="margin-bottom:8px">PRESETS</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn btn-ghost" style="padding:6px 10px; font-size:0.75rem;" onclick="applyPreset('aggressive')">⚡ Aggressive</button>
+              <button class="btn btn-ghost" style="padding:6px 10px; font-size:0.75rem;" onclick="applyPreset('optimal')">✅ Optimal</button>
+              <button class="btn btn-ghost" style="padding:6px 10px; font-size:0.75rem;" onclick="applyPreset('sluggish')">🐌 Sluggish</button>
+              <button class="btn btn-ghost" style="padding:6px 10px; font-size:0.75rem;" onclick="applyPreset('ponly')">P-Only</button>
+              <button class="btn btn-ghost" style="padding:6px 10px; font-size:0.75rem;" onclick="applyPreset('pionly')">PI</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts & Meters -->
+      <div>
+        <div class="meters">
+          <div class="meter-box">
+            <div class="meter-label">Process Variable</div>
+            <div class="meter-value cv" id="m-pv">0.0</div>
+            <div class="meter-unit">units</div>
+          </div>
+          <div class="meter-box">
+            <div class="meter-label">Setpoint</div>
+            <div class="meter-value sp" id="m-sp">50.0</div>
+            <div class="meter-unit">units</div>
+          </div>
+          <div class="meter-box">
+            <div class="meter-label">Error</div>
+            <div class="meter-value err-pos" id="m-err">+50.0</div>
+            <div class="meter-unit">units</div>
+          </div>
+          <div class="meter-box">
+            <div class="meter-label">Controller Output</div>
+            <div class="meter-value op" id="m-out">0.0</div>
+            <div class="meter-unit">%</div>
+          </div>
+        </div>
+
+        <div class="status-bar">
+          <div class="status-dot idle" id="sim-dot"></div>
+          <span id="sim-status">Ready — Configure parameters and press RUN</span>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">Response Curve — Process Variable vs. Time</div>
+          <canvas id="main-canvas" height="220"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Error Signal &amp; Controller Output</div>
+          <canvas id="error-canvas" height="120"></canvas>
+        </div>
+
+        <!-- Performance metrics -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-title">Performance Analysis</div>
+          <div class="grid-3" style="gap:10px">
+            <div style="text-align:center">
+              <div class="meter-label">Rise Time</div>
+              <div style="font-family:'Share Tech Mono',monospace; font-size:1.1rem; color:var(--accent-cyan)" id="perf-rise">—</div>
+              <div class="meter-unit">seconds</div>
+            </div>
+            <div style="text-align:center">
+              <div class="meter-label">% Overshoot</div>
+              <div style="font-family:'Share Tech Mono',monospace; font-size:1.1rem; color:var(--accent-red)" id="perf-over">—</div>
+              <div class="meter-unit">%</div>
+            </div>
+            <div style="text-align:center">
+              <div class="meter-label">Settling Time</div>
+              <div style="font-family:'Share Tech Mono',monospace; font-size:1.1rem; color:var(--accent-green)" id="perf-settle">—</div>
+              <div class="meter-unit">seconds</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TAB: THERMOSTAT LAB ═══════════ -->
+  <div id="tab-thermostat" class="tab-content">
+    <div class="grid-2">
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Thermostat Control Lab</div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Mode</span>
+            </div>
+            <div class="select-wrap">
+              <select id="hvac-mode" onchange="modeChanged()">
+                <option value="heat">🔥 Heating Mode</option>
+                <option value="cool">❄️ Cooling Mode</option>
+                <option value="auto">🔄 Auto (Nonlinear)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="slider-group" style="margin-top:14px">
+            <div class="slider-header">
+              <span class="slider-label">Room Setpoint Temperature (°F)</span>
+              <span class="slider-value" id="tsp-val">72°F</span>
+            </div>
+            <input type="range" id="tsp-slider" min="60" max="90" value="72" oninput="updateThermostat()">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Initial Room Temperature (°F)</span>
+              <span class="slider-value" id="tinit-val">55°F</span>
+            </div>
+            <input type="range" id="tinit-slider" min="40" max="100" value="55" oninput="updateThermostat()">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">HVAC Power (% capacity)</span>
+              <span class="slider-value" id="tpow-val">80%</span>
+            </div>
+            <input type="range" id="tpow-slider" min="20" max="100" step="5" value="80" oninput="updateThermostat()">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Thermal Mass (inertia)</span>
+              <span class="slider-value" id="tmass-val">0.5</span>
+            </div>
+            <input type="range" id="tmass-slider" min="0.1" max="1" step="0.1" value="0.5" oninput="updateThermostat()">
+          </div>
+
+          <div class="toggle-row" style="margin-top:12px">
+            <label class="toggle">
+              <input type="checkbox" id="nonlinear-toggle" checked>
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+            <span class="toggle-label">Nonlinear Mode (asymmetric heating/cooling)</span>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="startThermostat()">▶ START HVAC</button>
+            <button class="btn btn-danger" onclick="stopThermostat()">■ STOP</button>
+            <button class="btn btn-ghost" onclick="resetThermostat()">↺ RESET</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Closed-Loop Concept Walkthrough</div>
+          <div id="thermo-concept" style="font-size:0.9rem; color:var(--text-secondary); line-height:1.7">
+            <p>🌡️ <strong style="color:var(--accent-cyan)">Sensor</strong> reads current room temperature (Process Variable)</p>
+            <p>🎯 <strong style="color:var(--accent-amber)">Comparator</strong> calculates: Error = Setpoint − Measured Temp</p>
+            <p>🧠 <strong style="color:var(--accent-violet)">Controller</strong> processes error signal using on/off (bang-bang) logic with hysteresis</p>
+            <p>⚡ <strong style="color:var(--accent-green)">Actuator</strong> energizes furnace/AC based on control output</p>
+            <p>♻️ <strong style="color:var(--accent-red)">Feedback Loop</strong> continuously re-evaluates every cycle</p>
+          </div>
+
+          <div id="thermo-status-msg" style="margin-top:14px; font-family:'Share Tech Mono',monospace; font-size:0.85rem; color:var(--accent-cyan); min-height:20px;"></div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Thermometer + meters -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-title">Real-Time Thermostat Visualization</div>
+          <div class="meters" style="margin-bottom:12px">
+            <div class="meter-box">
+              <div class="meter-label">Room Temp</div>
+              <div class="meter-value cv" id="t-current">55°F</div>
+            </div>
+            <div class="meter-box">
+              <div class="meter-label">Setpoint</div>
+              <div class="meter-value sp" id="t-setpoint">72°F</div>
+            </div>
+            <div class="meter-box">
+              <div class="meter-label">Error</div>
+              <div class="meter-value err-pos" id="t-error">+17°F</div>
+            </div>
+            <div class="meter-box">
+              <div class="meter-label">HVAC State</div>
+              <div class="meter-value" id="t-hvacstate" style="color:var(--text-muted); font-size:1rem;">OFF</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:20px; align-items:flex-start; justify-content:center;">
+            <div id="thermostat-visual">
+              <div class="thermo-container">
+                <div class="thermo-tube">
+                  <div class="thermo-fill" id="thermo-fill" style="height:30%"></div>
+                </div>
+                <div class="thermo-bulb" id="thermo-bulb"></div>
+                <div class="thermo-scale" id="thermo-scale"></div>
+                <div class="setpoint-line" id="sp-line" style="top:60%"></div>
+                <div class="thermo-readout">
+                  <span id="thermo-temp-display">55</span>°F
+                </div>
+              </div>
+            </div>
+            <div style="flex:1">
+              <div class="card-title" style="margin-bottom:10px;">HVAC Activity</div>
+              <div id="hvac-indicator" style="text-align:center; font-size:3rem; padding:16px; border-radius:10px; background:var(--bg-lift); border:1px solid var(--border); transition:all 0.5s ease;">
+                💤
+              </div>
+              <div style="text-align:center; margin-top:8px; font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:var(--text-muted)" id="hvac-label">SYSTEM IDLE</div>
+
+              <div style="margin-top:16px">
+                <div class="prog-label"><span>Heating Load</span><span id="heat-pct">0%</span></div>
+                <div class="prog-track"><div class="prog-fill red" id="heat-bar" style="width:0%"></div></div>
+                <div class="prog-label" style="margin-top:8px"><span>Cooling Load</span><span id="cool-pct">0%</span></div>
+                <div class="prog-track"><div class="prog-fill cyan" id="cool-bar" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Temperature Response — Showing Overshoot Prevention</div>
+          <canvas id="thermo-canvas" height="200"></canvas>
+          <div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted); text-align:center;">
+            <span style="color:var(--accent-amber)">■</span> Room Temp &nbsp;&nbsp;
+            <span style="color:var(--accent-cyan)">- -</span> Setpoint &nbsp;&nbsp;
+            <span style="color:var(--accent-red)">■</span> Overshoot Zone &nbsp;&nbsp;
+            <span style="color:var(--accent-violet)">■</span> Hysteresis Band
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TAB: QUIZ ═══════════ -->
+  <div id="tab-quiz" class="tab-content">
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <div class="card-title">Knowledge Check — Closed-Loop Control</div>
+          <div id="quiz-container"></div>
+          <div id="score-display"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title">Quick Reference</div>
+          <div class="concept-card">
+            <h4>Open-Loop vs Closed-Loop</h4>
+            <p>Open-loop: no feedback — blind execution. Closed-loop: sensors measure output and feed back to correct errors automatically.</p>
+          </div>
+          <div class="concept-card amber">
+            <h4>Error Signal</h4>
+            <p>e(t) = SP − PV. If positive: output is below setpoint. If negative: above setpoint. Controller drives error toward zero.</p>
+          </div>
+          <div class="concept-card green">
+            <h4>Integral Windup</h4>
+            <p>When controller output saturates (maxes out), the integrator keeps accumulating error. Anti-windup prevents the integrator from charging beyond the saturation limit.</p>
+          </div>
+          <div class="concept-card violet">
+            <h4>Bang-Bang Control</h4>
+            <p>Simplest closed-loop: output is either fully ON or OFF. Thermostats use hysteresis (deadband) to prevent rapid switching and reduce overshoot oscillation.</p>
+          </div>
+          <div class="concept-card red">
+            <h4>Gain Scheduling</h4>
+            <p>Using different PID gain sets at different operating points to handle nonlinear process behavior across the entire operating range.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+// ══════════════════════════════════════════════
+// UTILITY
+// ══════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['concepts','simulator','thermostat','quiz'][i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function updateSlider(el, valId, suffix) {
+  const v = parseFloat(el.value);
+  const min = parseFloat(el.min), max = parseFloat(el.max);
+  const pct = ((v - min) / (max - min) * 100).toFixed(1);
+  el.style.setProperty('--pct', pct + '%');
+  document.getElementById(valId).textContent = v + (suffix || '');
+}
+
+// Init all sliders
+document.querySelectorAll('input[type=range]').forEach(el => {
+  const v = parseFloat(el.value), min = parseFloat(el.min), max = parseFloat(el.max);
+  const pct = ((v - min) / (max - min) * 100).toFixed(1);
+  el.style.setProperty('--pct', pct + '%');
+});
+
+// ══════════════════════════════════════════════
+// PID SIMULATOR
+// ══════════════════════════════════════════════
+let simRunning = false;
+let simTimer = null;
+let simTime = 0;
+const DT = 0.1; // seconds per tick
+const MAX_T = 80;
+
+// Simulation state
+let pv = 0, integral = 0, prevError = 0, lastOutput = 0;
+let pvHistory = [], errHistory = [], outHistory = [], timeHistory = [];
+let disturbanceFlag = false;
+let delayBuffer = [];
+
+// Performance tracking
+let riseTime = null, settleTime = null, peakPV = 0, riseStarted = false;
+
+function getSimParams() {
+  return {
+    sp: parseFloat(document.getElementById('sp-slider').value),
+    kp: parseFloat(document.getElementById('kp-slider').value),
+    ki: parseFloat(document.getElementById('ki-slider').value),
+    kd: parseFloat(document.getElementById('kd-slider').value),
+    delay: parseInt(document.getElementById('delay-slider').value),
+    nl: parseFloat(document.getElementById('nl-slider').value),
+    dist: parseFloat(document.getElementById('dist-slider').value),
+    antiwindup: document.getElementById('antiwindup-toggle').checked,
+    spFilter: document.getElementById('setpoint-filter-toggle').checked
+  };
+}
+
+function startSim() {
+  if (simRunning) return;
+  simRunning = true;
+  document.getElementById('sim-dot').classList.remove('idle');
+  document.getElementById('sim-status').textContent = 'Simulation running...';
+  simTimer = setInterval(simStep, DT * 100);
+}
+
+function resetSim() {
+  clearInterval(simTimer);
+  simRunning = false;
+  simTime = 0; pv = 0; integral = 0; prevError = 0; lastOutput = 0;
+  pvHistory = []; errHistory = []; outHistory = []; timeHistory = [];
+  delayBuffer = [];
+  riseTime = null; settleTime = null; peakPV = 0; riseStarted = false;
+  document.getElementById('sim-dot').classList.add('idle');
+  document.getElementById('sim-status').textContent = 'Reset — Configure parameters and press RUN';
+  document.getElementById('perf-rise').textContent = '—';
+  document.getElementById('perf-over').textContent = '—';
+  document.getElementById('perf-settle').textContent = '—';
+  updateMeters(0, getSimParams().sp, 0, 0);
+  drawMainCanvas();
+  drawErrorCanvas();
+}
+
+function injectDisturbance() {
+  disturbanceFlag = true;
+  document.getElementById('sim-status').textContent = 'Disturbance injected!';
+}
+
+let filteredSP = null;
+function simStep() {
+  if (simTime > MAX_T) { clearInterval(simTimer); simRunning = false; document.getElementById('sim-status').textContent = 'Simulation complete'; return; }
+  const p = getSimParams();
+
+  if (filteredSP === null) filteredSP = pv;
+  const targetSP = p.sp;
+  if (p.spFilter) {
+    filteredSP += (targetSP - filteredSP) * 0.05;
+  } else {
+    filteredSP = targetSP;
+  }
+
+  const error = filteredSP - pv;
+
+  // Integral with anti-windup
+  const rawIntegral = integral + error * DT;
+  const outputBeforeClamp = p.kp * error + p.ki * rawIntegral + p.kd * (error - prevError) / DT;
+  let output = Math.max(0, Math.min(100, outputBeforeClamp));
+
+  if (p.antiwindup) {
+    if (outputBeforeClamp > 100 || outputBeforeClamp < 0) {
+      // freeze integrator
+    } else {
+      integral = rawIntegral;
+    }
+  } else {
+    integral = rawIntegral;
+  }
+
+  prevError = error;
+  lastOutput = output;
+
+  // Delay buffer
+  delayBuffer.push(output);
+  const delaySteps = Math.round(p.delay / DT);
+  const effectiveOutput = delayBuffer.length > delaySteps ? delayBuffer[delayBuffer.length - 1 - delaySteps] : 0;
+
+  // Nonlinear process model
+  let processgain = 1.0;
+  if (p.nl > 0) {
+    // saturation + dead-zone nonlinearity
+    const norm = pv / 100;
+    processgain = 1.0 - p.nl * norm * norm;
+    processgain = Math.max(0.1, processgain);
+  }
+
+  // Process dynamics (first-order system with time constant)
+  const tau = 8;
+  const dpv = (effectiveOutput * processgain - pv) / tau * DT * 10;
+  pv += dpv;
+
+  // Disturbance
+  if (disturbanceFlag) {
+    pv += p.dist * (Math.random() > 0.5 ? 1 : -1);
+    disturbanceFlag = false;
+  }
+
+  pv = Math.max(0, Math.min(150, pv));
+
+  // Track performance
+  if (pv >= p.sp * 0.9 && !riseStarted) { riseStarted = true; }
+  if (riseStarted && pv >= p.sp && riseTime === null) { riseTime = simTime; }
+  peakPV = Math.max(peakPV, pv);
+
+  const spVal = p.sp;
+  const within5 = Math.abs(pv - spVal) <= spVal * 0.05;
+  if (within5 && riseTime !== null && settleTime === null && simTime > riseTime + 1) {
+    settleTime = simTime;
+  } else if (!within5) {
+    settleTime = null;
+  }
+
+  // Store history
+  pvHistory.push(pv);
+  errHistory.push(error);
+  outHistory.push(output);
+  timeHistory.push(simTime);
+  simTime += DT;
+
+  updateMeters(pv, spVal, error, output);
+  drawMainCanvas();
+  drawErrorCanvas();
+  updatePerformance(p.sp);
+}
+
+function updateMeters(pv, sp, err, out) {
+  document.getElementById('m-pv').textContent = pv.toFixed(1);
+  document.getElementById('m-sp').textContent = sp.toFixed(1);
+  const eEl = document.getElementById('m-err');
+  eEl.textContent = (err >= 0 ? '+' : '') + err.toFixed(1);
+  eEl.className = 'meter-value ' + (err >= 0 ? 'err-pos' : 'err-neg');
+  document.getElementById('m-out').textContent = out.toFixed(1);
+}
+
+function updatePerformance(sp) {
+  if (riseTime !== null) document.getElementById('perf-rise').textContent = riseTime.toFixed(1);
+  const over = sp > 0 ? Math.max(0, (peakPV - sp) / sp * 100) : 0;
+  document.getElementById('perf-over').textContent = over.toFixed(1);
+  if (settleTime !== null) document.getElementById('perf-settle').textContent = settleTime.toFixed(1);
+}
+
+function drawMainCanvas() {
+  const canvas = document.getElementById('main-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth, H = canvas.offsetHeight || 220;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { l: 40, r: 16, t: 16, b: 30 };
+  const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b;
+
+  // Background
+  ctx.fillStyle = '#060c14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,229,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = pad.t + cH - (i / 5) * cH;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,229,255,0.4)';
+    ctx.font = '9px Share Tech Mono';
+    ctx.fillText((i * 20).toString(), 2, y + 3);
+  }
+  for (let i = 0; i <= 8; i++) {
+    const x = pad.l + (i / 8) * cW;
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, H - pad.b); ctx.stroke();
+  }
+
+  // Setpoint line
+  const sp = getSimParams().sp;
+  const spY = pad.t + cH - (sp / 100) * cH;
+  ctx.strokeStyle = 'rgba(0,229,255,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.l, spY); ctx.lineTo(W - pad.r, spY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(0,229,255,0.7)';
+  ctx.font = '9px Share Tech Mono';
+  ctx.fillText('SP=' + sp, W - pad.r - 40, spY - 4);
+
+  // Overshoot zone
+  if (peakPV > sp + 1) {
+    const peakY = pad.t + cH - (peakPV / 100) * cH;
+    ctx.fillStyle = 'rgba(255,23,68,0.07)';
+    ctx.fillRect(pad.l, peakY, cW, spY - peakY);
+    ctx.strokeStyle = 'rgba(255,23,68,0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(pad.l, peakY); ctx.lineTo(W - pad.r, peakY); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  if (pvHistory.length < 2) return;
+  const N = pvHistory.length;
+  const tMax = MAX_T;
+
+  // PV curve with gradient
+  const grad = ctx.createLinearGradient(pad.l, pad.t + cH, pad.l, pad.t);
+  grad.addColorStop(0, 'rgba(0,230,118,0.05)');
+  grad.addColorStop(0.5, 'rgba(255,171,0,0.15)');
+  grad.addColorStop(1, 'rgba(255,23,68,0.2)');
+
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const x = pad.l + (timeHistory[i] / tMax) * cW;
+    const y = pad.t + cH - (pvHistory[i] / 100) * cH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#ffab00';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = 'rgba(255,171,0,0.5)';
+  ctx.shadowBlur = 6;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Axis labels
+  ctx.fillStyle = 'rgba(0,229,255,0.5)';
+  ctx.font = '9px Share Tech Mono';
+  ctx.fillText('Time (s)', W / 2 - 20, H - 4);
+}
+
+function drawErrorCanvas() {
+  const canvas = document.getElementById('error-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth, H = canvas.offsetHeight || 120;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.fillStyle = '#060c14';
+  ctx.fillRect(0, 0, W, H);
+
+  const pad = { l: 40, r: 16, t: 10, b: 24 };
+  const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b;
+  const tMax = MAX_T;
+
+  if (errHistory.length < 2) return;
+  const N = errHistory.length;
+
+  // Zero line
+  const midY = pad.t + cH / 2;
+  ctx.strokeStyle = 'rgba(0,229,255,0.2)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, midY); ctx.lineTo(W - pad.r, midY); ctx.stroke();
+
+  // Error (scale: ±100 maps to full height)
+  const scale = cH / 200;
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const x = pad.l + (timeHistory[i] / tMax) * cW;
+    const y = midY - errHistory[i] * scale;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Output (scale 0-100 → full height)
+  ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const x = pad.l + (timeHistory[i] / tMax) * cW;
+    const y = pad.t + cH - (outHistory[i] / 100) * cH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#d500f9'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Legend
+  ctx.font = '9px Share Tech Mono';
+  ctx.fillStyle = '#ff1744'; ctx.fillText('Error', pad.l + 4, pad.t + 10);
+  ctx.fillStyle = '#d500f9'; ctx.fillText('Output%', pad.l + 44, pad.t + 10);
+}
+
+function applyPreset(name) {
+  const presets = {
+    aggressive: { kp:4.5, ki:1.5, kd:0.1 },
+    optimal:    { kp:1.5, ki:0.3, kd:0.8 },
+    sluggish:   { kp:0.3, ki:0.05, kd:0.0 },
+    ponly:      { kp:2.0, ki:0.0, kd:0.0 },
+    pionly:     { kp:1.0, ki:0.5, kd:0.0 }
+  };
+  const p = presets[name];
+  document.getElementById('kp-slider').value = p.kp;
+  document.getElementById('ki-slider').value = p.ki;
+  document.getElementById('kd-slider').value = p.kd;
+  ['kp','ki','kd'].forEach(k => {
+    const el = document.getElementById(k+'-slider');
+    updateSlider(el, k+'-val', '');
+  });
+  resetSim();
+}
+
+// ══════════════════════════════════════════════
+// THERMOSTAT LAB
+// ══════════════════════════════════════════════
+let thermoRunning = false;
+let thermoTimer = null;
+let thermoTemp = 55;
+let thermoHistory = [], thermoTimeH = [];
+let thermoTime = 0;
+let hvacOn = false;
+let hvacOnCount = 0;
+
+function updateThermostat() {
+  const sp = parseInt(document.getElementById('tsp-slider').value);
+  const init = parseInt(document.getElementById('tinit-slider').value);
+  const pow = parseInt(document.getElementById('tpow-slider').value);
+  const mass = parseFloat(document.getElementById('tmass-slider').value);
+  document.getElementById('tsp-val').textContent = sp + '°F';
+  document.getElementById('tinit-val').textContent = init + '°F';
+  document.getElementById('tpow-val').textContent = pow + '%';
+  document.getElementById('tmass-val').textContent = mass.toFixed(1);
+  updateThermoDisplay(thermoTemp, sp);
+}
+
+function updateThermoDisplay(temp, sp) {
+  // Thermometer
+  const minT = 40, maxT = 120;
+  const pct = Math.max(0, Math.min(100, (temp - minT) / (maxT - minT) * 100));
+  document.getElementById('thermo-fill').style.height = pct + '%';
+  document.getElementById('thermo-temp-display').textContent = Math.round(temp);
+  document.getElementById('t-current').textContent = temp.toFixed(1) + '°F';
+  document.getElementById('t-setpoint').textContent = sp + '°F';
+  const err = sp - temp;
+  const eEl = document.getElementById('t-error');
+  eEl.textContent = (err >= 0 ? '+' : '') + err.toFixed(1) + '°F';
+  eEl.className = 'meter-value ' + (err >= 0 ? 'err-pos' : 'err-neg');
+
+  // Setpoint line on thermometer
+  const spPct = Math.max(0, Math.min(100, (sp - minT) / (maxT - minT) * 100));
+  document.getElementById('sp-line').style.top = (100 - spPct) * 2 + 'px';
+
+  // Thermometer bulb color
+  const bulb = document.getElementById('thermo-bulb');
+  if (temp > sp + 2) bulb.style.background = 'radial-gradient(circle at 35% 35%, #2979ff, #1a237e)';
+  else if (temp < sp - 2) bulb.style.background = 'radial-gradient(circle at 35% 35%, #ff4040, #b71c1c)';
+  else bulb.style.background = 'radial-gradient(circle at 35% 35%, #00e676, #1b5e20)';
+}
+
+function buildThermoScale() {
+  const sc = document.getElementById('thermo-scale');
+  sc.innerHTML = '';
+  for (let t = 100; t >= 40; t -= 20) {
+    const d = document.createElement('div');
+    d.textContent = t + '°';
+    sc.appendChild(d);
+  }
+}
+
+function startThermostat() {
+  if (thermoRunning) return;
+  thermoTemp = parseInt(document.getElementById('tinit-slider').value);
+  thermoHistory = [thermoTemp]; thermoTimeH = [0]; thermoTime = 0;
+  thermoRunning = true;
+  thermoTimer = setInterval(thermoStep, 200);
+}
+
+function stopThermostat() {
+  clearInterval(thermoTimer);
+  thermoRunning = false;
+  document.getElementById('t-hvacstate').textContent = 'OFF';
+  document.getElementById('t-hvacstate').style.color = 'var(--text-muted)';
+  document.getElementById('hvac-indicator').textContent = '💤';
+  document.getElementById('hvac-label').textContent = 'SYSTEM IDLE';
+}
+
+function resetThermostat() {
+  stopThermostat();
+  thermoTemp = parseInt(document.getElementById('tinit-slider').value);
+  thermoHistory = []; thermoTimeH = [];
+  updateThermoDisplay(thermoTemp, parseInt(document.getElementById('tsp-slider').value));
+  drawThermoCanvas([],[]);
+  document.getElementById('thermo-status-msg').textContent = '';
+  document.getElementById('heat-bar').style.width = '0%';
+  document.getElementById('cool-bar').style.width = '0%';
+  document.getElementById('heat-pct').textContent = '0%';
+  document.getElementById('cool-pct').textContent = '0%';
+}
+
+function thermoStep() {
+  const sp = parseInt(document.getElementById('tsp-slider').value);
+  const pow = parseInt(document.getElementById('tpow-slider').value) / 100;
+  const mass = parseFloat(document.getElementById('tmass-slider').value);
+  const mode = document.getElementById('hvac-mode').value;
+  const nonlinear = document.getElementById('nonlinear-toggle').checked;
+
+  const hysteresis = 1.0; // ±1°F deadband
+  const error = sp - thermoTemp;
+
+  // Bang-bang with hysteresis
+  if (mode === 'heat' || (mode === 'auto' && sp > thermoTemp + 5)) {
+    if (thermoTemp < sp - hysteresis) hvacOn = true;
+    if (thermoTemp >= sp + hysteresis) hvacOn = false;
+  } else if (mode === 'cool' || (mode === 'auto' && sp < thermoTemp - 5)) {
+    if (thermoTemp > sp + hysteresis) hvacOn = true;
+    if (thermoTemp <= sp - hysteresis) hvacOn = false;
+  } else {
+    // Auto near setpoint
+    if (Math.abs(error) > hysteresis) hvacOn = true;
+    else hvacOn = false;
+  }
+
+  // Heating/cooling rate
+  let rate = 0;
+  const baseRate = pow * 0.4;
+
+  if (hvacOn) {
+    if (mode === 'heat' || (mode === 'auto' && error > 0)) {
+      // Nonlinear: heating slows as temp rises (thermal resistance)
+      let gain = nonlinear ? Math.max(0.3, 1 - (thermoTemp - 40) / 100) : 1;
+      rate = baseRate * gain;
+    } else {
+      // Cooling only available passively if nonlinear
+      let gain = nonlinear ? Math.max(0.2, (thermoTemp - 40) / 80) : 1;
+      rate = -baseRate * (nonlinear ? gain * 0.6 : 1);
+    }
+  } else {
+    // Natural decay toward ambient (65°F)
+    rate = (65 - thermoTemp) * 0.01;
+  }
+
+  thermoTemp += rate / mass;
+  thermoTemp = Math.max(35, Math.min(115, thermoTemp));
+  thermoTime += 0.2;
+
+  thermoHistory.push(thermoTemp);
+  thermoTimeH.push(thermoTime);
+
+  updateThermoDisplay(thermoTemp, sp);
+
+  // UI updates
+  const hvacState = document.getElementById('t-hvacstate');
+  const hvacInd = document.getElementById('hvac-indicator');
+  const hvacLbl = document.getElementById('hvac-label');
+
+  if (hvacOn) {
+    const heating = (mode === 'heat') || (mode === 'auto' && thermoTemp < sp);
+    hvacState.textContent = heating ? '🔥 HTG' : '❄️ CLG';
+    hvacState.style.color = heating ? 'var(--accent-red)' : 'var(--accent-cyan)';
+    hvacInd.textContent = heating ? '🔥' : '❄️';
+    hvacInd.style.boxShadow = heating ? 'var(--glow-red)' : 'var(--glow-cyan)';
+    hvacLbl.textContent = heating ? 'HEATING ACTIVE' : 'COOLING ACTIVE';
+    if (heating) {
+      document.getElementById('heat-bar').style.width = (pow * 100) + '%';
+      document.getElementById('heat-pct').textContent = Math.round(pow * 100) + '%';
+      document.getElementById('cool-bar').style.width = '0%';
+      document.getElementById('cool-pct').textContent = '0%';
+    } else {
+      document.getElementById('cool-bar').style.width = (pow * 100) + '%';
+      document.getElementById('cool-pct').textContent = Math.round(pow * 100) + '%';
+      document.getElementById('heat-bar').style.width = '0%';
+      document.getElementById('heat-pct').textContent = '0%';
+    }
+  } else {
+    hvacState.textContent = 'OFF';
+    hvacState.style.color = 'var(--accent-green)';
+    hvacInd.textContent = '✅';
+    hvacInd.style.boxShadow = 'none';
+    hvacLbl.textContent = 'AT SETPOINT';
+    document.getElementById('heat-bar').style.width = '0%';
+    document.getElementById('cool-bar').style.width = '0%';
+    document.getElementById('heat-pct').textContent = '0%';
+    document.getElementById('cool-pct').textContent = '0%';
+  }
+
+  // Status message
+  const msg = document.getElementById('thermo-status-msg');
+  if (Math.abs(thermoTemp - sp) <= hysteresis) {
+    msg.textContent = '✅ Setpoint achieved — closed-loop maintaining temperature';
+    msg.style.color = 'var(--accent-green)';
+  } else {
+    msg.textContent = `⚙️ Error: ${(sp-thermoTemp).toFixed(1)}°F — controller ${hvacOn ? 'ACTIVE' : 'IDLE'}`;
+    msg.style.color = 'var(--accent-amber)';
+  }
+
+  drawThermoCanvas(thermoHistory, thermoTimeH);
+}
+
+function drawThermoCanvas(history, times) {
+  const canvas = document.getElementById('thermo-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth, H = canvas.offsetHeight || 200;
+  canvas.width = W; canvas.height = H;
+  ctx.fillStyle = '#060c14';
+  ctx.fillRect(0, 0, W, H);
+
+  const sp = parseInt(document.getElementById('tsp-slider').value);
+  const pad = { l: 38, r: 16, t: 16, b: 28 };
+  const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b;
+  const minT = 40, maxT = 120;
+  const tMax = Math.max(30, times.length > 0 ? times[times.length-1] + 5 : 30);
+
+  const toX = t => pad.l + (t / tMax) * cW;
+  const toY = t => pad.t + cH - ((t - minT) / (maxT - minT)) * cH;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,229,255,0.05)'; ctx.lineWidth = 1;
+  for (let t = minT; t <= maxT; t += 20) {
+    const y = toY(t);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,229,255,0.4)'; ctx.font = '9px Share Tech Mono';
+    ctx.fillText(t + '°', 2, y + 3);
+  }
+
+  // Hysteresis band
+  const hy = 1;
+  const yHi = toY(sp + hy), yLo = toY(sp - hy);
+  ctx.fillStyle = 'rgba(213,0,249,0.07)';
+  ctx.fillRect(pad.l, yHi, cW, yLo - yHi);
+
+  // Setpoint line
+  const spY = toY(sp);
+  ctx.strokeStyle = 'rgba(0,229,255,0.7)'; ctx.lineWidth = 1.5;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(pad.l, spY); ctx.lineTo(W-pad.r, spY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Overshoot zone (above SP for heat mode)
+  const mode = document.getElementById('hvac-mode').value;
+  const peakT = history.length > 0 ? Math.max(...history) : sp;
+  if (peakT > sp + hy) {
+    ctx.fillStyle = 'rgba(255,23,68,0.07)';
+    ctx.fillRect(pad.l, toY(peakT), cW, toY(sp + hy) - toY(peakT));
+  }
+
+  if (history.length < 2) return;
+
+  // Temperature curve
+  ctx.beginPath();
+  for (let i = 0; i < history.length; i++) {
+    const x = toX(times[i]);
+    const y = toY(history[i]);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#ffab00'; ctx.lineWidth = 2.5;
+  ctx.shadowColor = 'rgba(255,171,0,0.5)'; ctx.shadowBlur = 6;
+  ctx.stroke(); ctx.shadowBlur = 0;
+
+  // SP label
+  ctx.fillStyle = 'rgba(0,229,255,0.8)'; ctx.font = '9px Share Tech Mono';
+  ctx.fillText('SP=' + sp + '°F', W - pad.r - 55, spY - 4);
+}
+
+function modeChanged() { updateThermostat(); }
+
+// Init thermostat scale
+buildThermoScale();
+updateThermostat();
+drawThermoCanvas([], []);
+drawMainCanvas();
+drawErrorCanvas();
+
+// ══════════════════════════════════════════════
+// QUIZ
+// ══════════════════════════════════════════════
+const quizData = [
+  {
+    q: "What is the primary advantage of a closed-loop control system over an open-loop system?",
+    opts: ["It is simpler to design", "It automatically corrects errors using feedback", "It uses less power", "It requires no sensors"],
+    ans: 1,
+    explain: "Closed-loop systems use sensor feedback to continuously compare output to setpoint and correct deviations automatically."
+  },
+  {
+    q: "In a PID controller, the Error signal is calculated as:",
+    opts: ["Output – Setpoint", "Setpoint – Process Variable", "Process Variable × Kp", "Integral × Ki"],
+    ans: 1,
+    explain: "Error = Setpoint − Process Variable. A positive error means the output is below the target."
+  },
+  {
+    q: "Which PID term is most effective at ELIMINATING steady-state error?",
+    opts: ["Proportional (P)", "Integral (I)", "Derivative (D)", "All three equally"],
+    ans: 1,
+    explain: "The Integral term accumulates error over time, continuing to push the controller until steady-state error reaches zero."
+  },
+  {
+    q: "The Derivative term in a PID controller acts like a:",
+    opts: ["Spring that pulls back to setpoint", "Damper that resists rapid changes", "Amplifier of steady-state error", "Switch for on/off control"],
+    ans: 1,
+    explain: "The D term opposes the rate of change of error — like a damper — reducing overshoot by anticipating where the error is heading."
+  },
+  {
+    q: "What is 'integral windup' in a PID controller?",
+    opts: [
+      "When Kp is set too high causing oscillations",
+      "When the integrator accumulates excessive error during output saturation",
+      "When the derivative term amplifies noise",
+      "When the setpoint changes too rapidly"
+    ],
+    ans: 1,
+    explain: "Windup occurs when the controller output saturates but the integrator keeps accumulating error, causing severe overshoot when conditions change."
+  },
+  {
+    q: "A thermostat that uses simple ON/OFF control with a ±1°F deadband is an example of:",
+    opts: ["PID Control", "Bang-Bang (On-Off) Control with Hysteresis", "Feedforward Control", "Cascade Control"],
+    ans: 1,
+    explain: "Bang-bang control switches between fully ON and fully OFF states. Hysteresis (deadband) prevents rapid switching around the setpoint."
+  },
+  {
+    q: "In a nonlinear heating system, why might a PID controller that works well at 70°F perform poorly at 90°F?",
+    opts: [
+      "The sensor breaks at high temperatures",
+      "Process gain changes — the same control output produces a different effect at different operating points",
+      "The integral term resets automatically",
+      "Derivative gain becomes negative"
+    ],
+    ans: 1,
+    explain: "Nonlinear systems have variable process gain. PID parameters optimized at one operating point may cause oscillation, sluggishness, or instability at another — requiring gain scheduling."
+  },
+  {
+    q: "Increasing the Derivative gain (Kd) typically:",
+    opts: [
+      "Increases steady-state error and rise time",
+      "Reduces overshoot and settling time but may amplify sensor noise",
+      "Eliminates steady-state error completely",
+      "Has no effect on overshoot"
+    ],
+    ans: 1,
+    explain: "Higher Kd reduces overshoot and settling time by dampening the response, but excessive Kd amplifies high-frequency measurement noise."
+  }
+];
+
+let quizScore = 0;
+let quizAnswered = new Array(quizData.length).fill(false);
+
+function buildQuiz() {
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = '';
+  quizData.forEach((q, qi) => {
+    const div = document.createElement('div');
+    div.className = 'quiz-q';
+    div.innerHTML = `<p><span style="color:var(--accent-cyan); font-family:'Share Tech Mono',monospace">Q${qi+1}.</span> ${q.q}</p>`;
+    q.opts.forEach((opt, oi) => {
+      const btn = document.createElement('button');
+      btn.className = 'quiz-opt';
+      btn.textContent = `${String.fromCharCode(65+oi)}. ${opt}`;
+      btn.onclick = () => handleAnswer(qi, oi, q.ans, q.explain, div);
+      div.appendChild(btn);
+    });
+    const fb = document.createElement('div');
+    fb.className = 'quiz-feedback';
+    fb.id = 'fb-' + qi;
+    div.appendChild(fb);
+    container.appendChild(div);
+  });
+  updateScore();
+}
+
+function handleAnswer(qi, oi, correct, explain, div) {
+  if (quizAnswered[qi]) return;
+  quizAnswered[qi] = true;
+  const btns = div.querySelectorAll('.quiz-opt');
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === correct) b.classList.add('correct');
+    else if (i === oi) b.classList.add('wrong');
+  });
+  const fb = document.getElementById('fb-' + qi);
+  if (oi === correct) {
+    quizScore++;
+    fb.className = 'quiz-feedback ok';
+    fb.textContent = '✅ Correct! ' + explain;
+  } else {
+    fb.className = 'quiz-feedback bad';
+    fb.textContent = '❌ ' + explain;
+  }
+  updateScore();
+}
+
+function updateScore() {
+  const answered = quizAnswered.filter(Boolean).length;
+  document.getElementById('score-display').textContent =
+    answered > 0 ? `Score: ${quizScore} / ${answered} answered  (${Math.round(quizScore/answered*100)}%)` : '';
+}
+
+buildQuiz();
+</script>
 </body>
 </html>
