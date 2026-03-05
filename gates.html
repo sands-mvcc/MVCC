@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logic Gates — Digital Electronics Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06090f;
+    --panel: #0d1420;
+    --panel2: #111c2e;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --accent3: #ff6b35;
+    --hi: #ffffff;
+    --mid: #8ab4d4;
+    --lo: #3a5c7a;
+    --on-color: #00ff9d;
+    --off-color: #1e3a5f;
+    --glow: 0 0 20px rgba(0,212,255,0.4);
+    --glow-green: 0 0 20px rgba(0,255,157,0.5);
+    --glow-orange: 0 0 20px rgba(255,107,53,0.5);
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-ui: 'Exo 2', sans-serif;
+    --font-display: 'Orbitron', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--mid);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanline effect */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    padding: 32px 0 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 50%;
+    transform: translateX(-50%);
+    width: 200px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .lab-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 14px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    animation: pulse-border 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 6px rgba(0,212,255,0.3); }
+    50% { box-shadow: 0 0 18px rgba(0,212,255,0.7); }
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 5vw, 42px);
+    font-weight: 900;
+    color: var(--hi);
+    letter-spacing: 2px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--lo);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 800px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    background: var(--panel2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    flex: 1;
+  }
+
+  .panel-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .panel-body { padding: 16px; }
+
+  /* ── GATE SELECTOR ── */
+  .gate-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+
+  .gate-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--mid);
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gate-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+
+  .gate-btn.active {
+    border-color: var(--accent);
+    color: var(--hi);
+    background: rgba(0,212,255,0.12);
+    box-shadow: 0 0 16px rgba(0,212,255,0.25);
+  }
+
+  .gate-btn.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .gate-btn .gate-symbol {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  /* ── INPUT CONTROLS ── */
+  .input-controls { margin-top: 16px; }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .input-label {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--hi);
+    width: 30px;
+  }
+
+  .input-label span {
+    font-size: 9px;
+    color: var(--lo);
+    display: block;
+    font-weight: 400;
+    letter-spacing: 1px;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 72px; height: 34px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch input { display: none; }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--off-color);
+    border: 1px solid var(--border);
+    border-radius: 17px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 7px;
+  }
+
+  .toggle-track .t-off {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--lo);
+    transition: all 0.3s;
+  }
+
+  .toggle-track .t-on {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: transparent;
+    transition: all 0.3s;
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 26px; height: 26px;
+    background: var(--lo);
+    border-radius: 50%;
+    transition: all 0.3s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+
+  .toggle-switch input:checked ~ .toggle-track {
+    background: rgba(0,255,157,0.15);
+    border-color: var(--on-color);
+    box-shadow: 0 0 14px rgba(0,255,157,0.3);
+  }
+
+  .toggle-switch input:checked ~ .toggle-track .t-off { color: transparent; }
+  .toggle-switch input:checked ~ .toggle-track .t-on { color: var(--on-color); }
+
+  .toggle-switch input:checked ~ .toggle-thumb {
+    left: 43px;
+    background: var(--on-color);
+    box-shadow: 0 0 12px rgba(0,255,157,0.6);
+  }
+
+  .input-bit {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 900;
+    width: 40px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .input-bit.on { color: var(--on-color); text-shadow: 0 0 14px var(--on-color); }
+  .input-bit.off { color: var(--lo); }
+
+  .not-note {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent3);
+    text-align: center;
+    padding: 8px;
+    border: 1px dashed rgba(255,107,53,0.3);
+    border-radius: 3px;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .not-note.visible { display: block; }
+
+  /* ── KEYBOARD SHORTCUTS ── */
+  .shortcuts {
+    margin-top: 14px;
+    padding: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  .shortcuts-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--lo);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .kbd-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+    font-size: 11px;
+    color: var(--mid);
+    font-family: var(--font-mono);
+  }
+
+  kbd {
+    display: inline-block;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--accent);
+    box-shadow: 0 2px 0 var(--border);
+  }
+
+  /* ── RIGHT PANEL ── */
+  .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── GATE VISUAL ── */
+  .gate-visual-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    min-height: 200px;
+    position: relative;
+  }
+
+  .gate-canvas-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* Wire styles */
+  .wire {
+    height: 4px;
+    border-radius: 2px;
+    position: relative;
+    transition: all 0.3s;
+  }
+
+  .wire.on {
+    background: var(--on-color);
+    box-shadow: 0 0 10px rgba(0,255,157,0.6);
+  }
+
+  .wire.off { background: var(--lo); }
+
+  .wire-in-a { width: 60px; }
+  .wire-in-b { width: 60px; }
+  .wire-out { width: 60px; }
+
+  .inputs-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 36px;
+  }
+
+  .wire-label {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--hi);
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .wire-label .bit-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--lo);
+    transition: all 0.3s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+
+  .wire-label .bit-dot.on {
+    background: var(--on-color);
+    border-color: var(--on-color);
+    box-shadow: 0 0 12px rgba(0,255,157,0.7);
+    color: #000;
+  }
+
+  .wire-label .bit-dot.off { color: var(--lo); }
+
+  /* SVG Gate symbol */
+  .gate-svg-wrap {
+    width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gate-svg-wrap svg {
+    width: 110px; height: 90px;
+    filter: drop-shadow(0 0 8px rgba(0,212,255,0.3));
+    transition: all 0.3s;
+  }
+
+  .output-col {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .output-lamp {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 3px solid var(--lo);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 900;
+    transition: all 0.35s;
+    position: relative;
+  }
+
+  .output-lamp::after {
+    content: 'OUT';
+    position: absolute;
+    bottom: -20px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--lo);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .output-lamp.on {
+    border-color: var(--on-color);
+    background: rgba(0,255,157,0.12);
+    box-shadow: 0 0 30px rgba(0,255,157,0.6), inset 0 0 20px rgba(0,255,157,0.1);
+    color: var(--on-color);
+    text-shadow: 0 0 14px var(--on-color);
+  }
+
+  .output-lamp.off {
+    color: var(--lo);
+    background: transparent;
+  }
+
+  /* Gate name display */
+  .gate-name-display {
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .gate-desc {
+    position: absolute;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--lo);
+    white-space: nowrap;
+    letter-spacing: 1px;
+    text-align: center;
+    max-width: 90%;
+  }
+
+  /* ── TRUTH TABLE ── */
+  .truth-table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  thead tr {
+    background: var(--panel2);
+    border-bottom: 2px solid var(--accent);
+  }
+
+  thead th {
+    padding: 10px 14px;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(30,58,95,0.5);
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+
+  tbody tr:hover { background: rgba(0,212,255,0.04); }
+
+  tbody tr.active-row {
+    background: rgba(0,212,255,0.08);
+    border-bottom-color: var(--accent);
+  }
+
+  tbody tr.active-row td { color: var(--hi); }
+
+  tbody td {
+    padding: 9px 14px;
+    text-align: center;
+    color: var(--mid);
+    font-size: 14px;
+  }
+
+  .cell-1 {
+    color: var(--on-color);
+    font-weight: 700;
+    text-shadow: 0 0 8px rgba(0,255,157,0.5);
+  }
+
+  .cell-0 { color: var(--lo); }
+
+  .cell-result {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  .row-marker {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* ── OPERATION DISPLAY ── */
+  .operation-display {
+    padding: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .op-equation {
+    font-size: 18px;
+    text-align: center;
+    margin-bottom: 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--hi);
+    letter-spacing: 2px;
+  }
+
+  .op-desc {
+    text-align: center;
+    color: var(--lo);
+    font-size: 11px;
+  }
+
+  .op-result-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 10px;
+    font-size: 15px;
+  }
+
+  .op-arrow { color: var(--accent); }
+
+  .op-val {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 900;
+    transition: all 0.3s;
+  }
+
+  .op-val.on { color: var(--on-color); text-shadow: 0 0 14px var(--on-color); }
+  .op-val.off { color: var(--lo); }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    background: var(--panel2);
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--lo);
+    margin-top: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .status-item { display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+
+  /* ── CONCEPT CARD ── */
+  .concept-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 14px;
+    margin-top: 0;
+  }
+
+  .concept-title {
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .concept-text {
+    font-size: 12px;
+    color: var(--mid);
+    line-height: 1.6;
+    font-family: var(--font-mono);
+  }
+
+  /* ── QUIZ SECTION ── */
+  .quiz-area {
+    padding: 16px;
+  }
+
+  .quiz-q {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    color: var(--hi);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  .quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .quiz-opt {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--mid);
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .quiz-opt:hover { border-color: var(--accent); color: var(--accent); }
+  .quiz-opt.correct { border-color: var(--on-color); color: var(--on-color); background: rgba(0,255,157,0.08); }
+  .quiz-opt.wrong { border-color: var(--accent3); color: var(--accent3); background: rgba(255,107,53,0.08); }
+
+  .quiz-feedback {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    min-height: 36px;
+    text-align: center;
+    padding: 8px;
+    transition: all 0.3s;
+  }
+
+  .quiz-feedback.correct { color: var(--on-color); }
+  .quiz-feedback.wrong { color: var(--accent3); }
+
+  .quiz-next-btn {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .quiz-next-btn:hover {
+    background: rgba(0,212,255,0.1);
+    box-shadow: var(--glow);
+  }
+
+  .quiz-score {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--lo);
+    text-align: right;
+    margin-bottom: 10px;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes flash-on {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  .output-lamp.on { animation: flash-on 0.35s ease; }
+
+  @keyframes row-highlight {
+    0% { background: rgba(0,212,255,0.25); }
+    100% { background: rgba(0,212,255,0.08); }
+  }
+
+  tbody tr.active-row { animation: row-highlight 0.4s ease forwards; }
+
+  /* Connection dots on wires */
+  .wire-node {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--lo);
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  .wire-node.on { background: var(--on-color); border-color: var(--on-color); box-shadow: 0 0 10px rgba(0,255,157,0.7); }
+  .wire-node.off { background: transparent; }
+
+  .inputs-wires {
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+    align-items: flex-end;
+  }
+
+  .wire-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="lab-badge">⚡ Digital Electronics Laboratory</div>
+    <h1>Logic <span>Gates</span></h1>
+    <div class="subtitle">Interactive Simulator &amp; Learning Module &nbsp;|&nbsp; Boolean Logic Fundamentals</div>
+  </header>
+
+  <div class="main-grid">
+
+    <!-- LEFT PANEL: Controls -->
+    <div class="left-col">
+
+      <!-- Gate Selector -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-dot"></div>
+          <div class="panel-title">Gate Selection</div>
+        </div>
+        <div class="panel-body">
+          <div class="gate-grid">
+            <button class="gate-btn active" data-gate="AND" onclick="selectGate('AND')">
+              <span class="gate-symbol">⊓</span>AND
+            </button>
+            <button class="gate-btn" data-gate="OR" onclick="selectGate('OR')">
+              <span class="gate-symbol">⊔</span>OR
+            </button>
+            <button class="gate-btn" data-gate="NOT" onclick="selectGate('NOT')">
+              <span class="gate-symbol">¬</span>NOT
+            </button>
+            <button class="gate-btn" data-gate="NAND" onclick="selectGate('NAND')">
+              <span class="gate-symbol">⊼</span>NAND
+            </button>
+            <button class="gate-btn" data-gate="NOR" onclick="selectGate('NOR')">
+              <span class="gate-symbol">⊽</span>NOR
+            </button>
+            <button class="gate-btn" data-gate="XOR" onclick="selectGate('XOR')">
+              <span class="gate-symbol">⊕</span>XOR
+            </button>
+            <button class="gate-btn" data-gate="XNOR" onclick="selectGate('XNOR')">
+              <span class="gate-symbol">⊙</span>XNOR
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Controls -->
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div class="panel-dot" style="background:var(--accent2);box-shadow:0 0 8px var(--accent2);"></div>
+          <div class="panel-title" style="color:var(--accent2);">Input Controls</div>
+        </div>
+        <div class="panel-body">
+          <div class="input-controls">
+            <div class="input-row" id="rowA">
+              <div class="input-label">A <span>INPUT</span></div>
+              <div class="input-bit off" id="bitA">0</div>
+              <label class="toggle-switch" id="toggleA" tabindex="0" aria-label="Toggle Input A">
+                <input type="checkbox" id="inputA" onchange="updateGate()">
+                <div class="toggle-track">
+                  <span class="t-on">ON</span>
+                  <span class="t-off">OFF</span>
+                </div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+            <div class="input-row" id="rowB">
+              <div class="input-label">B <span>INPUT</span></div>
+              <div class="input-bit off" id="bitB">0</div>
+              <label class="toggle-switch" id="toggleB" tabindex="0" aria-label="Toggle Input B">
+                <input type="checkbox" id="inputB" onchange="updateGate()">
+                <div class="toggle-track">
+                  <span class="t-on">ON</span>
+                  <span class="t-off">OFF</span>
+                </div>
+                <div class="toggle-thumb"></div>
+              </label>
+            </div>
+            <div class="not-note" id="notNote">
+              ⚠ NOT gate uses Input A only.<br>Input B is ignored.
+            </div>
+          </div>
+
+          <!-- Keyboard shortcuts -->
+          <div class="shortcuts">
+            <div class="shortcuts-title">⌨ Keyboard Shortcuts</div>
+            <div class="kbd-row"><kbd>A</kbd> Toggle Input A</div>
+            <div class="kbd-row"><kbd>B</kbd> Toggle Input B</div>
+            <div class="kbd-row"><kbd>1</kbd>–<kbd>7</kbd> Select Gate</div>
+            <div class="kbd-row"><kbd>Space</kbd> Cycle All Inputs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Concept Card -->
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel-header">
+          <div class="panel-dot" style="background:var(--accent3);box-shadow:0 0 8px var(--accent3);animation:none;"></div>
+          <div class="panel-title" style="color:var(--accent3);">Boolean Expression</div>
+        </div>
+        <div class="panel-body">
+          <div class="operation-display">
+            <div class="op-equation" id="opEquation">Y = A · B</div>
+            <div class="op-desc" id="opDesc">Output is HIGH only when BOTH inputs are HIGH</div>
+            <div class="op-result-line">
+              <span id="opA" class="off" style="font-family:var(--font-display);font-weight:700;font-size:14px;">A=0</span>
+              <span class="op-arrow">▶</span>
+              <span id="opGateName" style="font-family:var(--font-display);font-size:12px;color:var(--accent);">AND</span>
+              <span class="op-arrow">▶</span>
+              <span id="opB" class="off" style="font-family:var(--font-display);font-weight:700;font-size:14px;">B=0</span>
+              <span class="op-arrow" id="opArrow2">→</span>
+              <span class="op-val off" id="opResult">0</span>
+            </div>
+          </div>
+          <div class="concept-card" style="margin-top:12px;">
+            <div class="concept-title">Key Concept</div>
+            <div class="concept-text" id="conceptText">The AND gate outputs logic 1 only when all inputs are logic 1. It implements logical conjunction — the Boolean multiply operation.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col">
+
+      <!-- Gate Visual -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-dot"></div>
+          <div class="panel-title">Gate Visualization</div>
+          <span id="activeGateLabel" style="font-family:var(--font-display);font-size:11px;color:var(--hi);letter-spacing:2px;">AND</span>
+        </div>
+        <div class="gate-visual-area">
+          <div class="gate-name-display" id="gateNameDisplay">AND GATE</div>
+
+          <div class="gate-canvas-wrap">
+            <!-- Input wires + labels -->
+            <div class="inputs-wires" id="inputsWires">
+              <div class="wire-row" id="wireRowA">
+                <span style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--hi);margin-right:8px;">A</span>
+                <div class="wire-node off" id="nodeA"></div>
+                <div class="wire on off" style="width:48px;" id="wireA"></div>
+              </div>
+              <div class="wire-row" id="wireRowB">
+                <span style="font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--hi);margin-right:8px;">B</span>
+                <div class="wire-node off" id="nodeB"></div>
+                <div class="wire off" style="width:48px;" id="wireB"></div>
+              </div>
+            </div>
+
+            <!-- Gate SVG Symbol -->
+            <div class="gate-svg-wrap">
+              <svg id="gateSvg" viewBox="0 0 110 90" xmlns="http://www.w3.org/2000/svg">
+                <!-- Drawn via JS -->
+              </svg>
+            </div>
+
+            <!-- Output wire + lamp -->
+            <div class="output-col">
+              <div class="wire off" style="width:32px;" id="wireOut"></div>
+              <div class="output-lamp off" id="outputLamp">0</div>
+            </div>
+          </div>
+
+          <div class="gate-desc" id="gateDesc">Y = A · B &nbsp;|&nbsp; Logical AND</div>
+        </div>
+      </div>
+
+      <!-- Truth Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-dot" style="background:var(--accent2);box-shadow:0 0 8px var(--accent2);"></div>
+          <div class="panel-title" style="color:var(--accent2);">Dynamic Truth Table</div>
+          <span id="truthTableGateName" style="font-family:var(--font-mono);font-size:10px;color:var(--lo);">AND</span>
+        </div>
+        <div class="panel-body">
+          <div class="truth-table-wrap">
+            <table id="truthTable">
+              <thead id="tableHead"></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quiz -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-dot" style="background:var(--accent3);box-shadow:0 0 8px var(--accent3);animation:none;"></div>
+          <div class="panel-title" style="color:var(--accent3);">Knowledge Check</div>
+          <span id="quizScore" class="quiz-score" style="font-family:var(--font-mono);font-size:11px;color:var(--lo);"></span>
+        </div>
+        <div class="quiz-area">
+          <div class="quiz-q" id="quizQuestion">Loading question...</div>
+          <div class="quiz-options" id="quizOptions"></div>
+          <div class="quiz-feedback" id="quizFeedback"></div>
+          <button class="quiz-next-btn" onclick="nextQuiz()">▶ Next Question</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-item"><div class="status-dot"></div><span id="statusGate">Gate: AND</span></div>
+    <div class="status-item"><div class="status-dot"></div><span id="statusInputs">A=0 | B=0</span></div>
+    <div class="status-item"><div class="status-dot"></div><span id="statusOutput">Output: 0 (LOW)</span></div>
+    <div class="status-item" style="margin-left:auto;"><span style="color:var(--lo);">MVCC Digital Electronics Lab &nbsp;|&nbsp; Keyboard: A B 1-7 Space</span></div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+let currentGate = 'AND';
+let inputA = false;
+let inputB = false;
+let quizScore = 0;
+let quizTotal = 0;
+let quizAnswered = false;
+
+// ══════════════════════════════════════════════════
+//  GATE DATA
+// ══════════════════════════════════════════════════
+const gates = {
+  AND: {
+    equation: 'Y = A · B',
+    desc: 'Output is HIGH only when BOTH inputs are HIGH',
+    concept: 'The AND gate outputs logic 1 only when all inputs are logic 1. It implements logical conjunction — the Boolean multiply operation.',
+    svgDesc: 'Y = A · B  |  Logical Conjunction',
+    op: (a,b) => a && b,
+    twoInput: true,
+    rows: [[0,0,0],[0,1,0],[1,0,0],[1,1,1]],
+  },
+  OR: {
+    equation: 'Y = A + B',
+    desc: 'Output is HIGH when ANY input is HIGH',
+    concept: 'The OR gate outputs logic 1 when at least one input is logic 1. It implements logical disjunction — the Boolean add operation.',
+    svgDesc: 'Y = A + B  |  Logical Disjunction',
+    op: (a,b) => a || b,
+    twoInput: true,
+    rows: [[0,0,0],[0,1,1],[1,0,1],[1,1,1]],
+  },
+  NOT: {
+    equation: 'Y = Ā  (NOT A)',
+    desc: 'Output is the COMPLEMENT (inverse) of the input',
+    concept: 'The NOT gate (inverter) has only one input and inverts it. Logic 0 becomes Logic 1, and Logic 1 becomes Logic 0. It is the simplest gate.',
+    svgDesc: 'Y = Ā  |  Logical Complement / Inverter',
+    op: (a,b) => !a,
+    twoInput: false,
+    rows: [[0,1],[1,0]],
+  },
+  NAND: {
+    equation: 'Y = (A · B)̄',
+    desc: 'Output is LOW only when BOTH inputs are HIGH',
+    concept: 'NAND is an inverted AND. Output is HIGH unless both inputs are HIGH. NAND is a universal gate — any logic function can be built from NAND gates alone.',
+    svgDesc: 'Y = (A·B)̄  |  Universal Gate',
+    op: (a,b) => !(a && b),
+    twoInput: true,
+    rows: [[0,0,1],[0,1,1],[1,0,1],[1,1,0]],
+  },
+  NOR: {
+    equation: 'Y = (A + B)̄',
+    desc: 'Output is HIGH only when BOTH inputs are LOW',
+    concept: 'NOR is an inverted OR. Output is HIGH only when all inputs are LOW. Like NAND, NOR is also a universal gate capable of implementing any logic function.',
+    svgDesc: 'Y = (A+B)̄  |  Universal Gate',
+    op: (a,b) => !(a || b),
+    twoInput: true,
+    rows: [[0,0,1],[0,1,0],[1,0,0],[1,1,0]],
+  },
+  XOR: {
+    equation: 'Y = A ⊕ B',
+    desc: 'Output is HIGH when inputs are DIFFERENT',
+    concept: 'The XOR (exclusive OR) gate outputs logic 1 only when an odd number of inputs are logic 1. For 2 inputs: output is HIGH when A and B differ. Used in adders and comparators.',
+    svgDesc: 'Y = A ⊕ B  |  Exclusive OR',
+    op: (a,b) => a !== b,
+    twoInput: true,
+    rows: [[0,0,0],[0,1,1],[1,0,1],[1,1,0]],
+  },
+  XNOR: {
+    equation: 'Y = A ⊙ B',
+    desc: 'Output is HIGH when inputs are the SAME (Equality)',
+    concept: 'XNOR (exclusive NOR) outputs logic 1 when both inputs are equal. It acts as an equality comparator — if A equals B, output is 1. Also called an equivalence gate.',
+    svgDesc: 'Y = A ⊙ B  |  Exclusive NOR / Equality',
+    op: (a,b) => a === b,
+    twoInput: true,
+    rows: [[0,0,1],[0,1,0],[1,0,0],[1,1,1]],
+  }
+};
+
+const gateKeys = ['AND','OR','NOT','NAND','NOR','XOR','XNOR'];
+
+// ══════════════════════════════════════════════════
+//  SVG GATE SHAPES
+// ══════════════════════════════════════════════════
+function drawGateSvg(type, output) {
+  const svg = document.getElementById('gateSvg');
+  const C = output ? '#00ff9d' : '#1e3a5f';
+  const S = '#00d4ff';
+  let inner = '';
+
+  switch(type) {
+    case 'AND':
+      inner = `
+        <path d="M25,18 L55,18 Q82,18 82,45 Q82,72 55,72 L25,72 Z"
+          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5" />
+        <line x1="15" y1="30" x2="25" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="15" y1="60" x2="25" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="82" y1="45" x2="95" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="82" cy="45" r="3" fill="${C}"/>`;
+      break;
+    case 'OR':
+      inner = `
+        <path d="M20,18 Q38,18 55,18 Q82,18 82,45 Q82,72 55,72 Q38,72 20,72 Q32,45 20,18 Z"
+          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
+        <line x1="10" y1="30" x2="28" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="10" y1="60" x2="28" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="82" y1="45" x2="95" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="82" cy="45" r="3" fill="${C}"/>`;
+      break;
+    case 'NOT':
+      inner = `
+        <polygon points="20,15 75,45 20,75"
+          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
+        <circle cx="79" cy="45" r="5" fill="${C === '#00ff9d' ? 'rgba(0,255,157,0.2)' : 'transparent'}" stroke="${C}" stroke-width="2.5"/>
+        <line x1="5" y1="45" x2="20" y2="45" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="84" y1="45" x2="95" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;
+      break;
+    case 'NAND':
+      inner = `
+        <path d="M20,18 L50,18 Q77,18 77,45 Q77,72 50,72 L20,72 Z"
+          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
+        <circle cx="81" cy="45" r="5" fill="${C === '#00ff9d' ? 'rgba(0,255,157,0.2)' : 'transparent'}" stroke="${C}" stroke-width="2.5"/>
+        <line x1="10" y1="30" x2="20" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="10" y1="60" x2="20" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="86" y1="45" x2="97" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;
+      break;
+    case 'NOR':
+      inner = `
+        <path d="M15,18 Q33,18 50,18 Q77,18 77,45 Q77,72 50,72 Q33,72 15,72 Q27,45 15,18 Z"
+          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
+        <circle cx="81" cy="45" r="5" fill="${C === '#00ff9d' ? 'rgba(0,255,157,0.2)' : 'transparent'}" stroke="${C}" stroke-width="2.5"/>
+        <line x1="5" y1="30" x2="23" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="5" y1="60" x2="23" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="86" y1="45" x2="97" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;
+      break;
+    case 'XOR':
+      inner = `
+        <path d="M20,18 Q38,18 55,18 Q82,18 82,45 Q82,72 55,72 Q38,72 20,72 Q32,45 20,18 Z"
+          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
+        <path d="M13,18 Q25,45 13,72" fill="none" stroke="${S}" stroke-width="2" stroke-dasharray="2,2"/>
+        <line x1="5" y1="30" x2="28" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="5" y1="60" x2="28" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="82" y1="45" x2="95" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="82" cy="45" r="3" fill="${C}"/>`;
+      break;
+    case 'XNOR':
+      inner = `
+        <path d="M20,18 Q38,18 55,18 Q77,18 77,45 Q77,72 55,72 Q38,72 20,72 Q32,45 20,18 Z"
+          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
+        <path d="M13,18 Q25,45 13,72" fill="none" stroke="${S}" stroke-width="2" stroke-dasharray="2,2"/>
+        <circle cx="81" cy="45" r="5" fill="${C === '#00ff9d' ? 'rgba(0,255,157,0.2)' : 'transparent'}" stroke="${C}" stroke-width="2.5"/>
+        <line x1="5" y1="30" x2="28" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="5" y1="60" x2="28" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="86" y1="45" x2="97" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;
+      break;
+  }
+  svg.innerHTML = inner;
+}
+
+// ══════════════════════════════════════════════════
+//  TRUTH TABLE BUILDER
+// ══════════════════════════════════════════════════
+function buildTruthTable(gate) {
+  const g = gates[gate];
+  const head = document.getElementById('tableHead');
+  const body = document.getElementById('tableBody');
+
+  if(g.twoInput) {
+    head.innerHTML = `<tr>
+      <th>Row</th>
+      <th>A</th>
+      <th>B</th>
+      <th>${gate} Output (Y)</th>
+    </tr>`;
+  } else {
+    head.innerHTML = `<tr>
+      <th>Row</th>
+      <th>A</th>
+      <th>${gate} Output (Y)</th>
+    </tr>`;
+  }
+
+  body.innerHTML = '';
+  g.rows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    tr.id = 'tr_' + i;
+    let cells = `<td>${i}</td>`;
+    row.forEach((val, j) => {
+      const isOutput = j === row.length - 1;
+      const cls = val ? 'cell-1' : 'cell-0';
+      if(isOutput) {
+        cells += `<td class="${cls} cell-result">${val}</td>`;
+      } else {
+        cells += `<td class="${cls}">${val}</td>`;
+      }
+    });
+    tr.innerHTML = cells;
+    // Click to set inputs
+    tr.addEventListener('click', () => {
+      if(g.twoInput) {
+        document.getElementById('inputA').checked = !!row[0];
+        document.getElementById('inputB').checked = !!row[1];
+      } else {
+        document.getElementById('inputA').checked = !!row[0];
+      }
+      inputA = !!row[0];
+      inputB = g.twoInput ? !!row[1] : false;
+      updateGate();
+    });
+    body.appendChild(tr);
+  });
+
+  document.getElementById('truthTableGateName').textContent = gate;
+}
+
+// ══════════════════════════════════════════════════
+//  ACTIVE ROW HIGHLIGHT
+// ══════════════════════════════════════════════════
+function highlightRow(gate, a, b) {
+  const g = gates[gate];
+  document.querySelectorAll('#tableBody tr').forEach(tr => tr.classList.remove('active-row'));
+
+  let rowIndex;
+  if(g.twoInput) {
+    rowIndex = g.rows.findIndex(r => r[0] === (a?1:0) && r[1] === (b?1:0));
+  } else {
+    rowIndex = g.rows.findIndex(r => r[0] === (a?1:0));
+  }
+  if(rowIndex >= 0) {
+    const tr = document.getElementById('tr_' + rowIndex);
+    if(tr) tr.classList.add('active-row');
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  SELECT GATE
+// ══════════════════════════════════════════════════
+function selectGate(gate) {
+  currentGate = gate;
+
+  // Update button states
+  document.querySelectorAll('.gate-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.gate === gate);
+  });
+
+  const g = gates[gate];
+
+  // Update labels
+  document.getElementById('gateNameDisplay').textContent = gate + ' GATE';
+  document.getElementById('activeGateLabel').textContent = gate;
+  document.getElementById('gateDesc').textContent = g.svgDesc;
+  document.getElementById('opEquation').textContent = g.equation;
+  document.getElementById('opDesc').textContent = g.desc;
+  document.getElementById('opGateName').textContent = gate;
+  document.getElementById('conceptText').textContent = g.concept;
+
+  // Show/hide B input for NOT gate
+  const rowB = document.getElementById('rowB');
+  const notNote = document.getElementById('notNote');
+  if(gate === 'NOT') {
+    rowB.style.opacity = '0.35';
+    rowB.style.pointerEvents = 'none';
+    notNote.classList.add('visible');
+  } else {
+    rowB.style.opacity = '1';
+    rowB.style.pointerEvents = '';
+    notNote.classList.remove('visible');
+  }
+
+  buildTruthTable(gate);
+  updateGate();
+}
+
+// ══════════════════════════════════════════════════
+//  UPDATE GATE STATE
+// ══════════════════════════════════════════════════
+function updateGate() {
+  inputA = document.getElementById('inputA').checked;
+  inputB = document.getElementById('inputB').checked;
+
+  const g = gates[currentGate];
+  const output = g.op(inputA, inputB);
+
+  // Bit displays
+  setbit('bitA', inputA);
+  setbit('bitB', inputB);
+
+  // Wires
+  setWire('nodeA', inputA);
+  setWire('wireA', inputA);
+  setWire('nodeB', inputB);
+  setWire('wireB', currentGate === 'NOT' ? false : inputB);
+  setWire('wireOut', output);
+
+  // Output lamp
+  const lamp = document.getElementById('outputLamp');
+  lamp.className = 'output-lamp ' + (output ? 'on' : 'off');
+  lamp.textContent = output ? '1' : '0';
+
+  // SVG
+  drawGateSvg(currentGate, output);
+
+  // Operation display
+  const opA = document.getElementById('opA');
+  const opB = document.getElementById('opB');
+  const opResult = document.getElementById('opResult');
+
+  opA.textContent = 'A=' + (inputA?1:0);
+  opA.style.color = inputA ? 'var(--on-color)' : 'var(--lo)';
+  opB.textContent = 'B=' + (inputB?1:0);
+  opB.style.color = inputB ? 'var(--on-color)' : 'var(--lo)';
+
+  if(currentGate === 'NOT') {
+    document.getElementById('opB').style.display = 'none';
+    document.getElementById('opArrow2').style.display = 'none';
+  } else {
+    document.getElementById('opB').style.display = '';
+    document.getElementById('opArrow2').style.display = '';
+  }
+
+  opResult.textContent = output ? '1' : '0';
+  opResult.className = 'op-val ' + (output ? 'on' : 'off');
+
+  // Highlight truth table row
+  highlightRow(currentGate, inputA, inputB);
+
+  // Status bar
+  document.getElementById('statusGate').textContent = 'Gate: ' + currentGate;
+  document.getElementById('statusInputs').textContent = `A=${inputA?1:0} | B=${inputB?1:0}`;
+  document.getElementById('statusOutput').textContent = `Output: ${output?1:0} (${output?'HIGH':'LOW'})`;
+}
+
+function setbit(id, val) {
+  const el = document.getElementById(id);
+  el.textContent = val ? '1' : '0';
+  el.className = 'input-bit ' + (val ? 'on' : 'off');
+}
+
+function setWire(id, val) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.className = el.className.replace(/\bon\b|\boff\b/g, '').trim() + ' ' + (val ? 'on' : 'off');
+}
+
+// ══════════════════════════════════════════════════
+//  QUIZ ENGINE
+// ══════════════════════════════════════════════════
+const quizBank = [
+  { q: "Which gate outputs HIGH only when ALL inputs are HIGH?", opts:["AND","OR","NAND","XOR"], ans:0 },
+  { q: "The NOT gate is also called an ___.", opts:["Amplifier","Inverter","Buffer","Multiplier"], ans:1 },
+  { q: "Which gate is called a 'Universal Gate' because it can implement any logic function?", opts:["OR","XOR","NAND","AND"], ans:2 },
+  { q: "An XOR gate outputs HIGH when inputs are:", opts:["Both 0","Both 1","Different","Both HIGH"], ans:2 },
+  { q: "What is the Boolean expression for an AND gate?", opts:["Y = A + B","Y = A · B","Y = Ā","Y = A ⊕ B"], ans:1 },
+  { q: "A NOR gate outputs HIGH only when:", opts:["A=1, B=0","A=0, B=0","A=1, B=1","A=0, B=1"], ans:1 },
+  { q: "XNOR gate acts as an _____ comparator.", opts:["Inequality","Range","Equality","Threshold"], ans:2 },
+  { q: "What is the output of NAND when A=1 and B=1?", opts:["0","1","Undefined","Depends"], ans:0 },
+  { q: "The Boolean expression Y = A + B represents which gate?", opts:["AND","NOR","OR","XNOR"], ans:2 },
+  { q: "Which gate outputs HIGH only when an ODD number of inputs are HIGH?", opts:["OR","XNOR","NOR","XOR"], ans:3 },
+  { q: "NOT gate has how many inputs?", opts:["0","1","2","3"], ans:1 },
+  { q: "NAND is the inverse of which gate?", opts:["OR","NOT","AND","XOR"], ans:2 },
+  { q: "What is the output of OR when A=0 and B=0?", opts:["0","1","Undefined","2"], ans:0 },
+  { q: "NOR is a universal gate. This means:", opts:["It only works in one direction","Any logic function can be built from it","It has no inputs","It only produces 0"], ans:1 },
+  { q: "For an XNOR gate with A=1, B=1, what is the output?", opts:["0","1","Undefined","Both"], ans:1 },
+];
+
+let quizOrder = [];
+let quizIndex = 0;
+
+function shuffleQuiz() {
+  quizOrder = [...Array(quizBank.length).keys()].sort(() => Math.random()-0.5);
+  quizIndex = 0;
+}
+
+function loadQuiz() {
+  if(quizOrder.length === 0) shuffleQuiz();
+  if(quizIndex >= quizOrder.length) { quizIndex = 0; shuffleQuiz(); }
+
+  const q = quizBank[quizOrder[quizIndex]];
+  quizAnswered = false;
+  document.getElementById('quizQuestion').textContent = q.q;
+  document.getElementById('quizFeedback').textContent = '';
+  document.getElementById('quizFeedback').className = 'quiz-feedback';
+  document.getElementById('quizScore').textContent = `Score: ${quizScore}/${quizTotal}`;
+
+  const optDiv = document.getElementById('quizOptions');
+  optDiv.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'quiz-opt';
+    btn.textContent = opt;
+    btn.onclick = () => answerQuiz(i, q.ans, btn);
+    optDiv.appendChild(btn);
+  });
+}
+
+function answerQuiz(chosen, correct, btn) {
+  if(quizAnswered) return;
+  quizAnswered = true;
+  quizTotal++;
+
+  const fb = document.getElementById('quizFeedback');
+  const allOpts = document.querySelectorAll('.quiz-opt');
+
+  if(chosen === correct) {
+    btn.classList.add('correct');
+    fb.textContent = '✓ Correct! Well done.';
+    fb.className = 'quiz-feedback correct';
+    quizScore++;
+  } else {
+    btn.classList.add('wrong');
+    allOpts[correct].classList.add('correct');
+    const q = quizBank[quizOrder[quizIndex]];
+    fb.textContent = `✗ Incorrect. The answer is: ${q.opts[correct]}`;
+    fb.className = 'quiz-feedback wrong';
+  }
+  document.getElementById('quizScore').textContent = `Score: ${quizScore}/${quizTotal}`;
+}
+
+function nextQuiz() {
+  quizIndex++;
+  loadQuiz();
+}
+
+// ══════════════════════════════════════════════════
+//  KEYBOARD CONTROLS
+// ══════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  const tag = e.target.tagName.toLowerCase();
+  if(tag === 'input' || tag === 'textarea') return;
+
+  switch(e.key.toLowerCase()) {
+    case 'a':
+      document.getElementById('inputA').checked = !document.getElementById('inputA').checked;
+      updateGate();
+      break;
+    case 'b':
+      if(currentGate !== 'NOT') {
+        document.getElementById('inputB').checked = !document.getElementById('inputB').checked;
+        updateGate();
+      }
+      break;
+    case ' ':
+      e.preventDefault();
+      // Cycle through all input combinations
+      const a = document.getElementById('inputA').checked;
+      const b = document.getElementById('inputB').checked;
+      if(!a && !b) { document.getElementById('inputA').checked = false; document.getElementById('inputB').checked = true; }
+      else if(!a && b) { document.getElementById('inputA').checked = true; document.getElementById('inputB').checked = false; }
+      else if(a && !b) { document.getElementById('inputA').checked = true; document.getElementById('inputB').checked = true; }
+      else { document.getElementById('inputA').checked = false; document.getElementById('inputB').checked = false; }
+      updateGate();
+      break;
+    case '1': selectGate('AND'); break;
+    case '2': selectGate('OR'); break;
+    case '3': selectGate('NOT'); break;
+    case '4': selectGate('NAND'); break;
+    case '5': selectGate('NOR'); break;
+    case '6': selectGate('XOR'); break;
+    case '7': selectGate('XNOR'); break;
+  }
+});
+
+// ══════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════
+shuffleQuiz();
+selectGate('AND');
+loadQuiz();
+</script>
+</body>
+</html>
