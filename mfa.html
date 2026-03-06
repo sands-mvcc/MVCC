@@ -1,0 +1,2135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Understanding Multifactor Authentication (MFA)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg-dark: #050a0f;
+    --bg-panel: #0a1520;
+    --bg-card: #0d1e2e;
+    --border: #0e4d6e;
+    --accent-blue: #00c8ff;
+    --accent-green: #00ff88;
+    --accent-purple: #c800ff;
+    --accent-orange: #ff6b00;
+    --text-primary: #e0f4ff;
+    --text-dim: #5a8aa0;
+    --glow-blue: 0 0 12px rgba(0,200,255,0.6);
+    --glow-green: 0 0 12px rgba(0,255,136,0.6);
+    --glow-purple: 0 0 12px rgba(200,0,255,0.6);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: 
+      radial-gradient(ellipse at 20% 50%, rgba(0,200,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(200,0,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 60% 80%, rgba(0,255,136,0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* GRID LINES BACKGROUND */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* LAYOUT */
+  .app-wrapper {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background: rgba(10,21,32,0.95);
+    border-right: 1px solid var(--border);
+    padding: 0;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+  }
+
+  .sidebar-header {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,200,255,0.08) 0%, transparent 100%);
+  }
+
+  .sidebar-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent-blue);
+    text-shadow: var(--glow-blue);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .sidebar-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 0;
+    overflow-y: auto;
+  }
+
+  .nav-section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    padding: 12px 20px 4px;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 500;
+    color: #7aacbf;
+    position: relative;
+  }
+
+  .nav-item:hover {
+    background: rgba(0,200,255,0.05);
+    color: var(--accent-blue);
+    border-left-color: rgba(0,200,255,0.3);
+  }
+
+  .nav-item.active {
+    background: rgba(0,200,255,0.08);
+    color: var(--accent-blue);
+    border-left-color: var(--accent-blue);
+    text-shadow: var(--glow-blue);
+  }
+
+  .nav-icon { font-size: 16px; min-width: 20px; text-align: center; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: rgba(0,200,255,0.15);
+    border: 1px solid rgba(0,200,255,0.3);
+    color: var(--accent-blue);
+    font-size: 9px;
+    font-family: 'Share Tech Mono', monospace;
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .progress-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .progress-bar {
+    background: rgba(0,200,255,0.1);
+    border: 1px solid rgba(0,200,255,0.2);
+    border-radius: 2px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+    box-shadow: var(--glow-blue);
+  }
+
+  .progress-pct {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-blue);
+    margin-top: 6px;
+  }
+
+  /* MAIN CONTENT */
+  .main-content {
+    margin-left: 260px;
+    flex: 1;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: rgba(10,21,32,0.8);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-breadcrumb {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .topbar-breadcrumb span { color: var(--accent-blue); }
+
+  .topbar-actions { display: flex; gap: 10px; }
+
+  .btn-infographic {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid var(--accent-green);
+    color: var(--accent-green);
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-infographic::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: rgba(0,255,136,0.1);
+    transition: left 0.3s ease;
+  }
+
+  .btn-infographic:hover::before { left: 0; }
+  .btn-infographic:hover { box-shadow: var(--glow-green); }
+
+  /* SECTION PANELS */
+  .section-panel {
+    display: none;
+    padding: 40px;
+    animation: fadeSlideIn 0.4s ease;
+  }
+
+  .section-panel.active { display: block; }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* SECTION HEADER */
+  .section-header {
+    margin-bottom: 36px;
+  }
+
+  .section-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-tag::after {
+    content: '';
+    flex: 1;
+    max-width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent-blue), transparent);
+  }
+
+  .section-heading {
+    font-family: 'Orbitron', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    text-shadow: 0 0 30px rgba(0,200,255,0.2);
+  }
+
+  .section-heading .hl { color: var(--accent-blue); }
+
+  .section-subheading {
+    font-size: 15px;
+    color: #7aacbf;
+    margin-top: 8px;
+    font-weight: 400;
+    max-width: 700px;
+    line-height: 1.6;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .card.blue::before { background: linear-gradient(90deg, var(--accent-blue), transparent); }
+  .card.green::before { background: linear-gradient(90deg, var(--accent-green), transparent); }
+  .card.purple::before { background: linear-gradient(90deg, var(--accent-purple), transparent); }
+  .card.orange::before { background: linear-gradient(90deg, var(--accent-orange), transparent); }
+
+  .card:hover {
+    border-color: rgba(0,200,255,0.4);
+    transform: translateY(-2px);
+  }
+
+  .card-icon {
+    font-size: 28px;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .card-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .card.green .card-title { color: var(--accent-green); }
+  .card.purple .card-title { color: var(--accent-purple); }
+  .card.orange .card-title { color: var(--accent-orange); }
+
+  .card-body {
+    font-size: 14px;
+    color: #9bbfcf;
+    line-height: 1.7;
+  }
+
+  /* GRIDS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+
+  /* FACTOR CARDS (big interactive) */
+  .factor-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .factor-card-header {
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .factor-card.knowledge .factor-card-header { background: linear-gradient(135deg, rgba(0,200,255,0.12) 0%, transparent 100%); border-bottom: 1px solid rgba(0,200,255,0.2); }
+  .factor-card.possession .factor-card-header { background: linear-gradient(135deg, rgba(200,0,255,0.12) 0%, transparent 100%); border-bottom: 1px solid rgba(200,0,255,0.2); }
+  .factor-card.inherence .factor-card-header { background: linear-gradient(135deg, rgba(0,255,136,0.12) 0%, transparent 100%); border-bottom: 1px solid rgba(0,255,136,0.2); }
+
+  .factor-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    border: 2px solid;
+  }
+
+  .factor-card.knowledge .factor-icon { border-color: var(--accent-blue); background: rgba(0,200,255,0.1); box-shadow: var(--glow-blue); }
+  .factor-card.possession .factor-icon { border-color: var(--accent-purple); background: rgba(200,0,255,0.1); box-shadow: var(--glow-purple); }
+  .factor-card.inherence .factor-icon { border-color: var(--accent-green); background: rgba(0,255,136,0.1); box-shadow: var(--glow-green); }
+
+  .factor-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    opacity: 0.7;
+    margin-bottom: 2px;
+  }
+
+  .factor-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .factor-card.knowledge .factor-name { color: var(--accent-blue); }
+  .factor-card.possession .factor-name { color: var(--accent-purple); }
+  .factor-card.inherence .factor-name { color: var(--accent-green); }
+
+  .factor-expand-btn {
+    margin-left: auto;
+    font-size: 20px;
+    opacity: 0.5;
+    transition: transform 0.3s ease, opacity 0.3s;
+  }
+
+  .factor-card.open .factor-expand-btn { transform: rotate(180deg); opacity: 1; }
+
+  .factor-body {
+    padding: 0 24px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s ease;
+  }
+
+  .factor-card.open .factor-body {
+    max-height: 600px;
+    padding: 20px 24px;
+  }
+
+  .examples-list {
+    list-style: none;
+    margin-bottom: 16px;
+  }
+
+  .examples-list li {
+    padding: 6px 0;
+    font-size: 13px;
+    color: #9bbfcf;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .examples-list li::before {
+    content: '▶';
+    font-size: 8px;
+    opacity: 0.5;
+  }
+
+  .vuln-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .vuln-tag {
+    background: rgba(255,80,80,0.1);
+    border: 1px solid rgba(255,80,80,0.3);
+    color: #ff8080;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+
+  .pro-tag {
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    color: var(--accent-green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+
+  /* MECHANISM TABLE */
+  .mech-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .mech-table th {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,200,255,0.05);
+  }
+
+  .mech-table td {
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #9bbfcf;
+    border-bottom: 1px solid rgba(14,77,110,0.5);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .mech-table tr:last-child td { border-bottom: none; }
+
+  .mech-table tr:hover td { background: rgba(0,200,255,0.03); }
+
+  .mech-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  /* QUIZ */
+  .quiz-container { max-width: 760px; }
+
+  .quiz-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .quiz-counter {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .quiz-score {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    color: var(--accent-green);
+    font-weight: 700;
+  }
+
+  .quiz-question-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .quiz-question-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-blue);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+
+  .quiz-question-text {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+
+  .quiz-option {
+    padding: 13px 18px;
+    background: rgba(0,200,255,0.04);
+    border: 1px solid rgba(14,77,110,0.8);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #9bbfcf;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+  }
+
+  .quiz-option:hover:not(.disabled) {
+    border-color: var(--accent-blue);
+    color: var(--text-primary);
+    background: rgba(0,200,255,0.08);
+  }
+
+  .quiz-option.correct {
+    border-color: var(--accent-green);
+    background: rgba(0,255,136,0.1);
+    color: var(--accent-green);
+  }
+
+  .quiz-option.wrong {
+    border-color: #ff4444;
+    background: rgba(255,68,68,0.1);
+    color: #ff8888;
+  }
+
+  .quiz-option.disabled { cursor: default; }
+
+  .option-letter {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .quiz-feedback {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 3px;
+    font-size: 13px;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); color: #80ffb8; }
+  .quiz-feedback.wrong { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3); color: #ffaaaa; }
+
+  .btn-next {
+    margin-top: 20px;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 12px 32px;
+    background: transparent;
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    display: none;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+  }
+
+  .btn-next:hover { background: rgba(0,200,255,0.1); box-shadow: var(--glow-blue); }
+  .btn-next.show { display: inline-block; }
+
+  .quiz-complete {
+    text-align: center;
+    padding: 50px 20px;
+    display: none;
+  }
+
+  .quiz-complete.show { display: block; }
+
+  .quiz-complete-score {
+    font-family: 'Orbitron', monospace;
+    font-size: 64px;
+    font-weight: 900;
+    color: var(--accent-green);
+    text-shadow: var(--glow-green);
+    margin-bottom: 8px;
+  }
+
+  .quiz-complete-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .btn-restart {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 12px 32px;
+    background: rgba(0,255,136,0.1);
+    border: 1px solid var(--accent-green);
+    color: var(--accent-green);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-restart:hover { box-shadow: var(--glow-green); }
+
+  /* SCENARIO SIMULATOR */
+  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+
+  .scenario-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .scenario-card:hover { border-color: rgba(0,200,255,0.4); }
+  .scenario-card.selected { border-color: var(--accent-blue); background: rgba(0,200,255,0.06); }
+
+  .scenario-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    color: var(--accent-blue);
+    margin-bottom: 8px;
+  }
+
+  .scenario-desc { font-size: 13px; color: #7aacbf; line-height: 1.6; }
+
+  .threat-meter {
+    margin-top: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+  }
+
+  .meter-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .threat-bars { display: flex; flex-direction: column; gap: 10px; }
+
+  .threat-row { display: flex; align-items: center; gap: 12px; }
+
+  .threat-name {
+    font-size: 12px;
+    color: #7aacbf;
+    width: 140px;
+    flex-shrink: 0;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .threat-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: rgba(0,200,255,0.08);
+    border: 1px solid rgba(14,77,110,0.8);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .threat-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+
+  .threat-val {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    width: 36px;
+    text-align: right;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal-box {
+    background: var(--bg-panel);
+    border: 1px solid var(--accent-blue);
+    border-radius: 4px;
+    max-width: 560px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 0 60px rgba(0,200,255,0.2);
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+    padding: 0;
+  }
+
+  .modal-overlay.open .modal-box { transform: scale(1); }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,200,255,0.05);
+  }
+
+  .modal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    color: var(--accent-blue);
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .modal-close {
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    transition: color 0.2s;
+    line-height: 1;
+  }
+
+  .modal-close:hover { color: var(--text-primary); }
+
+  .modal-body { padding: 24px; }
+
+  .modal-body img { width: 100%; border-radius: 3px; border: 1px solid var(--border); }
+
+  /* GLOSSARY */
+  .glossary-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .glossary-term {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    letter-spacing: 1px;
+    min-width: 160px;
+    padding-top: 2px;
+    text-transform: uppercase;
+  }
+
+  .glossary-def { font-size: 13px; color: #9bbfcf; line-height: 1.6; }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 28px 0;
+  }
+
+  .sub-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+    margin-top: 24px;
+    letter-spacing: 1px;
+  }
+
+  .info-box {
+    background: rgba(0,200,255,0.05);
+    border: 1px solid rgba(0,200,255,0.2);
+    border-left: 3px solid var(--accent-blue);
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: #9bbfcf;
+    line-height: 1.7;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .warn-box {
+    background: rgba(255,100,0,0.05);
+    border: 1px solid rgba(255,100,0,0.2);
+    border-left: 3px solid var(--accent-orange);
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: #d4a88a;
+    line-height: 1.7;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+  .tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+
+  .tag-blue { background: rgba(0,200,255,0.1); border: 1px solid rgba(0,200,255,0.3); color: var(--accent-blue); }
+  .tag-green { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: var(--accent-green); }
+  .tag-purple { background: rgba(200,0,255,0.1); border: 1px solid rgba(200,0,255,0.3); color: var(--accent-purple); }
+  .tag-red { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.3); color: #ff8888; }
+
+  /* COMPARE TABLE */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+  }
+
+  .compare-table th {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .compare-table th:nth-child(1) { color: var(--text-dim); }
+  .compare-table th:nth-child(2) { color: var(--accent-blue); }
+  .compare-table th:nth-child(3) { color: var(--accent-purple); }
+  .compare-table th:nth-child(4) { color: var(--accent-green); }
+
+  .compare-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #9bbfcf;
+    border-bottom: 1px solid rgba(14,77,110,0.4);
+    vertical-align: top;
+  }
+
+  .compare-table td:first-child {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-260px); }
+    .main-content { margin-left: 0; }
+    .grid-2, .grid-3, .scenario-grid { grid-template-columns: 1fr; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+
+  /* HERO */
+  .hero-banner {
+    background: linear-gradient(135deg, rgba(0,200,255,0.06) 0%, rgba(200,0,255,0.04) 50%, rgba(0,255,136,0.04) 100%);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 32px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-banner::before {
+    content: 'MFA';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 100px;
+    font-weight: 900;
+    color: rgba(0,200,255,0.04);
+    letter-spacing: 10px;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hero-subtitle { font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 4px; color: var(--accent-blue); margin-bottom: 10px; }
+  .hero-title { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+  .hero-desc { font-size: 14px; color: #7aacbf; line-height: 1.7; max-width: 600px; }
+
+  .obj-list { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .obj-item {
+    background: rgba(0,200,255,0.06);
+    border: 1px solid rgba(0,200,255,0.2);
+    padding: 7px 14px;
+    font-size: 12px;
+    color: #7aacbf;
+    border-radius: 2px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .obj-item::before { content: '✓'; color: var(--accent-green); font-weight: 700; }
+
+  /* DRAG DROP */
+  .drag-zone {
+    background: var(--bg-card);
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    min-height: 80px;
+    padding: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+    align-content: flex-start;
+    transition: border-color 0.2s;
+  }
+
+  .drag-zone.over { border-color: var(--accent-blue); background: rgba(0,200,255,0.04); }
+
+  .drag-chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .drag-chip:active { cursor: grabbing; opacity: 0.7; }
+  .drag-chip.k { background: rgba(0,200,255,0.12); border: 1px solid rgba(0,200,255,0.4); color: var(--accent-blue); }
+  .drag-chip.p { background: rgba(200,0,255,0.12); border: 1px solid rgba(200,0,255,0.4); color: var(--accent-purple); }
+  .drag-chip.i { background: rgba(0,255,136,0.12); border: 1px solid rgba(0,255,136,0.4); color: var(--accent-green); }
+  .drag-chip.mixed { background: rgba(255,107,0,0.12); border: 1px solid rgba(255,107,0,0.4); color: var(--accent-orange); }
+
+  .drop-area {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    min-height: 90px;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+
+  .drop-area-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .drop-area.k-zone .drop-area-label { color: var(--accent-blue); }
+  .drop-area.p-zone .drop-area-label { color: var(--accent-purple); }
+  .drop-area.i-zone .drop-area-label { color: var(--accent-green); }
+
+  .drop-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 38px;
+    border: 1px dashed;
+    padding: 8px;
+    border-radius: 3px;
+    align-items: flex-start;
+    align-content: flex-start;
+  }
+
+  .drop-area.k-zone .drop-inner { border-color: rgba(0,200,255,0.2); }
+  .drop-area.p-zone .drop-inner { border-color: rgba(200,0,255,0.2); }
+  .drop-area.i-zone .drop-inner { border-color: rgba(0,255,136,0.2); }
+  .drop-area.over .drop-inner { background: rgba(0,200,255,0.04); }
+
+  .drop-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+    padding: 4px 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .sort-btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 10px 24px;
+    background: transparent;
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 16px;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+
+  .sort-btn:hover { background: rgba(0,200,255,0.1); box-shadow: var(--glow-blue); }
+
+  .sort-result {
+    margin-top: 12px;
+    font-size: 13px;
+    font-family: 'Share Tech Mono', monospace;
+    padding: 10px 14px;
+    border-radius: 3px;
+    display: none;
+  }
+
+  .sort-result.show { display: block; }
+  .sort-result.ok { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); color: var(--accent-green); }
+  .sort-result.err { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3); color: #ff8888; }
+
+  /* PULSING DOT */
+  .pulse-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(0,255,136,0.5);
+    animation: pulse-anim 2s infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  @keyframes pulse-anim {
+    0% { box-shadow: 0 0 0 0 rgba(0,255,136,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(0,255,136,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,255,136,0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">CYBERSEC EDU</div>
+      <div class="sidebar-title">Multifactor Authentication</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section-label">// MODULES</div>
+      <div class="nav-item active" onclick="showSection('intro')">
+        <span class="nav-icon">🏠</span> Introduction
+      </div>
+      <div class="nav-item" onclick="showSection('factors')">
+        <span class="nav-icon">🔑</span> The 3 Core Factors
+      </div>
+      <div class="nav-item" onclick="showSection('advanced')">
+        <span class="nav-icon">🌐</span> Advanced Factors
+      </div>
+      <div class="nav-item" onclick="showSection('mechanisms')">
+        <span class="nav-icon">⚙️</span> Technical Mechanisms
+      </div>
+      <div class="nav-item" onclick="showSection('compare')">
+        <span class="nav-icon">📊</span> MFA vs 2-Step
+      </div>
+      <div class="nav-item" onclick="showSection('sorter')">
+        <span class="nav-icon">🧩</span> Factor Sorter
+        <span class="nav-badge">ACTIVITY</span>
+      </div>
+      <div class="nav-item" onclick="showSection('scenarios')">
+        <span class="nav-icon">🛡️</span> Attack Scenarios
+        <span class="nav-badge">ACTIVITY</span>
+      </div>
+      <div class="nav-section-label">// REVIEW</div>
+      <div class="nav-item" onclick="showSection('glossary')">
+        <span class="nav-icon">📖</span> Key Terms
+      </div>
+      <div class="nav-item" onclick="showSection('quiz')">
+        <span class="nav-icon">🎯</span> Knowledge Check
+        <span class="nav-badge">QUIZ</span>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="progress-label">// PROGRESS</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:10%"></div>
+      </div>
+      <div class="progress-pct" id="progressPct">10%</div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-breadcrumb">CYBERSEC EDU &nbsp;›&nbsp; <span id="breadcrumbText">INTRODUCTION</span></div>
+      <div class="topbar-actions">
+        <button class="btn-infographic" onclick="openModal()">📷 VIEW INFOGRAPHIC</button>
+      </div>
+    </div>
+
+    <!-- ==================== INTRO ==================== -->
+    <div class="section-panel active" id="section-intro">
+      <div class="section-header">
+        <div class="section-tag">MODULE 01</div>
+        <h1 class="section-heading">Understanding <span class="hl">MFA</span></h1>
+        <p class="section-subheading">Multifactor Authentication is a cornerstone of modern identity security. This lesson covers how it works, why it matters, and how to implement it effectively.</p>
+      </div>
+
+      <div class="hero-banner">
+        <div class="hero-subtitle">// LEARNING OBJECTIVE</div>
+        <div class="hero-title">Define, Design & Defend with MFA</div>
+        <div class="hero-desc">By the end of this lesson, you will be able to define the core authentication factors, explain their mechanisms and vulnerabilities, and design robust identity management solutions using MFA.</div>
+        <div class="obj-list">
+          <div class="obj-item">Identify the 3 core factors</div>
+          <div class="obj-item">Explain technical mechanisms</div>
+          <div class="obj-item">Distinguish MFA from 2-Step</div>
+          <div class="obj-item">Analyze threat vectors</div>
+          <div class="obj-item">Apply adaptive MFA concepts</div>
+        </div>
+      </div>
+
+      <div class="sub-label">WHAT IS MFA?</div>
+      <div class="info-box">
+        <strong style="color:var(--accent-blue)">Multifactor Authentication (MFA)</strong> is a security system that requires <strong>two or more distinct authentication factors</strong> from different categories to verify a user's identity before granting access to a resource. Its primary purpose is to add layered defense — even if one credential is compromised, an attacker must overcome additional, independent obstacles.
+      </div>
+
+      <div class="sub-label">THE AAA FRAMEWORK</div>
+      <div class="grid-3" style="margin-top:14px;">
+        <div class="card blue">
+          <div class="card-icon">🔐</div>
+          <div class="card-title">Authentication</div>
+          <div class="card-body"><strong style="color:var(--accent-blue)">WHO are you?</strong><br>Verifying identity before granting access. MFA lives here. This is the first gate.</div>
+        </div>
+        <div class="card" style="--accent:var(--accent-green)">
+          <div class="card-icon">🎫</div>
+          <div class="card-title" style="color:#aaa">Authorization</div>
+          <div class="card-body"><strong style="color:#bbb">WHAT can you do?</strong><br>Determines permissions and access rights after identity is confirmed.</div>
+        </div>
+        <div class="card" style="">
+          <div class="card-icon">📋</div>
+          <div class="card-title" style="color:#aaa">Accounting</div>
+          <div class="card-body"><strong style="color:#bbb">WHAT did you do?</strong><br>Logs and tracks user activity for audit trails and forensics.</div>
+        </div>
+      </div>
+
+      <div class="warn-box" style="margin-top:24px;">
+        <strong style="color:var(--accent-orange)">⚡ Why passwords alone aren't enough:</strong> In 2023, over 80% of data breaches involved compromised credentials. A stolen password provides zero resistance if no second factor is required. MFA is the single most effective control against credential-based attacks.
+      </div>
+
+      <button class="btn-next show" style="display:inline-block" onclick="showSection('factors')">NEXT: THE 3 CORE FACTORS →</button>
+    </div>
+
+    <!-- ==================== FACTORS ==================== -->
+    <div class="section-panel" id="section-factors">
+      <div class="section-header">
+        <div class="section-tag">MODULE 02</div>
+        <h1 class="section-heading">The <span class="hl">3 Core</span> Factors</h1>
+        <p class="section-subheading">True MFA must combine factors from at least two distinct categories. Click each factor to explore its examples, strengths, and vulnerabilities.</p>
+      </div>
+
+      <div class="info-box">
+        <span class="pulse-dot"></span>
+        <strong style="color:var(--accent-blue)">Interactive:</strong> Click any factor card below to expand its full details.
+      </div>
+
+      <!-- Knowledge Factor -->
+      <div class="factor-card knowledge" onclick="toggleFactor(this)" style="margin-bottom:12px;">
+        <div class="factor-card-header">
+          <div class="factor-icon">🧠</div>
+          <div>
+            <div class="factor-label">FACTOR 01 — KNOWLEDGE</div>
+            <div class="factor-name">Something You KNOW</div>
+          </div>
+          <div class="factor-expand-btn">▼</div>
+        </div>
+        <div class="factor-body">
+          <div class="sub-label" style="margin-top:0;">Examples</div>
+          <ul class="examples-list">
+            <li>Passwords and passphrases (e.g., "MyD0g$Name!sRex")</li>
+            <li>Personal Identification Numbers (PINs)</li>
+            <li>Security question answers (e.g., "Mother's maiden name")</li>
+            <li>Pattern locks (on mobile devices)</li>
+          </ul>
+          <div class="sub-label">Strengths</div>
+          <div class="tag-row">
+            <span class="tag tag-green">Easy to deploy</span>
+            <span class="tag tag-green">No hardware needed</span>
+            <span class="tag tag-green">Familiar to users</span>
+          </div>
+          <div class="sub-label">Vulnerabilities</div>
+          <div class="vuln-tags">
+            <span class="vuln-tag">PHISHING</span>
+            <span class="vuln-tag">BRUTE FORCE</span>
+            <span class="vuln-tag">CREDENTIAL STUFFING</span>
+            <span class="vuln-tag">KEYLOGGERS</span>
+            <span class="vuln-tag">SHOULDER SURFING</span>
+            <span class="vuln-tag">DATA BREACHES</span>
+          </div>
+          <div class="info-box" style="margin-top:16px;">
+            <strong style="color:var(--accent-blue)">Real-World Context:</strong> The 2024 RockYou2024 data dump contained <strong>10 billion plaintext passwords</strong>. Knowledge-only authentication is effectively broken at scale — pairing with a second factor is essential.
+          </div>
+        </div>
+      </div>
+
+      <!-- Possession Factor -->
+      <div class="factor-card possession" onclick="toggleFactor(this)" style="margin-bottom:12px;">
+        <div class="factor-card-header">
+          <div class="factor-icon">📱</div>
+          <div>
+            <div class="factor-label">FACTOR 02 — POSSESSION</div>
+            <div class="factor-name">Something You HAVE</div>
+          </div>
+          <div class="factor-expand-btn">▼</div>
+        </div>
+        <div class="factor-body">
+          <div class="sub-label" style="margin-top:0;">Examples</div>
+          <ul class="examples-list">
+            <li>Hardware tokens (e.g., YubiKey, RSA SecurID)</li>
+            <li>Authenticator apps generating TOTP (Google Authenticator, Authy)</li>
+            <li>Smart cards with embedded certificates (CAC, PIV)</li>
+            <li>Mobile device receiving SMS or Push notifications</li>
+            <li>One-Time Password (OTP) via email</li>
+          </ul>
+          <div class="sub-label">Strengths</div>
+          <div class="tag-row">
+            <span class="tag tag-green">Hard to replicate remotely</span>
+            <span class="tag tag-green">Requires physical access</span>
+            <span class="tag tag-green">Out-of-band delivery</span>
+          </div>
+          <div class="sub-label">Vulnerabilities</div>
+          <div class="vuln-tags">
+            <span class="vuln-tag">PHYSICAL THEFT</span>
+            <span class="vuln-tag">SIM SWAPPING (SMS)</span>
+            <span class="vuln-tag">MFA FATIGUE</span>
+            <span class="vuln-tag">REAL-TIME PHISHING</span>
+            <span class="vuln-tag">DEVICE LOSS</span>
+          </div>
+          <div class="warn-box" style="margin-top:16px;">
+            <strong style="color:var(--accent-orange)">⚡ MFA Fatigue Attack:</strong> Attackers spam an authenticated user with push notification requests, hoping they'll approve out of frustration or confusion. Mitigate with number-matching in push apps.
+          </div>
+        </div>
+      </div>
+
+      <!-- Inherence Factor -->
+      <div class="factor-card inherence" onclick="toggleFactor(this)" style="margin-bottom:12px;">
+        <div class="factor-card-header">
+          <div class="factor-icon">👁️</div>
+          <div>
+            <div class="factor-label">FACTOR 03 — INHERENCE</div>
+            <div class="factor-name">Something You ARE</div>
+          </div>
+          <div class="factor-expand-btn">▼</div>
+        </div>
+        <div class="factor-body">
+          <div class="sub-label" style="margin-top:0;">Examples</div>
+          <ul class="examples-list">
+            <li>Fingerprint scan (capacitive or optical sensors)</li>
+            <li>Facial recognition (2D photo or 3D depth map)</li>
+            <li>Iris / retina scan (high-assurance environments)</li>
+            <li>Voice authentication (voiceprint analysis)</li>
+            <li>Palm vein recognition</li>
+          </ul>
+          <div class="sub-label">Strengths</div>
+          <div class="tag-row">
+            <span class="tag tag-green">Extremely convenient</span>
+            <span class="tag tag-green">Always with the user</span>
+            <span class="tag tag-green">Hard to steal without presence</span>
+          </div>
+          <div class="sub-label">Vulnerabilities</div>
+          <div class="vuln-tags">
+            <span class="vuln-tag">IRREVERSIBLE IF COMPROMISED</span>
+            <span class="vuln-tag">SPOOFING (DEEPFAKE/REPLICA)</span>
+            <span class="vuln-tag">BIOMETRIC DB BREACH</span>
+            <span class="vuln-tag">PRIVACY CONCERNS</span>
+          </div>
+          <div class="warn-box" style="margin-top:16px;">
+            <strong style="color:var(--accent-orange)">⚡ Critical Difference:</strong> If your password is stolen, you change it. If your fingerprint data is stolen, <strong>you cannot change your fingerprint</strong>. This irreversibility is the most serious inherence vulnerability.
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-next show" onclick="showSection('advanced')">NEXT: ADVANCED FACTORS →</button>
+    </div>
+
+    <!-- ==================== ADVANCED ==================== -->
+    <div class="section-panel" id="section-advanced">
+      <div class="section-header">
+        <div class="section-tag">MODULE 03</div>
+        <h1 class="section-heading">Advanced & <span class="hl">Emerging</span> Factors</h1>
+        <p class="section-subheading">Modern authentication systems use passive, contextual signals to make continuous risk-based decisions beyond the three core factors.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card blue">
+          <div class="card-icon">📍</div>
+          <div class="card-title">Location Factor</div>
+          <div class="card-body">
+            <strong style="color:var(--text-primary)">Somewhere You Are</strong><br><br>
+            Verifies access based on the user's physical or network location.<br><br>
+            <strong>Examples:</strong>
+            <ul class="examples-list" style="margin-top:8px;">
+              <li>GPS coordinates from mobile device</li>
+              <li>Corporate office IP address range</li>
+              <li>Geo-velocity detection (impossible travel)</li>
+              <li>Country-based allow/deny policies</li>
+            </ul>
+            <div class="info-box" style="margin-top:12px; font-size:12px;">
+              <strong style="color:var(--accent-blue)">Geo-velocity example:</strong> A user logs in from Chicago at 8:00 AM, then attempts login from London at 8:30 AM — physically impossible, so the system flags it as suspicious.
+            </div>
+          </div>
+        </div>
+
+        <div class="card purple">
+          <div class="card-icon">🎭</div>
+          <div class="card-title">Behavioral Factor</div>
+          <div class="card-body">
+            <strong style="color:var(--text-primary)">Something You Do</strong><br><br>
+            Analyzes the unique way a user interacts with their device — continuously, not just at login.<br><br>
+            <strong>Examples:</strong>
+            <ul class="examples-list" style="margin-top:8px;">
+              <li>Keystroke dynamics (typing rhythm & speed)</li>
+              <li>Mouse movement patterns</li>
+              <li>Touchscreen swipe pressure & angle</li>
+              <li>Walking gait (wearable sensors)</li>
+            </ul>
+            <div class="info-box" style="margin-top:12px; font-size:12px;">
+              <strong style="color:var(--accent-blue)">Continuous Auth:</strong> Behavioral factors enable <em>continuous authentication</em> — instead of verifying identity once at login, the system constantly confirms the right person is still at the keyboard.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-label" style="margin-top:28px;">ADAPTIVE / RISK-BASED MFA</div>
+      <div class="card green" style="margin-top:14px;">
+        <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+          <div style="flex:1; min-width:260px;">
+            <div class="card-title">Adaptive MFA Engine</div>
+            <div class="card-body">
+              <strong style="color:var(--text-primary)">Risk-Based Authentication</strong> dynamically adjusts the number and type of factors required based on the perceived risk of each login attempt.<br><br>
+              When risk is <strong style="color:var(--accent-green)">LOW</strong> (known device, normal location, typical hours) → fewer factors required.<br><br>
+              When risk is <strong style="color:#ff8080">HIGH</strong> (new device, foreign IP, unusual time, velocity anomaly) → additional factors triggered.
+            </div>
+          </div>
+          <div style="flex:1; min-width:260px;">
+            <div style="font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text-dim); letter-spacing:2px; margin-bottom:12px;">// RISK SIGNALS EVALUATED</div>
+            <div class="tag-row">
+              <span class="tag tag-blue">NEW DEVICE</span>
+              <span class="tag tag-blue">UNKNOWN IP</span>
+              <span class="tag tag-red">FOREIGN COUNTRY</span>
+              <span class="tag tag-red">ODD LOGIN TIME</span>
+              <span class="tag tag-red">VELOCITY ANOMALY</span>
+              <span class="tag tag-blue">ADMIN ACTION</span>
+              <span class="tag tag-blue">PRIVILEGE ESCALATION</span>
+              <span class="tag tag-green">TRUSTED DEVICE</span>
+              <span class="tag tag-green">CORPORATE NETWORK</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-next show" style="margin-top:24px;" onclick="showSection('mechanisms')">NEXT: TECHNICAL MECHANISMS →</button>
+    </div>
+
+    <!-- ==================== MECHANISMS ==================== -->
+    <div class="section-panel" id="section-mechanisms">
+      <div class="section-header">
+        <div class="section-tag">MODULE 04</div>
+        <h1 class="section-heading">Technical <span class="hl">Mechanisms</span></h1>
+        <p class="section-subheading">Understanding the delivery and verification mechanics of each MFA method is essential for secure implementation decisions.</p>
+      </div>
+
+      <div class="card blue" style="margin-bottom:20px;">
+        <table class="mech-table">
+          <thead>
+            <tr>
+              <th>MECHANISM</th>
+              <th>HOW IT WORKS</th>
+              <th>FACTOR TYPE</th>
+              <th>SECURITY LEVEL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="mech-name">OTP</div></td>
+              <td>A temporary code valid for <strong>one login session only</strong>. Generated server-side and delivered via SMS, email, or voice call.</td>
+              <td><span class="tag tag-purple">POSSESSION</span></td>
+              <td><span style="color:#ff8">MODERATE</span></td>
+            </tr>
+            <tr>
+              <td><div class="mech-name">TOTP</div></td>
+              <td>Time-Based OTP using HMAC algorithm. Code refreshes every <strong>30–60 seconds</strong>. Both server and app share a secret key. Offline capable.</td>
+              <td><span class="tag tag-purple">POSSESSION</span></td>
+              <td><span style="color:var(--accent-green)">HIGH</span></td>
+            </tr>
+            <tr>
+              <td><div class="mech-name">PUSH NOTIFY</div></td>
+              <td>An <strong>out-of-band message</strong> sent to a trusted mobile app asking the user to approve a login. User taps Approve or Deny. Simple but vulnerable to fatigue attacks.</td>
+              <td><span class="tag tag-purple">POSSESSION</span></td>
+              <td><span style="color:#ff8">MODERATE</span></td>
+            </tr>
+            <tr>
+              <td><div class="mech-name">FIDO2 / WebAuthn</div></td>
+              <td>Open standard using <strong>public-key cryptography</strong>. Private key never leaves the device. Biometric or PIN unlocks the local key. <strong>Phishing-resistant by design</strong> — server never sees a password.</td>
+              <td><span class="tag tag-green">INHERENCE + POSSESSION</span></td>
+              <td><span style="color:var(--accent-green)">VERY HIGH</span></td>
+            </tr>
+            <tr>
+              <td><div class="mech-name">SMS OTP</div></td>
+              <td>Code delivered via text message to the user's phone number. Convenient but subject to SIM swapping, SS7 protocol attacks, and interception.</td>
+              <td><span class="tag tag-purple">POSSESSION</span></td>
+              <td><span style="color:#f80">LOW–MOD</span></td>
+            </tr>
+            <tr>
+              <td><div class="mech-name">SMART CARD / PKI</div></td>
+              <td>Physical card with embedded chip containing <strong>X.509 digital certificate</strong>. User inserts card and enters PIN. Government and enterprise use (CAC, PIV).</td>
+              <td><span class="tag tag-blue">KNOWLEDGE + POSSESSION</span></td>
+              <td><span style="color:var(--accent-green)">VERY HIGH</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub-label">THE TOTP ALGORITHM (HOW IT WORKS)</div>
+      <div class="grid-2" style="margin-top:14px;">
+        <div class="card blue">
+          <div class="card-title">TOTP Process Flow</div>
+          <div class="card-body" style="font-family:'Share Tech Mono',monospace; font-size:12px; line-height:2;">
+            <span style="color:var(--text-dim)">01.</span> Server &amp; app share a <span style="color:var(--accent-blue)">secret key</span> (provisioned via QR code)<br>
+            <span style="color:var(--text-dim)">02.</span> Both compute: <span style="color:var(--accent-green)">HOTP(key, floor(time/30))</span><br>
+            <span style="color:var(--text-dim)">03.</span> Result is a <span style="color:var(--accent-blue)">6-digit code</span><br>
+            <span style="color:var(--text-dim)">04.</span> Code valid for <span style="color:var(--accent-green)">30–60 seconds</span><br>
+            <span style="color:var(--text-dim)">05.</span> User enters code → server validates
+          </div>
+        </div>
+        <div class="card purple">
+          <div class="card-title">FIDO2 / Passkey Flow</div>
+          <div class="card-body" style="font-family:'Share Tech Mono',monospace; font-size:12px; line-height:2;">
+            <span style="color:var(--text-dim)">01.</span> Server sends <span style="color:var(--accent-purple)">challenge</span> to browser<br>
+            <span style="color:var(--text-dim)">02.</span> Device prompts for <span style="color:var(--accent-purple)">biometric/PIN</span><br>
+            <span style="color:var(--text-dim)">03.</span> Private key signs the challenge<br>
+            <span style="color:var(--text-dim)">04.</span> Server verifies with <span style="color:var(--accent-green)">public key</span><br>
+            <span style="color:var(--text-dim)">05.</span> No password ever transmitted ✓
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-next show" style="margin-top:24px;" onclick="showSection('compare')">NEXT: MFA vs 2-STEP →</button>
+    </div>
+
+    <!-- ==================== COMPARE ==================== -->
+    <div class="section-panel" id="section-compare">
+      <div class="section-header">
+        <div class="section-tag">MODULE 05</div>
+        <h1 class="section-heading">MFA vs <span class="hl">Two-Step</span> Verification</h1>
+        <p class="section-subheading">These terms are often used interchangeably — incorrectly. The distinction is critical in security design.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card blue">
+          <div class="card-title">✅ True MFA</div>
+          <div class="card-body">
+            Uses factors from <strong style="color:var(--accent-blue)">two or more DIFFERENT categories</strong>.<br><br>
+            <strong>Example combinations:</strong>
+            <ul class="examples-list" style="margin-top:10px;">
+              <li>Password (Knowledge) + Fingerprint (Inherence)</li>
+              <li>PIN (Knowledge) + YubiKey (Possession)</li>
+              <li>Password + Authenticator App + Face ID</li>
+            </ul>
+            <div class="tag-row" style="margin-top:12px;">
+              <span class="tag tag-green">STRONGER ASSURANCE</span>
+              <span class="tag tag-green">CROSS-CATEGORY</span>
+            </div>
+          </div>
+        </div>
+        <div class="card orange">
+          <div class="card-title">⚠️ Two-Step Verification</div>
+          <div class="card-body">
+            Uses two steps from the <strong style="color:var(--accent-orange)">SAME category</strong>.<br><br>
+            <strong>Examples (NOT true MFA):</strong>
+            <ul class="examples-list" style="margin-top:10px;">
+              <li>Password + Security Question (both Knowledge)</li>
+              <li>Password + Recovery Email Password (both Knowledge)</li>
+            </ul>
+            <div class="warn-box" style="margin-top:12px; margin-bottom:0;">
+              If an attacker knows your password, they may also know or crack security questions from the same data source.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-label" style="margin-top:28px;">FACTOR COMPARISON TABLE</div>
+      <div class="card blue" style="margin-top:14px; padding:0; overflow:auto;">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>ATTRIBUTE</th>
+              <th>🧠 KNOWLEDGE</th>
+              <th>📱 POSSESSION</th>
+              <th>👁️ INHERENCE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>REVOCABLE</td><td style="color:var(--accent-green)">Yes (change password)</td><td style="color:var(--accent-green)">Yes (replace device)</td><td style="color:#ff8888">No (can't change biometrics)</td></tr>
+            <tr><td>REMOTE THEFT</td><td style="color:#ff8888">High risk</td><td style="color:var(--accent-green)">Low risk</td><td style="color:var(--accent-green)">Very low risk</td></tr>
+            <tr><td>USER FRICTION</td><td style="color:var(--accent-green)">Low</td><td style="color:#ff8">Moderate</td><td style="color:var(--accent-green)">Very low</td></tr>
+            <tr><td>OFFLINE CAPABLE</td><td style="color:var(--accent-green)">Yes</td><td style="color:#ff8">Sometimes (TOTP yes, SMS no)</td><td style="color:var(--accent-green)">Yes (local biometric)</td></tr>
+            <tr><td>PHISHING RESISTANT</td><td style="color:#ff8888">No</td><td style="color:#ff8">Partial (FIDO2: yes)</td><td style="color:var(--accent-green)">Yes (can't phish a fingerprint)</td></tr>
+            <tr><td>SCALABILITY</td><td style="color:var(--accent-green)">Very high</td><td style="color:#ff8">High</td><td style="color:#ff8">Moderate (hardware needed)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <button class="btn-next show" style="margin-top:24px;" onclick="showSection('sorter')">NEXT: FACTOR SORTER ACTIVITY →</button>
+    </div>
+
+    <!-- ==================== SORTER ==================== -->
+    <div class="section-panel" id="section-sorter">
+      <div class="section-header">
+        <div class="section-tag">ACTIVITY 01</div>
+        <h1 class="section-heading">Factor <span class="hl">Sorter</span></h1>
+        <p class="section-subheading">Drag each authentication method into the correct factor category. Test your understanding of the three core factors.</p>
+      </div>
+
+      <div class="info-box">
+        <span class="pulse-dot"></span>
+        Drag each chip from the pool below into the correct category zone. Click <strong>CHECK ANSWERS</strong> when done.
+      </div>
+
+      <div class="sub-label" style="margin-top:20px;">AUTHENTICATION METHODS POOL</div>
+      <div class="drag-zone" id="dragPool">
+        <div class="drag-chip k" draggable="true" data-type="k" data-id="d1">Password</div>
+        <div class="drag-chip p" draggable="true" data-type="p" data-id="d2">YubiKey</div>
+        <div class="drag-chip i" draggable="true" data-type="i" data-id="d3">Fingerprint</div>
+        <div class="drag-chip k" draggable="true" data-type="k" data-id="d4">PIN</div>
+        <div class="drag-chip p" draggable="true" data-type="p" data-id="d5">Authenticator App</div>
+        <div class="drag-chip i" draggable="true" data-type="i" data-id="d6">Iris Scan</div>
+        <div class="drag-chip p" draggable="true" data-type="p" data-id="d7">Smart Card</div>
+        <div class="drag-chip i" draggable="true" data-type="i" data-id="d8">Face ID</div>
+        <div class="drag-chip k" draggable="true" data-type="k" data-id="d9">Security Question</div>
+        <div class="drag-chip p" draggable="true" data-type="p" data-id="d10">SMS Code</div>
+        <div class="drag-chip i" draggable="true" data-type="i" data-id="d11">Voice Print</div>
+        <div class="drag-chip k" draggable="true" data-type="k" data-id="d12">Passphrase</div>
+      </div>
+
+      <div class="grid-3" style="margin-top:20px;">
+        <div class="drop-area k-zone" id="drop-k">
+          <div class="drop-area-label">🧠 KNOWLEDGE</div>
+          <div class="drop-inner" id="drop-k-inner">
+            <div class="drop-hint">Drop here</div>
+          </div>
+        </div>
+        <div class="drop-area p-zone" id="drop-p">
+          <div class="drop-area-label">📱 POSSESSION</div>
+          <div class="drop-inner" id="drop-p-inner">
+            <div class="drop-hint">Drop here</div>
+          </div>
+        </div>
+        <div class="drop-area i-zone" id="drop-i">
+          <div class="drop-area-label">👁️ INHERENCE</div>
+          <div class="drop-inner" id="drop-i-inner">
+            <div class="drop-hint">Drop here</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="sort-btn" onclick="checkSorter()">✓ CHECK ANSWERS</button>
+      <button class="sort-btn" style="border-color:var(--text-dim); color:var(--text-dim); margin-left:10px;" onclick="resetSorter()">↺ RESET</button>
+      <div class="sort-result" id="sortResult"></div>
+    </div>
+
+    <!-- ==================== SCENARIOS ==================== -->
+    <div class="section-panel" id="section-scenarios">
+      <div class="section-header">
+        <div class="section-tag">ACTIVITY 02</div>
+        <h1 class="section-heading">Attack <span class="hl">Scenarios</span></h1>
+        <p class="section-subheading">Select an attack scenario to see how it exploits authentication weaknesses — and which MFA defenses counter it.</p>
+      </div>
+
+      <div class="scenario-grid" id="scenarioGrid">
+        <div class="scenario-card" onclick="selectScenario(this, 'cred')" data-id="cred">
+          <div class="scenario-title">💀 Credential Stuffing</div>
+          <div class="scenario-desc">Attacker uses a leaked database of username/password pairs to try automated logins across hundreds of sites.</div>
+        </div>
+        <div class="scenario-card" onclick="selectScenario(this, 'sim')" data-id="sim">
+          <div class="scenario-title">📡 SIM Swapping</div>
+          <div class="scenario-desc">Attacker socially engineers a telecom to transfer the victim's phone number to their SIM card.</div>
+        </div>
+        <div class="scenario-card" onclick="selectScenario(this, 'phish')" data-id="phish">
+          <div class="scenario-title">🎣 Real-Time Phishing</div>
+          <div class="scenario-desc">Attacker creates a fake login portal that intercepts OTP codes in real-time as the victim enters them.</div>
+        </div>
+        <div class="scenario-card" onclick="selectScenario(this, 'fatigue')" data-id="fatigue">
+          <div class="scenario-title">😤 MFA Fatigue Attack</div>
+          <div class="scenario-desc">After obtaining credentials, attacker floods the victim with push notification approval requests.</div>
+        </div>
+      </div>
+
+      <div class="threat-meter" id="threatMeter" style="display:none;">
+        <div class="meter-label">// THREAT ANALYSIS</div>
+        <div id="threatTitle" style="font-family:'Orbitron',monospace; font-size:14px; color:var(--text-primary); margin-bottom:16px;"></div>
+        <div id="threatDesc" style="font-size:13px; color:#7aacbf; margin-bottom:16px; line-height:1.7;"></div>
+        <div class="meter-label">// DEFENSE EFFECTIVENESS vs THIS ATTACK</div>
+        <div class="threat-bars" id="threatBars"></div>
+        <div id="threatRec" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ==================== GLOSSARY ==================== -->
+    <div class="section-panel" id="section-glossary">
+      <div class="section-header">
+        <div class="section-tag">REFERENCE</div>
+        <h1 class="section-heading">Key <span class="hl">Terms</span></h1>
+        <p class="section-subheading">Critical vocabulary for MFA design, implementation, and security assessment.</p>
+      </div>
+
+      <div class="glossary-item"><div class="glossary-term">AAA</div><div class="glossary-def"><strong>Authentication, Authorization, and Accounting.</strong> The three pillars of access control. MFA operates within the Authentication phase, verifying identity before any authorization decisions are made.</div></div>
+      <div class="glossary-item"><div class="glossary-term">CREDENTIAL STUFFING</div><div class="glossary-def">An automated attack where leaked username/password pairs are tested against multiple services, exploiting password reuse. MFA is highly effective at blocking this attack even when credentials are known.</div></div>
+      <div class="glossary-item"><div class="glossary-term">SIM SWAPPING</div><div class="glossary-def">An attack where the adversary tricks a telecom provider into transferring the victim's phone number to a new SIM card under attacker control, enabling interception of SMS OTP codes.</div></div>
+      <div class="glossary-item"><div class="glossary-term">OUT-OF-BAND (OOB)</div><div class="glossary-def">A method of transmitting authentication data using a separate communication channel from the primary login attempt. Example: logging in on a laptop while receiving approval push on a smartphone.</div></div>
+      <div class="glossary-item"><div class="glossary-term">ADAPTIVE MFA</div><div class="glossary-def">Also called Risk-Based Authentication. Dynamically adjusts authentication requirements based on the assessed risk of each login attempt — evaluating device, location, time, and behavior signals.</div></div>
+      <div class="glossary-item"><div class="glossary-term">TOTP</div><div class="glossary-def">Time-Based One-Time Password. A dynamic 6-digit code computed using a shared secret key and the current time (HMAC algorithm). Refreshes every 30–60 seconds. Used by Google Authenticator, Authy, Microsoft Authenticator.</div></div>
+      <div class="glossary-item"><div class="glossary-term">FIDO2 / WebAuthn</div><div class="glossary-def">An open standard using public-key cryptography for passwordless and phishing-resistant MFA. The private key never leaves the device. Authentication is performed locally with a biometric or PIN.</div></div>
+      <div class="glossary-item"><div class="glossary-term">MFA FATIGUE</div><div class="glossary-def">A social engineering attack where an attacker repeatedly sends push notification MFA requests to an authenticated user, hoping they will accidentally or frustratedly approve one. Countered by number-matching and context-aware push apps.</div></div>
+      <div class="glossary-item"><div class="glossary-term">GEO-VELOCITY</div><div class="glossary-def">A risk signal that detects logins from locations that are geographically impossible to reach given the time elapsed since the last login — indicating a compromised account or unauthorized access.</div></div>
+    </div>
+
+    <!-- ==================== QUIZ ==================== -->
+    <div class="section-panel" id="section-quiz">
+      <div class="section-header">
+        <div class="section-tag">ASSESSMENT</div>
+        <h1 class="section-heading">Knowledge <span class="hl">Check</span></h1>
+        <p class="section-subheading">Test your understanding of MFA concepts. Answer all 8 questions to see your final score.</p>
+      </div>
+
+      <div class="quiz-container">
+        <div class="quiz-header">
+          <div class="quiz-counter" id="quizCounter">QUESTION 1 OF 8</div>
+          <div class="quiz-score" id="quizScore">SCORE: 0</div>
+        </div>
+
+        <div id="quizActive">
+          <div class="quiz-question-card">
+            <div class="quiz-question-num" id="questionNum">// Q01</div>
+            <div class="quiz-question-text" id="questionText"></div>
+            <div class="quiz-options" id="quizOptions"></div>
+            <div class="quiz-feedback" id="quizFeedback"></div>
+          </div>
+          <button class="btn-next" id="btnNext" onclick="nextQuestion()">NEXT QUESTION →</button>
+        </div>
+
+        <div class="quiz-complete" id="quizComplete">
+          <div class="quiz-complete-score" id="finalScore"></div>
+          <div class="quiz-complete-label">// FINAL SCORE</div>
+          <div id="finalMsg" style="font-size:15px; color:#7aacbf; margin-bottom:28px; line-height:1.6;"></div>
+          <button class="btn-restart" onclick="restartQuiz()">↺ RETAKE QUIZ</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- INFOGRAPHIC MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">MFA INFOGRAPHIC</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <img src="mfa.png">
+  </div>
+</div>
+
+<script>
+// ========== NAVIGATION ==========
+const sectionOrder = ['intro','factors','advanced','mechanisms','compare','sorter','scenarios','glossary','quiz'];
+const sectionLabels = {
+  intro: 'INTRODUCTION', factors: 'THE 3 CORE FACTORS', advanced: 'ADVANCED FACTORS',
+  mechanisms: 'TECHNICAL MECHANISMS', compare: 'MFA VS 2-STEP', sorter: 'FACTOR SORTER',
+  scenarios: 'ATTACK SCENARIOS', glossary: 'KEY TERMS', quiz: 'KNOWLEDGE CHECK'
+};
+
+let visitedSections = new Set(['intro']);
+
+function showSection(id) {
+  document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + id + "'")) {
+      n.classList.add('active');
+    }
+  });
+  document.getElementById('breadcrumbText').textContent = sectionLabels[id] || id.toUpperCase();
+  visitedSections.add(id);
+  updateProgress();
+  window.scrollTo(0,0);
+}
+
+function updateProgress() {
+  const pct = Math.round((visitedSections.size / sectionOrder.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+// ========== FACTOR TOGGLE ==========
+function toggleFactor(card) {
+  card.classList.toggle('open');
+}
+
+// ========== MODAL ==========
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+// ========== DRAG & DROP SORTER ==========
+let draggingEl = null;
+
+function initDragDrop() {
+  document.querySelectorAll('.drag-chip').forEach(chip => {
+    chip.addEventListener('dragstart', e => {
+      draggingEl = chip;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => chip.style.opacity = '0.4', 0);
+    });
+    chip.addEventListener('dragend', () => {
+      if(draggingEl) draggingEl.style.opacity = '1';
+      draggingEl = null;
+      document.querySelectorAll('.drop-inner, .drag-zone').forEach(z => z.classList.remove('over'));
+    });
+  });
+
+  const zones = ['drop-k-inner','drop-p-inner','drop-i-inner','dragPool'];
+  zones.forEach(zoneId => {
+    const zone = document.getElementById(zoneId);
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('over');
+      if (!draggingEl) return;
+      // remove drop hints
+      zone.querySelectorAll('.drop-hint').forEach(h => h.remove());
+      zone.appendChild(draggingEl);
+      draggingEl.style.opacity = '1';
+    });
+  });
+}
+
+function checkSorter() {
+  const kItems = Array.from(document.getElementById('drop-k-inner').querySelectorAll('.drag-chip'));
+  const pItems = Array.from(document.getElementById('drop-p-inner').querySelectorAll('.drag-chip'));
+  const iItems = Array.from(document.getElementById('drop-i-inner').querySelectorAll('.drag-chip'));
+
+  let correct = 0, total = 0;
+  [...kItems,...pItems,...iItems].forEach(chip => {
+    total++;
+    const parent = chip.parentElement.id;
+    const expected = chip.dataset.type;
+    const inCorrect = (expected === 'k' && parent === 'drop-k-inner') ||
+                      (expected === 'p' && parent === 'drop-p-inner') ||
+                      (expected === 'i' && parent === 'drop-i-inner');
+    if (inCorrect) { correct++; chip.style.boxShadow = '0 0 8px rgba(0,255,136,0.6)'; chip.style.borderColor = 'var(--accent-green)'; }
+    else { chip.style.boxShadow = '0 0 8px rgba(255,68,68,0.6)'; chip.style.borderColor = '#ff4444'; }
+  });
+
+  const result = document.getElementById('sortResult');
+  result.classList.add('show');
+  if (correct === 12 && total === 12) {
+    result.className = 'sort-result show ok';
+    result.textContent = '✓ PERFECT SCORE! All 12 items correctly categorized.';
+  } else {
+    result.className = 'sort-result show err';
+    result.textContent = `${correct}/${total} correct. Red-highlighted items are in the wrong category. Try again!`;
+  }
+}
+
+function resetSorter() {
+  const pool = document.getElementById('dragPool');
+  const chips = document.querySelectorAll('.drag-chip');
+  chips.forEach(c => {
+    c.style.boxShadow = '';
+    c.style.borderColor = '';
+    pool.appendChild(c);
+  });
+  ['drop-k-inner','drop-p-inner','drop-i-inner'].forEach(id => {
+    const zone = document.getElementById(id);
+    if (!zone.querySelector('.drop-hint')) {
+      const hint = document.createElement('div');
+      hint.className = 'drop-hint';
+      hint.textContent = 'Drop here';
+      zone.appendChild(hint);
+    }
+  });
+  const result = document.getElementById('sortResult');
+  result.className = 'sort-result';
+  result.textContent = '';
+}
+
+// ========== SCENARIOS ==========
+const scenarios = {
+  cred: {
+    title: '💀 CREDENTIAL STUFFING ATTACK',
+    desc: 'Attacker obtains a leaked credential database (e.g., from Have I Been Pwned). They run automated tools to test millions of username/password combinations against a target site. Since ~65% of people reuse passwords, many attempts succeed. Password-only sites are fully compromised. MFA blocks this entirely.',
+    bars: [
+      { name: 'Password only', val: 100, color: '#ff4444' },
+      { name: 'SMS OTP', val: 20, color: '#ff8' },
+      { name: 'TOTP App', val: 5, color: '#80ff80' },
+      { name: 'FIDO2 Key', val: 0, color: '#00ff88' },
+      { name: 'Adaptive MFA', val: 3, color: '#00ff88' }
+    ],
+    rec: '<div class="info-box"><strong style="color:var(--accent-blue)">Best Defense:</strong> Any MFA defeats credential stuffing. Even SMS OTP reduces success rate by ~99%. FIDO2 with passkeys eliminates the risk entirely since there is no password to stuff.</div>'
+  },
+  sim: {
+    title: '📡 SIM SWAPPING ATTACK',
+    desc: 'Attacker calls or visits a telecom provider, posing as the victim. Using personal information (from OSINT or data brokers), they convince the carrier to transfer the victim's phone number to a new SIM. Incoming SMS messages — including OTP codes — now go to the attacker's device.',
+    bars: [
+      { name: 'SMS OTP', val: 90, color: '#ff4444' },
+      { name: 'Email OTP', val: 60, color: '#ff8' },
+      { name: 'TOTP App', val: 5, color: '#80ff80' },
+      { name: 'Hardware Key', val: 0, color: '#00ff88' },
+      { name: 'FIDO2 Key', val: 0, color: '#00ff88' }
+    ],
+    rec: '<div class="warn-box"><strong style="color:var(--accent-orange)">⚠️ Critical:</strong> SMS-based MFA offers WEAK protection against SIM swapping. Organizations should migrate to TOTP apps, hardware tokens, or FIDO2 keys — none of which rely on phone numbers.</div>'
+  },
+  phish: {
+    title: '🎣 REAL-TIME PHISHING (AiTM)',
+    desc: 'Attacker creates a convincing clone of the target login page using an Adversary-in-the-Middle (AiTM) proxy. Victim enters credentials AND their TOTP/OTP code. The attacker's proxy immediately forwards these to the real site. Session cookies are harvested. TOTP is defeated but FIDO2 is not.',
+    bars: [
+      { name: 'Password only', val: 100, color: '#ff4444' },
+      { name: 'SMS OTP', val: 85, color: '#ff4444' },
+      { name: 'TOTP App', val: 80, color: '#ff8' },
+      { name: 'FIDO2 / Passkey', val: 0, color: '#00ff88' },
+      { name: 'Hardware Key', val: 2, color: '#00ff88' }
+    ],
+    rec: '<div class="info-box"><strong style="color:var(--accent-blue)">Why FIDO2 Wins:</strong> FIDO2/WebAuthn binds the authentication to the exact origin domain. A phishing site on evil.com cannot use the real key bound to bank.com. This makes FIDO2 the only truly phishing-resistant MFA method.</div>'
+  },
+  fatigue: {
+    title: '😤 MFA FATIGUE / PUSH BOMBING ATTACK',
+    desc: 'Attacker has already obtained valid credentials (from a prior breach). They attempt login repeatedly, triggering an automated push notification to the victim's phone. The attacker sends dozens of requests hoping the victim taps "Approve" to make them stop. This technique was used in the 2022 Uber breach.',
+    bars: [
+      { name: 'Standard Push', val: 75, color: '#ff4444' },
+      { name: 'Number Match Push', val: 10, color: '#80ff80' },
+      { name: 'TOTP Code', val: 5, color: '#00ff88' },
+      { name: 'FIDO2 Key', val: 0, color: '#00ff88' },
+      { name: 'Adaptive MFA', val: 5, color: '#00ff88' }
+    ],
+    rec: '<div class="info-box"><strong style="color:var(--accent-blue)">Mitigation:</strong> Enable <strong>number matching</strong> in push apps (Microsoft Authenticator, Duo). The user must enter a number shown on screen — eliminating blind-approval. Also use login rate limiting and anomaly detection.</div>'
+  }
+};
+
+function selectScenario(card, id) {
+  document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const s = scenarios[id];
+  const meter = document.getElementById('threatMeter');
+  meter.style.display = 'block';
+  document.getElementById('threatTitle').textContent = s.title;
+  document.getElementById('threatDesc').textContent = s.desc;
+  const bars = document.getElementById('threatBars');
+  bars.innerHTML = s.bars.map(b => `
+    <div class="threat-row">
+      <div class="threat-name">${b.name}</div>
+      <div class="threat-bar-bg">
+        <div class="threat-bar-fill" style="width:0%; background:${b.color};" data-val="${b.val}"></div>
+      </div>
+      <div class="threat-val" style="color:${b.color}">${b.val}%</div>
+    </div>
+  `).join('');
+  document.getElementById('threatRec').innerHTML = s.rec;
+  setTimeout(() => {
+    document.querySelectorAll('.threat-bar-fill').forEach(fill => {
+      fill.style.width = fill.dataset.val + '%';
+    });
+  }, 50);
+}
+
+// ========== QUIZ ==========
+const questions = [
+  {
+    q: "Which of the following represents TRUE multifactor authentication?",
+    opts: ["Password + Security Question","Password + Fingerprint","PIN + Passphrase","Secret Question + Backup Code"],
+    ans: 1,
+    exp: "True MFA requires factors from TWO DIFFERENT CATEGORIES. Password (Knowledge) + Fingerprint (Inherence) is the only option crossing category boundaries. The others all use multiple Knowledge factors."
+  },
+  {
+    q: "A YubiKey hardware security token belongs to which authentication factor?",
+    opts: ["Knowledge — Something You Know","Inherence — Something You Are","Possession — Something You Have","Location — Somewhere You Are"],
+    ans: 2,
+    exp: "A YubiKey is a physical hardware token that you must physically possess to use. It belongs to the Possession factor — 'Something You Have.'"
+  },
+  {
+    q: "An attacker tricks a telecom carrier into transferring your phone number to their SIM. What attack is this?",
+    opts: ["Credential stuffing","MFA fatigue","SIM swapping","Shoulder surfing"],
+    ans: 2,
+    exp: "SIM swapping involves socially engineering a telecom provider to transfer a victim's phone number to a SIM controlled by the attacker, enabling interception of SMS OTP codes."
+  },
+  {
+    q: "TOTP codes are generated using which algorithm and what time interval?",
+    opts: ["AES-256; refreshes every 60 minutes","RSA; refreshes daily","HMAC; refreshes every 30–60 seconds","SHA-1; refreshes every 5 minutes"],
+    ans: 2,
+    exp: "TOTP (Time-Based One-Time Password) uses the HMAC algorithm combined with the current Unix timestamp. Codes typically refresh every 30 to 60 seconds and are computed identically on both the server and the authenticator app."
+  },
+  {
+    q: "Which MFA mechanism is considered PHISHING-RESISTANT because the private key is bound to a specific origin domain?",
+    opts: ["SMS OTP","TOTP (Google Authenticator)","Email OTP","FIDO2 / WebAuthn"],
+    ans: 3,
+    exp: "FIDO2/WebAuthn uses public-key cryptography where the private key is bound to the exact origin (domain). A phishing site on a different domain cannot use the key, making FIDO2 the only truly phishing-resistant MFA standard."
+  },
+  {
+    q: "An attacker with valid credentials sends 50 push notification requests in 5 minutes hoping the victim approves one. What is this attack called?",
+    opts: ["Credential stuffing","MFA fatigue / push bombing","Brute force","Real-time phishing"],
+    ans: 1,
+    exp: "MFA Fatigue (also called push bombing) involves flooding a user with push notification requests. The attacker hopes the victim approves one to make the notifications stop. It was used in the 2022 Uber breach."
+  },
+  {
+    q: "If a user's biometric data (fingerprint hash) is stolen from a database, what is the PRIMARY concern specific to the Inherence factor?",
+    opts: ["The user must buy a new phone","The data can be easily changed","The compromise is irreversible — you cannot change your fingerprint","It requires the attacker to be physically present"],
+    ans: 2,
+    exp: "The critical vulnerability of Inherence factors is IRREVERSIBILITY. Unlike a password which can be changed, a compromised fingerprint, iris scan, or face geometry cannot be revoked and reissued. The user is permanently at risk."
+  },
+  {
+    q: "Adaptive MFA (Risk-Based Authentication) would MOST LIKELY trigger an additional authentication step when:",
+    opts: ["A user logs in from the same device used daily","A user logs in during business hours","A user logs in from a foreign country on an unrecognized device","A user accesses a low-privilege read-only resource"],
+    ans: 2,
+    exp: "Adaptive MFA evaluates risk signals. A login from a foreign country on an unrecognized device presents multiple high-risk signals (location anomaly + new device) that would trigger additional verification steps."
+  }
+];
+
+let qIndex = 0, score = 0, answered = false;
+
+function loadQuestion() {
+  const q = questions[qIndex];
+  document.getElementById('quizCounter').textContent = `QUESTION ${qIndex+1} OF ${questions.length}`;
+  document.getElementById('questionNum').textContent = `// Q${String(qIndex+1).padStart(2,'0')}`;
+  document.getElementById('questionText').textContent = q.q;
+  document.getElementById('quizScore').textContent = `SCORE: ${score}`;
+  answered = false;
+
+  const opts = document.getElementById('quizOptions');
+  opts.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'quiz-option';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span>${opt}`;
+    btn.onclick = () => selectAnswer(i, q.ans, q.exp);
+    opts.appendChild(btn);
+  });
+
+  const fb = document.getElementById('quizFeedback');
+  fb.className = 'quiz-feedback';
+  fb.textContent = '';
+  document.getElementById('btnNext').classList.remove('show');
+}
+
+function selectAnswer(selected, correct, explanation) {
+  if (answered) return;
+  answered = true;
+  const opts = document.querySelectorAll('.quiz-option');
+  opts.forEach((opt, i) => {
+    opt.classList.add('disabled');
+    if (i === correct) opt.classList.add('correct');
+    else if (i === selected) opt.classList.add('wrong');
+  });
+  if (selected === correct) score++;
+  document.getElementById('quizScore').textContent = `SCORE: ${score}`;
+  const fb = document.getElementById('quizFeedback');
+  fb.className = `quiz-feedback show ${selected === correct ? 'correct' : 'wrong'}`;
+  fb.innerHTML = `<strong>${selected === correct ? '✓ Correct!' : '✗ Incorrect.'}</strong> ${explanation}`;
+  document.getElementById('btnNext').classList.add('show');
+}
+
+function nextQuestion() {
+  qIndex++;
+  if (qIndex >= questions.length) {
+    document.getElementById('quizActive').style.display = 'none';
+    document.getElementById('quizComplete').classList.add('show');
+    const pct = Math.round((score / questions.length) * 100);
+    document.getElementById('finalScore').textContent = `${score}/${questions.length}`;
+    const msgs = [
+      [0,49,'Review the material and try again. Focus on the factor categories and attack types.'],
+      [50,74,'Good effort! Review the sections on technical mechanisms and attack scenarios.'],
+      [75,87,'Strong performance! You have a solid understanding of MFA fundamentals.'],
+      [88,100,'Excellent! You demonstrate expert-level understanding of multifactor authentication.']
+    ];
+    const msg = msgs.find(m => pct >= m[0] && pct <= m[1]);
+    document.getElementById('finalMsg').textContent = msg ? msg[2] : '';
+  } else {
+    loadQuestion();
+  }
+}
+
+function restartQuiz() {
+  qIndex = 0; score = 0;
+  document.getElementById('quizActive').style.display = 'block';
+  document.getElementById('quizComplete').classList.remove('show');
+  loadQuestion();
+}
+
+// ========== INIT ==========
+document.addEventListener('DOMContentLoaded', () => {
+  initDragDrop();
+  loadQuestion();
+});
+</script>
+</body>
+</html>
