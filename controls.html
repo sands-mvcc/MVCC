@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Controls: Purpose, Types & Categories</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg-dark: #0a0e1a;
+    --bg-panel: #111827;
+    --bg-card: #1a2236;
+    --bg-card2: #1e2a40;
+    --cyan: #00e5ff;
+    --cyan-dim: #00b8cc;
+    --amber: #ffa726;
+    --amber-dim: #e65100;
+    --green: #00e676;
+    --green-dim: #00c853;
+    --purple: #ce93d8;
+    --red: #ef5350;
+    --text-primary: #e8eaf6;
+    --text-secondary: #90a4ae;
+    --text-muted: #546e7a;
+    --border: #1e3a5f;
+    --border-bright: #00e5ff33;
+    --nav-width: 260px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Exo 2', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ===== SIDEBAR NAV ===== */
+  #sidebar {
+    width: var(--nav-width);
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-header {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, #0d1b2e, #111827);
+  }
+
+  .sidebar-logo {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .sidebar-title {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .progress-bar-wrap {
+    margin-top: 14px;
+    background: var(--bg-dark);
+    border-radius: 4px;
+    height: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), var(--green));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .progress-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 5px;
+    letter-spacing: 1px;
+  }
+
+  .nav-section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 18px 20px 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    position: relative;
+  }
+
+  .nav-item:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  .nav-item.active {
+    background: var(--bg-card);
+    color: var(--cyan);
+    border-left-color: var(--cyan);
+    font-weight: 600;
+  }
+
+  .nav-item .nav-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .nav-item .nav-check {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--green);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .nav-item.completed .nav-check { opacity: 1; }
+
+  /* ===== MAIN CONTENT ===== */
+  #main {
+    margin-left: var(--nav-width);
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-section {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .topbar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'Exo 2', sans-serif;
+  }
+
+  /* ===== SECTIONS ===== */
+  .section {
+    display: none;
+    padding: 48px 48px 80px;
+    max-width: 960px;
+    animation: fadeSlide 0.35s ease;
+  }
+
+  .section.active { display: block; }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== HERO BANNER ===== */
+  .hero {
+    background: linear-gradient(135deg, #0d1b2e 0%, #0a2744 50%, #0d1b2e 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 48px 40px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(0,229,255,0.07) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .hero-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .hero h1 {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #e8eaf6, var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    max-width: 560px;
+    line-height: 1.7;
+  }
+
+  .hero-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+
+  .badge {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  .badge-cyan { background: rgba(0,229,255,0.1); color: var(--cyan); border: 1px solid rgba(0,229,255,0.3); }
+  .badge-amber { background: rgba(255,167,38,0.1); color: var(--amber); border: 1px solid rgba(255,167,38,0.3); }
+  .badge-green { background: rgba(0,230,118,0.1); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+  .badge-purple { background: rgba(206,147,216,0.1); color: var(--purple); border: 1px solid rgba(206,147,216,0.3); }
+
+  /* ===== SECTION HEADERS ===== */
+  .section-header {
+    margin-bottom: 32px;
+  }
+
+  .section-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .section-header h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .section-header p {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    max-width: 680px;
+  }
+
+  /* ===== CARDS ===== */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card:hover {
+    border-color: var(--cyan-dim);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,229,255,0.08);
+  }
+
+  .card-accent {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .card-accent.cyan { background: linear-gradient(90deg, var(--cyan), var(--cyan-dim)); }
+  .card-accent.amber { background: linear-gradient(90deg, var(--amber), var(--amber-dim)); }
+  .card-accent.green { background: linear-gradient(90deg, var(--green), var(--green-dim)); }
+  .card-accent.purple { background: linear-gradient(90deg, var(--purple), #9c27b0); }
+
+  .card-icon {
+    width: 42px; height: 42px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+
+  .card-icon.cyan { background: rgba(0,229,255,0.1); }
+  .card-icon.amber { background: rgba(255,167,38,0.1); }
+  .card-icon.green { background: rgba(0,230,118,0.1); }
+  .card-icon.purple { background: rgba(206,147,216,0.1); }
+
+  .card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  .card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ===== INFO BOXES ===== */
+  .info-box {
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .info-box.cyan { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); }
+  .info-box.amber { background: rgba(255,167,38,0.06); border: 1px solid rgba(255,167,38,0.2); }
+  .info-box.green { background: rgba(0,230,118,0.06); border: 1px solid rgba(0,230,118,0.2); }
+
+  .info-box-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+
+  .info-box-content h4 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    font-family: 'Exo 2', sans-serif;
+  }
+
+  .info-box.cyan .info-box-content h4 { color: var(--cyan); }
+  .info-box.amber .info-box-content h4 { color: var(--amber); }
+  .info-box.green .info-box-content h4 { color: var(--green); }
+
+  .info-box-content p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ===== ACCORDIONS ===== */
+  .accordion-group { margin-bottom: 12px; }
+
+  .accordion-btn {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    color: var(--text-primary);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .accordion-btn:hover { background: var(--bg-card2); border-color: var(--cyan-dim); }
+  .accordion-btn.open { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-color: var(--cyan-dim); }
+
+  .accordion-btn-left { display: flex; align-items: center; gap: 12px; }
+  .accordion-btn-icon { font-size: 18px; }
+  .accordion-arrow { font-size: 14px; color: var(--text-muted); transition: transform 0.3s; }
+  .accordion-btn.open .accordion-arrow { transform: rotate(180deg); }
+
+  .accordion-body {
+    display: none;
+    background: var(--bg-card2);
+    border: 1px solid var(--cyan-dim);
+    border-top: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    padding: 20px 24px;
+    animation: fadeSlide 0.2s ease;
+  }
+
+  .accordion-body.open { display: block; }
+
+  .accordion-body ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .accordion-body ul li {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .accordion-body ul li::before {
+    content: '▹';
+    color: var(--cyan);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ===== CONTROL TYPE TABS ===== */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 5px;
+    margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .tab-btn:hover { color: var(--text-primary); background: var(--bg-card); }
+  .tab-btn.active { background: var(--cyan); color: #000; font-weight: 700; }
+  .tab-btn.active.amber { background: var(--amber); }
+  .tab-btn.active.green { background: var(--green); }
+
+  .tab-panel { display: none; animation: fadeSlide 0.25s ease; }
+  .tab-panel.active { display: block; }
+
+  /* ===== TABLE ===== */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .data-table th {
+    background: var(--bg-card2);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  .data-table tr:hover td { background: var(--bg-card2); }
+  .data-table .td-label { color: var(--text-primary); font-weight: 600; }
+
+  /* ===== INTERACTIVE SCENARIO ===== */
+  .scenario-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .scenario-header {
+    background: linear-gradient(90deg, #0d1b2e, #0a2744);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .scenario-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--amber);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .scenario-body { padding: 24px; }
+
+  .scenario-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    background: rgba(0,0,0,0.2);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 6px 6px 0;
+  }
+
+  .scenario-question {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+  }
+
+  .scenario-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .scenario-option {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .scenario-option:hover { border-color: var(--cyan-dim); color: var(--text-primary); }
+
+  .scenario-option.correct { background: rgba(0,230,118,0.1); border-color: var(--green); color: var(--green); }
+  .scenario-option.incorrect { background: rgba(239,83,80,0.1); border-color: var(--red); color: var(--red); }
+  .scenario-option.neutral { opacity: 0.5; }
+
+  .option-letter {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  .scenario-option.correct .option-letter { background: var(--green); color: #000; }
+  .scenario-option.incorrect .option-letter { background: var(--red); color: #fff; }
+
+  .scenario-feedback {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .scenario-feedback.show { display: block; }
+  .scenario-feedback.correct { background: rgba(0,230,118,0.1); border: 1px solid var(--green); color: var(--green); }
+  .scenario-feedback.incorrect { background: rgba(239,83,80,0.08); border: 1px solid var(--red); color: #ef9a9a; }
+
+  .next-scenario-btn {
+    margin-top: 14px;
+    display: none;
+    background: var(--cyan);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .next-scenario-btn:hover { background: var(--cyan-dim); }
+  .next-scenario-btn.show { display: inline-block; }
+
+  /* ===== DRAG & DROP ===== */
+  .drag-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+
+  .drag-source h4, .drag-targets h4 {
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text-muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .draggable-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .drag-chip {
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: grab;
+    transition: all 0.2s;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .drag-chip:hover { border-color: var(--cyan); background: var(--bg-card); }
+  .drag-chip.dragging { opacity: 0.4; }
+  .drag-chip.placed { opacity: 0.4; pointer-events: none; }
+
+  .drop-zone {
+    background: var(--bg-panel);
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    min-height: 60px;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+
+  .drop-zone.drag-over { border-color: var(--cyan); background: rgba(0,229,255,0.05); }
+  .drop-zone.correct { border-color: var(--green); border-style: solid; background: rgba(0,230,118,0.05); }
+  .drop-zone.incorrect { border-color: var(--red); border-style: solid; background: rgba(239,83,80,0.05); }
+
+  .drop-zone-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .drop-zone-label span { color: var(--cyan); }
+
+  .drag-submit-btn {
+    background: var(--amber);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .drag-submit-btn:hover { background: var(--amber-dim); color: #fff; }
+
+  .drag-result {
+    margin-top: 14px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: none;
+  }
+
+  .drag-result.show { display: block; }
+
+  /* ===== GLOSSARY ===== */
+  .glossary-search {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 18px;
+    color: var(--text-primary);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 14px;
+    margin-bottom: 20px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .glossary-search:focus { border-color: var(--cyan); }
+  .glossary-search::placeholder { color: var(--text-muted); }
+
+  .glossary-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .glossary-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    transition: all 0.2s;
+  }
+
+  .glossary-item:hover { border-color: var(--cyan-dim); }
+  .glossary-item.hidden { display: none; }
+
+  .glossary-term {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 5px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .glossary-def {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ===== KNOWLEDGE CHECK (Quiz) ===== */
+  .quiz-container { max-width: 680px; }
+
+  .quiz-progress {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+
+  .quiz-pip {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.3s;
+  }
+
+  .quiz-pip.done { background: var(--green); }
+  .quiz-pip.active { background: var(--cyan); }
+
+  .quiz-q {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .quiz-q-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+  .quiz-opt {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .quiz-opt:hover { border-color: var(--cyan-dim); color: var(--text-primary); }
+  .quiz-opt.correct { background: rgba(0,230,118,0.1); border-color: var(--green); color: var(--green); }
+  .quiz-opt.incorrect { background: rgba(239,83,80,0.08); border-color: var(--red); color: #ef9a9a; }
+  .quiz-opt.disabled { pointer-events: none; }
+
+  .quiz-opt-letter {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: var(--bg-panel);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .quiz-opt.correct .quiz-opt-letter { background: var(--green); color: #000; }
+  .quiz-opt.incorrect .quiz-opt-letter { background: var(--red); color: #fff; }
+
+  .quiz-feedback {
+    display: none;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(0,230,118,0.1); border: 1px solid var(--green); color: var(--green); }
+  .quiz-feedback.incorrect { background: rgba(239,83,80,0.08); border: 1px solid var(--red); color: #ef9a9a; }
+
+  .quiz-next-btn {
+    background: var(--cyan);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 24px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: none;
+  }
+
+  .quiz-next-btn:hover { background: var(--cyan-dim); }
+  .quiz-next-btn.show { display: inline-block; }
+
+  .quiz-score {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .quiz-score.show { display: block; }
+
+  .quiz-score-num {
+    font-size: 72px;
+    font-weight: 900;
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .quiz-score-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  .quiz-retry-btn {
+    background: var(--amber);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 28px;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .quiz-retry-btn:hover { background: var(--amber-dim); color: #fff; }
+
+  /* ===== NAV BUTTONS ===== */
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn {
+    padding: 11px 24px;
+    border-radius: 7px;
+    border: none;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .btn-outline:hover { border-color: var(--cyan-dim); color: var(--text-primary); }
+
+  .btn-primary {
+    background: var(--cyan);
+    color: #000;
+  }
+
+  .btn-primary:hover { background: var(--cyan-dim); }
+
+  /* ===== LAYERED DEFENSE VIZ ===== */
+  .defense-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 28px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .defense-layer {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .defense-layer:last-child { border-bottom: none; }
+  .defense-layer:hover { background: var(--bg-card2); }
+  .defense-layer.active { background: var(--bg-card2); }
+
+  .defense-layer-bar {
+    width: 4px;
+    height: 40px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .defense-layer-content { flex: 1; }
+  .defense-layer-name { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+  .defense-layer-desc { font-size: 12px; color: var(--text-secondary); }
+
+  .defense-detail {
+    display: none;
+    background: rgba(0,0,0,0.2);
+    padding: 16px 24px 16px 44px;
+    border-top: 1px solid var(--border);
+    animation: fadeSlide 0.2s ease;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .defense-detail.show { display: block; }
+  .defense-detail ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .defense-detail ul li { font-size: 13px; color: var(--text-secondary); display: flex; gap: 10px; }
+  .defense-detail ul li::before { content: '⟶'; color: var(--cyan); flex-shrink: 0; }
+
+  /* ===== SCENARIO SELECTOR ===== */
+  .scenario-selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .scenario-pill {
+    padding: 7px 16px;
+    border-radius: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Exo 2', sans-serif;
+  }
+
+  .scenario-pill:hover { border-color: var(--cyan-dim); color: var(--text-primary); }
+  .scenario-pill.active { background: rgba(255,167,38,0.1); border-color: var(--amber); color: var(--amber); }
+
+  /* ===== SUMMARY GRID ===== */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .summary-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .summary-stat-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .summary-stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    #sidebar { display: none; }
+    #main { margin-left: 0; }
+    .section { padding: 24px; }
+    .drag-area { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">// SEC-CTRL-101</div>
+    <div class="sidebar-title">Security Controls:<br>Purpose, Types &amp; Categories</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0% Complete</div>
+  </div>
+
+  <div class="nav-section-label">Module Sections</div>
+
+  <div class="nav-item active" data-section="overview" onclick="showSection('overview',this)">
+    <div class="nav-icon cyan" style="background:rgba(0,229,255,0.1)">🏠</div>
+    <span>Overview</span>
+    <span class="nav-check">✓</span>
+  </div>
+  <div class="nav-item" data-section="purpose" onclick="showSection('purpose',this)">
+    <div class="nav-icon" style="background:rgba(0,229,255,0.1)">🎯</div>
+    <span>Core Purpose</span>
+    <span class="nav-check">✓</span>
+  </div>
+  <div class="nav-item" data-section="functional" onclick="showSection('functional',this)">
+    <div class="nav-icon" style="background:rgba(255,167,38,0.1)">⚙️</div>
+    <span>Functional Types</span>
+    <span class="nav-check">✓</span>
+  </div>
+  <div class="nav-item" data-section="categories" onclick="showSection('categories',this)">
+    <div class="nav-icon" style="background:rgba(0,230,118,0.1)">🗂️</div>
+    <span>Implementation Categories</span>
+    <span class="nav-check">✓</span>
+  </div>
+  <div class="nav-item" data-section="selection" onclick="showSection('selection',this)">
+    <div class="nav-icon" style="background:rgba(206,147,216,0.1)">📋</div>
+    <span>Selection &amp; Guidance</span>
+    <span class="nav-check">✓</span>
+  </div>
+  <div class="nav-item" data-section="scenarios" onclick="showSection('scenarios',this)">
+    <div class="nav-icon" style="background:rgba(255,167,38,0.1)">🏢</div>
+    <span>Real-World Scenarios</span>
+    <span class="nav-check">✓</span>
+  </div>
+  <div class="nav-item" data-section="classify" onclick="showSection('classify',this)">
+    <div class="nav-icon" style="background:rgba(0,229,255,0.1)">🧩</div>
+    <span>Classify Controls</span>
+    <span class="nav-check">✓</span>
+  </div>
+  <div class="nav-item" data-section="glossary" onclick="showSection('glossary',this)">
+    <div class="nav-icon" style="background:rgba(0,230,118,0.1)">📖</div>
+    <span>Glossary</span>
+    <span class="nav-check">✓</span>
+  </div>
+  <div class="nav-item" data-section="quiz" onclick="showSection('quiz',this)">
+    <div class="nav-icon" style="background:rgba(206,147,216,0.1)">✅</div>
+    <span>Knowledge Check</span>
+    <span class="nav-check">✓</span>
+  </div>
+</nav>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main id="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-section" id="topbarSection">MODULE 1</div>
+      <div class="topbar-title" id="topbarTitle">Security Controls Overview</div>
+    </div>
+    <div class="badge badge-cyan">Cybersecurity Fundamentals</div>
+  </div>
+
+  <!-- ======================= SECTION: OVERVIEW ======================= -->
+  <div class="section active" id="section-overview">
+    <div class="hero">
+      <div class="hero-tag">// Module Introduction</div>
+      <h1>Security Controls:<br>Purpose, Types &amp; Categories</h1>
+      <p>Security controls are the safeguards and countermeasures organizations implement to protect the confidentiality, integrity, and availability of their information systems. This module explores how controls are classified, selected, and applied.</p>
+      <div class="hero-badges">
+        <span class="badge badge-cyan">Preventive</span>
+        <span class="badge badge-amber">Detective</span>
+        <span class="badge badge-green">Corrective</span>
+        <span class="badge badge-purple">Administrative · Technical · Physical</span>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-stat">
+        <div class="summary-stat-num" style="color:var(--cyan)">3</div>
+        <div class="summary-stat-label">Functional Types</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-num" style="color:var(--amber)">3</div>
+        <div class="summary-stat-label">Implementation Categories</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-num" style="color:var(--green)">9+</div>
+        <div class="summary-stat-label">Sections in Module</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-eyebrow">// Learning Objectives</div>
+      <h2>What You Will Learn</h2>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-accent cyan"></div>
+        <div class="card-icon cyan">🎯</div>
+        <h3>Core Purpose</h3>
+        <p>Understand why security controls exist and how they support the CIA triad — Confidentiality, Integrity, and Availability.</p>
+      </div>
+      <div class="card">
+        <div class="card-accent amber"></div>
+        <div class="card-icon amber">⚙️</div>
+        <h3>Functional Types</h3>
+        <p>Distinguish between Preventive, Detective, and Corrective/Recovery controls and provide examples of each.</p>
+      </div>
+      <div class="card">
+        <div class="card-accent green"></div>
+        <div class="card-icon green">🗂️</div>
+        <h3>Implementation Categories</h3>
+        <p>Classify controls as Administrative, Technical, or Physical and explain how they layer for defense-in-depth.</p>
+      </div>
+      <div class="card">
+        <div class="card-accent purple"></div>
+        <div class="card-icon purple">📋</div>
+        <h3>Selection Guidance</h3>
+        <p>Apply a risk-based framework to select and implement appropriate controls for various organizational contexts.</p>
+      </div>
+    </div>
+
+    <div class="info-box cyan">
+      <div class="info-box-icon">💡</div>
+      <div class="info-box-content">
+        <h4>How to Use This Lesson</h4>
+        <p>Navigate through each section using the left sidebar. Engage with interactive elements — click accordions, answer scenario questions, drag-and-drop controls, and take the final knowledge check. Sections are marked complete as you visit them.</p>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <div></div>
+      <button class="btn btn-primary" onclick="showSection('purpose', document.querySelector('[data-section=purpose]'))">Next: Core Purpose →</button>
+    </div>
+  </div>
+
+  <!-- ======================= SECTION: PURPOSE ======================= -->
+  <div class="section" id="section-purpose">
+    <div class="section-header">
+      <div class="section-eyebrow">// Section 1</div>
+      <h2>Core Purpose of Security Controls</h2>
+      <p>Security controls exist to protect organizational assets and data from threats, ensure compliance with regulations, and support continuous business operations. They are the foundation of any cybersecurity program.</p>
+    </div>
+
+    <div class="cards-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+      <div class="card">
+        <div class="card-accent cyan"></div>
+        <div class="card-icon cyan">🔒</div>
+        <h3>Confidentiality</h3>
+        <p>Ensure only authorized users can access sensitive information. Controls prevent data leakage and unauthorized disclosure.</p>
+      </div>
+      <div class="card">
+        <div class="card-accent amber"></div>
+        <div class="card-icon amber">✔️</div>
+        <h3>Integrity</h3>
+        <p>Guarantee that data has not been tampered with or altered by unauthorized parties, preserving its accuracy and trustworthiness.</p>
+      </div>
+      <div class="card">
+        <div class="card-accent green"></div>
+        <div class="card-icon green">📡</div>
+        <h3>Availability</h3>
+        <p>Keep systems and data accessible to authorized users when needed, even under attack or hardware failure.</p>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:36px">
+      <div class="section-eyebrow">// Three Dimensions</div>
+      <h2>Primary Objectives, Risk Management &amp; Outcomes</h2>
+    </div>
+
+    <div class="accordion-group">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        <div class="accordion-btn-left">
+          <span class="accordion-btn-icon">🏹</span>
+          <span>Primary Objectives</span>
+        </div>
+        <span class="accordion-arrow">▼</span>
+      </button>
+      <div class="accordion-body">
+        <ul>
+          <li>Protect assets and data by implementing measures that reduce risks and prevent unauthorized access or modification.</li>
+          <li>Ensure confidentiality, integrity, and availability of information systems through layered defenses and policies.</li>
+          <li>Support compliance and governance goals by enforcing standards, detecting incidents, and enabling recovery processes.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion-group">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        <div class="accordion-btn-left">
+          <span class="accordion-btn-icon">⚖️</span>
+          <span>Risk Management Role</span>
+        </div>
+        <span class="accordion-arrow">▼</span>
+      </button>
+      <div class="accordion-body">
+        <ul>
+          <li>Identify, assess, and mitigate risks by applying controls proportionate to threat likelihood and potential impact.</li>
+          <li>Balance control costs and operational needs to maintain business continuity and acceptable risk levels.</li>
+          <li>Prioritize controls based on criticality of assets, regulatory requirements, and threat intelligence.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion-group">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        <div class="accordion-btn-left">
+          <span class="accordion-btn-icon">📊</span>
+          <span>Operational Outcomes</span>
+        </div>
+        <span class="accordion-arrow">▼</span>
+      </button>
+      <div class="accordion-body">
+        <ul>
+          <li>Prevent incidents through proactive measures and reduce attack surface via hardening and least-privilege practices.</li>
+          <li>Detect anomalies and breaches quickly using monitoring, logging, and analytics to enable rapid response.</li>
+          <li>Recover and resume normal operations with backups, redundancy, and tested incident response and continuity plans.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-box amber" style="margin-top:28px">
+      <div class="info-box-icon">⚠️</div>
+      <div class="info-box-content">
+        <h4>Key Principle: Defense-in-Depth</h4>
+        <p>No single control is perfect. Organizations layer multiple controls so that if one fails, others remain to protect assets. This concept — defense-in-depth — is central to modern cybersecurity architecture.</p>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="showSection('overview', document.querySelector('[data-section=overview]'))">← Overview</button>
+      <button class="btn btn-primary" onclick="showSection('functional', document.querySelector('[data-section=functional]'))">Next: Functional Types →</button>
+    </div>
+  </div>
+
+  <!-- ======================= SECTION: FUNCTIONAL ======================= -->
+  <div class="section" id="section-functional">
+    <div class="section-header">
+      <div class="section-eyebrow">// Section 2</div>
+      <h2>Types of Security Controls by Function</h2>
+      <p>Controls are grouped by what they <em>do</em>: prevent threats before they occur, detect threats in progress, or correct and recover from incidents after they happen.</p>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab('preventive', this)">🛡️ Preventive</button>
+      <button class="tab-btn" onclick="showTab('detective', this)">🔍 Detective</button>
+      <button class="tab-btn" onclick="showTab('corrective', this)">🔧 Corrective &amp; Recovery</button>
+    </div>
+
+    <!-- PREVENTIVE TAB -->
+    <div class="tab-panel active" id="tab-preventive">
+      <div class="info-box cyan">
+        <div class="info-box-icon">🛡️</div>
+        <div class="info-box-content">
+          <h4>Preventive Controls — Stop threats before they happen</h4>
+          <p>These controls act as barriers. They are implemented proactively to block unauthorized access, reduce vulnerabilities, and minimize the attack surface before an incident can occur.</p>
+        </div>
+      </div>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-accent cyan"></div>
+          <h3>🔑 Access Controls</h3>
+          <p>Mechanisms that restrict who can access systems and data — including authentication (who are you?) and authorization (what can you do?).</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--cyan); font-family:'Share Tech Mono',monospace;">Examples: MFA, RBAC, password policies, SSO</p>
+        </div>
+        <div class="card">
+          <div class="card-accent cyan"></div>
+          <h3>🔨 Hardening &amp; Patching</h3>
+          <p>Configuration management practices that remove vulnerabilities and minimize exposed services or features by keeping systems updated and securely configured.</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--cyan); font-family:'Share Tech Mono',monospace;">Examples: CIS Benchmarks, patch Tuesday, disabling unused services</p>
+        </div>
+        <div class="card">
+          <div class="card-accent cyan"></div>
+          <h3>🌐 Network Protections</h3>
+          <p>Firewalls, segmentation, and secure gateways that block unauthorized network traffic and limit lateral movement by attackers.</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--cyan); font-family:'Share Tech Mono',monospace;">Examples: Firewall rules, VLANs, DMZ, WAF, IPS</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETECTIVE TAB -->
+    <div class="tab-panel" id="tab-detective">
+      <div class="info-box amber">
+        <div class="info-box-icon">🔍</div>
+        <div class="info-box-content">
+          <h4>Detective Controls — Find threats in progress</h4>
+          <p>These controls identify when something suspicious has happened or is happening. They create visibility into the environment so security teams can respond rapidly.</p>
+        </div>
+      </div>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-accent amber"></div>
+          <h3>📋 Monitoring &amp; Logging</h3>
+          <p>Continuous event collection and aggregation to identify suspicious activity and provide forensic evidence after an incident.</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--amber); font-family:'Share Tech Mono',monospace;">Examples: SIEM, syslog, Windows Event Log, audit trails</p>
+        </div>
+        <div class="card">
+          <div class="card-accent amber"></div>
+          <h3>🚨 Intrusion Detection</h3>
+          <p>IDS tools analyze traffic or host behavior to flag potential attacks or policy violations in real time or near-real time.</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--amber); font-family:'Share Tech Mono',monospace;">Examples: Snort, Suricata, host-based IDS (HIDS), EDR alerts</p>
+        </div>
+        <div class="card">
+          <div class="card-accent amber"></div>
+          <h3>📈 Auditing &amp; Assessments</h3>
+          <p>Periodic or automated checks that reveal deviations from baseline security posture and identify compliance gaps.</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--amber); font-family:'Share Tech Mono',monospace;">Examples: Vulnerability scans, penetration tests, compliance audits</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CORRECTIVE TAB -->
+    <div class="tab-panel" id="tab-corrective">
+      <div class="info-box green">
+        <div class="info-box-icon">🔧</div>
+        <div class="info-box-content">
+          <h4>Corrective &amp; Recovery Controls — Fix and restore</h4>
+          <p>These controls minimize damage after an incident and restore normal operations as quickly as possible. They are essential for business continuity and resilience.</p>
+        </div>
+      </div>
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-accent green"></div>
+          <h3>🚑 Incident Response</h3>
+          <p>Structured procedures to contain, eradicate, and remediate threats while preserving evidence and maintaining communication throughout the process.</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--green); font-family:'Share Tech Mono',monospace;">Examples: IR playbooks, NIST SP 800-61, containment isolation</p>
+        </div>
+        <div class="card">
+          <div class="card-accent green"></div>
+          <h3>🩹 Patch &amp; Remediation</h3>
+          <p>Actions to fix vulnerabilities and misconfigurations discovered through detection activities, preventing repeat exploitation.</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--green); font-family:'Share Tech Mono',monospace;">Examples: Emergency patching, config remediation, vulnerability closure</p>
+        </div>
+        <div class="card">
+          <div class="card-accent green"></div>
+          <h3>💾 Backup &amp; Disaster Recovery</h3>
+          <p>Regular data backups, restore procedures, and failover capabilities to restore operations after incidents — including ransomware attacks.</p>
+          <p style="margin-top:8px; font-size:12px; color:var(--green); font-family:'Share Tech Mono',monospace;">Examples: 3-2-1 backup rule, RTO/RPO planning, hot standby</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="showSection('purpose', document.querySelector('[data-section=purpose]'))">← Core Purpose</button>
+      <button class="btn btn-primary" onclick="showSection('categories', document.querySelector('[data-section=categories]'))">Next: Categories →</button>
+    </div>
+  </div>
+
+  <!-- ======================= SECTION: CATEGORIES ======================= -->
+  <div class="section" id="section-categories">
+    <div class="section-header">
+      <div class="section-eyebrow">// Section 3</div>
+      <h2>Categories by Control Implementation Type</h2>
+      <p>While functional types describe <em>what</em> a control does, implementation categories describe <em>how</em> a control is deployed. Controls fall into three categories: Administrative, Technical, and Physical.</p>
+    </div>
+
+    <div class="defense-layers">
+      <!-- Administrative -->
+      <div class="defense-layer" onclick="toggleLayer(this, 'admin-detail')" style="background: linear-gradient(90deg, rgba(0,229,255,0.05), transparent)">
+        <div class="defense-layer-bar" style="background: var(--cyan)"></div>
+        <div class="defense-layer-content">
+          <div class="defense-layer-name">🏛️ Administrative (Managerial) Controls</div>
+          <div class="defense-layer-desc">Policies, procedures, and governance that shape human behavior and organizational security culture</div>
+        </div>
+        <span style="color:var(--text-muted); font-size:12px">Click to expand ▼</span>
+      </div>
+      <div class="defense-detail" id="admin-detail">
+        <ul>
+          <li><strong>Policies &amp; Procedures:</strong> Documented rules and workflows governing security practices and user behavior across the organization.</li>
+          <li><strong>Training &amp; Awareness:</strong> Programs that educate staff on threats, secure procedures, and reporting channels to reduce human risk.</li>
+          <li><strong>Risk Assessments &amp; Governance:</strong> Ongoing evaluation of threats, control effectiveness, and alignment with legal/regulatory obligations.</li>
+          <li><strong>Examples:</strong> Security policy, acceptable use policy (AUP), annual security awareness training, NIST RMF, ISO 27001 controls.</li>
+        </ul>
+      </div>
+
+      <!-- Technical -->
+      <div class="defense-layer" onclick="toggleLayer(this, 'tech-detail')" style="background: linear-gradient(90deg, rgba(255,167,38,0.05), transparent)">
+        <div class="defense-layer-bar" style="background: var(--amber)"></div>
+        <div class="defense-layer-content">
+          <div class="defense-layer-name">💻 Technical (Logical) Controls</div>
+          <div class="defense-layer-desc">Technology-based safeguards enforced by hardware, software, and network infrastructure</div>
+        </div>
+        <span style="color:var(--text-muted); font-size:12px">Click to expand ▼</span>
+      </div>
+      <div class="defense-detail" id="tech-detail">
+        <ul>
+          <li><strong>Encryption &amp; Cryptography:</strong> Algorithms and key management protecting data at rest and in transit from disclosure or tampering.</li>
+          <li><strong>Identity &amp; Access Management:</strong> Authentication, SSO, MFA, and role-based access control (RBAC) systems.</li>
+          <li><strong>Endpoint &amp; Network Security:</strong> Antivirus, EDR, VPNs, secure proxies, and application-layer protections.</li>
+          <li><strong>Examples:</strong> AES-256 encryption, Active Directory, firewall rules, antivirus/EDR, VPN, IDS/IPS, SIEM.</li>
+        </ul>
+      </div>
+
+      <!-- Physical -->
+      <div class="defense-layer" onclick="toggleLayer(this, 'phys-detail')" style="background: linear-gradient(90deg, rgba(0,230,118,0.05), transparent)">
+        <div class="defense-layer-bar" style="background: var(--green)"></div>
+        <div class="defense-layer-content">
+          <div class="defense-layer-name">🏢 Physical Controls</div>
+          <div class="defense-layer-desc">Real-world barriers and environmental protections for facilities, hardware, and physical assets</div>
+        </div>
+        <span style="color:var(--text-muted); font-size:12px">Click to expand ▼</span>
+      </div>
+      <div class="defense-detail" id="phys-detail">
+        <ul>
+          <li><strong>Facility Access Controls:</strong> Locks, badges, guards, and visitor logs preventing unauthorized physical entry to sensitive areas.</li>
+          <li><strong>Environmental Protections:</strong> Fire suppression, HVAC, and power redundancy systems protecting hardware from physical threats.</li>
+          <li><strong>Physical Asset Management:</strong> Inventory, secure disposal, and asset labeling procedures reducing theft and misuse.</li>
+          <li><strong>Examples:</strong> Badge readers, man-traps, security cameras (CCTV), UPS systems, fire suppression, secure document shredding.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:36px">
+      <div class="section-eyebrow">// Cross-Reference</div>
+      <h2>Controls by Function × Category Matrix</h2>
+      <p>Any control can be described using BOTH its functional type (what it does) AND its implementation category (how it's deployed).</p>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Control</th>
+          <th>Functional Type</th>
+          <th>Implementation Category</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="td-label">Firewall rules</td><td>Preventive</td><td>Technical</td></tr>
+        <tr><td class="td-label">Security awareness training</td><td>Preventive</td><td>Administrative</td></tr>
+        <tr><td class="td-label">Badge access system</td><td>Preventive</td><td>Physical</td></tr>
+        <tr><td class="td-label">SIEM / log monitoring</td><td>Detective</td><td>Technical</td></tr>
+        <tr><td class="td-label">Security audit</td><td>Detective</td><td>Administrative</td></tr>
+        <tr><td class="td-label">Security cameras (CCTV)</td><td>Detective</td><td>Physical</td></tr>
+        <tr><td class="td-label">Backup &amp; restore procedures</td><td>Corrective/Recovery</td><td>Technical + Administrative</td></tr>
+        <tr><td class="td-label">Incident response plan</td><td>Corrective/Recovery</td><td>Administrative</td></tr>
+        <tr><td class="td-label">Emergency power (UPS)</td><td>Corrective/Recovery</td><td>Physical</td></tr>
+      </tbody>
+    </table>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="showSection('functional', document.querySelector('[data-section=functional]'))">← Functional Types</button>
+      <button class="btn btn-primary" onclick="showSection('selection', document.querySelector('[data-section=selection]'))">Next: Selection Guidance →</button>
+    </div>
+  </div>
+
+  <!-- ======================= SECTION: SELECTION ======================= -->
+  <div class="section" id="section-selection">
+    <div class="section-header">
+      <div class="section-eyebrow">// Section 4</div>
+      <h2>Selection &amp; Implementation Guidance</h2>
+      <p>Choosing the right controls requires a structured, risk-based approach. Organizations must match control strength to asset value, align with regulations, and implement using proven practices.</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-accent cyan"></div>
+        <div class="card-icon cyan">🏷️</div>
+        <h3>Asset Classification</h3>
+        <p>Identify critical systems and data first. Match control strength and priority to the value and sensitivity of each asset.</p>
+      </div>
+      <div class="card">
+        <div class="card-accent amber"></div>
+        <div class="card-icon amber">🗺️</div>
+        <h3>Threat Mapping</h3>
+        <p>Align chosen controls with identified threat scenarios and applicable regulations or standards (NIST, ISO, CMMC, HIPAA, PCI-DSS).</p>
+      </div>
+      <div class="card">
+        <div class="card-accent green"></div>
+        <div class="card-icon green">🧱</div>
+        <h3>Defense-in-Depth</h3>
+        <p>Combine administrative, technical, and physical controls to create layered protection and reduce single points of failure.</p>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:36px">
+      <div class="section-eyebrow">// Best Practices</div>
+      <h2>Implementation Principles</h2>
+    </div>
+
+    <div class="accordion-group">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        <div class="accordion-btn-left"><span class="accordion-btn-icon">🧪</span><span>Test &amp; Validate Controls</span></div>
+        <span class="accordion-arrow">▼</span>
+      </button>
+      <div class="accordion-body">
+        <ul>
+          <li>Run penetration tests to find gaps in preventive controls before attackers do.</li>
+          <li>Conduct tabletop exercises to validate that incident response procedures work in practice.</li>
+          <li>Perform control effectiveness audits to ensure controls are functioning as designed.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion-group">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        <div class="accordion-btn-left"><span class="accordion-btn-icon">🤖</span><span>Automate Where Practical</span></div>
+        <span class="accordion-arrow">▼</span>
+      </button>
+      <div class="accordion-body">
+        <ul>
+          <li>Leverage security orchestration and automation (SOAR) to speed response to detected events.</li>
+          <li>Implement patch automation to reduce the window of vulnerability exposure.</li>
+          <li>Use continuous monitoring tools to maintain visibility without relying solely on manual review.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion-group">
+      <button class="accordion-btn" onclick="toggleAccordion(this)">
+        <div class="accordion-btn-left"><span class="accordion-btn-icon">🔄</span><span>Lifecycle Management</span></div>
+        <span class="accordion-arrow">▼</span>
+      </button>
+      <div class="accordion-body">
+        <ul>
+          <li>Regularly update and tune controls as the threat landscape evolves.</li>
+          <li>Retire outdated controls that no longer address current risks or create operational burden.</li>
+          <li>Review and update documentation, policies, and procedures annually or after significant changes.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="showSection('categories', document.querySelector('[data-section=categories]'))">← Categories</button>
+      <button class="btn btn-primary" onclick="showSection('scenarios', document.querySelector('[data-section=scenarios]'))">Next: Real-World Scenarios →</button>
+    </div>
+  </div>
+
+  <!-- ======================= SECTION: SCENARIOS ======================= -->
+  <div class="section" id="section-scenarios">
+    <div class="section-header">
+      <div class="section-eyebrow">// Section 5 — Applied Learning</div>
+      <h2>Real-World Scenarios</h2>
+      <p>Explore how security controls are applied in three different organizational contexts. For each scenario, read the situation and answer the interactive question.</p>
+    </div>
+
+    <div class="scenario-selector">
+      <button class="scenario-pill active" onclick="showScenario(0, this)">🏪 Small Business</button>
+      <button class="scenario-pill" onclick="showScenario(1, this)">☁️ Cloud Environment</button>
+      <button class="scenario-pill" onclick="showScenario(2, this)">🚨 Incident Response</button>
+    </div>
+
+    <!-- Scenario 0: Small Business -->
+    <div class="scenario-box" id="scenario-0">
+      <div class="scenario-header">
+        <span>🏪</span>
+        <h3>SCENARIO: Small Business — Affordable Baseline Controls</h3>
+      </div>
+      <div class="scenario-body">
+        <div class="scenario-desc">
+          A 12-person accounting firm handles sensitive client tax data. They have a limited IT budget and one part-time IT contractor. They have experienced one phishing attack in the past year that resulted in a staff member clicking a malicious link. The owner wants to implement an affordable baseline set of security controls.
+        </div>
+        <div class="scenario-question">Which combination of controls represents the most cost-effective baseline for this firm?</div>
+        <div class="scenario-options">
+          <div class="scenario-option" onclick="answerScenario(this, false, 0, '❌ A full-time SOC and SIEM are enterprise-grade solutions well beyond the budget and needs of a 12-person firm. While powerful, these tools would be excessive and unmanageable without dedicated security staff.')">
+            <div class="option-letter">A</div>
+            Deploy a 24/7 Security Operations Center (SOC) and enterprise SIEM platform
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, true, 0, '✅ Correct! MFA stops credential theft from phishing. Weekly patching closes known vulnerabilities. A firewall blocks unauthorized network access. Staff phishing training addresses the human factor — the firm\'s known weakness. This combination is affordable, manageable, and directly addresses the firm\'s risk profile.')">
+            <div class="option-letter">B</div>
+            Implement MFA, weekly patching, firewall rules, and staff phishing awareness training
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, false, 0, '❌ Zero Trust requires significant technical infrastructure and expertise. While effective, it is complex to implement and maintain for a 12-person firm with part-time IT support. Start with the basics first.')">
+            <div class="option-letter">C</div>
+            Deploy a full Zero Trust network architecture with microsegmentation
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, false, 0, '❌ Relying solely on antivirus is insufficient in today\'s threat landscape. It is primarily a detective/preventive technical control but doesn\'t address phishing (the known threat), network perimeter, patching, or human factors.')">
+            <div class="option-letter">D</div>
+            Install antivirus software on all workstations
+          </div>
+        </div>
+        <div class="scenario-feedback" id="feedback-0"></div>
+        <button class="next-scenario-btn" id="next-0" onclick="showScenario(1, document.querySelectorAll('.scenario-pill')[1])">Next Scenario →</button>
+      </div>
+    </div>
+
+    <!-- Scenario 1: Cloud -->
+    <div class="scenario-box" id="scenario-1" style="display:none">
+      <div class="scenario-header">
+        <span>☁️</span>
+        <h3>SCENARIO: Cloud Environment — Securing Cloud Workloads</h3>
+      </div>
+      <div class="scenario-body">
+        <div class="scenario-desc">
+          A healthcare startup stores patient records in AWS. A recent penetration test revealed that several S3 buckets were publicly accessible and IAM roles had overly broad permissions. The security team needs to address these findings and implement appropriate cloud security controls.
+        </div>
+        <div class="scenario-question">Which set of controls directly addresses the identified vulnerabilities in this cloud environment?</div>
+        <div class="scenario-options">
+          <div class="scenario-option" onclick="answerScenario(this, false, 1, '❌ Physical controls (locks, guards) protect on-premises infrastructure. In a cloud environment, the physical security of data centers is the cloud provider\'s responsibility. These controls don\'t address the identified IAM and S3 bucket misconfigurations.')">
+            <div class="option-letter">A</div>
+            Install physical locks on server racks and hire a security guard for the data center
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, false, 1, '❌ Phishing training is a valuable administrative control but doesn\'t address the technical misconfigurations (public S3 buckets, over-privileged IAM roles) found in the penetration test. Training addresses human behavior, not cloud resource configuration.')">
+            <div class="option-letter">B</div>
+            Conduct a phishing simulation and provide security awareness training to all employees
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, true, 1, '✅ Correct! IAM policies with least privilege directly fix the over-permissioned roles. VPC segmentation isolates workloads. Encryption (KMS) protects data at rest and in transit. Continuous cloud monitoring (CloudTrail, GuardDuty, Security Hub) provides detective capability. This is the correct set of technical controls for a cloud environment.')">
+            <div class="option-letter">C</div>
+            Implement IAM least-privilege policies, VPC segmentation, encryption keys (KMS), and continuous cloud monitoring
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, false, 1, '❌ While a password policy is a useful administrative control, it doesn\'t address the core cloud misconfigurations. Public S3 buckets and over-privileged IAM roles require configuration-level technical controls, not just password requirements.')">
+            <div class="option-letter">D</div>
+            Enforce a strong password policy requiring 16-character passwords for all users
+          </div>
+        </div>
+        <div class="scenario-feedback" id="feedback-1"></div>
+        <button class="next-scenario-btn" id="next-1" onclick="showScenario(2, document.querySelectorAll('.scenario-pill')[2])">Next Scenario →</button>
+      </div>
+    </div>
+
+    <!-- Scenario 2: IR -->
+    <div class="scenario-box" id="scenario-2" style="display:none">
+      <div class="scenario-header">
+        <span>🚨</span>
+        <h3>SCENARIO: Incident Response — Ransomware Attack</h3>
+      </div>
+      <div class="scenario-body">
+        <div class="scenario-desc">
+          At 2:47 AM, a hospital's SIEM generates a critical alert: ransomware encryption activity is detected on 14 workstations in the radiology department. The IR team is paged. File shares are beginning to be encrypted. Backup systems are on a separate network segment.
+        </div>
+        <div class="scenario-question">In the correct sequence of the incident response lifecycle, what should the IR team do FIRST upon confirming the ransomware?</div>
+        <div class="scenario-options">
+          <div class="scenario-option" onclick="answerScenario(this, false, 2, '❌ Paying ransom is generally discouraged by the FBI and CISA. It does not guarantee data recovery, funds criminal activity, and skips proper containment — leaving the threat potentially active. Containment must come first.')">
+            <div class="option-letter">A</div>
+            Immediately pay the ransom to recover encrypted files and restore operations
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, false, 2, '❌ Wiping and rebuilding is part of the eradication and recovery phase — but doing it immediately without first containing the threat risks allowing the ransomware to spread to other systems, including the backup network.')">
+            <div class="option-letter">B</div>
+            Immediately wipe all 14 workstations and reinstall operating systems
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, true, 2, '✅ Correct! The NIST IR lifecycle is: Preparation → Detection → Containment → Eradication → Recovery → Post-Incident. Containment is the critical first action after detection. Network segmentation isolates the infected machines, stopping spread. Then the team can safely eradicate and recover from backups. The SIEM alert was the detective control; network isolation is the corrective control.')">
+            <div class="option-letter">C</div>
+            Activate the IR playbook: isolate infected workstations via network segmentation, then begin eradication and recovery from tested backups
+          </div>
+          <div class="scenario-option" onclick="answerScenario(this, false, 2, '❌ Notifying staff hospital-wide before containment could cause panic, alert attackers, and delay the critical first step of isolation. Notifications and communications are important but should follow containment actions.')">
+            <div class="option-letter">D</div>
+            Send an all-staff notification explaining the attack before taking any technical action
+          </div>
+        </div>
+        <div class="scenario-feedback" id="feedback-2"></div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="showSection('selection', document.querySelector('[data-section=selection]'))">← Selection Guidance</button>
+      <button class="btn btn-primary" onclick="showSection('classify', document.querySelector('[data-section=classify]'))">Next: Classify Controls →</button>
+    </div>
+  </div>
+
+  <!-- ======================= SECTION: CLASSIFY (DRAG & DROP) ======================= -->
+  <div class="section" id="section-classify">
+    <div class="section-header">
+      <div class="section-eyebrow">// Section 6 — Interactive Exercise</div>
+      <h2>Classify the Controls</h2>
+      <p>Drag each security control from the left panel and drop it into the correct functional type category. Then check your answers.</p>
+    </div>
+
+    <div class="drag-area">
+      <div class="drag-source">
+        <h4>// Controls to Classify</h4>
+        <div class="draggable-items" id="drag-items">
+          <div class="drag-chip" draggable="true" data-answer="preventive" id="chip-1" ondragstart="dragStart(event)">🔑 Multi-Factor Authentication (MFA)</div>
+          <div class="drag-chip" draggable="true" data-answer="detective" id="chip-2" ondragstart="dragStart(event)">📋 SIEM Log Monitoring</div>
+          <div class="drag-chip" draggable="true" data-answer="corrective" id="chip-3" ondragstart="dragStart(event)">💾 Backup &amp; Restore</div>
+          <div class="drag-chip" draggable="true" data-answer="preventive" id="chip-4" ondragstart="dragStart(event)">🌐 Firewall Rules</div>
+          <div class="drag-chip" draggable="true" data-answer="detective" id="chip-5" ondragstart="dragStart(event)">🚨 Intrusion Detection System (IDS)</div>
+          <div class="drag-chip" draggable="true" data-answer="corrective" id="chip-6" ondragstart="dragStart(event)">🚑 Incident Response Plan</div>
+        </div>
+      </div>
+
+      <div class="drag-targets">
+        <h4>// Drop Zone — Functional Types</h4>
+
+        <div class="drop-zone-label">🛡️ <span>PREVENTIVE</span> Controls</div>
+        <div class="drop-zone" id="zone-preventive"
+          ondragover="allowDrop(event)"
+          ondrop="drop(event, 'preventive')"
+          ondragenter="this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')">
+        </div>
+
+        <div class="drop-zone-label" style="margin-top:12px">🔍 <span>DETECTIVE</span> Controls</div>
+        <div class="drop-zone" id="zone-detective"
+          ondragover="allowDrop(event)"
+          ondrop="drop(event, 'detective')"
+          ondragenter="this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')">
+        </div>
+
+        <div class="drop-zone-label" style="margin-top:12px">🔧 <span>CORRECTIVE</span> Controls</div>
+        <div class="drop-zone" id="zone-corrective"
+          ondragover="allowDrop(event)"
+          ondrop="drop(event, 'corrective')"
+          ondragenter="this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')">
+        </div>
+      </div>
+    </div>
+
+    <button class="drag-submit-btn" onclick="checkDragAnswers()">Check My Classification</button>
+    <button class="drag-submit-btn" style="background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border);margin-left:10px" onclick="resetDrag()">↺ Reset</button>
+
+    <div class="drag-result" id="drag-result"></div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="showSection('scenarios', document.querySelector('[data-section=scenarios]'))">← Scenarios</button>
+      <button class="btn btn-primary" onclick="showSection('glossary', document.querySelector('[data-section=glossary]'))">Next: Glossary →</button>
+    </div>
+  </div>
+
+  <!-- ======================= SECTION: GLOSSARY ======================= -->
+  <div class="section" id="section-glossary">
+    <div class="section-header">
+      <div class="section-eyebrow">// Section 7</div>
+      <h2>Key Terms Glossary</h2>
+      <p>Search for any term covered in this module. Use this as a reference while studying for Security+ or other certification exams.</p>
+    </div>
+
+    <input type="text" class="glossary-search" placeholder="Search terms... (e.g., 'firewall', 'MFA', 'detective')" oninput="filterGlossary(this.value)">
+
+    <div class="glossary-list" id="glossary-list">
+      <div class="glossary-item" data-term="security control">
+        <div class="glossary-term">Security Control</div>
+        <div class="glossary-def">A safeguard or countermeasure used to protect the confidentiality, integrity, and availability of information systems. Controls can be preventive, detective, or corrective in function, and administrative, technical, or physical in implementation.</div>
+      </div>
+      <div class="glossary-item" data-term="preventive control">
+        <div class="glossary-term">Preventive Control</div>
+        <div class="glossary-def">A security control designed to stop threats before they occur or prevent unauthorized access from happening. Examples include firewalls, access controls, hardening, and MFA.</div>
+      </div>
+      <div class="glossary-item" data-term="detective control">
+        <div class="glossary-term">Detective Control</div>
+        <div class="glossary-def">A security control that identifies when a security incident has occurred or is occurring. Examples include SIEM systems, IDS, log monitoring, and security audits.</div>
+      </div>
+      <div class="glossary-item" data-term="corrective control recovery">
+        <div class="glossary-term">Corrective / Recovery Control</div>
+        <div class="glossary-def">A security control that reduces the impact of a security incident and restores normal operations. Examples include incident response plans, patch remediation, and backup systems.</div>
+      </div>
+      <div class="glossary-item" data-term="administrative managerial control">
+        <div class="glossary-term">Administrative (Managerial) Control</div>
+        <div class="glossary-def">Controls implemented through policies, procedures, training, and governance frameworks. They govern human behavior and organizational security culture. Examples: security policies, AUP, security awareness training.</div>
+      </div>
+      <div class="glossary-item" data-term="technical logical control">
+        <div class="glossary-term">Technical (Logical) Control</div>
+        <div class="glossary-def">Controls implemented through technology — hardware, software, or network infrastructure. Examples include encryption, IAM systems, firewalls, antivirus, and VPNs.</div>
+      </div>
+      <div class="glossary-item" data-term="physical control">
+        <div class="glossary-term">Physical Control</div>
+        <div class="glossary-def">Controls that protect the physical environment — buildings, hardware, and assets. Examples: locks, badge readers, CCTV, guards, fire suppression, and UPS systems.</div>
+      </div>
+      <div class="glossary-item" data-term="defense in depth">
+        <div class="glossary-term">Defense-in-Depth</div>
+        <div class="glossary-def">A layered security strategy that combines multiple types of controls so that if one fails, others remain to protect assets. Reduces single points of failure in a security architecture.</div>
+      </div>
+      <div class="glossary-item" data-term="cia triad confidentiality integrity availability">
+        <div class="glossary-term">CIA Triad</div>
+        <div class="glossary-def">The three core properties of information security: Confidentiality (keeping data private), Integrity (keeping data accurate and unaltered), and Availability (keeping systems and data accessible to authorized users).</div>
+      </div>
+      <div class="glossary-item" data-term="iam identity access management mfa rbac">
+        <div class="glossary-term">Identity and Access Management (IAM)</div>
+        <div class="glossary-def">A framework of policies and technologies for ensuring the right individuals access the right resources at the right time. Includes authentication, MFA, SSO, and RBAC (role-based access control).</div>
+      </div>
+      <div class="glossary-item" data-term="siem security information event management">
+        <div class="glossary-term">SIEM (Security Information and Event Management)</div>
+        <div class="glossary-def">A detective technical control that aggregates and analyzes log data from across an organization's environment to detect threats, generate alerts, and support incident investigation.</div>
+      </div>
+      <div class="glossary-item" data-term="incident response ir plan playbook">
+        <div class="glossary-term">Incident Response (IR)</div>
+        <div class="glossary-def">A corrective/recovery control consisting of structured procedures to detect, contain, eradicate, and recover from security incidents. The NIST IR lifecycle includes: Preparation, Detection, Containment, Eradication, Recovery, and Post-Incident Review.</div>
+      </div>
+      <div class="glossary-item" data-term="least privilege rbac role based access">
+        <div class="glossary-term">Principle of Least Privilege</div>
+        <div class="glossary-def">A security principle requiring that users, processes, and systems be granted only the minimum access rights necessary to perform their function. Reduces the attack surface and limits damage from compromised accounts.</div>
+      </div>
+      <div class="glossary-item" data-term="hardening patching vulnerability">
+        <div class="glossary-term">Hardening</div>
+        <div class="glossary-def">The process of reducing a system's attack surface by removing unnecessary software, disabling unused services, applying secure configurations (e.g., CIS Benchmarks), and keeping systems patched. A preventive technical control.</div>
+      </div>
+      <div class="glossary-item" data-term="risk assessment management">
+        <div class="glossary-term">Risk Assessment</div>
+        <div class="glossary-def">An administrative control process that identifies, analyzes, and evaluates risks to organizational assets. Informs control selection by prioritizing threats based on likelihood and potential impact.</div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="showSection('classify', document.querySelector('[data-section=classify]'))">← Classify Controls</button>
+      <button class="btn btn-primary" onclick="showSection('quiz', document.querySelector('[data-section=quiz]'))">Next: Knowledge Check →</button>
+    </div>
+  </div>
+
+  <!-- ======================= SECTION: QUIZ ======================= -->
+  <div class="section" id="section-quiz">
+    <div class="section-header">
+      <div class="section-eyebrow">// Section 8 — Assessment</div>
+      <h2>Knowledge Check</h2>
+      <p>Test your understanding of security controls with 8 exam-style questions. Choose the best answer for each question.</p>
+    </div>
+
+    <div class="quiz-container">
+      <div class="quiz-progress" id="quiz-progress"></div>
+
+      <div id="quiz-questions">
+        <div class="quiz-q-num" id="q-num">QUESTION 1 OF 8</div>
+        <div class="quiz-q" id="q-text"></div>
+        <div class="quiz-opts" id="q-opts"></div>
+        <div class="quiz-feedback" id="q-feedback"></div>
+        <button class="quiz-next-btn" id="q-next" onclick="nextQuestion()">Next Question →</button>
+      </div>
+
+      <div class="quiz-score" id="quiz-score">
+        <div class="quiz-score-num" id="score-num"></div>
+        <div class="quiz-score-label">Questions Correct</div>
+        <div id="score-message" style="font-size:15px;color:var(--text-secondary);margin-bottom:28px;"></div>
+        <button class="quiz-retry-btn" onclick="startQuiz()">↺ Retake Quiz</button>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="showSection('glossary', document.querySelector('[data-section=glossary]'))">← Glossary</button>
+      <button class="btn btn-primary" onclick="showSection('overview', document.querySelector('[data-section=overview]'))">↩ Back to Start</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ===== NAVIGATION =====
+const sectionMeta = {
+  overview:    { title: 'Security Controls Overview',         section: 'MODULE INTRO' },
+  purpose:     { title: 'Core Purpose of Security Controls',   section: 'SECTION 1' },
+  functional:  { title: 'Types by Function',                  section: 'SECTION 2' },
+  categories:  { title: 'Implementation Categories',          section: 'SECTION 3' },
+  selection:   { title: 'Selection & Implementation',          section: 'SECTION 4' },
+  scenarios:   { title: 'Real-World Scenarios',               section: 'SECTION 5' },
+  classify:    { title: 'Classify the Controls',              section: 'SECTION 6' },
+  glossary:    { title: 'Key Terms Glossary',                 section: 'SECTION 7' },
+  quiz:        { title: 'Knowledge Check',                    section: 'SECTION 8' },
+};
+
+const visited = new Set();
+
+function showSection(id, navEl) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+
+  visited.add(id);
+
+  // Mark previous nav items as completed
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    if (visited.has(item.dataset.section) && item.dataset.section !== id) {
+      item.classList.add('completed');
+    }
+  });
+
+  // Update topbar
+  const meta = sectionMeta[id];
+  if (meta) {
+    document.getElementById('topbarSection').textContent = meta.section;
+    document.getElementById('topbarTitle').textContent = meta.title;
+  }
+
+  // Update progress
+  const total = Object.keys(sectionMeta).length;
+  const pct = Math.round((visited.size / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = pct + '% Complete';
+
+  // Scroll to top of main
+  document.getElementById('main').scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Init quiz if entering that section
+  if (id === 'quiz' && currentQ === -1) startQuiz();
+}
+
+// ===== ACCORDIONS =====
+function toggleAccordion(btn) {
+  const body = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.accordion-btn').forEach(b => {
+    b.classList.remove('open');
+    b.nextElementSibling.classList.remove('open');
+  });
+  if (!isOpen) {
+    btn.classList.add('open');
+    body.classList.add('open');
+  }
+}
+
+// ===== TABS =====
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== LAYERED DEFENSE TOGGLE =====
+function toggleLayer(layerEl, detailId) {
+  const detail = document.getElementById(detailId);
+  const isOpen = detail.classList.contains('show');
+  // Close all
+  document.querySelectorAll('.defense-detail').forEach(d => d.classList.remove('show'));
+  document.querySelectorAll('.defense-layer').forEach(l => l.classList.remove('active'));
+  if (!isOpen) {
+    detail.classList.add('show');
+    layerEl.classList.add('active');
+  }
+}
+
+// ===== SCENARIOS =====
+function showScenario(idx, pill) {
+  document.querySelectorAll('.scenario-box').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.scenario-pill').forEach(p => p.classList.remove('active'));
+  const box = document.getElementById('scenario-' + idx);
+  if (box) box.style.display = 'block';
+  if (pill) pill.classList.add('active');
+}
+
+const scenarioAnswered = {};
+
+function answerScenario(optEl, correct, idx, feedback) {
+  if (scenarioAnswered[idx]) return;
+  scenarioAnswered[idx] = true;
+
+  const allOpts = optEl.parentElement.querySelectorAll('.scenario-option');
+  allOpts.forEach(o => {
+    o.style.pointerEvents = 'none';
+    o.classList.add('neutral');
+  });
+
+  optEl.classList.remove('neutral');
+  optEl.classList.add(correct ? 'correct' : 'incorrect');
+  optEl.querySelector('.option-letter').style.background = correct ? 'var(--green)' : 'var(--red)';
+  optEl.querySelector('.option-letter').style.color = '#000';
+
+  const fb = document.getElementById('feedback-' + idx);
+  fb.textContent = feedback;
+  fb.className = 'scenario-feedback show ' + (correct ? 'correct' : 'incorrect');
+
+  const nextBtn = document.getElementById('next-' + idx);
+  if (nextBtn) nextBtn.classList.add('show');
+}
+
+// ===== DRAG & DROP =====
+let draggedId = null;
+const droppedItems = {}; // zone -> [chipIds]
+
+function dragStart(e) {
+  draggedId = e.target.id;
+  e.target.classList.add('dragging');
+}
+
+function allowDrop(e) { e.preventDefault(); }
+
+function drop(e, zone) {
+  e.preventDefault();
+  const chip = document.getElementById(draggedId);
+  if (!chip || chip.classList.contains('placed')) return;
+
+  const zoneEl = document.getElementById('zone-' + zone);
+  zoneEl.classList.remove('drag-over');
+
+  // Clone chip into zone
+  const clone = chip.cloneNode(true);
+  clone.draggable = false;
+  clone.classList.remove('dragging');
+  clone.style.opacity = '1';
+  clone.style.cursor = 'default';
+  clone.style.marginBottom = '6px';
+  zoneEl.appendChild(clone);
+
+  chip.classList.add('placed', 'dragging');
+  chip.style.opacity = '0.35';
+  chip.draggable = false;
+
+  if (!droppedItems[zone]) droppedItems[zone] = [];
+  droppedItems[zone].push({ id: draggedId, answer: chip.dataset.answer });
+  draggedId = null;
+}
+
+function checkDragAnswers() {
+  let correct = 0, total = 0;
+
+  ['preventive', 'detective', 'corrective'].forEach(zone => {
+    const zoneEl = document.getElementById('zone-' + zone);
+    const items = droppedItems[zone] || [];
+    items.forEach(item => {
+      total++;
+      if (item.answer === zone) { correct++; }
+    });
+    // Visual
+    if (items.length > 0) {
+      const allCorrect = items.every(i => i.answer === zone);
+      zoneEl.classList.remove('correct', 'incorrect');
+      zoneEl.classList.add(allCorrect ? 'correct' : 'incorrect');
+    }
+  });
+
+  const result = document.getElementById('drag-result');
+  result.className = 'drag-result show';
+  if (correct === 6 && total === 6) {
+    result.style.background = 'rgba(0,230,118,0.1)';
+    result.style.border = '1px solid var(--green)';
+    result.style.color = 'var(--green)';
+    result.innerHTML = `✅ Perfect! ${correct}/6 controls correctly classified. You understand the functional types of security controls!`;
+  } else if (total < 6) {
+    result.style.background = 'rgba(255,167,38,0.08)';
+    result.style.border = '1px solid var(--amber)';
+    result.style.color = 'var(--amber)';
+    result.innerHTML = `⚠️ You've classified ${total}/6 controls. Drag the remaining items to check all answers.`;
+  } else {
+    result.style.background = 'rgba(239,83,80,0.08)';
+    result.style.border = '1px solid var(--red)';
+    result.style.color = '#ef9a9a';
+    result.innerHTML = `❌ ${correct}/6 correct. Review the misplaced controls and try again. Tip: Preventive = block, Detective = find, Corrective = fix.`;
+  }
+}
+
+function resetDrag() {
+  ['preventive', 'detective', 'corrective'].forEach(zone => {
+    const zoneEl = document.getElementById('zone-' + zone);
+    const clones = zoneEl.querySelectorAll('.drag-chip');
+    clones.forEach(c => c.remove());
+    zoneEl.classList.remove('correct', 'incorrect', 'drag-over');
+  });
+  Object.keys(droppedItems).forEach(k => delete droppedItems[k]);
+
+  document.querySelectorAll('#drag-items .drag-chip').forEach(chip => {
+    chip.classList.remove('placed', 'dragging');
+    chip.style.opacity = '1';
+    chip.draggable = true;
+  });
+
+  const result = document.getElementById('drag-result');
+  result.className = 'drag-result';
+}
+
+// ===== GLOSSARY SEARCH =====
+function filterGlossary(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('.glossary-item').forEach(item => {
+    const text = item.dataset.term + ' ' + item.textContent.toLowerCase();
+    item.classList.toggle('hidden', q.length > 0 && !text.includes(q));
+  });
+}
+
+// ===== QUIZ =====
+const quizData = [
+  {
+    q: "A company installs a firewall to block unauthorized traffic from entering the network. What type of security control is this?",
+    opts: ["Detective — Technical", "Preventive — Technical", "Corrective — Physical", "Administrative — Preventive"],
+    ans: 1,
+    exp: "A firewall is a Preventive control (it stops threats before they occur) and a Technical/Logical control (implemented through technology). Firewalls filter traffic based on rules, acting as a barrier against unauthorized access."
+  },
+  {
+    q: "An organization discovers a ransomware attack at 3 AM and activates its Incident Response Plan to contain and eradicate the threat. What functional type of control is the Incident Response Plan?",
+    opts: ["Preventive", "Detective", "Corrective / Recovery", "Administrative only"],
+    ans: 2,
+    exp: "An Incident Response Plan is a Corrective/Recovery control. It doesn't prevent the incident or detect it — it provides structured procedures to contain, eradicate, and recover from the incident once it has been identified."
+  },
+  {
+    q: "A security analyst reviews SIEM alerts that indicate unusual login activity from multiple countries simultaneously. The SIEM is an example of which combination?",
+    opts: ["Preventive — Physical", "Corrective — Technical", "Detective — Technical", "Detective — Administrative"],
+    ans: 2,
+    exp: "A SIEM is a Detective control (it identifies security events after or during their occurrence) and a Technical/Logical control (it is a software-based system). It collects and correlates logs to detect anomalies and generate alerts."
+  },
+  {
+    q: "Which of the following is an example of an Administrative (Managerial) security control?",
+    opts: ["Installing antivirus software on all endpoints", "Implementing badge readers at server room doors", "Enforcing a mandatory annual security awareness training program", "Deploying an intrusion detection system (IDS)"],
+    ans: 2,
+    exp: "Security awareness training is an Administrative control — it governs human behavior through education and policy, rather than through technology or physical barriers. It is also preventive in function, as it reduces the risk of human-caused incidents like phishing clicks."
+  },
+  {
+    q: "According to the defense-in-depth principle, why should organizations combine administrative, technical, and physical controls?",
+    opts: ["To reduce the total cost of security spending", "To satisfy all compliance frameworks simultaneously", "To create layered protection and eliminate single points of failure", "To eliminate the need for detective controls"],
+    ans: 2,
+    exp: "Defense-in-depth means layering multiple control types so that if one fails, others remain to protect assets. No single control is perfect — combining administrative, technical, and physical controls reduces single points of failure and increases overall resilience."
+  },
+  {
+    q: "A small business implements MFA, weekly patching, a firewall, and phishing training. Which type of control is the phishing awareness training?",
+    opts: ["Preventive — Administrative", "Detective — Technical", "Corrective — Physical", "Preventive — Physical"],
+    ans: 0,
+    exp: "Phishing awareness training is a Preventive control (it reduces the likelihood of staff clicking malicious links, preventing incidents) and an Administrative control (it is delivered through education and policy, governing human behavior)."
+  },
+  {
+    q: "An organization needs to select security controls. According to best practices, what should they do FIRST?",
+    opts: ["Purchase the most expensive available security tools", "Implement all possible controls simultaneously", "Perform asset classification to identify critical systems and match control strength to asset value", "Deploy technical controls before administrative controls"],
+    ans: 2,
+    exp: "The risk-based approach to control selection begins with asset classification — identifying what is most valuable and sensitive. This allows organizations to prioritize control strength proportionally, ensuring the most critical assets receive the most protection without wasting resources."
+  },
+  {
+    q: "A hospital uses fire suppression systems, HVAC controls, and badge-access server rooms to protect its infrastructure. What category of controls are these?",
+    opts: ["Technical (Logical) Controls", "Administrative (Managerial) Controls", "Physical Controls", "Detective Controls"],
+    ans: 2,
+    exp: "Fire suppression, HVAC, and badge-access systems are all Physical controls — they protect the physical environment, facilities, and hardware from threats like fire, temperature extremes, and unauthorized physical access. Physical controls are one of the three implementation categories alongside Administrative and Technical."
+  }
+];
+
+let currentQ = -1;
+let score = 0;
+let answered = false;
+
+function startQuiz() {
+  currentQ = 0;
+  score = 0;
+  answered = false;
+
+  // Build pip progress
+  const progress = document.getElementById('quiz-progress');
+  progress.innerHTML = '';
+  quizData.forEach((_, i) => {
+    const pip = document.createElement('div');
+    pip.className = 'quiz-pip';
+    pip.id = 'pip-' + i;
+    progress.appendChild(pip);
+  });
+
+  document.getElementById('quiz-questions').style.display = 'block';
+  document.getElementById('quiz-score').classList.remove('show');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = quizData[currentQ];
+  document.getElementById('q-num').textContent = `QUESTION ${currentQ + 1} OF ${quizData.length}`;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('q-feedback').className = 'quiz-feedback';
+  document.getElementById('q-next').className = 'quiz-next-btn';
+
+  // Update pips
+  quizData.forEach((_, i) => {
+    const pip = document.getElementById('pip-' + i);
+    if (i < currentQ) pip.className = 'quiz-pip done';
+    else if (i === currentQ) pip.className = 'quiz-pip active';
+    else pip.className = 'quiz-pip';
+  });
+
+  const optsEl = document.getElementById('q-opts');
+  optsEl.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  q.opts.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'quiz-opt';
+    div.innerHTML = `<div class="quiz-opt-letter">${letters[i]}</div><span>${opt}</span>`;
+    div.onclick = () => answerQuiz(i, div);
+    optsEl.appendChild(div);
+  });
+}
+
+function answerQuiz(chosen, optEl) {
+  if (answered) return;
+  answered = true;
+
+  const q = quizData[currentQ];
+  const allOpts = document.querySelectorAll('.quiz-opt');
+  allOpts.forEach(o => { o.classList.add('disabled'); o.style.pointerEvents = 'none'; });
+
+  const correct = chosen === q.ans;
+  if (correct) score++;
+
+  optEl.classList.add(correct ? 'correct' : 'incorrect');
+  allOpts[q.ans].classList.add('correct');
+
+  const fb = document.getElementById('q-feedback');
+  fb.textContent = (correct ? '✅ Correct! ' : '❌ Incorrect. ') + q.exp;
+  fb.className = 'quiz-feedback show ' + (correct ? 'correct' : 'incorrect');
+
+  document.getElementById('pip-' + currentQ).className = 'quiz-pip ' + (correct ? 'done' : 'done');
+  document.getElementById('pip-' + currentQ).style.background = correct ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('q-next').className = 'quiz-next-btn show';
+  document.getElementById('q-next').textContent = currentQ < quizData.length - 1 ? 'Next Question →' : 'See Results →';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= quizData.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('quiz-questions').style.display = 'none';
+  const scoreEl = document.getElementById('quiz-score');
+  scoreEl.classList.add('show');
+
+  const pct = Math.round((score / quizData.length) * 100);
+  const numEl = document.getElementById('score-num');
+  numEl.textContent = `${score}/${quizData.length}`;
+  numEl.style.color = score >= 6 ? 'var(--green)' : score >= 4 ? 'var(--amber)' : 'var(--red)';
+
+  const msgs = {
+    high: "🏆 Excellent! You have a strong command of security controls. You're ready to apply these concepts on exams and in practice.",
+    mid:  "📚 Good effort! Review the questions you missed and revisit the relevant sections. You're building solid foundational knowledge.",
+    low:  "💪 Keep studying! Go back through the module sections, engage with the scenarios, and retake the quiz when you're ready."
+  };
+
+  document.getElementById('score-message').textContent =
+    pct >= 75 ? msgs.high : pct >= 50 ? msgs.mid : msgs.low;
+}
+
+// Initialize
+visited.add('overview');
+document.getElementById('progressFill').style.width = Math.round(1/9*100) + '%';
+document.getElementById('progressLabel').textContent = Math.round(1/9*100) + '% Complete';
+</script>
+</body>
+</html>
