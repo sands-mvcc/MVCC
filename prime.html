@@ -1,132 +1,1383 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prime Number Interactive Quiz</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-            background-color: #f0f0f0;
-            color: #333;
-        }
-        .number-container {
-            margin: 20px;
-        }
-        .number {
-            display: inline-block;
-            margin: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #fff;
-            border: 1px solid #333;
-            width: 100px;
-            font-size: 2em;
-        }
-        .button-container {
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 1em;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #555;
-            color: white;
-        }
-        .prime {
-            background-color: red;
-            color: white;
-        }
-        .not-prime {
-            background-color: black;
-            color: white;
-        }
-        #score {
-            margin-top: 20px;
-            font-size: 1.5em;
-        }
-        #description {
-            margin-bottom: 20px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prime Numbers — Interactive Learning Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e3a5f;
+    --prime: #00e5ff;
+    --prime-glow: rgba(0,229,255,0.18);
+    --composite: #ff6b35;
+    --composite-glow: rgba(255,107,53,0.18);
+    --gold: #ffd700;
+    --gold-glow: rgba(255,215,0,0.18);
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --radius: 12px;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── STARFIELD ── */
+  #starfield {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    overflow: hidden;
+  }
+  .star {
+    position: absolute; background: white; border-radius: 50%;
+    animation: twinkle var(--dur, 3s) ease-in-out infinite alternate;
+    animation-delay: var(--delay, 0s);
+  }
+  @keyframes twinkle { from { opacity: 0.1; } to { opacity: 0.7; } }
+
+  /* ── LAYOUT ── */
+  #app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--prime), transparent);
+    box-shadow: 0 0 20px var(--prime);
+  }
+  .header-eyebrow {
+    font-family: var(--mono);
+    color: var(--prime);
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  header h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, var(--prime) 60%, var(--purple) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+  header p {
+    color: var(--text-dim);
+    font-size: 1rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+
+  /* ── NAV TABS ── */
+  nav {
+    display: flex; gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+    margin-bottom: 28px;
+    overflow-x: auto;
+  }
+  .tab {
+    flex: 1; min-width: 120px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none; border-radius: 8px;
+    color: var(--text-muted);
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    text-align: center;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .tab:hover { color: var(--text); background: var(--surface2); }
+  .tab.active {
+    background: var(--prime);
+    color: #000;
+    box-shadow: 0 0 20px var(--prime-glow);
+  }
+
+  /* ── PANELS ── */
+  .panel { display: none; animation: fadeIn 0.35s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--prime);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+  }
+  .card-title .icon { font-size: 1.2rem; }
+
+  /* ── INTRO PANEL ── */
+  .concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 640px) { .concept-grid { grid-template-columns: 1fr; } }
+  .concept-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .concept-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .concept-card.prime-card::before { background: var(--prime); box-shadow: 0 0 10px var(--prime); }
+  .concept-card.composite-card::before { background: var(--composite); box-shadow: 0 0 10px var(--composite); }
+  .concept-card.special-card::before { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+  .concept-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+  .concept-card.prime-card h3 { color: var(--prime); }
+  .concept-card.composite-card h3 { color: var(--composite); }
+  .concept-card.special-card h3 { color: var(--gold); }
+  .concept-card p { color: var(--text-dim); font-size: 0.85rem; line-height: 1.6; }
+  .examples-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .num-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .num-badge.prime { background: var(--prime-glow); border: 1px solid var(--prime); color: var(--prime); }
+  .num-badge.composite { background: var(--composite-glow); border: 1px solid var(--composite); color: var(--composite); }
+  .num-badge.special { background: var(--gold-glow); border: 1px solid var(--gold); color: var(--gold); }
+
+  /* ── REAL-WORLD ── */
+  .rw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .rw-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+  }
+  .rw-card .rw-icon { font-size: 2rem; margin-bottom: 10px; }
+  .rw-card h4 { font-size: 0.85rem; font-weight: 700; color: var(--prime); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rw-card p { font-size: 0.78rem; color: var(--text-dim); line-height: 1.5; }
+
+  /* ── SIEVE PANEL ── */
+  #sieve-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+    margin: 20px 0;
+  }
+  .sieve-cell {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+    font-weight: 700;
+    cursor: default;
+    transition: all 0.3s;
+    position: relative;
+    user-select: none;
+  }
+  .sieve-cell.eliminated {
+    background: rgba(239,68,68,0.08);
+    color: rgba(239,68,68,0.4);
+    border-color: rgba(239,68,68,0.2);
+    text-decoration: line-through;
+  }
+  .sieve-cell.highlighted {
+    background: rgba(167,139,250,0.25);
+    border-color: var(--purple);
+    color: var(--purple);
+    transform: scale(1.08);
+    box-shadow: 0 0 12px rgba(167,139,250,0.4);
+  }
+  .sieve-cell.confirmed-prime {
+    background: var(--prime-glow);
+    border-color: var(--prime);
+    color: var(--prime);
+    box-shadow: 0 0 10px rgba(0,229,255,0.3);
+  }
+  .sieve-cell.one {
+    background: var(--gold-glow);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .sieve-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    padding: 10px 20px;
+    border: none; border-radius: 8px;
+    font-family: var(--sans);
+    font-weight: 700; font-size: 0.8rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--prime); color: #000;
+    box-shadow: 0 0 15px var(--prime-glow);
+  }
+  .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--prime); color: var(--prime); }
+  .btn-danger {
+    background: rgba(239,68,68,0.15); color: var(--red);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .sieve-status {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    min-height: 48px;
+    line-height: 1.5;
+  }
+  .speed-control { display: flex; align-items: center; gap: 10px; }
+  .speed-control label { font-size: 0.8rem; color: var(--text-muted); }
+  .speed-control input { accent-color: var(--prime); cursor: pointer; }
+
+  /* ── DIVISIBILITY TESTER ── */
+  .tester-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-group label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  input[type="number"] {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 1rem;
+    width: 160px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="number"]:focus { border-color: var(--prime); box-shadow: 0 0 10px var(--prime-glow); }
+  .divisor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .divisor-test {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    text-align: center;
+    transition: all 0.3s;
+    animation: popIn 0.3s ease forwards;
+  }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+  .divisor-test.divides {
+    background: rgba(239,68,68,0.1);
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .divisor-test.no-divide {
+    background: rgba(34,197,94,0.1);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .verdict-box {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: all 0.4s;
+    animation: popIn 0.4s ease;
+  }
+  .verdict-prime {
+    background: var(--prime-glow);
+    border: 2px solid var(--prime);
+    color: var(--prime);
+    box-shadow: 0 0 30px var(--prime-glow);
+  }
+  .verdict-composite {
+    background: var(--composite-glow);
+    border: 2px solid var(--composite);
+    color: var(--composite);
+    box-shadow: 0 0 30px var(--composite-glow);
+  }
+  .verdict-special {
+    background: var(--gold-glow);
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 30px var(--gold-glow);
+  }
+  .factor-visualization {
+    margin-top: 16px;
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  }
+  .factor-chip {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .factor-chip.is-prime { border-color: var(--prime); color: var(--prime); background: var(--prime-glow); }
+
+  /* ── FACTOR TREE ── */
+  #tree-container {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    min-height: 300px;
+    overflow-x: auto;
+    text-align: center;
+  }
+  svg.tree-svg { max-width: 100%; }
+  .tree-node {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tree-node circle {
+    fill: var(--surface2);
+    stroke: var(--border);
+    stroke-width: 2;
+    transition: all 0.2s;
+  }
+  .tree-node.prime-leaf circle {
+    fill: var(--prime-glow);
+    stroke: var(--prime);
+    stroke-width: 2.5;
+  }
+  .tree-node text {
+    fill: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+  }
+  .tree-node.prime-leaf text { fill: var(--prime); }
+  .tree-edge { stroke: var(--border); stroke-width: 1.5; fill: none; }
+  .primefact-display {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--prime);
+    text-align: center;
+    padding: 16px;
+    background: var(--prime-glow);
+    border: 1px solid var(--prime);
+    border-radius: 8px;
+    margin-top: 16px;
+    display: none;
+  }
+
+  /* ── QUIZ PANEL ── */
+  .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .score-display {
+    display: flex; gap: 16px;
+  }
+  .score-item {
+    text-align: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+  }
+  .score-item .val { font-size: 1.5rem; font-weight: 800; font-family: var(--mono); }
+  .score-item .val.correct { color: var(--green); }
+  .score-item .val.wrong { color: var(--red); }
+  .score-item .lbl { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+  .quiz-question {
+    text-align: center;
+    padding: 32px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+  .quiz-number {
+    font-size: 4rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    background: linear-gradient(135deg, #fff, var(--prime));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .quiz-prompt { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 20px; }
+  .quiz-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .quiz-btn {
+    padding: 14px 32px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 140px;
+  }
+  .quiz-btn.prime-btn {
+    background: var(--prime-glow);
+    border-color: var(--prime);
+    color: var(--prime);
+  }
+  .quiz-btn.prime-btn:hover { background: rgba(0,229,255,0.3); transform: translateY(-2px); }
+  .quiz-btn.composite-btn {
+    background: var(--composite-glow);
+    border-color: var(--composite);
+    color: var(--composite);
+  }
+  .quiz-btn.composite-btn:hover { background: rgba(255,107,53,0.3); transform: translateY(-2px); }
+  .quiz-btn:disabled { opacity: 0.5; cursor: default; transform: none !important; }
+  .quiz-btn.correct-flash { background: rgba(34,197,94,0.3) !important; border-color: var(--green) !important; color: var(--green) !important; }
+  .quiz-btn.wrong-flash { background: rgba(239,68,68,0.3) !important; border-color: var(--red) !important; color: var(--red) !important; }
+  .quiz-feedback {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    display: none;
+    animation: popIn 0.3s ease;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct-fb { background: rgba(34,197,94,0.1); border: 1px solid var(--green); color: var(--green); }
+  .quiz-feedback.wrong-fb { background: rgba(239,68,68,0.1); border: 1px solid var(--red); color: var(--red); }
+  .quiz-mode-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 28px; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; background: var(--prime); transition: width 0.5s ease; box-shadow: 0 0 8px var(--prime); }
+
+  /* ── CRYPTOGRAPHY DEMO ── */
+  .crypto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .crypto-grid { grid-template-columns: 1fr; } }
+  .crypto-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .crypto-box h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; color: var(--prime); }
+  .prime-selector { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .prime-chip {
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .prime-chip.selected { background: var(--prime-glow); border-color: var(--prime); color: var(--prime); }
+  .big-number {
+    font-family: var(--mono);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--gold);
+    padding: 12px;
+    background: var(--gold-glow);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    text-align: center;
+    word-break: break-all;
+    margin-top: 8px;
+  }
+  .crypto-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; line-height: 1.6; }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; padding-left: 30px; }
+  .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--prime), var(--purple), transparent); }
+  .timeline-item { position: relative; margin-bottom: 24px; padding-left: 20px; }
+  .timeline-item::before {
+    content: '';
+    position: absolute; left: -26px; top: 6px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--prime);
+    box-shadow: 0 0 8px var(--prime);
+  }
+  .timeline-year { font-family: var(--mono); font-size: 0.75rem; color: var(--prime); margin-bottom: 4px; }
+  .timeline-item h4 { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .timeline-item p { font-size: 0.8rem; color: var(--text-dim); line-height: 1.5; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 480px) {
+    .sieve-controls { flex-direction: column; align-items: flex-start; }
+    .tester-row { flex-direction: column; }
+    input[type="number"] { width: 100%; }
+    nav { gap: 4px; }
+    .tab { min-width: 90px; padding: 9px 10px; font-size: 0.7rem; }
+  }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+</style>
 </head>
 <body>
-    <div id="description">
-        <h1>Prime Number Interactive Quiz</h1>
-        <p>A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself.</p>
+
+<div id="starfield"></div>
+
+<div id="app">
+  <header>
+    <div class="header-eyebrow">Interactive Math Lab</div>
+    <h1>Prime Numbers</h1>
+    <p>The fundamental building blocks of all mathematics</p>
+  </header>
+
+  <nav>
+    <button class="tab active" onclick="switchTab('intro')">📖 Concepts</button>
+    <button class="tab" onclick="switchTab('sieve')">🔍 Sieve</button>
+    <button class="tab" onclick="switchTab('tester')">🧮 Tester</button>
+    <button class="tab" onclick="switchTab('tree')">🌳 Factor Tree</button>
+    <button class="tab" onclick="switchTab('quiz')">🎯 Quiz</button>
+    <button class="tab" onclick="switchTab('crypto')">🔐 Crypto</button>
+  </nav>
+
+  <!-- ════════════════════════════════════ INTRO ══ -->
+  <div id="panel-intro" class="panel active">
+    <div class="card">
+      <div class="card-title"><span class="icon">💡</span> What Are Prime Numbers?</div>
+      <div class="concept-grid">
+        <div class="concept-card prime-card">
+          <h3>🔵 Prime Numbers</h3>
+          <p>A number greater than 1 that has <strong>exactly two factors</strong>: 1 and itself. It cannot be divided evenly by any other whole number.</p>
+          <div class="examples-row">
+            <span class="num-badge prime">2</span>
+            <span class="num-badge prime">3</span>
+            <span class="num-badge prime">5</span>
+            <span class="num-badge prime">7</span>
+            <span class="num-badge prime">11</span>
+            <span class="num-badge prime">13</span>
+          </div>
+        </div>
+        <div class="concept-card composite-card">
+          <h3>🟠 Composite Numbers</h3>
+          <p>A number greater than 1 that has <strong>more than two factors</strong>. It can be broken down into a product of prime numbers.</p>
+          <div class="examples-row">
+            <span class="num-badge composite">4</span>
+            <span class="num-badge composite">6</span>
+            <span class="num-badge composite">8</span>
+            <span class="num-badge composite">9</span>
+            <span class="num-badge composite">12</span>
+            <span class="num-badge composite">15</span>
+          </div>
+        </div>
+      </div>
+      <div class="concept-card special-card" style="margin-top:0;">
+        <h3>⭐ The Special Case: 1</h3>
+        <p>The number 1 is <strong>neither prime nor composite</strong>. It has only one factor (itself). By mathematical convention, 1 is excluded from both categories — and for good reason: including it would break the Fundamental Theorem of Arithmetic.</p>
+      </div>
     </div>
-    <div id="numberContainer" class="number-container"></div>
-    <div id="buttonsContainer" class="button-container">
-        <button id="primeButton" class="prime">Prime</button>
-        <button id="notPrimeButton" class="not-prime">Not Prime</button>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🏗️</span> The Fundamental Theorem of Arithmetic</div>
+      <p style="color:var(--text-dim); font-size:0.9rem; line-height:1.7; margin-bottom:14px;">
+        Every integer greater than 1 is either prime itself, or can be written as a <strong style="color:var(--prime)">unique product of primes</strong> — regardless of the order. Think of primes as the <em>atoms</em> of mathematics: all other numbers are molecules built from them.
+      </p>
+      <div class="examples-row">
+        <span style="font-family:var(--mono); font-size:0.85rem; color:var(--text-dim); padding:8px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px;">12 = 2² × 3</span>
+        <span style="font-family:var(--mono); font-size:0.85rem; color:var(--text-dim); padding:8px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px;">30 = 2 × 3 × 5</span>
+        <span style="font-family:var(--mono); font-size:0.85rem; color:var(--text-dim); padding:8px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px;">100 = 2² × 5²</span>
+        <span style="font-family:var(--mono); font-size:0.85rem; color:var(--text-dim); padding:8px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px;">360 = 2³ × 3² × 5</span>
+      </div>
     </div>
-    <div id="score">Score: 0</div>
-    <button id="nextButton">Next</button>
-    <button id="endButton">End</button>
 
-    <script>
-        const isPrime = (num) => {
-            if (num <= 1) return false;
-            for (let i = 2; i <= Math.sqrt(num); i++) {
-                if (num % i === 0) return false;
-            }
-            return true;
-        }
+    <div class="card">
+      <div class="card-title"><span class="icon">🌍</span> Why Do Primes Matter?</div>
+      <div class="rw-grid">
+        <div class="rw-card">
+          <div class="rw-icon">🔐</div>
+          <h4>Cryptography</h4>
+          <p>RSA encryption — used in every HTTPS website and secure transaction — relies on the fact that multiplying two large primes is easy, but factoring the result is computationally infeasible.</p>
+        </div>
+        <div class="rw-card">
+          <div class="rw-icon">🔢</div>
+          <h4>Number Theory</h4>
+          <p>Primes are the foundation of advanced mathematics including modular arithmetic, Diophantine equations, and analytic number theory.</p>
+        </div>
+        <div class="rw-card">
+          <div class="rw-icon">📡</div>
+          <h4>Signal Processing</h4>
+          <p>Fast Fourier Transforms and hash functions used in data compression and networking exploit properties of prime numbers.</p>
+        </div>
+        <div class="rw-card">
+          <div class="rw-icon">🐛</div>
+          <h4>Nature</h4>
+          <p>Cicadas emerge every 13 or 17 years (both prime) to avoid predators with 2–6 year cycles. Primes appear throughout biology.</p>
+        </div>
+      </div>
+    </div>
 
-        let score = 0;
-        let currentNumber = 0;
+    <div class="card">
+      <div class="card-title"><span class="icon">📜</span> Historical Milestones</div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-year">~300 BCE</div>
+          <h4>Euclid's Proof</h4>
+          <p>Euclid proved there are infinitely many primes — one of the oldest mathematical proofs still in use today.</p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">~240 BCE</div>
+          <h4>Sieve of Eratosthenes</h4>
+          <p>A simple algorithm to find all primes up to a given limit. Still taught and used in computer science today.</p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">1859</div>
+          <h4>Riemann Hypothesis</h4>
+          <p>Bernhard Riemann conjectured a deep connection between primes and complex analysis. It remains one of math's greatest unsolved problems.</p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">1977</div>
+          <h4>RSA Encryption Born</h4>
+          <p>Rivest, Shamir & Adleman developed RSA — the first practical public-key cryptosystem — built entirely on prime number theory.</p>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-year">2024</div>
+          <h4>Largest Known Prime</h4>
+          <p>The largest known prime has over 41 million digits — a Mersenne prime (2ⁿ − 1) — discovered by the GIMPS distributed computing project.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        const generateRandomNumber = () => {
-            return Math.floor(Math.random() * (201 - 11 + 1)) + 11;
-        }
+  <!-- ════════════════════════════════════ SIEVE ══ -->
+  <div id="panel-sieve" class="panel">
+    <div class="card">
+      <div class="card-title"><span class="icon">🔍</span> Sieve of Eratosthenes — Interactive Simulation</div>
+      <p style="color:var(--text-dim); font-size:0.85rem; line-height:1.6; margin-bottom:20px;">
+        The Sieve is a 2,200-year-old algorithm. Start with all numbers 2–100. Cross out multiples of each prime — what remains are all primes! Step through it one prime at a time.
+      </p>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--prime); box-shadow:0 0 6px var(--prime)"></div> Confirmed Prime</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--purple); box-shadow:0 0 6px var(--purple)"></div> Being Eliminated</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(239,68,68,0.3)"></div> Composite (eliminated)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div> 1 (neither)</div>
+      </div>
+      <div class="sieve-controls">
+        <button class="btn btn-primary" id="sieve-step-btn" onclick="sieveStep()">▶ Next Step</button>
+        <button class="btn btn-secondary" onclick="sieveAuto()">⚡ Auto Run</button>
+        <button class="btn btn-danger" onclick="sieveReset()">↺ Reset</button>
+        <div class="speed-control">
+          <label>Speed</label>
+          <input type="range" id="sieve-speed" min="100" max="1500" value="600" step="100" oninput="updateSieveSpeed()">
+          <span id="speed-label" style="font-family:var(--mono); font-size:0.75rem; color:var(--text-muted);">600ms</span>
+        </div>
+      </div>
+      <div id="sieve-grid"></div>
+      <div class="sieve-status" id="sieve-status">
+        Click <strong style="color:var(--prime)">Next Step</strong> to begin the Sieve of Eratosthenes. We'll eliminate multiples step by step.
+      </div>
+      <div id="sieve-results" style="margin-top:14px; display:none;">
+        <div class="card-title" style="margin-bottom:10px;"><span class="icon">✅</span> Primes Found (1–100)</div>
+        <div id="prime-list" style="font-family:var(--mono); font-size:0.8rem; line-height:2; color:var(--prime); word-break:break-word;"></div>
+      </div>
+    </div>
+  </div>
 
-        const displayNumber = () => {
-            const numberContainer = document.getElementById('numberContainer');
-            numberContainer.innerHTML = '';
-            currentNumber = generateRandomNumber();
-            const numberDiv = document.createElement('div');
-            numberDiv.className = 'number';
-            numberDiv.textContent = currentNumber;
-            numberContainer.appendChild(numberDiv);
-        }
+  <!-- ════════════════════════════════════ TESTER ══ -->
+  <div id="panel-tester" class="panel">
+    <div class="card">
+      <div class="card-title"><span class="icon">🧮</span> Prime Number Tester</div>
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:20px; line-height:1.6;">
+        Enter any number and watch the divisibility tests run in real time. See exactly <em>why</em> a number is prime or composite.
+      </p>
+      <div class="tester-row">
+        <div class="field-group">
+          <label>Enter a Number (2–9999)</label>
+          <input type="number" id="test-number" min="2" max="9999" value="17" onkeydown="if(event.key==='Enter')testNumber()">
+        </div>
+        <button class="btn btn-primary" onclick="testNumber()" style="margin-bottom:2px;">Test It!</button>
+        <button class="btn btn-secondary" onclick="testRandom()" style="margin-bottom:2px;">🎲 Random</button>
+      </div>
+      <div id="divisor-grid" class="divisor-grid"></div>
+      <div id="verdict" style="margin-top:16px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">📏</span> Divisibility Rules — Quick Reference</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px;">
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <div style="color:var(--prime); font-family:var(--mono); font-size:1rem; font-weight:700; margin-bottom:6px;">÷ 2</div>
+          <div style="color:var(--text-dim); font-size:0.8rem;">Last digit is 0, 2, 4, 6, or 8 (even)</div>
+        </div>
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <div style="color:var(--prime); font-family:var(--mono); font-size:1rem; font-weight:700; margin-bottom:6px;">÷ 3</div>
+          <div style="color:var(--text-dim); font-size:0.8rem;">Sum of digits divisible by 3</div>
+        </div>
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <div style="color:var(--prime); font-family:var(--mono); font-size:1rem; font-weight:700; margin-bottom:6px;">÷ 5</div>
+          <div style="color:var(--text-dim); font-size:0.8rem;">Last digit is 0 or 5</div>
+        </div>
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <div style="color:var(--prime); font-family:var(--mono); font-size:1rem; font-weight:700; margin-bottom:6px;">÷ 7</div>
+          <div style="color:var(--text-dim); font-size:0.8rem;">Double last digit, subtract from rest. If result ÷ 7 → yes</div>
+        </div>
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <div style="color:var(--prime); font-family:var(--mono); font-size:1rem; font-weight:700; margin-bottom:6px;">÷ 11</div>
+          <div style="color:var(--text-dim); font-size:0.8rem;">Alternating digit sum divisible by 11</div>
+        </div>
+        <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <div style="color:var(--prime); font-family:var(--mono); font-size:1rem; font-weight:700; margin-bottom:6px;">√n Rule</div>
+          <div style="color:var(--text-dim); font-size:0.8rem;">Only need to test divisors up to √n to prove primality</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        const checkAnswer = (isPrimeGuess) => {
-            const numberDiv = document.querySelector('.number');
-            const correct = isPrime(currentNumber) === isPrimeGuess;
-            if (correct) {
-                score++;
-                numberDiv.style.backgroundColor = 'green';
-            } else {
-                numberDiv.style.backgroundColor = 'red';
-            }
-            document.getElementById('score').textContent = `Score: ${score}`;
-            document.getElementById('primeButton').disabled = true;
-            document.getElementById('notPrimeButton').disabled = true;
-        }
+  <!-- ════════════════════════════════════ TREE ══ -->
+  <div id="panel-tree" class="panel">
+    <div class="card">
+      <div class="card-title"><span class="icon">🌳</span> Prime Factorization — Factor Tree</div>
+      <p style="color:var(--text-dim); font-size:0.85rem; margin-bottom:20px; line-height:1.6;">
+        Enter a composite number and see its factor tree built automatically. Every branch ends at a prime — those are the atoms that make up your number.
+      </p>
+      <div class="tester-row" style="margin-bottom:20px;">
+        <div class="field-group">
+          <label>Enter a Number (4–500)</label>
+          <input type="number" id="tree-number" min="4" max="500" value="60" onkeydown="if(event.key==='Enter')buildTree()">
+        </div>
+        <button class="btn btn-primary" onclick="buildTree()" style="margin-bottom:2px;">Build Tree</button>
+        <button class="btn btn-secondary" onclick="treeRandom()" style="margin-bottom:2px;">🎲 Random</button>
+      </div>
+      <div id="tree-container">
+        <p style="color:var(--text-muted); text-align:center; padding:40px; font-size:0.85rem;">Enter a number and click Build Tree →</p>
+      </div>
+      <div class="primefact-display" id="prime-fact-display"></div>
+    </div>
+  </div>
 
-        document.getElementById('primeButton').onclick = () => checkAnswer(true);
-        document.getElementById('notPrimeButton').onclick = () => checkAnswer(false);
+  <!-- ════════════════════════════════════ QUIZ ══ -->
+  <div id="panel-quiz" class="panel">
+    <div class="card">
+      <div class="card-title"><span class="icon">🎯</span> Prime or Composite? — Challenge Mode</div>
 
-        document.getElementById('nextButton').onclick = () => {
-            displayNumber();
-            document.getElementById('primeButton').disabled = false;
-            document.getElementById('notPrimeButton').disabled = false;
-        }
+      <div class="quiz-header">
+        <div class="quiz-mode-btns">
+          <button class="btn btn-secondary" id="mode-easy" onclick="setMode('easy')" style="font-size:0.75rem; padding:8px 14px;">Easy (1–30)</button>
+          <button class="btn btn-primary" id="mode-medium" onclick="setMode('medium')" style="font-size:0.75rem; padding:8px 14px;">Medium (1–100)</button>
+          <button class="btn btn-secondary" id="mode-hard" onclick="setMode('hard')" style="font-size:0.75rem; padding:8px 14px;">Hard (1–500)</button>
+        </div>
+        <div class="score-display">
+          <div class="score-item">
+            <div class="val correct" id="score-correct">0</div>
+            <div class="lbl">Correct</div>
+          </div>
+          <div class="score-item">
+            <div class="val wrong" id="score-wrong">0</div>
+            <div class="lbl">Wrong</div>
+          </div>
+          <div class="score-item">
+            <div class="val" id="score-streak" style="color:var(--gold)">0</div>
+            <div class="lbl">Streak 🔥</div>
+          </div>
+        </div>
+      </div>
 
-        document.getElementById('endButton').onclick = () => {
-            alert(`Final Score: ${score}`);
-            window.location.reload();
-        }
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="quiz-progress" style="width:0%"></div>
+      </div>
 
-        displayNumber();
-    </script>
+      <div class="quiz-question">
+        <div class="quiz-number" id="quiz-num">?</div>
+        <div class="quiz-prompt" id="quiz-prompt">Press Start to begin the challenge!</div>
+        <div class="quiz-buttons">
+          <button class="quiz-btn prime-btn" id="btn-prime" onclick="quizAnswer(true)" disabled>🔵 Prime</button>
+          <button class="quiz-btn composite-btn" id="btn-composite" onclick="quizAnswer(false)" disabled>🟠 Composite</button>
+        </div>
+        <div class="quiz-feedback" id="quiz-feedback"></div>
+      </div>
+
+      <div style="text-align:center;">
+        <button class="btn btn-primary" id="quiz-start-btn" onclick="startQuiz()">🚀 Start Quiz</button>
+        <button class="btn btn-secondary" id="quiz-next-btn" onclick="nextQuestion()" style="display:none; margin-left:10px;">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ CRYPTO ══ -->
+  <div id="panel-crypto" class="panel">
+    <div class="card">
+      <div class="card-title"><span class="icon">🔐</span> Primes in Cryptography — RSA Concept Demo</div>
+      <p style="color:var(--text-dim); font-size:0.85rem; line-height:1.6; margin-bottom:20px;">
+        RSA encryption — the backbone of internet security — works because multiplying two primes is trivial, but <strong style="color:var(--prime)">factoring the result is extremely hard</strong>. Select two primes below to see the concept in action.
+      </p>
+      <div class="crypto-grid">
+        <div class="crypto-box">
+          <h4>Select Prime p</h4>
+          <div class="prime-selector" id="p-selector"></div>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Selected: <span id="p-val" style="color:var(--prime); font-family:var(--mono); font-weight:700;">—</span></div>
+        </div>
+        <div class="crypto-box">
+          <h4>Select Prime q</h4>
+          <div class="prime-selector" id="q-selector"></div>
+          <div style="font-size:0.8rem; color:var(--text-muted);">Selected: <span id="q-val" style="color:var(--prime); font-family:var(--mono); font-weight:700;">—</span></div>
+        </div>
+      </div>
+      <div id="crypto-result" style="margin-top:20px; display:none;">
+        <div style="text-align:center; margin-bottom:12px; color:var(--text-dim); font-size:0.85rem;">
+          The public modulus <strong style="color:var(--gold)">n = p × q</strong>
+        </div>
+        <div class="big-number" id="n-display"></div>
+        <div class="crypto-hint" id="crypto-hint"></div>
+        <div style="margin-top:16px; padding:16px; background:var(--surface2); border:1px solid var(--border); border-radius:8px;">
+          <div style="font-size:0.78rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; font-weight:700;">The RSA Insight</div>
+          <p style="font-size:0.82rem; color:var(--text-dim); line-height:1.7;">
+            Anyone can see <strong style="color:var(--gold)" id="n-inline">n</strong> (the public key). But to decrypt messages, you need to know <strong style="color:var(--prime)">p</strong> and <strong style="color:var(--prime)">q</strong> individually — and finding those factors from a very large n is <em>computationally infeasible</em>. Real RSA keys use primes with <strong style="color:var(--prime)">hundreds of digits</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🔬</span> The Factoring Challenge</div>
+      <p style="color:var(--text-dim); font-size:0.85rem; line-height:1.6; margin-bottom:16px;">
+        Can you factor these numbers into their two prime components? This is exactly what makes RSA hard at scale.
+      </p>
+      <div id="factor-challenge-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════ TAB NAVIGATION ════════════
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name === 'sieve' && !sieveBuilt) buildSieveGrid();
+  if (name === 'tester') testNumber();
+  if (name === 'tree') buildTree();
+  if (name === 'crypto') initCrypto();
+}
+
+// ════════════ UTILITIES ════════════
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n === 2) return true;
+  if (n % 2 === 0) return false;
+  for (let i = 3; i <= Math.sqrt(n); i += 2) if (n % i === 0) return false;
+  return true;
+}
+function getFactors(n) {
+  const factors = [];
+  for (let i = 2; i <= n; i++) if (n % i === 0) factors.push(i);
+  return factors;
+}
+function primeFactors(n) {
+  const factors = [];
+  let d = 2;
+  while (d * d <= n) {
+    while (n % d === 0) { factors.push(d); n = Math.floor(n / d); }
+    d++;
+  }
+  if (n > 1) factors.push(n);
+  return factors;
+}
+
+// ════════════ STARFIELD ════════════
+(function() {
+  const sf = document.getElementById('starfield');
+  for (let i = 0; i < 120; i++) {
+    const s = document.createElement('div');
+    const size = Math.random() * 2 + 0.5;
+    s.className = 'star';
+    s.style.cssText = `
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      width:${size}px;height:${size}px;
+      --dur:${2+Math.random()*4}s;--delay:${Math.random()*5}s;
+      opacity:${0.1+Math.random()*0.5}
+    `;
+    sf.appendChild(s);
+  }
+})();
+
+// ════════════ SIEVE ════════════
+let sieveState = [];
+let sievePrimeIdx = 0;
+let sieveBuilt = false;
+let sieveTimer = null;
+let sieveSpeed = 600;
+const sievePrimes = [];
+
+function buildSieveGrid() {
+  sieveBuilt = true;
+  const grid = document.getElementById('sieve-grid');
+  grid.innerHTML = '';
+  sieveState = Array(101).fill('none');
+  sieveState[1] = 'one';
+  for (let i = 2; i <= 100; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'sieve-cell' + (i === 1 ? ' one' : '');
+    cell.id = `sc-${i}`;
+    cell.textContent = i;
+    grid.appendChild(cell);
+  }
+  const c1 = document.getElementById('sc-1');
+  if (c1) c1.classList.add('one');
+}
+
+function sieveReset() {
+  clearInterval(sieveTimer);
+  sievePrimeIdx = 0;
+  sievePrimes.length = 0;
+  buildSieveGrid();
+  document.getElementById('sieve-status').innerHTML = 'Click <strong style="color:var(--prime)">Next Step</strong> to begin.';
+  document.getElementById('sieve-results').style.display = 'none';
+  document.getElementById('sieve-step-btn').disabled = false;
+}
+
+let nextPrimeToSieve = 2;
+
+function sieveStep() {
+  if (!sieveBuilt) buildSieveGrid();
+  // Find next un-eliminated number >= nextPrimeToSieve
+  let p = nextPrimeToSieve;
+  while (p <= 100 && sieveState[p] === 'eliminated') p++;
+  if (p > 100) { finalizeSieve(); return; }
+
+  sievePrimes.push(p);
+  sieveState[p] = 'prime';
+  document.getElementById(`sc-${p}`).className = 'sieve-cell confirmed-prime';
+
+  // Highlight multiples
+  let count = 0;
+  for (let m = p * 2; m <= 100; m += p) {
+    if (sieveState[m] !== 'eliminated') {
+      sieveState[m] = 'eliminated';
+      const cell = document.getElementById(`sc-${m}`);
+      if (cell) {
+        cell.classList.add('highlighted');
+        setTimeout(() => {
+          cell.className = 'sieve-cell eliminated';
+        }, Math.min(sieveSpeed * 0.7, 500));
+        count++;
+      }
+    }
+  }
+  document.getElementById('sieve-status').innerHTML =
+    `<span style="color:var(--prime); font-weight:700">${p}</span> is prime! ✓ &nbsp;|&nbsp; Eliminated ${count} multiples of ${p} &nbsp;|&nbsp; Primes found so far: <span style="color:var(--prime)">${sievePrimes.join(', ')}</span>`;
+  nextPrimeToSieve = p + 1;
+
+  // Check if done
+  let done = true;
+  for (let i = nextPrimeToSieve; i <= 100; i++) {
+    if (sieveState[i] !== 'eliminated') { done = false; break; }
+  }
+  if (done) setTimeout(finalizeSieve, sieveSpeed);
+}
+
+function finalizeSieve() {
+  clearInterval(sieveTimer);
+  sieveTimer = null;
+  // Confirm all remaining as primes
+  for (let i = 2; i <= 100; i++) {
+    if (sieveState[i] !== 'eliminated' && sieveState[i] !== 'one') {
+      sieveState[i] = 'prime';
+      const c = document.getElementById(`sc-${i}`);
+      if (c && !c.classList.contains('confirmed-prime')) c.className = 'sieve-cell confirmed-prime';
+    }
+  }
+  const allPrimes = [];
+  for (let i = 2; i <= 100; i++) if (sieveState[i] === 'prime') allPrimes.push(i);
+  document.getElementById('sieve-status').innerHTML =
+    `<span style="color:var(--green); font-weight:700">✅ Sieve complete!</span> Found <strong style="color:var(--prime)">${allPrimes.length} primes</strong> between 1 and 100.`;
+  document.getElementById('sieve-results').style.display = 'block';
+  document.getElementById('prime-list').textContent = allPrimes.join('  ·  ');
+  document.getElementById('sieve-step-btn').disabled = true;
+}
+
+function sieveAuto() {
+  if (sieveTimer) { clearInterval(sieveTimer); sieveTimer = null; return; }
+  if (!sieveBuilt) buildSieveGrid();
+  sieveTimer = setInterval(() => {
+    let done = true;
+    for (let i = nextPrimeToSieve; i <= 100; i++) {
+      if (sieveState[i] !== 'eliminated' && i !== 1) { done = false; break; }
+    }
+    if (done) { finalizeSieve(); return; }
+    sieveStep();
+  }, sieveSpeed);
+}
+
+function updateSieveSpeed() {
+  sieveSpeed = parseInt(document.getElementById('sieve-speed').value);
+  document.getElementById('speed-label').textContent = sieveSpeed + 'ms';
+}
+
+// ════════════ TESTER ════════════
+function testNumber() {
+  let n = parseInt(document.getElementById('test-number').value);
+  if (isNaN(n) || n < 2) n = 2;
+  if (n > 9999) n = 9999;
+  document.getElementById('test-number').value = n;
+
+  const grid = document.getElementById('divisor-grid');
+  const verdict = document.getElementById('verdict');
+  grid.innerHTML = '';
+  verdict.innerHTML = '';
+
+  if (n === 1) {
+    verdict.innerHTML = `<div class="verdict-box verdict-special">1 is neither prime nor composite — a special case by mathematical convention.</div>`;
+    return;
+  }
+
+  const limit = Math.floor(Math.sqrt(n));
+  let firstFactor = null;
+
+  for (let d = 2; d <= limit; d++) {
+    const divides = n % d === 0;
+    if (divides && !firstFactor) firstFactor = d;
+    const cell = document.createElement('div');
+    cell.className = `divisor-test ${divides ? 'divides' : 'no-divide'}`;
+    cell.style.animationDelay = `${(d - 2) * 40}ms`;
+    cell.innerHTML = `<div style="font-size:1rem; font-weight:700">${n} ÷ ${d}</div>
+      <div style="margin-top:4px; font-size:0.9rem;">${divides ? `= ${n/d} ✗` : `≠ whole ✓`}</div>`;
+    grid.appendChild(cell);
+  }
+
+  setTimeout(() => {
+    if (isPrime(n)) {
+      verdict.innerHTML = `
+        <div class="verdict-box verdict-prime">
+          🔵 ${n} is PRIME!
+          <div style="font-size:0.8rem; font-weight:400; margin-top:8px; opacity:0.85">No divisors found from 2 to √${n} = ${limit}. Only factors are 1 and ${n}.</div>
+        </div>`;
+    } else {
+      const pf = primeFactors(n);
+      const factors = getFactors(n);
+      const pfStr = formatPF(pf);
+      verdict.innerHTML = `
+        <div class="verdict-box verdict-composite">
+          🟠 ${n} is COMPOSITE!
+          <div style="font-size:0.8rem; font-weight:400; margin-top:8px; opacity:0.85">Smallest divisor: ${firstFactor} — so ${n} = ${firstFactor} × ${n/firstFactor}</div>
+        </div>
+        <div style="margin-top:12px; text-align:center;">
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">All Factors</div>
+          <div class="factor-visualization">
+            ${[1, ...factors, n].map(f => `<span class="factor-chip ${isPrime(f) ? 'is-prime' : ''}">${f}${isPrime(f)?'★':''}</span>`).join('')}
+          </div>
+          <div style="margin-top:12px; font-family:var(--mono); font-size:0.9rem; color:var(--prime);">
+            Prime Factorization: ${pfStr}
+          </div>
+        </div>`;
+    }
+  }, limit * 50 + 100);
+}
+
+function formatPF(pf) {
+  const counts = {};
+  pf.forEach(p => counts[p] = (counts[p]||0)+1);
+  return Object.entries(counts).map(([p,c]) => c > 1 ? `${p}^${c}` : p).join(' × ');
+}
+
+function testRandom() {
+  const n = Math.floor(Math.random() * 9998) + 2;
+  document.getElementById('test-number').value = n;
+  testNumber();
+}
+
+// ════════════ FACTOR TREE ════════════
+function buildTree() {
+  let n = parseInt(document.getElementById('tree-number').value);
+  if (isNaN(n) || n < 2) n = 60;
+  if (n > 500) n = 500;
+  document.getElementById('tree-number').value = n;
+
+  const container = document.getElementById('tree-container');
+  const pfd = document.getElementById('prime-fact-display');
+
+  if (isPrime(n)) {
+    container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--prime); font-family:var(--mono); font-size:1.1rem;">
+      ${n} is already prime! No factor tree needed — it's an atomic building block.</div>`;
+    pfd.style.display = 'none';
+    return;
+  }
+
+  // Build tree data structure
+  const nodes = [];
+  const edges = [];
+  let idCounter = 0;
+
+  function buildNode(val, parentId) {
+    const id = idCounter++;
+    nodes.push({ id, val, parentId });
+    if (isPrime(val) || val < 4) return;
+    // Find smallest prime factor
+    let d = 2;
+    while (val % d !== 0) d++;
+    const other = val / d;
+    buildNode(d, id);
+    buildNode(other, id);
+    edges.push([id, idCounter - 2]);
+    edges.push([id, idCounter - 1]);
+  }
+  buildNode(n, null);
+
+  // Layout: BFS to assign positions
+  const levelMap = {};
+  const queue = [{ id: 0, depth: 0 }];
+  const pos = {};
+  const depths = {};
+  while (queue.length) {
+    const { id, depth } = queue.shift();
+    depths[id] = depth;
+    if (!levelMap[depth]) levelMap[depth] = [];
+    levelMap[depth].push(id);
+    // Find children
+    edges.filter(e => e[0] === id).forEach(e => queue.push({ id: e[1], depth: depth + 1 }));
+  }
+  const maxDepth = Math.max(...Object.values(depths));
+  const W = Math.max(600, levelMap[maxDepth].length * 60 + 80);
+  const H = (maxDepth + 1) * 80 + 60;
+  const R = 22;
+  Object.entries(levelMap).forEach(([d, ids]) => {
+    ids.forEach((id, i) => {
+      pos[id] = { x: (W / (ids.length + 1)) * (i + 1), y: 40 + parseInt(d) * 80 };
+    });
+  });
+
+  // Build SVG
+  let svg = `<svg class="tree-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="max-width:100%; overflow:visible;">`;
+  edges.forEach(([p, c]) => {
+    svg += `<line x1="${pos[p].x}" y1="${pos[p].y}" x2="${pos[c].x}" y2="${pos[c].y}" class="tree-edge"/>`;
+  });
+  nodes.forEach(n => {
+    const prime = isPrime(n.val);
+    const fill = prime ? 'var(--prime-glow)' : 'var(--surface2)';
+    const stroke = prime ? 'var(--prime)' : 'var(--border)';
+    const textFill = prime ? 'var(--prime)' : 'var(--text)';
+    svg += `<g>
+      <circle cx="${pos[n.id].x}" cy="${pos[n.id].y}" r="${R}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <text x="${pos[n.id].x}" y="${pos[n.id].y}" fill="${textFill}" font-family="'Space Mono',monospace" font-size="12" font-weight="700" text-anchor="middle" dominant-baseline="central">${n.val}</text>
+    </g>`;
+  });
+  svg += `</svg>`;
+  container.innerHTML = svg;
+
+  const pf = primeFactors(n);
+  pfd.style.display = 'block';
+  pfd.innerHTML = `${n} = ${formatPF(pf)}`;
+}
+
+function treeRandom() {
+  const composites = [4,6,8,9,10,12,14,15,16,18,20,24,28,30,36,42,48,60,72,84,90,100,120,144,180,210,240,360,420,480];
+  const n = composites[Math.floor(Math.random() * composites.length)];
+  document.getElementById('tree-number').value = n;
+  buildTree();
+}
+
+// ════════════ QUIZ ════════════
+let quizMode = 'medium';
+let quizScore = { correct: 0, wrong: 0, streak: 0 };
+let currentNum = null;
+let quizActive = false;
+let questionsAnswered = 0;
+const QUIZ_TOTAL = 10;
+
+function setMode(mode) {
+  quizMode = mode;
+  document.querySelectorAll('.quiz-mode-btns .btn').forEach(b => b.className = 'btn btn-secondary');
+  document.getElementById(`mode-${mode}`).className = 'btn btn-primary';
+}
+
+function startQuiz() {
+  quizScore = { correct: 0, wrong: 0, streak: 0 };
+  questionsAnswered = 0;
+  updateScoreUI();
+  document.getElementById('quiz-progress').style.width = '0%';
+  document.getElementById('quiz-start-btn').style.display = 'none';
+  document.getElementById('quiz-next-btn').style.display = 'none';
+  quizActive = true;
+  nextQuestion();
+}
+
+function nextQuestion() {
+  if (questionsAnswered >= QUIZ_TOTAL) { endQuiz(); return; }
+  const maxN = quizMode === 'easy' ? 30 : quizMode === 'medium' ? 100 : 500;
+  currentNum = Math.floor(Math.random() * (maxN - 2)) + 2;
+  document.getElementById('quiz-num').textContent = currentNum;
+  document.getElementById('quiz-prompt').textContent = 'Is this number PRIME or COMPOSITE?';
+  document.getElementById('quiz-feedback').className = 'quiz-feedback';
+  document.getElementById('btn-prime').disabled = false;
+  document.getElementById('btn-composite').disabled = false;
+  document.getElementById('btn-prime').className = 'quiz-btn prime-btn';
+  document.getElementById('btn-composite').className = 'quiz-btn composite-btn';
+  document.getElementById('quiz-next-btn').style.display = 'none';
+}
+
+function quizAnswer(guessedPrime) {
+  if (!quizActive || currentNum === null) return;
+  const correct = isPrime(currentNum);
+  const isCorrect = guessedPrime === correct;
+
+  document.getElementById('btn-prime').disabled = true;
+  document.getElementById('btn-composite').disabled = true;
+
+  if (isCorrect) {
+    quizScore.correct++;
+    quizScore.streak++;
+    const correctBtn = guessedPrime ? 'btn-prime' : 'btn-composite';
+    document.getElementById(correctBtn).className = `quiz-btn ${guessedPrime?'prime-btn':'composite-btn'} correct-flash`;
+    const pf = primeFactors(currentNum);
+    const fb = document.getElementById('quiz-feedback');
+    fb.className = 'quiz-feedback show correct-fb';
+    fb.innerHTML = `✅ Correct! ${currentNum} is ${correct ? 'prime' : `composite: ${currentNum} = ${formatPF(pf)}`}.${quizScore.streak >= 3 ? ` 🔥 ${quizScore.streak} in a row!` : ''}`;
+  } else {
+    quizScore.wrong++;
+    quizScore.streak = 0;
+    const wrongBtn = guessedPrime ? 'btn-prime' : 'btn-composite';
+    document.getElementById(wrongBtn).className = `quiz-btn ${guessedPrime?'prime-btn':'composite-btn'} wrong-flash`;
+    const rightBtn = correct ? 'btn-prime' : 'btn-composite';
+    document.getElementById(rightBtn).className = `quiz-btn ${correct?'prime-btn':'composite-btn'} correct-flash`;
+    const pf = correct ? [] : primeFactors(currentNum);
+    const fb = document.getElementById('quiz-feedback');
+    fb.className = 'quiz-feedback show wrong-fb';
+    fb.innerHTML = `❌ Not quite! ${currentNum} is actually ${correct ? 'prime — it only has factors 1 and itself.' : `composite: ${currentNum} = ${formatPF(pf)}`}.`;
+  }
+
+  questionsAnswered++;
+  updateScoreUI();
+  document.getElementById('quiz-progress').style.width = `${(questionsAnswered / QUIZ_TOTAL) * 100}%`;
+
+  if (questionsAnswered < QUIZ_TOTAL) {
+    document.getElementById('quiz-next-btn').style.display = 'inline-block';
+  } else {
+    setTimeout(endQuiz, 1200);
+  }
+}
+
+function endQuiz() {
+  const pct = Math.round((quizScore.correct / QUIZ_TOTAL) * 100);
+  const grade = pct >= 90 ? '🏆 Excellent!' : pct >= 70 ? '⭐ Good job!' : pct >= 50 ? '📚 Keep practicing!' : '💪 Review the concepts and try again!';
+  document.getElementById('quiz-num').textContent = `${pct}%`;
+  document.getElementById('quiz-prompt').textContent = `${grade} You got ${quizScore.correct}/${QUIZ_TOTAL} correct.`;
+  document.getElementById('quiz-feedback').className = 'quiz-feedback';
+  document.getElementById('quiz-next-btn').style.display = 'none';
+  document.getElementById('quiz-start-btn').style.display = 'inline-block';
+  document.getElementById('quiz-start-btn').textContent = '🔄 Try Again';
+  quizActive = false;
+}
+
+function updateScoreUI() {
+  document.getElementById('score-correct').textContent = quizScore.correct;
+  document.getElementById('score-wrong').textContent = quizScore.wrong;
+  document.getElementById('score-streak').textContent = quizScore.streak;
+}
+
+// ════════════ CRYPTO ════════════
+const cryptoPrimes = [7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113];
+let cryptoP = null, cryptoQ = null;
+
+function initCrypto() {
+  const ps = document.getElementById('p-selector');
+  const qs = document.getElementById('q-selector');
+  if (ps.innerHTML !== '') return;
+  cryptoPrimes.forEach(p => {
+    ['p','q'].forEach(side => {
+      const btn = document.createElement('div');
+      btn.className = 'prime-chip';
+      btn.textContent = p;
+      btn.onclick = () => selectCryptoPrime(side, p, btn);
+      document.getElementById(`${side}-selector`).appendChild(btn);
+    });
+  });
+  initFactorChallenge();
+}
+
+function selectCryptoPrime(side, val, btn) {
+  document.querySelectorAll(`#${side}-selector .prime-chip`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  if (side === 'p') { cryptoP = val; document.getElementById('p-val').textContent = val; }
+  else { cryptoQ = val; document.getElementById('q-val').textContent = val; }
+  if (cryptoP && cryptoQ) showCryptoResult();
+}
+
+function showCryptoResult() {
+  const n = cryptoP * cryptoQ;
+  document.getElementById('crypto-result').style.display = 'block';
+  document.getElementById('n-display').textContent = `n = ${cryptoP} × ${cryptoQ} = ${n}`;
+  document.getElementById('n-inline').textContent = n;
+  const digits = n.toString().length;
+  const hint = digits < 5
+    ? `With only ${digits} digits, this n is easy to factor. Real RSA uses primes with 150+ digits each, making n have 300+ digits — impossible to factor with current computers.`
+    : `n = ${n} has ${digits} digits. A computer could factor this quickly. Real RSA uses numbers with 600+ digits — which would take longer than the age of the universe to factor!`;
+  document.getElementById('crypto-hint').textContent = hint;
+}
+
+function initFactorChallenge() {
+  const challenges = [15, 21, 35, 77, 91, 143, 221, 323, 391, 437, 667, 899];
+  const grid = document.getElementById('factor-challenge-grid');
+  challenges.forEach(c => {
+    const pf = primeFactors(c);
+    const div = document.createElement('div');
+    div.style.cssText = 'background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px; text-align:center;';
+    div.innerHTML = `
+      <div style="font-family:var(--mono); font-size:1.3rem; font-weight:700; color:var(--gold); margin-bottom:8px;">${c}</div>
+      <button onclick="this.style.display='none'; this.nextElementSibling.style.display='block'" 
+        style="background:var(--prime-glow); border:1px solid var(--prime); color:var(--prime); border-radius:6px; padding:5px 12px; font-family:var(--sans); font-size:0.75rem; font-weight:700; cursor:pointer;">Reveal</button>
+      <div style="display:none; font-family:var(--mono); font-size:0.85rem; color:var(--prime);">${pf.join(' × ')}</div>`;
+    grid.appendChild(div);
+  });
+}
+</script>
 </body>
 </html>
