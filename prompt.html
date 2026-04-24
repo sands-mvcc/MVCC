@@ -2,14 +2,14 @@
 <html lang="en" data-theme="light">
 <head>
 <!--
-  Prompt Builder Tool — Educational Prompt Builder
-  Version: 1.0 (2026)
+  Prompt Builder for Educators
+  Version: 1.1 (2026)
   Audience: High school (9–12) and community college (100–200 level) instructors
   Style: MVCC light educational aesthetic
 -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Prompt Builder — Educational Content Prompt Builder</title>
+<title>Prompt Builder for Educators</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -568,10 +568,10 @@
 <header class="masthead" role="banner">
   <div class="masthead-inner">
     <a class="brand" href="#top">
-      <div class="brand-mark" aria-hidden="true">P<sup style="font-size:12px;">∧</sup></div>
+      <div class="brand-mark" aria-hidden="true">P<sup style="font-size:12px;">B</sup></div>
       <div class="brand-text">
-        <h1>Prompt Architect Lite</h1>
-        <p>Educational Prompt Builder</p>
+        <h1>Prompt Builder for Educators</h1>
+        <p>Structured prompts for classroom AI</p>
       </div>
     </a>
     <span class="pill">BETA</span>
@@ -702,6 +702,13 @@
         </div>
       </fieldset>
 
+      <!-- EXPERT PERSONAS -->
+      <fieldset>
+        <legend>🎭 Expert Personas <span class="count-badge" data-count="0" id="personaCount">0</span></legend>
+        <p class="helper-text" style="margin: 0 0 10px;">Select one or stack multiple. Selection order determines the order they appear in the prompt. Click the ★ on an active persona to make it the lead voice.</p>
+        <div class="chip-grid" id="personaChips" role="group" aria-label="Expert personas"></div>
+      </fieldset>
+
       <!-- COLOR PALETTE -->
       <details class="palette" id="paletteSection" open>
         <summary>🎨 Color Palette <span style="font-weight:400; color: var(--ink-muted); font-size: 12px;">(interactive only)</span></summary>
@@ -803,7 +810,7 @@
 </main>
 
 <footer class="page-foot">
-  Prompt Architect Lite · Educational Prompt Builder ·
+  Prompt Builder for Educators ·
   Built for high school and community college faculty developing AI-generated learning materials ·
   <a href="https://www.w3.org/WAI/WCAG21/quickref/" target="_blank" rel="noopener">WCAG 2.1 Reference</a>
 </footer>
@@ -895,6 +902,30 @@
     { name: 'High-Contrast',     primary: '#000000', accent: '#ffcc00', background: '#ffffff' }
   ];
 
+  const PERSONAS = [
+    { id: 'id',    label: '🎓 Instructional Designer',
+      role: 'an expert Instructional Designer',
+      directive: 'Apply sound instructional design: measurable learning objectives aligned to Bloom\'s Taxonomy, logical sequencing, appropriate scaffolding, and built-in opportunities for practice and retrieval.' },
+    { id: 'sme',   label: '🧪 Subject Matter Expert',
+      role: 'a Subject Matter Expert in the discipline',
+      directive: 'Ensure content is technically accurate, uses correct domain terminology, reflects current disciplinary consensus, and calls out common conceptual pitfalls or advanced nuances where helpful.' },
+    { id: 'asmt',  label: '📊 Assessment Specialist',
+      role: 'an Assessment Specialist',
+      directive: 'Design items that validly measure the stated objectives. Use clear stems, plausible distractors, varied item types, and alignment between the level of Bloom\'s assessed and the level taught. Provide answer keys with brief rationales.' },
+    { id: 'web',   label: '🎨 Website Designer',
+      role: 'an experienced Website Designer',
+      directive: 'Produce a clean, visually coherent interface with strong typographic hierarchy, generous whitespace, consistent use of color, and a responsive layout that reads well on phones, tablets, and desktops.' },
+    { id: 'dev',   label: '💻 Expert Programmer',
+      role: 'an Expert Programmer',
+      directive: 'Write correct, efficient, well-structured code with clear naming, appropriate comments, graceful error handling, and no reliance on external build tools. Keep the entire implementation in a single self-contained file unless otherwise specified.' },
+    { id: 'edit',  label: '✏️ Editor',
+      role: 'a professional Editor',
+      directive: 'Polish all prose for clarity, grammar, consistency, and tone. Enforce parallel structure in lists and headings, eliminate wordiness, and ensure every instruction can be followed on first read.' },
+    { id: 'rvs',   label: '🔍 Research Validation Specialist',
+      role: 'a Research Validation Specialist',
+      directive: 'Verify factual claims against authoritative sources. Flag anything uncertain. Avoid fabricated citations. Where a specific claim, statistic, or date is included, note whether it should be double-checked before classroom use.' }
+  ];
+
   // ---------- State ----------
   const STORAGE_KEY = 'promptArchitectLite.v1';
   let state = loadState() || {
@@ -910,6 +941,8 @@
     density: 'Balanced',
     palette: { primary: '#1a4480', accent: '#c8102e', background: '#ffffff', preset: 'Classroom Classic' },
     extra: '',
+    personas: [],
+    leadPersona: null,
     learning: [],
     access: [],
     resist: [],
@@ -918,6 +951,10 @@
     refUrl: '',
     theme: 'light'
   };
+
+  // Back-compat for users who already have saved state from v1.0
+  if (!('personas' in state)) state.personas = [];
+  if (!('leadPersona' in state)) state.leadPersona = null;
 
   function saveState() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
@@ -976,6 +1013,36 @@
         update();
       });
     });
+  }
+
+  function renderPersonas() {
+    const c = $('#personaChips');
+    c.innerHTML = '';
+    PERSONAS.forEach((p) => {
+      const active = state.personas.includes(p.id);
+      const isLead = state.leadPersona === p.id;
+      const chip = buildChip(c, p.id, `${p.label}<span class="star" title="Make lead persona">★</span>`, active, null, isLead ? 'primary' : '');
+      chip.addEventListener('click', (e) => {
+        if (e.target.classList.contains('star')) {
+          if (state.personas.includes(p.id)) state.leadPersona = p.id;
+        } else {
+          if (state.personas.includes(p.id)) {
+            state.personas = state.personas.filter(x => x !== p.id);
+            if (state.leadPersona === p.id) {
+              state.leadPersona = state.personas[0] || null;
+            }
+          } else {
+            state.personas.push(p.id);
+            if (!state.leadPersona) state.leadPersona = p.id;
+          }
+        }
+        renderPersonas();
+        update();
+      });
+    });
+    const badge = $('#personaCount');
+    badge.textContent = state.personas.length;
+    badge.dataset.count = state.personas.length;
   }
 
   function renderChipGroup(containerId, chips, stateKey, countId) {
@@ -1087,10 +1154,43 @@
   function buildPrompt() {
     const lines = [];
     const interactive = state.mode === 'interactive';
+    const deliverableShort = interactive ? 'an interactive HTML learning activity' : 'a text-based assignment document';
+    const audienceShort = state.audience || '[audience TBD]';
 
     // ROLE
     lines.push('ROLE');
-    lines.push(`You are an expert instructional designer creating ${interactive ? 'an interactive HTML learning activity' : 'a text-based assignment document'} for ${state.audience || '[audience TBD]'} students.`);
+    if (state.personas.length === 0) {
+      // Default role when no personas are selected
+      lines.push(`You are an expert instructional designer creating ${deliverableShort} for ${audienceShort} students.`);
+    } else {
+      // Personas take over the role entirely. Order: lead first, then remaining in user's selection order.
+      const ordered = [];
+      if (state.leadPersona && state.personas.includes(state.leadPersona)) {
+        ordered.push(PERSONAS.find(p => p.id === state.leadPersona));
+      }
+      state.personas.forEach(pid => {
+        if (pid !== state.leadPersona) {
+          const p = PERSONAS.find(x => x.id === pid);
+          if (p) ordered.push(p);
+        }
+      });
+
+      if (ordered.length === 1) {
+        lines.push(`You are ${ordered[0].role}, creating ${deliverableShort} for ${audienceShort} students.`);
+      } else {
+        const roles = ordered.map(p => p.role);
+        const lastRole = roles.pop();
+        const roleSentence = `${roles.join(', ')}, and ${lastRole}`;
+        lines.push(`You are ${roleSentence}. Working together as a single voice, you are creating ${deliverableShort} for ${audienceShort} students. The lead perspective is ${ordered[0].role}; the other roles inform and strengthen the work from their respective angles.`);
+      }
+
+      // Per-persona directives
+      lines.push('');
+      lines.push('PERSONA DIRECTIVES');
+      ordered.forEach(p => {
+        lines.push(`- As ${p.role}: ${p.directive}`);
+      });
+    }
     lines.push('');
 
     // CONTEXT
@@ -1276,7 +1376,7 @@
     const blob = new Blob([prompt], { type: 'text/plain;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `prompt-architect-${slug}.txt`;
+    a.download = `prompt-builder-${slug}.txt`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast('Downloaded ✓');
@@ -1320,6 +1420,7 @@
 
     // Renders
     renderInteractiveTypes();
+    renderPersonas();
     renderChipGroup('#learningChips', LEARNING_CHIPS, 'learning', '#learningCount');
     renderChipGroup('#accessChips',   ACCESS_CHIPS,   'access',   '#accessCount');
     renderChipGroup('#resistChips',   RESIST_CHIPS,   'resist',   '#resistCount');
