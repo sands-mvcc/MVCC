@@ -7,14 +7,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
+  /* Light mode (default) */
+  --bg:#eef2f6; --panel:#ffffff; --surface:#f3f6f9; --border:#d6dee6;
+  --glow:#00838f; --glow2:#c25400; --glow3:#7440c9; --amber:#a8720a;
+  --red:#c92a44; --green:#1a8f52; --text:#16232e; --muted:#5b7285;
+  --mono:'Share Tech Mono',monospace; --sans:'Exo 2',sans-serif;
+}
+[data-theme="dark"] {
   --bg:#080c10; --panel:#0d1219; --surface:#111a24; --border:#1c2d3e;
   --glow:#00ffe0; --glow2:#ff6a00; --glow3:#9b59ff; --amber:#ffb300;
   --red:#ff3b5c; --green:#39ff85; --text:#d6eaf8; --muted:#4a6a80;
-  --mono:'Share Tech Mono',monospace; --sans:'Exo 2',sans-serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
-body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;transition:background .25s ease,color .25s ease}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999;opacity:0.35}
+html[data-theme="dark"] body::after{opacity:1}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 20% 10%,rgba(0,255,224,0.04) 0%,transparent 70%),radial-gradient(ellipse 50% 30% at 80% 80%,rgba(155,89,255,0.04) 0%,transparent 70%);pointer-events:none;z-index:0}
 .page{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:20px 18px 60px}
 
@@ -24,11 +31,14 @@ header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;back
 .hdr-left h1{font-family:var(--mono);font-size:clamp(1rem,2.2vw,1.35rem);color:var(--glow);letter-spacing:2px}
 .hdr-left h1 em{color:var(--glow2);font-style:normal}
 .hdr-left p{font-size:0.72rem;color:var(--muted);margin-top:3px;letter-spacing:1px}
+.hdr-right{display:flex;align-items:center;gap:10px}
 .status-pill{font-family:var(--mono);font-size:0.68rem;letter-spacing:1px;padding:4px 12px;border-radius:100px;border:1px solid;display:flex;align-items:center;gap:6px}
 .status-pill .dot{width:7px;height:7px;border-radius:50%;animation:blink 1.4s infinite}
 .status-pill.active{border-color:rgba(57,255,133,0.4);color:var(--green)}
 .status-pill.active .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.theme-toggle{font-family:var(--mono);font-size:0.68rem;letter-spacing:1px;padding:4px 12px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .2s}
+.theme-toggle:hover{border-color:var(--glow);color:var(--glow)}
 
 /* TABS */
 .mode-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:5px}
@@ -180,6 +190,7 @@ td.v-cyan{color:var(--glow)} td.v-amber{color:var(--amber)} td.v-violet{color:va
     <p>ANALOG ↔ DIGITAL CONVERSION · INTERACTIVE INSTRUMENT SIMULATOR · MORAINE VALLEY COMMUNITY COLLEGE</p>
   </div>
   <div class="hdr-right">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle light/dark mode"><span id="themeToggleIcon">🌙</span><span id="themeToggleLabel">DARK</span></button>
     <div class="status-pill active"><div class="dot"></div>SYSTEM READY</div>
   </div>
 </header>
@@ -856,8 +867,30 @@ function answerQ(qi,oi){
 }
 function resetQuiz(){ buildQuiz(); }
 
+/* ── THEME ── */
+function applyTheme(theme){
+  if(theme==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  const icon=document.getElementById('themeToggleIcon');
+  const label=document.getElementById('themeToggleLabel');
+  if(icon) icon.textContent = theme==='dark' ? '☀️' : '🌙';
+  if(label) label.textContent = theme==='dark' ? 'LIGHT' : 'DARK';
+  try{ localStorage.setItem('adcDacTheme', theme); }catch(e){}
+  drawScope(); drawDacScope();
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light';
+  applyTheme(current==='dark' ? 'light' : 'dark');
+}
+
 /* ── INIT ── */
 window.addEventListener('load',()=>{
+  let saved='light';
+  try{ saved = localStorage.getItem('adcDacTheme') || 'light'; }catch(e){}
+  applyTheme(saved);
   updateSliderGradient(document.getElementById('analogSlider'));
   updateSliderGradient(document.getElementById('dacSlider'));
   buildBitCells(0,adcBits,'bitsWrap');
