@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PID Loop Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8EBEE; --panel:#F7F8FA; --panel-2:#DDE2E7; --ink:#18222D; --ink-2:#4B5663; --line:#C3CAD2;
+  --navy:#0047AB; --on-navy:#FFFFFF; --navy-soft:#D6E2F5; --green:#00A86B; --green-ink:#007A4D; --sp:#39424D;
+  --amber:#B97F00; --amber-bg:#FFF1CC; --red:#C62828; --red-bg:#FDE2E2;
+  --liquid:#7FA6DA; --steel:#9AA5B1; --pipe:#7C8794; --grid:#D3D9DF;
+  --font:"Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --cond:"Barlow Semi Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151B; --panel:#19212A; --panel-2:#232D38; --ink:#E3E9EF; --ink-2:#A2AEBB; --line:#34414E;
+    --navy:#6E9EF2; --on-navy:#0C1A30; --navy-soft:#1E2E4A; --green:#2FCB8E; --green-ink:#56DDA6; --sp:#CBD3DC;
+    --amber:#F2B53A; --amber-bg:#3A2E10; --red:#FF7070; --red-bg:#3D1A1A;
+    --liquid:#3F6CAD; --steel:#5E6A77; --pipe:#6B7785; --grid:#26313C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151B; --panel:#19212A; --panel-2:#232D38; --ink:#E3E9EF; --ink-2:#A2AEBB; --line:#34414E;
+  --navy:#6E9EF2; --on-navy:#0C1A30; --navy-soft:#1E2E4A; --green:#2FCB8E; --green-ink:#56DDA6; --sp:#CBD3DC;
+  --amber:#F2B53A; --amber-bg:#3A2E10; --red:#FF7070; --red-bg:#3D1A1A;
+  --liquid:#3F6CAD; --steel:#5E6A77; --pipe:#6B7785; --grid:#26313C;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* Title bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar-in{max-width:1280px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand svg{flex:none}
+.brand h1{font-family:var(--cond);font-weight:700;font-size:1.35rem;margin:0;line-height:1.1;letter-spacing:.01em}
+.brand p{margin:0;color:var(--ink-2);font-size:.85rem}
+nav.tabs{display:flex;gap:2px;flex-wrap:wrap}
+nav.tabs button{background:none;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;color:var(--ink-2);font-weight:600;font-size:.95rem}
+nav.tabs button[aria-selected="true"]{background:var(--navy);color:var(--on-navy)}
+nav.tabs button:hover:not([aria-selected="true"]){background:var(--panel-2);color:var(--ink)}
+.theme-btn{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:.9rem}
+
+main{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
+section[role="tabpanel"][hidden]{display:none}
+
+/* Panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.panel h2,.panel h3{font-family:var(--cond);font-weight:600;margin:0 0 8px;font-size:1.1rem;line-height:1.2}
+.ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.ph h2,.ph h3{margin:0}
+.hint{color:var(--ink-2);font-size:.88rem;margin:0}
+
+/* Process selector & run controls */
+.runbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.seg{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:3px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-weight:600;font-size:.92rem;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:.92rem}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:4px 9px;font-size:.85rem}
+.spacer{flex:1}
+.clock{font-family:var(--cond);font-weight:600;color:var(--ink-2)}
+
+/* Top grid: mimic + faceplate */
+.top{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:14px}
+.mimic svg{width:100%;height:auto;display:block}
+.mimic .cap{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mimic .cap h2{margin:0}
+
+/* Faceplate */
+.face{display:flex;flex-direction:column;gap:10px;padding:0;overflow:hidden}
+.face-head{background:var(--panel-2);padding:10px 14px;border-bottom:1px solid var(--line)}
+.face-head .tag{font-family:var(--cond);font-weight:700;font-size:1.3rem;line-height:1}
+.face-head .desc{font-size:.85rem;color:var(--ink-2)}
+.face-body{padding:0 14px 14px;display:grid;grid-template-columns:52px 1fr;gap:12px}
+.vbar{position:relative;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;height:190px}
+.vbar .fill{position:absolute;left:6px;right:6px;bottom:0;background:var(--navy);border-radius:2px 2px 0 0}
+.vbar .spmark{position:absolute;left:-7px;right:-7px;height:0;border-top:2px solid var(--sp)}
+.vbar .spmark::before{content:"";position:absolute;left:-1px;top:-7px;border:6px solid transparent;border-left:8px solid var(--sp)}
+.vbar .lim{position:absolute;right:2px;font-size:.68rem;color:var(--ink-2)}
+.readout{display:flex;flex-direction:column;gap:8px}
+.ro{display:grid;grid-template-columns:34px 1fr;align-items:baseline;gap:4px}
+.ro b{font-family:var(--cond);font-weight:600;color:var(--ink-2);font-size:.9rem}
+.ro span{font-family:var(--cond);font-weight:700;font-size:1.55rem;line-height:1.1;text-align:right}
+.ro span small{font-size:.8rem;font-weight:500;color:var(--ink-2);margin-left:3px}
+.ro.pv span{color:var(--navy)}
+.ro.co span{color:var(--green-ink)}
+.ro.pv.alarm span{color:var(--red)}
+.cobar{height:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:3px;position:relative;overflow:hidden}
+.cobar i{position:absolute;inset:0 auto 0 0;background:var(--green)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 14px}
+.modes button{padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-family:var(--cond);font-weight:700;font-size:1rem;letter-spacing:.02em}
+.modes button[aria-pressed="true"]{background:var(--sp);color:var(--panel);border-color:var(--sp)}
+.face-ctl{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+.status{margin:0 14px;padding:6px 10px;border-radius:5px;font-size:.85rem;font-weight:600;min-height:1.9em;display:flex;align-items:center;gap:6px}
+.status.ok{color:var(--ink-2);background:var(--panel-2)}
+.status.warn{color:var(--amber);background:var(--amber-bg)}
+.status.bad{color:var(--red);background:var(--red-bg)}
+
+/* sliders */
+.sl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.sl label{font-weight:600;font-size:.92rem}
+.sl output{font-family:var(--cond);font-weight:700;font-size:1.05rem;min-width:4.2em;text-align:right}
+.sl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--navy);margin:0}
+.sl .sub{grid-column:1/-1;font-size:.8rem;color:var(--ink-2);margin-top:-2px}
+.sl.disabled{opacity:.45}
+
+/* Trend */
+.trend-wrap{margin-top:14px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;color:var(--ink-2);align-items:center}
+.legend i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.legend .l-pv i{border-color:var(--navy)}
+.legend .l-sp i{border-top:2px dashed var(--sp)}
+.legend .l-co i{border-color:var(--green)}
+canvas#trend{width:100%;height:290px;display:block;margin-top:6px}
+.coach{margin-top:10px;border-left:4px solid var(--navy);background:var(--navy-soft);padding:10px 14px;border-radius:0 6px 6px 0;font-size:.95rem}
+.coach[hidden]{display:none}
+.coach strong{font-family:var(--cond);font-size:1.05rem}
+
+/* Lower grid */
+.lower{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:14px;margin-top:14px}
+.terms{display:flex;gap:6px;margin-bottom:10px}
+.term{flex:1;border:1px solid var(--line);background:var(--panel-2);border-radius:6px;padding:6px 0;cursor:pointer;font-family:var(--cond);font-weight:700;font-size:1.05rem;color:var(--ink-2)}
+.term[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.92rem;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--navy)}
+.check small{display:block;color:var(--ink-2);font-size:.8rem}
+
+.contrib{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.crow{display:grid;grid-template-columns:42px 1fr 52px;gap:8px;align-items:center;font-size:.88rem}
+.crow b{font-family:var(--cond);font-weight:600}
+.ctrack{position:relative;height:12px;background:var(--panel-2);border-radius:3px}
+.ctrack::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;border-left:1px solid var(--ink-2)}
+.ctrack i{position:absolute;top:0;bottom:0;border-radius:2px}
+.crow span{text-align:right;font-family:var(--cond);font-weight:600}
+.crow.p i{background:var(--navy)} .crow.i i{background:#7A55C7} .crow.d i{background:#C26A1A} .crow.b i{background:var(--steel)}
+.crow.tot i{background:var(--green)}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.metric{background:var(--panel-2);border-radius:6px;padding:8px 10px}
+.metric b{display:block;font-size:.8rem;color:var(--ink-2);font-weight:600}
+.metric span{font-family:var(--cond);font-weight:700;font-size:1.35rem}
+.metric.wide{grid-column:1/-1}
+
+.labs{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-top:14px}
+.lablist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lablist li button{width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:9px 11px;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.lablist li button:hover{border-color:var(--navy)}
+.lablist li button.active{border-color:var(--navy);box-shadow:inset 3px 0 0 var(--navy)}
+.lablist .n{font-family:var(--cond);font-weight:700;color:var(--navy);min-width:1.2em}
+.lablist .t{font-weight:600;font-size:.93rem;line-height:1.3}
+.lablist .t small{display:block;font-weight:400;color:var(--ink-2);font-size:.8rem}
+.chal{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.chal h4{margin:0 0 2px;font-family:var(--cond);font-size:1rem}
+.chal p{margin:0 0 8px;font-size:.88rem;color:var(--ink-2)}
+.chal .res{font-size:.88rem;margin-top:8px}
+.chal .res ul{margin:4px 0 0;padding-left:18px}
+.pass{color:var(--green-ink);font-weight:700}
+.fail{color:var(--red);font-weight:700}
+
+details.calc{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+details.calc summary{cursor:pointer;font-weight:600;font-family:var(--cond);font-size:1.02rem}
+.calcgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.calcgrid label{font-size:.82rem;color:var(--ink-2);display:flex;flex-direction:column;gap:2px}
+.calcgrid input{border:1px solid var(--line);border-radius:5px;padding:5px 7px;background:var(--panel);width:100%}
+.calcout{background:var(--panel-2);border-radius:6px;padding:8px 10px;font-size:.92rem;margin-bottom:8px}
+
+/* Tutorial */
+.tut{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:90px;align-self:start}
+.steps button{width:100%;text-align:left;border:0;background:none;padding:9px 12px;border-radius:6px;cursor:pointer;display:flex;gap:10px;font-weight:600;color:var(--ink-2)}
+.steps button .k{font-family:var(--cond);color:var(--navy);min-width:1.1em}
+.steps button[aria-current="step"]{background:var(--panel);color:var(--ink);box-shadow:inset 3px 0 0 var(--navy)}
+.lesson{max-width:72ch}
+.lesson h2{font-family:var(--cond);font-size:1.7rem;font-weight:700;margin:0 0 6px;line-height:1.15}
+.lesson .lede{font-size:1.08rem;color:var(--ink-2);margin:0 0 14px}
+.lesson p{margin:0 0 12px}
+.lesson ul{margin:0 0 12px;padding-left:20px}
+.eq{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 16px;font-family:var(--cond);font-size:1.2rem;margin:10px 0 14px;overflow-x:auto;white-space:nowrap}
+.eq sub{font-size:.7em}
+.lesson-nav{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.analogy{border-left:4px solid var(--green);padding:6px 12px;background:var(--panel);margin:10px 0 14px;border-radius:0 6px 6px 0}
+.lesson svg{max-width:100%;height:auto}
+
+/* Competencies */
+.intro{max-width:75ch;margin:0 0 16px}
+.intro h2{font-family:var(--cond);font-size:1.7rem;margin:0 0 6px;line-height:1.15}
+.acc{border:1px solid var(--line);border-radius:8px;background:var(--panel);margin-bottom:8px;overflow:hidden}
+.acc>button{width:100%;text-align:left;border:0;background:none;padding:12px 16px;display:flex;gap:12px;align-items:center;cursor:pointer}
+.acc>button .ttl{font-family:var(--cond);font-weight:600;font-size:1.12rem;flex:1}
+.acc>button .lvl{font-size:.8rem;color:var(--ink-2)}
+.acc>button .chev{transition:transform .2s}
+.acc>button[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.acc .body{padding:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.acc .body[hidden]{display:none}
+.acc .body h4{margin:0 0 4px;font-size:.92rem;color:var(--ink-2)}
+.acc .body ul{margin:0;padding-left:18px;font-size:.93rem}
+.acc .body li{margin-bottom:4px}
+.acc .body .assess{grid-column:1/-1;font-size:.88rem;background:var(--panel-2);border-radius:6px;padding:8px 10px}
+
+/* Glossary flip cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.card{perspective:900px;height:160px;border:0;background:none;padding:0;cursor:pointer;text-align:left}
+.card .in{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.card.flip .in{transform:rotateY(180deg)}
+.card .f,.card .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:8px;border:1px solid var(--line);padding:14px;display:flex;flex-direction:column}
+.card .f{background:var(--panel);justify-content:space-between}
+.card .f strong{font-family:var(--cond);font-size:1.25rem;line-height:1.15}
+.card .f small{color:var(--ink-2);font-size:.8rem}
+.card .b{background:var(--navy-soft);transform:rotateY(180deg);font-size:.88rem;line-height:1.4;overflow:auto}
+
+/* Quiz */
+.quiz{max-width:78ch}
+.q{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.q p.stem{margin:0 0 10px;font-weight:600}
+.q .opts{display:flex;flex-direction:column;gap:6px}
+.q .opts button{text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:8px 12px;cursor:pointer}
+.q .opts button:hover:not(:disabled){border-color:var(--navy)}
+.q .opts button.right{border-color:var(--green);background:color-mix(in srgb,var(--green) 14%,var(--panel))}
+.q .opts button.wrong{border-color:var(--red);background:var(--red-bg)}
+.q .opts button:disabled{cursor:default}
+.q .fb{margin-top:10px;font-size:.92rem}
+.score{position:sticky;top:76px;display:inline-block;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-family:var(--cond);font-weight:700;margin-bottom:10px}
+
+/* mimic svg classes */
+.m-pipe{stroke:var(--pipe);stroke-width:8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.m-flowd{stroke:var(--liquid);stroke-width:3;fill:none;stroke-dasharray:6 10}
+.m-vessel{fill:var(--panel-2);stroke:var(--steel);stroke-width:3}
+.m-sig{stroke:var(--ink-2);stroke-width:1.5;fill:none;stroke-dasharray:6 4}
+.m-bub{fill:var(--panel);stroke:var(--ink);stroke-width:1.6}
+.m-txt{fill:var(--ink);font-family:var(--cond);font-weight:700;font-size:12px;text-anchor:middle}
+.m-lbl{fill:var(--ink-2);font-family:var(--font);font-size:11.5px;text-anchor:middle}
+.m-val{fill:var(--ink);font-family:var(--cond);font-weight:700;font-size:15px;text-anchor:middle}
+.m-valve{fill:var(--panel);stroke:var(--ink);stroke-width:1.6}
+.m-open{fill:var(--green)}
+
+@media (max-width:1020px){
+  .lower{grid-template-columns:1fr 1fr}
+  .lower .perf{grid-column:1/-1}
+  .labs{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .top{grid-template-columns:1fr}
+  .lower{grid-template-columns:1fr}
+  .lablist{grid-template-columns:1fr}
+  .tut{grid-template-columns:1fr}
+  .steps{position:static;flex-direction:row;overflow-x:auto}
+  .steps button{white-space:nowrap}
+  .acc .body{grid-template-columns:1fr}
+  canvas#trend{height:230px}
+  .bar-in{padding:8px 14px}
+  .bar{position:static}
+  nav.tabs{flex-wrap:nowrap;overflow-x:auto;width:100%}
+  nav.tabs button{white-space:nowrap}
+  .mimic .cap{flex-direction:column;align-items:flex-start}
+  .score{top:8px}
+  main{padding:14px 12px 40px}
+}
+@media (prefers-reduced-motion:reduce){ .card .in,.acc>button .chev{transition:none} }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand">
+      <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><rect x="1" y="1" width="36" height="36" rx="6" fill="#0047AB"/><circle cx="19" cy="19" r="11" fill="none" stroke="#fff" stroke-width="2"/><line x1="8" y1="19" x2="30" y2="19" stroke="#fff" stroke-width="2"/><path d="M4 30 Q12 30 14 24 T22 22 T34 21" fill="none" stroke="#00a86b" stroke-width="2.5"/></svg>
+      <div><h1>PID Loop Trainer</h1><p>Process control fundamentals for technicians</p></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" aria-selected="true" aria-controls="t-sim" id="tab-sim">Simulator</button>
+      <button role="tab" aria-selected="false" aria-controls="t-tut" id="tab-tut">How PID works</button>
+      <button role="tab" aria-selected="false" aria-controls="t-comp" id="tab-comp">Competencies</button>
+      <button role="tab" aria-selected="false" aria-controls="t-glos" id="tab-glos">Glossary</button>
+      <button role="tab" aria-selected="false" aria-controls="t-quiz" id="tab-quiz">Check yourself</button>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode"><span id="themeIcon">◐</span><span id="themeLbl">Theme</span></button>
+  </div>
+</header>
+<main>
+<!-- ================= SIMULATOR ================= -->
+<section role="tabpanel" id="t-sim" aria-labelledby="tab-sim">
+  <div class="runbar">
+    <div class="seg" role="group" aria-label="Process">
+      <button data-proc="level" aria-pressed="true">Tank level</button>
+      <button data-proc="temp" aria-pressed="false">Reactor temperature</button>
+      <button data-proc="flow" aria-pressed="false">Line flow</button>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn" id="runBtn">Pause</button>
+    <div class="seg" role="group" aria-label="Simulation speed">
+      <button data-speed="1" aria-pressed="true">1×</button>
+      <button data-speed="2" aria-pressed="false">2×</button>
+      <button data-speed="4" aria-pressed="false">4×</button>
+      <button data-speed="8" aria-pressed="false">8×</button>
+    </div>
+    <button class="btn" id="resetBtn">Reset process</button>
+    <span class="clock num" id="clock">t = 0 s</span>
+  </div>
+
+  <div class="top">
+    <div class="panel mimic">
+      <div class="cap"><h2 id="procName">Surge tank level</h2><p class="hint" id="procHint">Inlet valve LV-101 fills the tank; the outlet hand valve sets the demand.</p></div>
+      <svg id="mimic" viewBox="0 0 460 300" role="img" aria-label="Process graphic of the control loop">
+        <defs><clipPath id="tankClip"><rect x="200" y="84" width="150" height="180" rx="10"/></clipPath></defs>
+        <!-- inlet pipe -->
+        <path class="m-pipe" id="pIn" d="M14 116 H92 M128 116 H250 V86"/>
+        <path class="m-flowd" id="fIn" d="M14 116 H250 V86"/>
+        <!-- vessel group -->
+        <g id="gVessel">
+          <rect class="m-vessel" x="200" y="84" width="150" height="180" rx="10"/>
+          <g clip-path="url(#tankClip)">
+            <rect id="liquid" x="200" y="174" width="150" height="90" fill="var(--liquid)"/>
+            <path id="coil" d="M215 244 h120 l-8 -12 h-104 l-8 -12 h120 l-8 -12 h-104" fill="none" stroke="#C26A1A" stroke-width="4" opacity="0"/>
+          </g>
+          <rect x="200" y="84" width="150" height="180" rx="10" fill="none" stroke="var(--steel)" stroke-width="3"/>
+          <g id="ticks"></g>
+          <text class="m-val num" id="tankTxt" x="275" y="160">50.0 %</text>
+          <path class="m-pipe" d="M275 264 V284 H446"/>
+          <path class="m-flowd" id="fOut" d="M275 264 V284 H446"/>
+          <!-- hand valve -->
+          <polygon class="m-valve" points="372,274 372,294 396,284"/><polygon class="m-valve" points="420,274 420,294 396,284"/>
+          <line x1="396" y1="284" x2="396" y2="266" stroke="var(--ink)" stroke-width="1.6"/><line x1="386" y1="266" x2="406" y2="266" stroke="var(--ink)" stroke-width="2.5"/>
+          <text class="m-lbl" x="396" y="258" id="loadTxt">Demand 50%</text>
+          <!-- transmitter -->
+          <line x1="350" y1="170" x2="378" y2="170" stroke="var(--ink)" stroke-width="1.6"/>
+          <circle class="m-bub" cx="400" cy="170" r="21"/>
+          <text class="m-txt" x="400" y="167" id="ttA">LT</text><text class="m-txt" x="400" y="181" id="ttB">101</text>
+          <path class="m-sig" d="M400 149 V40 H346"/>
+        </g>
+        <!-- flow group -->
+        <g id="gFlow" style="display:none">
+          <path class="m-pipe" d="M250 116 H446"/>
+          <path class="m-flowd" id="fRun" d="M250 116 H446"/>
+          <rect x="336" y="102" width="5" height="28" fill="var(--ink)"/>
+          <text class="m-lbl" x="338" y="96">FE-301</text>
+          <line x1="338" y1="130" x2="338" y2="168" stroke="var(--ink)" stroke-width="1.6"/>
+          <circle class="m-bub" cx="338" cy="190" r="21"/>
+          <text class="m-txt" x="338" y="187">FT</text><text class="m-txt" x="338" y="201">301</text>
+          <path class="m-sig" d="M359 190 H420 V40 H346"/>
+          <text class="m-val num" id="flowTxt" x="400" y="150">60.0 m³/h</text>
+          <text class="m-lbl" x="190" y="200" id="presTxt">Supply pressure 50%</text>
+          <path d="M150 210 h80" stroke="var(--ink-2)" stroke-width="1"/>
+        </g>
+        <!-- control valve -->
+        <polygon class="m-valve" points="92,104 92,128 110,116"/><polygon class="m-valve" points="128,104 128,128 110,116"/>
+        <line x1="110" y1="116" x2="110" y2="80" stroke="var(--ink)" stroke-width="1.6"/>
+        <path class="m-valve" d="M92 80 a18 14 0 0 1 36 0 Z"/>
+        <rect x="80" y="140" width="60" height="6" rx="3" fill="var(--panel-2)"/>
+        <rect id="valveFill" x="80" y="140" width="30" height="6" rx="3" class="m-open"/>
+        <text class="m-lbl" x="110" y="162" id="vTag">LV-101</text>
+        <text class="m-val num" x="110" y="180" id="vTxt">35%</text>
+        <!-- controller bubble (shared display) -->
+        <path class="m-sig" d="M302 40 H110 V66"/>
+        <rect x="302" y="18" width="44" height="44" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/>
+        <circle cx="324" cy="40" r="21" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+        <line x1="303" y1="40" x2="345" y2="40" stroke="var(--ink)" stroke-width="1.2"/>
+        <text class="m-txt" x="324" y="35" id="cA">LIC</text><text class="m-txt" x="324" y="54" id="cB">101</text>
+        <text class="m-lbl" x="14" y="104" text-anchor="start" id="srcTxt" style="text-anchor:start">Supply</text>
+      </svg>
+    </div>
+
+    <div class="panel face" aria-label="Controller faceplate">
+      <div class="face-head"><div class="tag" id="fTag">LIC-101</div><div class="desc" id="fDesc">Surge tank level</div></div>
+      <div class="face-body">
+        <div class="vbar" aria-hidden="true"><div class="fill" id="pvFill"></div><div class="spmark" id="spMark"></div><span class="lim num" style="top:2px" id="limHi">100</span><span class="lim num" style="bottom:2px" id="limLo">0</span></div>
+        <div class="readout">
+          <div class="ro pv" id="roPV"><b>PV</b><span class="num" id="pvTxt">50.0<small>%</small></span></div>
+          <div class="ro"><b>SP</b><span class="num" id="spTxt">50.0<small>%</small></span></div>
+          <div class="ro co"><b>CO</b><span class="num" id="coTxt">35.4<small>%</small></span></div>
+          <div class="cobar" aria-hidden="true"><i id="coFill"></i></div>
+          <div class="ro"><b>Err</b><span class="num" id="eTxt" style="font-size:1.15rem">0.0<small>%</small></span></div>
+        </div>
+      </div>
+      <div class="modes" role="group" aria-label="Controller mode">
+        <button id="mAuto" aria-pressed="true">AUTO</button>
+        <button id="mMan" aria-pressed="false">MAN</button>
+      </div>
+      <div class="status ok" id="status" role="status">Loop in automatic</div>
+      <div class="face-ctl">
+        <div class="sl"><label for="spSl">Setpoint</label><output id="spOut" class="num">50.0</output><input type="range" id="spSl" min="0" max="100" step="0.5" value="50"></div>
+        <div style="display:flex;gap:6px"><button class="btn small" id="spDn">SP −10</button><button class="btn small" id="spUp">SP +10</button></div>
+        <div class="sl disabled" id="coWrap"><label for="coSl">Manual output</label><output id="coOut" class="num">35</output><input type="range" id="coSl" min="0" max="100" step="0.5" value="35" disabled></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel trend-wrap">
+    <div class="ph"><h2>Trend</h2>
+      <div class="legend"><span class="l-pv"><i></i>Process variable (PV)</span><span class="l-sp"><i></i>Setpoint (SP)</span><span class="l-co"><i></i>Controller output (CO, right axis)</span></div>
+    </div>
+    <canvas id="trend" aria-label="Trend chart of PV, SP and CO over time" role="img"></canvas>
+    <div class="coach" id="coach" hidden></div>
+  </div>
+
+  <div class="lower">
+    <div class="panel">
+      <div class="ph"><h2>Tuning</h2><span class="hint">Standard (ISA) form</span></div>
+      <div class="terms" role="group" aria-label="Enable terms">
+        <button class="term" id="tP" aria-pressed="true" title="Proportional">P</button>
+        <button class="term" id="tI" aria-pressed="true" title="Integral">I</button>
+        <button class="term" id="tD" aria-pressed="false" title="Derivative">D</button>
+      </div>
+      <div class="stack">
+        <div class="sl" id="wKc"><label for="kc">Controller gain K<sub>c</sub></label><output id="kcOut" class="num">1.50</output><input type="range" id="kc" min="0.05" max="12" step="0.05" value="1.5"><span class="sub" id="pbTxt">Proportional band = 67%</span></div>
+        <div class="sl" id="wTi"><label for="ti">Integral (reset) time T<sub>i</sub></label><output id="tiOut" class="num">20 s</output><input type="range" id="ti" min="0.5" max="120" step="0.5" value="20"><span class="sub" id="rptTxt">3.0 repeats/min</span></div>
+        <div class="sl" id="wTd"><label for="td">Derivative (rate) time T<sub>d</sub></label><output id="tdOut" class="num">0.0 s</output><input type="range" id="td" min="0" max="15" step="0.1" value="0"></div>
+      </div>
+      <details class="calc">
+        <summary>Bump test and lambda tuning helper</summary>
+        <p class="hint" style="margin-top:8px">1. Run a bump test: the loop goes to manual and the output steps +10%. 2. Read the process gain K, dead time θ and time constant τ from the trend. 3. Pick a closed-loop speed λ (start at λ ≥ τ for a gentle loop). 4. Apply.</p>
+        <button class="btn small" id="bumpBtn" style="margin-top:8px">Run bump test (+10% CO)</button>
+        <div class="calcgrid">
+          <label>Process gain K (<span id="kUnits">%</span> per % CO)<input type="number" id="cK" step="0.05" value="2.5"></label>
+          <label>Time constant τ (s)<input type="number" id="cTau" step="0.5" value="30"></label>
+          <label>Dead time θ (s)<input type="number" id="cTh" step="0.5" value="1.5"></label>
+          <label>Desired λ (s)<input type="number" id="cLam" step="0.5" value="30"></label>
+        </div>
+        <div class="calcout num" id="calcOut">Kc = —, Ti = —</div>
+        <button class="btn small primary" id="applyCalc">Apply PI settings</button>
+      </details>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><h2>Process and controller options</h2></div>
+      <div class="stack">
+        <div class="sl"><label for="load" id="loadLbl">Outflow demand</label><output id="loadOut" class="num">50%</output><input type="range" id="load" min="0" max="100" step="1" value="50"><span class="sub">This is the disturbance. The controller cannot see it, only its effect on PV.</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn small" id="ldDn">Load −15</button><button class="btn small" id="ldUp">Load +15</button></div>
+        <label class="check"><input type="checkbox" id="oNoise" checked><span>Measurement noise<small>Real transmitters are never perfectly smooth.</small></span></label>
+        <label class="check"><input type="checkbox" id="oPvD" checked><span>Derivative on PV<small>Off = derivative on error, which kicks on setpoint changes.</small></span></label>
+        <label class="check"><input type="checkbox" id="oAW" checked><span>Anti-reset windup<small>Stops integration while the output is pinned at a limit.</small></span></label>
+        <label class="check"><input type="checkbox" id="oTrack" checked><span>Setpoint tracks PV in manual<small>Makes the return to automatic bumpless.</small></span></label>
+        <div><div class="hint" style="margin-bottom:4px;font-weight:600;color:var(--ink)">Controller action</div>
+          <div class="seg" role="group" aria-label="Controller action"><button data-act="reverse" aria-pressed="true">Reverse</button><button data-act="direct" aria-pressed="false">Direct</button></div>
+          <p class="hint" style="margin-top:4px">Reverse: output falls as PV rises. Correct for all three loops here.</p></div>
+      </div>
+    </div>
+
+    <div class="panel perf">
+      <div class="ph"><h2>Live response</h2></div>
+      <div class="contrib" aria-label="Output contributions">
+        <div class="crow b"><b>Bias</b><div class="ctrack"><i id="cbB"></i></div><span class="num" id="cvB">0</span></div>
+        <div class="crow p"><b>P</b><div class="ctrack"><i id="cbP"></i></div><span class="num" id="cvP">0</span></div>
+        <div class="crow i"><b>I</b><div class="ctrack"><i id="cbI"></i></div><span class="num" id="cvI">0</span></div>
+        <div class="crow d"><b>D</b><div class="ctrack"><i id="cbD"></i></div><span class="num" id="cvD">0</span></div>
+        <div class="crow tot"><b>CO</b><div class="ctrack"><i id="cbT"></i></div><span class="num" id="cvT">0</span></div>
+      </div>
+      <p class="hint" style="margin:8px 0 10px">Bars show each term's share of the output in %, centered on zero.</p>
+      <h3 id="mHead">Last setpoint change</h3>
+      <div class="metrics" id="metrics">
+        <div class="metric"><b>Overshoot</b><span class="num" id="m1">—</span></div>
+        <div class="metric"><b>Rise time (10–90%)</b><span class="num" id="m2">—</span></div>
+        <div class="metric"><b>Settling time (±5%)</b><span class="num" id="m3">—</span></div>
+        <div class="metric"><b>Remaining error</b><span class="num" id="m4">—</span></div>
+        <div class="metric wide"><b>Integrated absolute error (IAE, %·s)</b><span class="num" id="m5">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="labs">
+    <div class="panel">
+      <div class="ph"><h2>Guided labs</h2><span class="hint">Each lab loads settings and schedules the event for you.</span></div>
+      <ul class="lablist" id="labList"></ul>
+    </div>
+    <div class="panel">
+      <div class="ph"><h2>Tuning challenges</h2><span class="hint">Auto-graded</span></div>
+      <div id="chalList"></div>
+    </div>
+  </div>
+</section>
+<!-- ================= TUTORIAL ================= -->
+<section role="tabpanel" id="t-tut" aria-labelledby="tab-tut" hidden>
+  <div class="tut">
+    <ol class="steps" id="stepNav">
+      <li><button data-step="0" aria-current="step"><span class="k">1</span>The feedback loop</button></li>
+      <li><button data-step="1"><span class="k">2</span>Proportional</button></li>
+      <li><button data-step="2"><span class="k">3</span>Integral</button></li>
+      <li><button data-step="3"><span class="k">4</span>Derivative</button></li>
+      <li><button data-step="4"><span class="k">5</span>Putting it together</button></li>
+      <li><button data-step="5"><span class="k">6</span>Tuning safely</button></li>
+    </ol>
+    <div>
+      <article class="lesson" data-lesson="0">
+        <h2>The feedback loop</h2>
+        <p class="lede">A controller does one thing over and over: measure, compare, correct.</p>
+        <svg viewBox="0 0 620 170" role="img" aria-label="Block diagram of a feedback control loop">
+          <g font-family="Barlow Semi Condensed, sans-serif" font-size="14" font-weight="600" fill="var(--ink)">
+            <text x="6" y="66">SP</text>
+            <line x1="30" y1="62" x2="72" y2="62" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/>
+            <circle cx="88" cy="62" r="15" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="82" y="67">Σ</text>
+            <text x="98" y="86" font-size="13">−</text>
+            <line x1="103" y1="62" x2="150" y2="62" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="118" y="54" font-size="12" fill="var(--ink-2)">error</text>
+            <rect x="152" y="38" width="120" height="48" rx="6" fill="var(--navy)"/><text x="176" y="67" fill="var(--on-navy)">Controller</text>
+            <line x1="272" y1="62" x2="318" y2="62" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/><text x="284" y="54" font-size="12" fill="var(--ink-2)">CO</text>
+            <rect x="320" y="38" width="110" height="48" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="335" y="67">Final element</text>
+            <line x1="430" y1="62" x2="476" y2="62" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/>
+            <rect x="478" y="38" width="90" height="48" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="500" y="67">Process</text>
+            <line x1="523" y1="10" x2="523" y2="36" stroke="var(--amber)" stroke-width="2" marker-end="url(#ar)"/><text x="534" y="22" font-size="12" fill="var(--amber)">disturbance</text>
+            <line x1="568" y1="62" x2="612" y2="62" stroke="var(--ink)" stroke-width="2"/><text x="590" y="54" font-size="12" fill="var(--ink-2)">PV</text>
+            <path d="M600 62 V140 H88 V79" fill="none" stroke="var(--ink)" stroke-width="2" marker-end="url(#ar)"/>
+            <rect x="290" y="122" width="100" height="36" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><text x="308" y="145">Transmitter</text>
+          </g>
+          <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink)"/></marker></defs>
+        </svg>
+        <p>The <b>transmitter</b> measures the <b>process variable (PV)</b>, such as tank level, and sends it to the controller, usually as a 4–20 mA or digital signal. The controller subtracts PV from the <b>setpoint (SP)</b> to get the <b>error</b>. It then calculates a <b>controller output (CO)</b>, typically 0–100%, that drives a <b>final control element</b> such as a valve, damper or variable-speed drive.</p>
+        <p>Something is always trying to push the process away from setpoint. These <b>disturbances</b> (a change in demand, feed temperature or supply pressure) are why we need closed-loop control at all.</p>
+        <div class="analogy">Think of driving at a steady speed. Your eyes read the speedometer (transmitter), your brain compares it to the speed limit (setpoint), and your foot adjusts the throttle (final element). A hill is the disturbance.</div>
+      </article>
+
+      <article class="lesson" data-lesson="1" hidden>
+        <h2>Proportional: react to the present error</h2>
+        <p class="lede">The P term moves the output in proportion to how far PV is from setpoint right now.</p>
+        <div class="eq">P = K<sub>c</sub> × e</div>
+        <p>Double the error and the P correction doubles. A higher <b>controller gain K<sub>c</sub></b> gives a stronger, faster response. Many controllers express this instead as <b>proportional band</b>: PB = 100 ÷ K<sub>c</sub>, so a PB of 50% is a gain of 2.</p>
+        <p>Proportional-only control has a built-in weakness. The P term only produces output when there is error, so when a load change requires a different valve position, the loop settles with a permanent <b>offset</b> between PV and SP. Raising the gain shrinks the offset, but too much gain causes oscillation, especially when the process has dead time.</p>
+        <button class="btn primary" data-lab="p-offset">Try it: see proportional offset</button>
+      </article>
+
+      <article class="lesson" data-lesson="2" hidden>
+        <h2>Integral: remove the past error</h2>
+        <p class="lede">The I term adds up error over time and keeps moving the output until the error is gone.</p>
+        <div class="eq">I = (K<sub>c</sub> ÷ T<sub>i</sub>) × ∫ e dt</div>
+        <p>As long as any error remains, integral keeps pushing, so it eliminates offset. The <b>integral time T<sub>i</sub></b> is how long it takes integral action to repeat the proportional correction. A <i>smaller</i> T<sub>i</sub> means <i>stronger</i> integral. Some vendors use repeats per minute (60 ÷ T<sub>i</sub> in seconds) instead; check which units your controller uses before changing anything.</p>
+        <p>Too much integral makes the loop overshoot and oscillate slowly. If the output hits 0% or 100% while error persists, the integral keeps growing anyway. That is <b>integral windup</b>, and it causes a large overshoot later. Anti-reset windup logic prevents it.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-lab="pi-fix">Try it: integral removes offset</button><button class="btn" data-lab="windup">Try it: integral windup</button></div>
+      </article>
+
+      <article class="lesson" data-lesson="3" hidden>
+        <h2>Derivative: anticipate the future</h2>
+        <p class="lede">The D term reacts to how fast the PV is changing, braking the response before it overshoots.</p>
+        <div class="eq">D = −K<sub>c</sub> × T<sub>d</sub> × dPV/dt</div>
+        <p>When PV is racing toward setpoint, derivative pulls the output back early. On slow processes with dead time, such as temperature, a modest <b>derivative time T<sub>d</sub></b> allows a higher gain with less overshoot.</p>
+        <p>Derivative amplifies noise. On fast, noisy loops like flow and pressure it makes the valve chatter, so it is usually left off. Most modern controllers take the derivative of PV rather than error, which avoids a large output spike, the <b>derivative kick</b>, every time the operator changes the setpoint.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-lab="d-helps">Try it: derivative reduces overshoot</button><button class="btn" data-lab="d-noise">Try it: derivative and noise</button></div>
+      </article>
+
+      <article class="lesson" data-lesson="4" hidden>
+        <h2>Putting it together</h2>
+        <p class="lede">The output is the sum of three corrections: present, past and future.</p>
+        <div class="eq">CO = K<sub>c</sub> [ e + (1/T<sub>i</sub>) ∫ e dt + T<sub>d</sub> de/dt ] + bias</div>
+        <p>This is the <b>standard (ISA) form</b> used in this simulator. Other forms exist. In the <b>parallel</b> form each term has its own independent gain, and the <b>series</b> (interacting) form is common in older analog and some PLC controllers. The same numbers produce different behavior in different forms, so always confirm the algorithm before copying tuning values between systems.</p>
+        <ul>
+          <li><b>P</b> provides the main, immediate correction.</li>
+          <li><b>I</b> finishes the job and removes offset. Nearly every loop uses it.</li>
+          <li><b>D</b> is optional. Use it on slow loops with lag; skip it on noisy fast loops.</li>
+        </ul>
+        <p>In practice most industrial loops run as PI. Watch the <b>Live response</b> bars in the simulator to see how each term contributes moment by moment.</p>
+        <button class="btn primary" data-goto="sim">Open the simulator</button>
+      </article>
+
+      <article class="lesson" data-lesson="5" hidden>
+        <h2>Tuning safely</h2>
+        <p class="lede">Tuning changes how a real plant behaves. Treat every change as a controlled change.</p>
+        <ul>
+          <li><b>Get permission first.</b> Follow your site's management-of-change and work-permit process and coordinate with operations.</li>
+          <li><b>Record the existing settings</b> (K<sub>c</sub>, T<sub>i</sub>, T<sub>d</sub>, action, limits) so you can restore them.</li>
+          <li><b>Run a bump test.</b> In manual, step the output a small amount and record the process gain K, dead time θ and time constant τ.</li>
+          <li><b>Start conservative.</b> The lambda method sets T<sub>i</sub> = τ and K<sub>c</sub> = τ ÷ [K (λ + θ)]. A larger λ gives a slower, more robust loop.</li>
+          <li><b>Change one parameter at a time</b>, then test with a small setpoint step and watch the trend.</li>
+          <li><b>Check the hardware.</b> A sticky valve, a bad transmitter or the wrong controller action cannot be tuned away.</li>
+          <li><b>Document and protect.</b> Log the final values. Tuning parameters are a cybersecurity asset: restrict who can change them and monitor for unauthorized edits.</li>
+        </ul>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-goto="calc">Practice a bump test</button><button class="btn" data-lab="wrong-action">Try it: wrong controller action</button></div>
+      </article>
+      <div class="lesson-nav"><button class="btn" id="prevStep">Previous</button><button class="btn primary" id="nextStep">Next</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COMPETENCIES ================= -->
+<section role="tabpanel" id="t-comp" aria-labelledby="tab-comp" hidden>
+  <div class="intro">
+    <h2>What a PID technician needs to know and do</h2>
+    <p class="hint" style="font-size:1rem">Six competency areas for instrumentation and process control technicians who operate, maintain and tune PID loops. Each lists the underpinning knowledge, the observable skills, and how this trainer supports assessment.</p>
+  </div>
+  <div id="compList"></div>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section role="tabpanel" id="t-glos" aria-labelledby="tab-glos" hidden>
+  <div class="intro"><h2>Glossary</h2><p class="hint" style="font-size:1rem">Select a card to see its definition.</p></div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section role="tabpanel" id="t-quiz" aria-labelledby="tab-quiz" hidden>
+  <div class="intro"><h2>Check your understanding</h2><p class="hint" style="font-size:1rem">Ten questions. Each answer is scored immediately with an explanation.</p></div>
+  <div class="quiz"><div class="score num" id="score">Score: 0 / 10</div><div id="quizList"></div><button class="btn" id="quizReset">Retake quiz</button></div>
+</section>
+</main>
+<script>
+/*SIM-START*/
+const DT = 0.05;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+const PROCS = {
+  level: { key:'level', tag: 'LIC-101', tt:'LT', vt:'LV-101', name: 'Surge tank level', short:'Tank level', units: '%', min: 0, max: 100, sp: 50, pv0: 50, load0: 50,
+    loadLabel: 'Outflow demand', theta: 1.0, valveTau: 1.0, noise: 0.15, window: 180,
+    tune: { Kc: 1.5, Ti: 20, Td: 0, useP: true, useI: true, useD: false },
+    deriv: (pv, u, load) => 8 * (u - load * Math.sqrt(Math.max(pv, 0) / 100)) / 100,
+    ss: (pv, load) => load * Math.sqrt(pv / 100) },
+  temp: { key:'temp', tag: 'TIC-201', tt:'TT', vt:'TV-201', name: 'Reactor jacket temperature', short:'Reactor temperature', units: '°C', min: 0, max: 150, sp: 70, pv0: 70, load0: 50,
+    loadLabel: 'Cold feed rate', theta: 4.0, valveTau: 1.5, noise: 0.2, window: 240,
+    tune: { Kc: 1.2, Ti: 20, Td: 0, useP: true, useI: true, useD: false },
+    deriv: (pv, u, load) => ((20 + 1.0 * u - 0.5 * (load - 50)) - pv) / 20,
+    ss: (pv, load) => pv - 20 + 0.5 * (load - 50) },
+  flow: { key:'flow', tag: 'FIC-301', tt:'FT', vt:'FV-301', name: 'Feed line flow', short:'Line flow', units: 'm³/h', min: 0, max: 120, sp: 60, pv0: 60, load0: 50,
+    loadLabel: 'Supply pressure', theta: 0.3, valveTau: 0.5, noise: 0.8, window: 60,
+    tune: { Kc: 0.3, Ti: 2, Td: 0, useP: true, useI: true, useD: false },
+    deriv: (pv, u, load) => (1.2 * u * Math.sqrt(Math.max(load, 0) / 50) - pv) / 1.5,
+    ss: (pv, load) => pv / (1.2 * Math.sqrt(Math.max(load, 1) / 50)) }
+};
+class Loop {
+  constructor(key) { this.opt = { pvDeriv: true, antiWindup: true, action: 'reverse', noise: true, spTrack: true }; this.setProcess(key); }
+  setProcess(key) { this.key = key; this.p = PROCS[key]; this.tune = { ...this.p.tune }; this.reset(); }
+  span() { return this.p.max - this.p.min; }
+  reset() {
+    const p = this.p;
+    this.t = 0; this.sp = p.sp; this.load = p.load0; this.pv = p.pv0;
+    const u0 = clamp(p.ss(p.pv0, p.load0), 0, 100);
+    this.co = u0; this.valve = u0; this.mode = 'auto';
+    this.buf = new Array(Math.max(1, Math.round(p.theta / DT))).fill(u0); this.bi = 0;
+    this.bias = u0; this.I = 0; this.P = 0; this.D = 0; this.dF = 0; this.e = 0;
+    this.pvm = this.pv; this.prevPvm = this.pv; this.prevE = 0;
+    this.events = []; this.hist = []; this.nextSample = 0;
+    this.metrics = null; this.saturated = false; this.ud = u0;
+  }
+  errPct(pvm) { const e = (this.sp - pvm) / this.span() * 100; return this.opt.action === 'reverse' ? e : -e; }
+  setMode(m) {
+    if (m === this.mode) return;
+    if (m === 'auto') { // bumpless: bias absorbs current output
+      if (this.opt.spTrack) this.sp = this.pvm;
+      const e = this.errPct(this.pvm); this.prevE = e; this.dF = 0;
+      const P = this.tune.useP ? this.tune.Kc * e : 0;
+      this.bias = this.co - P; this.I = 0;
+    }
+    this.mode = m; this.metrics = null;
+  }
+  setSP(v) {
+    v = clamp(v, this.p.min, this.p.max); const old = this.sp; this.sp = v;
+    if (this.mode !== 'auto' || Math.abs(v - old) < 1e-6) return;
+    if (this.metrics && this.metrics.type === 'sp' && this.t - this.metrics.t0 < 1.0) { this.metrics.to = v; }
+    else this.metrics = { type: 'sp', t0: this.t, from: old, to: v, peak: -Infinity, t10: null, t90: null, lastOut: this.t, iae: 0 };
+  }
+  setLoad(v) {
+    v = clamp(v, 0, 100); if (Math.abs(v - this.load) < 1e-6) return;
+    this.load = v;
+    if (this.mode === 'auto') this.metrics = { type: 'load', t0: this.t, ref: this.sp, maxDev: 0, lastOut: this.t, iae: 0 };
+  }
+  foldI() { this.bias += this.I; this.I = 0; }
+  control() {
+    const T = this.tune, Kc = T.Kc, pvm = this.pvm, e = this.errPct(pvm);
+    const P = T.useP ? Kc * e : 0;
+    let raw;
+    if (this.opt.pvDeriv) { const d = (pvm - this.prevPvm) / this.span() * 100 / DT; raw = this.opt.action === 'reverse' ? -d : d; }
+    else raw = (e - this.prevE) / DT;
+    const Tf = Math.max(0.1 * T.Td, DT);
+    this.dF += (raw - this.dF) * Math.min(1, DT / Tf);
+    const D = T.useD ? Kc * T.Td * this.dF : 0;
+    if (this.mode === 'auto') {
+      let I = this.I;
+      if (T.useI && T.Ti > 0) I += Kc * e * DT / T.Ti;
+      let out = this.bias + P + I + D;
+      if (this.opt.antiWindup && T.useI && ((out > 100 && e > 0) || (out < 0 && e < 0))) { I = this.I; out = this.bias + P + I + D; }
+      this.I = clamp(I, -2000, 2000);
+      this.saturated = out >= 100 || out <= 0;
+      this.co = clamp(out, 0, 100);
+    } else {
+      this.saturated = false;
+      if (this.opt.spTrack) this.sp = pvm;
+    }
+    this.P = P; this.D = D; this.e = e; this.prevE = e; this.prevPvm = pvm;
+  }
+  step() {
+    const p = this.p;
+    while (this.events.length && this.events[0].t <= this.t + 1e-9) { const ev = this.events.shift(); ev.fn(this); }
+    this.pvm = this.pv + (this.opt.noise ? gauss() * p.noise : 0);
+    this.control();
+    this.valve += (this.co - this.valve) * DT / p.valveTau;
+    this.ud = this.buf[this.bi]; this.buf[this.bi] = this.valve; this.bi = (this.bi + 1) % this.buf.length;
+    this.pv = clamp(this.pv + p.deriv(this.pv, this.ud, this.load) * DT, p.min, p.max);
+    this.t += DT;
+    this.updMetrics();
+    if (this.t >= this.nextSample) { this.hist.push({ t: this.t, pv: this.pvm, sp: this.sp, co: this.co }); this.nextSample = this.t + 0.2; if (this.hist.length > 4000) this.hist.splice(0, 1000); }
+  }
+  updMetrics() {
+    const m = this.metrics; if (!m) return; const span = this.span();
+    if (m.type === 'sp') {
+      const size = Math.abs(m.to - m.from), dir = Math.sign(m.to - m.from) || 1, prog = (this.pv - m.from) * dir;
+      if (m.t10 == null && prog >= 0.1 * size) m.t10 = this.t;
+      if (m.t90 == null && prog >= 0.9 * size) m.t90 = this.t;
+      m.peak = Math.max(m.peak, (this.pv - m.to) * dir);
+      const band = Math.max(0.05 * size, 0.005 * span);
+      if (Math.abs(this.pv - m.to) > band) m.lastOut = this.t;
+    } else {
+      const dev = Math.abs(this.pv - m.ref); m.maxDev = Math.max(m.maxDev, dev);
+      if (dev > 0.01 * span) m.lastOut = this.t;
+    }
+    m.iae += Math.abs(this.sp - this.pv) / span * 100 * DT;
+  }
+  summary() {
+    const m = this.metrics; if (!m) return null; const span = this.span();
+    const settled = (this.t - m.lastOut) >= 8;
+    if (m.type === 'sp') {
+      const size = Math.abs(m.to - m.from);
+      return { type: 'sp', overshoot: size > 0 ? Math.max(0, m.peak) / size * 100 : 0,
+        rise: (m.t10 != null && m.t90 != null) ? m.t90 - m.t10 : null,
+        settle: settled ? m.lastOut - m.t0 : null, err: Math.abs(this.sp - this.pv) / span * 100, iae: m.iae };
+    }
+    return { type: 'load', maxDev: m.maxDev, recover: settled ? m.lastOut - m.t0 : null, err: Math.abs(this.sp - this.pv) / span * 100, iae: m.iae };
+  }
+}
+/*SIM-END*/
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 1) => (v == null || !isFinite(v)) ? '—' : v.toFixed(d);
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+/* ---------- theme ---------- */
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+function effectiveTheme() { const a = document.documentElement.getAttribute('data-theme'); return a || (mq.matches ? 'dark' : 'light'); }
+function paintThemeBtn() { const d = effectiveTheme() === 'dark'; $('themeLbl').textContent = d ? 'Light' : 'Dark'; $('themeIcon').textContent = d ? '☀' : '☾'; refreshColors(); }
+(function initTheme() { const s = store.get('pid-theme'); if (s === 'dark' || s === 'light') document.documentElement.setAttribute('data-theme', s); })();
+$('themeBtn').addEventListener('click', () => { const next = effectiveTheme() === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', next); store.set('pid-theme', next); paintThemeBtn(); });
+mq.addEventListener && mq.addEventListener('change', paintThemeBtn);
+
+/* ---------- tabs ---------- */
+const tabs = [...document.querySelectorAll('nav.tabs [role=tab]')];
+function showTab(id) {
+  tabs.forEach(t => { const on = t.getAttribute('aria-controls') === id; t.setAttribute('aria-selected', on); $(t.getAttribute('aria-controls')).hidden = !on; });
+  window.scrollTo({ top: 0 });
+}
+tabs.forEach(t => t.addEventListener('click', () => showTab(t.getAttribute('aria-controls'))));
+
+/* ---------- loop + state ---------- */
+const DEFAULT_OPT = { pvDeriv: true, antiWindup: true, action: 'reverse', noise: true, spTrack: true };
+const L = new Loop('level');
+let running = true, speed = 1, activeLab = null, dashPhase = 0;
+let yLo = null, yHi = null;
+let C = {};
+function refreshColors() { const cs = getComputedStyle(document.documentElement); ['--navy', '--green', '--sp', '--ink-2', '--grid', '--line', '--amber', '--panel'].forEach(k => C[k] = cs.getPropertyValue(k).trim()); }
+
+function setPressed(groupSel, attr, val) { document.querySelectorAll(groupSel).forEach(b => b.setAttribute('aria-pressed', b.dataset[attr] === String(val))); }
+function setRunning(r) { running = r; $('runBtn').textContent = r ? 'Pause' : 'Run'; }
+function setSpeed(s) { speed = s; setPressed('[data-speed]', 'speed', s); }
+
+/* ---------- process / UI sync ---------- */
+const PROC_UI = {
+  level: { hint: 'Inlet valve LV-101 fills the tank; the outlet hand valve sets the demand.', src: 'Supply', calc: { K: '', tau: '', th: '' } },
+  temp: { hint: 'Steam valve TV-201 heats the jacket; cold feed is the disturbance.', src: 'Steam', calc: {} },
+  flow: { hint: 'Flow valve FV-301 throttles the line; supply pressure is the disturbance.', src: 'Feed', calc: {} }
+};
+function syncProcessUI() {
+  const p = L.p;
+  setPressed('[data-proc]', 'proc', p.key);
+  $('procName').textContent = p.name; $('procHint').textContent = PROC_UI[p.key].hint;
+  $('fTag').textContent = p.tag; $('fDesc').textContent = p.name;
+  const [a, b] = p.tag.split('-'); $('cA').textContent = a; $('cB').textContent = b;
+  $('ttA').textContent = p.tt; $('ttB').textContent = b; $('vTag').textContent = p.vt; $('srcTxt').textContent = PROC_UI[p.key].src;
+  $('gVessel').style.display = p.key === 'flow' ? 'none' : ''; $('gFlow').style.display = p.key === 'flow' ? '' : 'none';
+  $('coil').setAttribute('opacity', 0); $('ticks').style.display = p.key === 'level' ? '' : 'none';
+  $('limHi').textContent = p.max; $('limLo').textContent = p.min;
+  const sl = $('spSl'); sl.min = p.min; sl.max = p.max;
+  $('loadLbl').textContent = p.loadLabel; $('kUnits').textContent = p.units;
+  ['cK', 'cTau', 'cTh'].forEach(id => $(id).value = ''); $('cK').placeholder = 'from bump test'; $('cTau').placeholder = 'from bump test'; $('cTh').placeholder = 'from bump test';
+  calc();
+  yLo = yHi = null;
+  syncTuneUI(); syncOptUI();
+}
+function syncTuneUI() {
+  const T = L.tune;
+  $('kc').value = T.Kc; $('ti').value = T.Ti; $('td').value = T.Td;
+  $('tP').setAttribute('aria-pressed', T.useP); $('tI').setAttribute('aria-pressed', T.useI); $('tD').setAttribute('aria-pressed', T.useD);
+  tuneLabels();
+}
+function tuneLabels() {
+  const T = L.tune;
+  $('kcOut').textContent = T.Kc.toFixed(2); $('pbTxt').textContent = 'Proportional band = ' + (100 / T.Kc).toFixed(0) + '%';
+  $('tiOut').textContent = T.Ti.toFixed(1) + ' s'; $('rptTxt').textContent = (60 / T.Ti).toFixed(2) + ' repeats/min';
+  $('tdOut').textContent = T.Td.toFixed(1) + ' s';
+  $('wKc').classList.toggle('disabled', !T.useP && !T.useI && !T.useD);
+  $('wTi').classList.toggle('disabled', !T.useI); $('wTd').classList.toggle('disabled', !T.useD);
+}
+function syncOptUI() {
+  const o = L.opt;
+  $('oNoise').checked = o.noise; $('oPvD').checked = o.pvDeriv; $('oAW').checked = o.antiWindup; $('oTrack').checked = o.spTrack;
+  setPressed('[data-act]', 'act', o.action);
+  syncModeUI();
+}
+function syncModeUI() {
+  const man = L.mode === 'man';
+  $('mAuto').setAttribute('aria-pressed', !man); $('mMan').setAttribute('aria-pressed', man);
+  $('coSl').disabled = !man; $('coWrap').classList.toggle('disabled', !man);
+  const lockSP = man && L.opt.spTrack;
+  ['spSl', 'spUp', 'spDn'].forEach(id => $(id).disabled = lockSP);
+}
+
+/* ---------- control bindings ---------- */
+document.querySelectorAll('[data-proc]').forEach(b => b.addEventListener('click', () => { L.setProcess(b.dataset.proc); hideCoach(); syncProcessUI(); }));
+document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => setSpeed(+b.dataset.speed)));
+$('runBtn').addEventListener('click', () => setRunning(!running));
+$('resetBtn').addEventListener('click', () => { L.reset(); hideCoach(); syncModeUI(); yLo = yHi = null; setRunning(true); });
+$('kc').addEventListener('input', e => { L.tune.Kc = +e.target.value; tuneLabels(); });
+$('ti').addEventListener('input', e => { L.tune.Ti = +e.target.value; tuneLabels(); });
+$('td').addEventListener('input', e => { L.tune.Td = +e.target.value; tuneLabels(); });
+$('tP').addEventListener('click', () => { L.tune.useP = !L.tune.useP; syncTuneUI(); });
+$('tI').addEventListener('click', () => { if (L.tune.useI) L.foldI(); L.tune.useI = !L.tune.useI; syncTuneUI(); });
+$('tD').addEventListener('click', () => { L.tune.useD = !L.tune.useD; syncTuneUI(); });
+$('mAuto').addEventListener('click', () => { L.setMode('auto'); syncModeUI(); });
+$('mMan').addEventListener('click', () => { L.setMode('man'); syncModeUI(); });
+$('spSl').addEventListener('input', e => L.setSP(+e.target.value));
+$('spUp').addEventListener('click', () => L.setSP(Math.round(L.sp) + 10));
+$('spDn').addEventListener('click', () => L.setSP(Math.round(L.sp) - 10));
+$('coSl').addEventListener('input', e => { if (L.mode === 'man') L.co = +e.target.value; });
+$('load').addEventListener('input', e => L.setLoad(+e.target.value));
+$('ldUp').addEventListener('click', () => L.setLoad(L.load + 15));
+$('ldDn').addEventListener('click', () => L.setLoad(L.load - 15));
+$('oNoise').addEventListener('change', e => L.opt.noise = e.target.checked);
+$('oPvD').addEventListener('change', e => L.opt.pvDeriv = e.target.checked);
+$('oAW').addEventListener('change', e => L.opt.antiWindup = e.target.checked);
+$('oTrack').addEventListener('change', e => { L.opt.spTrack = e.target.checked; syncModeUI(); });
+document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => { L.opt.action = b.dataset.act; setPressed('[data-act]', 'act', b.dataset.act); }));
+
+/* ---------- bump test + lambda calc ---------- */
+$('bumpBtn').addEventListener('click', () => {
+  if (L.mode !== 'man') { L.setMode('man'); syncModeUI(); }
+  const from = L.co, to = Math.min(100, from + 10); L.co = to;
+  const p = L.p;
+  showCoach('Bump test running', `At t = ${L.t.toFixed(0)} s the output stepped from ${from.toFixed(1)}% to ${to.toFixed(1)}% with the loop in manual. Let the PV settle, then read the trend. <b>Dead time θ</b>: time from the step until PV starts to move. <b>Time constant τ</b>: time from that first movement until PV has covered 63% of its total change. <b>Process gain K</b>: total change in PV (${p.units}) divided by ${(to - from).toFixed(1)}% change in CO. Enter the values below, apply, then switch to AUTO.`, false);
+  if (speed < 2) setSpeed(2); setRunning(true);
+});
+function calc() {
+  const K = parseFloat($('cK').value), tau = parseFloat($('cTau').value), th = parseFloat($('cTh').value), lam = parseFloat($('cLam').value);
+  if (!(K > 0 && tau > 0 && th >= 0 && lam > 0)) { $('calcOut').textContent = 'Enter K, τ and θ from your bump test.'; return null; }
+  const Kn = K / L.span() * 100; const Kc = tau / (Kn * (lam + th));
+  $('calcOut').innerHTML = `Normalized gain = ${Kn.toFixed(2)} %/% &nbsp; → &nbsp; <b>Kc = ${Kc.toFixed(2)}</b>, <b>Ti = ${tau.toFixed(1)} s</b>, Td = 0`;
+  return { Kc, Ti: tau };
+}
+['cK', 'cTau', 'cTh', 'cLam'].forEach(id => $(id).addEventListener('input', calc));
+$('applyCalc').addEventListener('click', () => {
+  const r = calc(); if (!r) return;
+  Object.assign(L.tune, { Kc: Math.min(12, Math.max(0.05, r.Kc)), Ti: Math.min(120, Math.max(0.5, r.Ti)), Td: 0, useP: true, useI: true, useD: false });
+  syncTuneUI();
+  showCoach('PI settings applied', `Kc = ${L.tune.Kc.toFixed(2)}, Ti = ${L.tune.Ti.toFixed(1)} s. Switch to AUTO, then test with a small setpoint step. A smaller λ makes the loop faster but less tolerant of model error.`, false);
+});
+
+/* ---------- coach ---------- */
+function showCoach(title, html, replay) {
+  const c = $('coach'); c.hidden = false;
+  c.innerHTML = `<strong>${title}</strong><p style="margin:4px 0 0">${html}</p>` + (replay ? `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="replay">Replay lab with current settings</button><button class="btn small" id="closeCoach">Close</button></div>` : `<div style="margin-top:8px"><button class="btn small" id="closeCoach">Close</button></div>`);
+  if (replay) $('replay').addEventListener('click', () => runLabEvents(activeLab));
+  $('closeCoach').addEventListener('click', hideCoach);
+}
+function hideCoach() { $('coach').hidden = true; activeLab = null; document.querySelectorAll('.lablist button').forEach(b => b.classList.remove('active')); }
+
+/* ---------- guided labs ---------- */
+const LABS = [
+  { id: 'p-offset', title: 'Proportional only leaves offset', sub: 'Tank level, P only', proc: 'level', tune: { Kc: 1, Ti: 20, Td: 0, useP: true, useI: false, useD: false }, speed: 2, events: [[5, 'sp', 60], [80, 'load', 65]],
+    note: 'At 5 s the setpoint steps to 60%. PV settles short of setpoint; that gap is <b>offset</b>. At 80 s the demand rises and the offset grows. Try a higher K<sub>c</sub> and replay: the offset shrinks but never reaches zero.' },
+  { id: 'pi-fix', title: 'Integral removes offset', sub: 'Tank level, PI', proc: 'level', tune: { Kc: 1, Ti: 20, Td: 0, useP: true, useI: true, useD: false }, speed: 2, events: [[5, 'sp', 60], [80, 'load', 65]],
+    note: 'The same test with integral on. PV returns all the way to setpoint after both events. Watch the <b>I</b> bar in Live response grow to supply the extra output the new demand needs.' },
+  { id: 'too-much-i', title: 'Too much integral', sub: 'Tank level, Ti = 3 s', proc: 'level', tune: { Kc: 1.5, Ti: 3, Td: 0, useP: true, useI: true, useD: false }, speed: 2, events: [[5, 'sp', 60]],
+    note: 'A slow, rolling oscillation with large overshoot is the signature of too much integral. Raise T<sub>i</sub> to 20–25 s and replay to compare.' },
+  { id: 'too-much-gain', title: 'Too much gain', sub: 'Reactor temperature, Kc = 10', proc: 'temp', tune: { Kc: 10, Ti: 20, Td: 0, useP: true, useI: true, useD: false }, speed: 2, events: [[5, 'sp', 85]],
+    note: 'With about 5 s of dead time and valve lag, the loop cannot keep up with its own high gain, so it oscillates continuously. Lower K<sub>c</sub> to about 2–2.5 and replay. A faster, tighter oscillation than the integral lab points to gain.' },
+  { id: 'd-helps', title: 'Derivative reduces overshoot', sub: 'Reactor temperature, PID', proc: 'temp', tune: { Kc: 3.5, Ti: 20, Td: 2, useP: true, useI: true, useD: true }, speed: 2, events: [[5, 'sp', 85]],
+    note: 'Note the overshoot with D on. Turn <b>D</b> off and replay: the same gain now overshoots noticeably more. Derivative lets slow, laggy loops run harder.' },
+  { id: 'd-noise', title: 'Derivative and noise', sub: 'Line flow, Td = 2 s', proc: 'flow', tune: { Kc: 0.3, Ti: 2, Td: 2, useP: true, useI: true, useD: true }, speed: 1, events: [[5, 'load', 35]],
+    note: 'Watch the green CO trace. Derivative turns transmitter noise into rapid valve movement that wears out packing and actuators. Turn <b>D</b> off and the output calms down. This is why flow loops almost always run as PI.' },
+  { id: 'wrong-action', title: 'Wrong controller action', sub: 'Reactor temperature, direct acting', proc: 'temp', opt: { action: 'direct' }, speed: 1, events: [[5, 'sp', 75]],
+    note: 'PV moves away from setpoint and the output runs to a limit: the controller is making things worse because its action does not match the process. Select <b>Reverse</b> under controller action to recover. Verify action during commissioning, never by trial on a live plant.' },
+  { id: 'windup', title: 'Integral windup', sub: 'Reactor temperature, unreachable SP', proc: 'temp', opt: { antiWindup: false }, speed: 4, events: [[5, 'sp', 130], [80, 'sp', 90]],
+    note: 'At 5 s the setpoint goes to 130 °C, which full steam cannot reach, so CO pins at 100% while integral keeps growing. At 80 s the setpoint drops to 90 °C, yet CO stays at 100% while the wound-up integral unwinds and PV overshoots. Tick <b>Anti-reset windup</b> and replay to compare.' }
+];
+function runLabEvents(lab) {
+  if (!lab) return;
+  L.reset(); syncModeUI(); yLo = yHi = null;
+  L.events = lab.events.map(([t, type, v]) => ({ t, fn: l => type === 'sp' ? l.setSP(v) : l.setLoad(v) }));
+  setSpeed(lab.speed || 1); setRunning(true);
+}
+function loadLab(id) {
+  const lab = LABS.find(l => l.id === id); if (!lab) return;
+  L.setProcess(lab.proc); Object.assign(L.tune, lab.tune || {}); L.opt = { ...DEFAULT_OPT, ...(lab.opt || {}) };
+  syncProcessUI(); runLabEvents(lab);
+  activeLab = lab;
+  document.querySelectorAll('.lablist button').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+  showCoach(lab.title, lab.note, true);
+}
+$('labList').innerHTML = LABS.map((l, i) => `<li><button data-id="${l.id}"><span class="n">${i + 1}</span><span class="t">${l.title}<small>${l.sub}</small></span></button></li>`).join('');
+$('labList').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { loadLab(b.dataset.id); $('t-sim').querySelector('.trend-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+
+/* ---------- challenges ---------- */
+const CHAL = [
+  { id: 'c1', proc: 'level', title: 'Level: quick and tidy', desc: 'Setpoint step 50 → 65%. Pass with overshoot ≤ 10%, settling ≤ 25 s and remaining error ≤ 0.5%.', events: [[5, 'sp', 65]], dur: 150,
+    check: s => [['Overshoot ≤ 10%', s.overshoot <= 10, fmt(s.overshoot) + '%'], ['Settling ≤ 25 s', s.settle != null && s.settle <= 25, s.settle == null ? 'did not settle' : fmt(s.settle) + ' s'], ['Error ≤ 0.5%', s.err <= 0.5, fmt(s.err, 2) + '%']] },
+  { id: 'c2', proc: 'temp', title: 'Temperature: fast without overshoot', desc: 'Setpoint step 70 → 85 °C. Pass with overshoot ≤ 5% and settling ≤ 30 s.', events: [[5, 'sp', 85]], dur: 180,
+    check: s => [['Overshoot ≤ 5%', s.overshoot <= 5, fmt(s.overshoot) + '%'], ['Settling ≤ 30 s', s.settle != null && s.settle <= 30, s.settle == null ? 'did not settle' : fmt(s.settle) + ' s']] },
+  { id: 'c3', proc: 'flow', title: 'Flow: reject a pressure drop', desc: 'Supply pressure falls 50 → 30% at 5 s. Pass with peak deviation ≤ 8.5 m³/h and recovery to ±1% of span within 10 s.', events: [[5, 'load', 30]], dur: 40,
+    check: s => [['Peak deviation ≤ 8.5 m³/h', s.maxDev <= 8.5, fmt(s.maxDev) + ' m³/h'], ['Recovery ≤ 10 s', s.recover != null && s.recover <= 10, s.recover == null ? 'did not recover' : fmt(s.recover) + ' s']] }
+];
+$('chalList').innerHTML = CHAL.map(c => `<div class="chal" id="${c.id}"><h4>${c.title}</h4><p>${c.desc}</p><button class="btn small primary" data-chal="${c.id}">Run test with my tuning</button><div class="res" aria-live="polite"></div></div>`).join('');
+$('chalList').addEventListener('click', e => {
+  const b = e.target.closest('[data-chal]'); if (!b) return;
+  const c = CHAL.find(x => x.id === b.dataset.chal); const res = $(c.id).querySelector('.res');
+  let note = '';
+  if (L.key !== c.proc) { L.setProcess(c.proc); syncProcessUI(); note = `<p class="hint" style="margin:0 0 4px">Switched to the ${L.p.short.toLowerCase()} loop with its default tuning. Adjust the tuning and run again.</p>`; }
+  if (L.mode !== 'auto') { L.setMode('auto'); syncModeUI(); }
+  hideCoach(); L.reset(); yLo = yHi = null;
+  L.events = c.events.map(([t, type, v]) => ({ t, fn: l => type === 'sp' ? l.setSP(v) : l.setLoad(v) }));
+  const n = Math.round(c.dur / DT); for (let i = 0; i < n; i++) L.step();
+  setRunning(false);
+  const s = L.summary(); const rows = c.check(s); const ok = rows.every(r => r[1]);
+  res.innerHTML = note + `<span class="${ok ? 'pass' : 'fail'}">${ok ? 'Passed' : 'Not yet'}</span> with K<sub>c</sub> ${L.tune.Kc.toFixed(2)}, T<sub>i</sub> ${L.tune.Ti.toFixed(1)} s${L.tune.useD ? ', T<sub>d</sub> ' + L.tune.Td.toFixed(1) + ' s' : ''}<ul>` + rows.map(r => `<li><span class="${r[1] ? 'pass' : 'fail'}">${r[1] ? '✓' : '✗'}</span> ${r[0]}: ${r[2]}</li>`).join('') + '</ul><span class="hint">The trend shows the full test. Press Run to continue live.</span>';
+});
+
+/* ---------- trend ---------- */
+const cv = $('trend'), ctx = cv.getContext('2d');
+function niceStep(r) { const raw = r / 5, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
+function drawTrend() {
+  const w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  const pl = 46, pr = 40, pt = 8, pb = 24, pw = w - pl - pr, ph = h - pt - pb;
+  const win = L.p.window, t1 = Math.max(L.t, win), t0 = t1 - win;
+  let i0 = L.hist.length; while (i0 > 0 && L.hist[i0 - 1].t >= t0) i0--;
+  const H = L.hist.slice(Math.max(0, i0 - 1));
+  let lo = L.pv, hi = L.pv; for (const d of H) { lo = Math.min(lo, d.pv, d.sp); hi = Math.max(hi, d.pv, d.sp); }
+  const span = L.span(), minR = 0.2 * span; let r = hi - lo;
+  if (r < minR) { const m = (hi + lo) / 2; lo = m - minR / 2; hi = m + minR / 2; } else { lo -= r * 0.12; hi += r * 0.12; }
+  if (lo < L.p.min) { hi += L.p.min - lo; lo = L.p.min; } if (hi > L.p.max) { lo -= hi - L.p.max; hi = L.p.max; } lo = Math.max(L.p.min, lo);
+  if (yLo == null) { yLo = lo; yHi = hi; } else { yLo += (lo - yLo) * 0.08; yHi += (hi - yHi) * 0.08; }
+  const X = t => pl + (t - t0) / win * pw, Y = v => pt + (1 - (v - yLo) / (yHi - yLo)) * ph, YC = v => pt + (1 - v / 100) * ph;
+  ctx.font = '12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.lineWidth = 1;
+  // grid + left labels
+  const st = niceStep(yHi - yLo); ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let v = Math.ceil(yLo / st) * st; v <= yHi + 1e-9; v += st) { const y = Math.round(Y(v)) + 0.5; ctx.strokeStyle = C['--grid']; ctx.beginPath(); ctx.moveTo(pl, y); ctx.lineTo(pl + pw, y); ctx.stroke(); ctx.fillStyle = C['--navy']; ctx.fillText(+v.toFixed(2), pl - 6, y); }
+  ctx.textAlign = 'left'; ctx.fillStyle = C['--green'];
+  for (let v = 0; v <= 100; v += 25) ctx.fillText(v + '%', pl + pw + 6, YC(v));
+  const ts = win <= 60 ? 10 : win <= 180 ? 30 : 40; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = C['--ink-2'];
+  for (let t = Math.ceil(t0 / ts) * ts; t <= t1; t += ts) { const x = Math.round(X(t)) + 0.5; ctx.strokeStyle = C['--grid']; ctx.beginPath(); ctx.moveTo(x, pt); ctx.lineTo(x, pt + ph); ctx.stroke(); ctx.fillText(t + ' s', x, pt + ph + 5); }
+  ctx.strokeStyle = C['--line']; ctx.strokeRect(pl + 0.5, pt + 0.5, pw, ph);
+  ctx.save(); ctx.beginPath(); ctx.rect(pl, pt, pw, ph); ctx.clip();
+  if (H.length > 1) {
+    // CO
+    ctx.strokeStyle = C['--green']; ctx.lineWidth = 1.6; ctx.beginPath(); H.forEach((d, i) => i ? ctx.lineTo(X(d.t), YC(d.co)) : ctx.moveTo(X(d.t), YC(d.co))); ctx.stroke();
+    // SP stepped
+    ctx.strokeStyle = C['--sp']; ctx.lineWidth = 1.6; ctx.setLineDash([6, 4]); ctx.beginPath();
+    H.forEach((d, i) => { if (!i) ctx.moveTo(X(d.t), Y(d.sp)); else { ctx.lineTo(X(d.t), Y(H[i - 1].sp)); ctx.lineTo(X(d.t), Y(d.sp)); } }); ctx.stroke(); ctx.setLineDash([]);
+    // PV
+    ctx.strokeStyle = C['--navy']; ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.beginPath(); H.forEach((d, i) => i ? ctx.lineTo(X(d.t), Y(d.pv)) : ctx.moveTo(X(d.t), Y(d.pv))); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.save(); ctx.translate(12, pt + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = C['--navy']; ctx.fillText('PV, SP (' + L.p.units + ')', 0, 0); ctx.restore();
+}
+
+/* ---------- mimic + faceplate ---------- */
+(function ticks() { let s = ''; for (const f of [25, 50, 75]) { const y = 264 - 1.8 * f; s += `<line x1="200" y1="${y}" x2="210" y2="${y}" stroke="var(--steel)" stroke-width="1.5"/><text x="214" y="${y + 4}" class="m-lbl" style="text-anchor:start;font-size:10px">${f}</text>`; } $('ticks').innerHTML = s; })();
+function mixColor(f) { const a = [79, 143, 224], b = [224, 86, 59]; f = Math.max(0, Math.min(1, f)); return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * f)).join(',')})`; }
+let alarmSince = null;
+function updateUI(dtR) {
+  const p = L.p, u = p.units, span = L.span();
+  $('clock').textContent = 't = ' + L.t.toFixed(0) + ' s' + (running ? '' : ' (paused)');
+  // mimic
+  const v = L.valve;
+  $('valveFill').setAttribute('width', (60 * v / 100).toFixed(1)); $('vTxt').textContent = v.toFixed(0) + '%';
+  const inRate = p.key === 'flow' ? L.pv / 120 : v / 100;
+  const outRate = p.key === 'level' ? (L.load / 100) * Math.sqrt(L.pv / 100) : L.load / 100;
+  if (running) dashPhase += dtR * speed * 40;
+  $('fIn').style.strokeDashoffset = (-dashPhase * inRate).toFixed(1); $('fIn').style.opacity = inRate > 0.01 ? 1 : 0;
+  $('fOut').style.strokeDashoffset = (-dashPhase * outRate).toFixed(1); $('fOut').style.opacity = outRate > 0.01 ? 1 : 0;
+  $('fRun').style.strokeDashoffset = (-dashPhase * inRate).toFixed(1);
+  if (p.key === 'level') { const hgt = 1.8 * L.pv; const lq = $('liquid'); lq.setAttribute('y', (264 - hgt).toFixed(1)); lq.setAttribute('height', hgt.toFixed(1)); lq.setAttribute('fill', 'var(--liquid)'); $('tankTxt').textContent = L.pvm.toFixed(1) + ' %'; $('loadTxt').textContent = 'Demand ' + L.load.toFixed(0) + '%'; }
+  else if (p.key === 'temp') { const lq = $('liquid'); lq.setAttribute('y', 96); lq.setAttribute('height', 168); lq.setAttribute('fill', mixColor((L.pv - 20) / 100)); $('coil').setAttribute('opacity', (0.25 + 0.75 * v / 100).toFixed(2)); $('tankTxt').textContent = L.pvm.toFixed(1) + ' °C'; $('loadTxt').textContent = 'Cold feed ' + L.load.toFixed(0) + '%'; }
+  else { $('flowTxt').textContent = L.pvm.toFixed(1) + ' m³/h'; $('presTxt').textContent = 'Supply pressure ' + L.load.toFixed(0) + '%'; }
+  // faceplate
+  const pct = x => Math.max(0, Math.min(100, (x - p.min) / span * 100));
+  $('pvFill').style.height = pct(L.pvm) + '%'; $('spMark').style.bottom = pct(L.sp) + '%';
+  $('pvTxt').innerHTML = L.pvm.toFixed(1) + `<small>${u}</small>`; $('spTxt').innerHTML = L.sp.toFixed(1) + `<small>${u}</small>`;
+  $('coTxt').innerHTML = L.co.toFixed(1) + '<small>%</small>'; $('coFill').style.width = L.co + '%';
+  $('eTxt').innerHTML = ((L.sp - L.pvm) / span * 100).toFixed(1) + '<small>%</small>';
+  const dev = Math.abs(L.sp - L.pv) / span * 100;
+  if (L.mode === 'auto' && dev > 10) { if (alarmSince == null) alarmSince = L.t; } else alarmSince = null;
+  const alarm = alarmSince != null && L.t - alarmSince > 5;
+  $('roPV').classList.toggle('alarm', alarm);
+  const st = $('status');
+  if (alarm) { st.className = 'status bad'; st.textContent = '▲ Deviation alarm: PV more than 10% from SP'; }
+  else if (L.mode === 'auto' && L.saturated) { st.className = 'status warn'; st.textContent = '◆ Output at limit (' + (L.co >= 99.9 ? '100%' : '0%') + ')'; }
+  else if (L.mode === 'man') { st.className = 'status ok'; st.textContent = 'Manual: operator sets the output'; }
+  else { st.className = 'status ok'; st.textContent = 'Loop in automatic'; }
+  // sliders follow state unless being dragged
+  const ae = document.activeElement;
+  if (ae !== $('spSl')) $('spSl').value = L.sp; $('spOut').textContent = L.sp.toFixed(1);
+  if (ae !== $('coSl')) $('coSl').value = L.co; $('coOut').textContent = L.co.toFixed(1);
+  if (ae !== $('load')) $('load').value = L.load; $('loadOut').textContent = L.load.toFixed(0) + '%';
+  // contributions
+  const bars = [['B', L.mode === 'auto' ? L.bias : L.co], ['P', L.mode === 'auto' ? L.P : 0], ['I', L.mode === 'auto' ? L.I : 0], ['D', L.mode === 'auto' ? L.D : 0], ['T', L.co]];
+  for (const [k, val] of bars) { const c = Math.max(-100, Math.min(100, val)); const el = $('cb' + k); el.style.left = (c >= 0 ? 50 : 50 + c / 2) + '%'; el.style.width = Math.abs(c) / 2 + '%'; $('cv' + k).textContent = val.toFixed(1); }
+  // metrics
+  const s = L.summary(); const lb = document.querySelectorAll('#metrics .metric b');
+  if (!s) { $('mHead').textContent = L.mode === 'auto' ? 'Make a setpoint or load change to measure' : 'Metrics pause in manual'; ['m1', 'm2', 'm3', 'm4', 'm5'].forEach(id => $(id).textContent = '—'); }
+  else if (s.type === 'sp') {
+    $('mHead').textContent = 'Last setpoint change'; lb[0].textContent = 'Overshoot'; lb[1].textContent = 'Rise time (10–90%)'; lb[2].textContent = 'Settling time (±5%)';
+    $('m1').textContent = fmt(s.overshoot) + '%'; $('m2').textContent = s.rise == null ? '—' : fmt(s.rise) + ' s'; $('m3').textContent = s.settle == null ? 'settling…' : fmt(s.settle) + ' s'; $('m4').textContent = fmt(s.err, 2) + '%'; $('m5').textContent = fmt(s.iae, 0);
+  } else {
+    $('mHead').textContent = 'Last load disturbance'; lb[0].textContent = 'Peak deviation'; lb[1].textContent = 'Load change'; lb[2].textContent = 'Recovery (±1% span)';
+    $('m1').textContent = fmt(s.maxDev) + ' ' + u; $('m2').textContent = L.load.toFixed(0) + '%'; $('m3').textContent = s.recover == null ? 'recovering…' : fmt(s.recover) + ' s'; $('m4').textContent = fmt(s.err, 2) + '%'; $('m5').textContent = fmt(s.iae, 0);
+  }
+  drawTrend();
+}
+let last = performance.now(), acc = 0;
+function frame(now) {
+  const dtR = Math.min(0.1, (now - last) / 1000); last = now;
+  if (running) { acc += dtR * speed; let n = 0; while (acc >= DT && n < 2000) { L.step(); acc -= DT; n++; } } else acc = 0;
+  if (!$('t-sim').hidden) updateUI(dtR);
+  requestAnimationFrame(frame);
+}
+
+/* ---------- tutorial ---------- */
+let step = 0; const lessons = [...document.querySelectorAll('.lesson')];
+function goStep(i) { step = Math.max(0, Math.min(lessons.length - 1, i)); lessons.forEach((l, k) => l.hidden = k !== step); document.querySelectorAll('#stepNav button').forEach((b, k) => { if (k === step) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); }); $('prevStep').disabled = step === 0; $('nextStep').textContent = step === lessons.length - 1 ? 'Open the simulator' : 'Next'; }
+$('stepNav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) goStep(+b.dataset.step); });
+$('prevStep').addEventListener('click', () => goStep(step - 1));
+$('nextStep').addEventListener('click', () => { if (step === lessons.length - 1) showTab('t-sim'); else { goStep(step + 1); window.scrollTo({ top: 0 }); } });
+document.querySelectorAll('[data-lab]').forEach(b => b.addEventListener('click', () => { showTab('t-sim'); loadLab(b.dataset.lab); }));
+document.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => { showTab('t-sim'); if (b.dataset.goto === 'calc') { const d = document.querySelector('details.calc'); d.open = true; setTimeout(() => d.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); } }));
+goStep(0);
+
+/* ---------- competencies ---------- */
+const COMP = [
+  { t: 'Process and instrumentation fundamentals', lvl: 'Foundation',
+    k: ['Process variables: pressure, level, flow, temperature, analytical', 'Reading P&IDs and ISA-5.1 tag letters (LIC, TT, FV)', 'Transmitters, 4–20 mA and digital signals (HART, fieldbus); range, span and scaling', 'Final control elements: control valves, actuators, positioners, fail-open vs fail-closed', 'Process dynamics: gain, dead time, time constant; self-regulating vs integrating processes'],
+    s: ['Trace a loop from sensor to valve on a P&ID and in the field', 'Convert between mA, % of span and engineering units', 'Verify transmitter calibration and valve stroke', 'Identify the process type from its open-loop response'],
+    a: 'Trainer support: process graphic tags, faceplate scaling, the bump test in the tuning helper.' },
+  { t: 'Feedback control theory', lvl: 'Foundation',
+    k: ['Open-loop vs closed-loop control; setpoint, PV, CO and error', 'The role and side effects of P, I and D', 'Gain vs proportional band; reset in seconds or minutes per repeat vs repeats per minute', 'Direct vs reverse controller action and how valve failure mode affects it', 'PID algorithm forms: standard (ISA), parallel and series'],
+    s: ['Predict how a change to Kc, Ti or Td will alter a response', 'Select the correct controller action for a loop', 'Convert tuning values between units and algorithm forms'],
+    a: 'Trainer support: How PID works, Labs 1–5 and 7, Live response bars.' },
+  { t: 'Controller operation', lvl: 'Operational',
+    k: ['Modes: manual, automatic, cascade and remote setpoint', 'Bumpless transfer and setpoint tracking', 'Output limits, anti-reset windup, derivative on PV, PV filtering', 'Alarms: deviation, high/low, output at limit; ISA-18.2 alarm management principles', 'HMI conventions (ISA-101): faceplates, trends, color used for abnormal states'],
+    s: ['Transfer a loop between manual and automatic without upsetting the process', 'Make setpoint and output changes in safe increments', 'Read a trend to judge whether a loop is performing well'],
+    a: 'Trainer support: faceplate AUTO/MAN, setpoint tracking option, Lab 8.' },
+  { t: 'Loop tuning', lvl: 'Advanced',
+    k: ['Open-loop bump (step) testing and model identification', 'Tuning methods: lambda/IMC, Ziegler-Nichols, Cohen-Coon, trial and error', 'Performance measures: overshoot, rise time, settling time, IAE, decay ratio', 'Trade-off between speed and robustness; tuning for setpoint vs load response'],
+    s: ['Plan and run a bump test with operations approval', 'Calculate starting PI values from K, τ and θ', 'Refine tuning one parameter at a time and verify with a setpoint step', 'Document before and after settings'],
+    a: 'Trainer support: bump test and lambda helper, three auto-graded challenges.' },
+  { t: 'Troubleshooting control loops', lvl: 'Advanced',
+    k: ['Oscillation signatures: tuning, valve stiction, interaction between loops', 'Measurement problems: noise, plugged impulse lines, failed sensors, wrong range', 'Saturation and undersized or oversized valves', 'Configuration errors: wrong action, bad scaling, wrong units'],
+    s: ['Separate a tuning problem from a hardware problem using manual-mode tests', 'Diagnose a loop from its trend history', 'Apply systematic troubleshooting and verify the repair'],
+    a: 'Trainer support: Labs 3, 4, 6 and 7 present recognizable fault signatures.' },
+  { t: 'Safety, change management and OT security', lvl: 'All levels',
+    k: ['Lockout/tagout, permits, and coordination with operations', 'Management of change (MOC) for tuning and configuration', 'Separation of basic process control from safety instrumented systems (IEC 61511)', 'OT cybersecurity: ISA/IEC 62443 zones and conduits, role-based access to controllers, change logging'],
+    s: ['Follow MOC before altering setpoints, limits or tuning', 'Restrict and log who can change controller parameters', 'Recognize unexplained tuning or setpoint changes as possible tampering and escalate'],
+    a: 'Trainer support: How PID works step 6 and quiz question 10.' }
+];
+$('compList').innerHTML = COMP.map((c, i) => `<div class="acc"><button aria-expanded="${i === 0}" aria-controls="cb${i}x"><span class="chev" aria-hidden="true">▸</span><span class="ttl">${c.t}</span><span class="lvl">${c.lvl}</span></button><div class="body" id="cb${i}x" ${i === 0 ? '' : 'hidden'}><div><h4>Knowledge</h4><ul>${c.k.map(x => `<li>${x}</li>`).join('')}</ul></div><div><h4>Skills</h4><ul>${c.s.map(x => `<li>${x}</li>`).join('')}</ul></div><div class="assess">${c.a}</div></div></div>`).join('');
+$('compList').addEventListener('click', e => { const b = e.target.closest('.acc>button'); if (!b) return; const open = b.getAttribute('aria-expanded') === 'true'; b.setAttribute('aria-expanded', !open); $(b.getAttribute('aria-controls')).hidden = open; });
+
+/* ---------- glossary ---------- */
+const GLOS = [
+  ['Setpoint (SP)', 'The target value the operator wants the process variable to hold.'],
+  ['Process variable (PV)', 'The measured quantity being controlled, such as level, temperature or flow.'],
+  ['Controller output (CO)', 'The signal the controller sends to the final control element, usually 0–100%.'],
+  ['Error', 'The difference between setpoint and PV. Reverse-acting: SP − PV. Direct-acting: PV − SP.'],
+  ['Controller gain (Kc)', 'How strongly the output responds to error. Higher gain means a more aggressive response.'],
+  ['Proportional band (PB)', 'The % change in PV that moves the output across its full range. PB = 100 ÷ Kc.'],
+  ['Integral (reset) time', 'Time for integral action to repeat the proportional correction. Smaller means stronger integral.'],
+  ['Derivative (rate) time', 'How far ahead derivative action anticipates, based on the rate of change of PV.'],
+  ['Offset', 'The steady error left by proportional-only control after a load change.'],
+  ['Dead time (θ)', 'Delay between a change in output and the first visible response in PV.'],
+  ['Time constant (τ)', 'Time for a first-order process to complete 63.2% of its response after it starts moving.'],
+  ['Process gain (K)', 'Final change in PV divided by the change in output that caused it.'],
+  ['Integral windup', 'Integral keeps accumulating while the output is pinned at a limit, causing a large overshoot later.'],
+  ['Bumpless transfer', 'Switching between manual and automatic without a sudden jump in the output.'],
+  ['Derivative kick', 'An output spike caused by derivative acting on error when the setpoint steps. Avoided by derivative on PV.'],
+  ['Valve stiction', 'Static friction that makes a valve stick and then jump, often causing a sawtooth oscillation.']
+];
+$('cards').innerHTML = GLOS.map(([t, d]) => `<button class="card" aria-label="${t}: show definition"><div class="in"><div class="f"><strong>${t}</strong><small>Select to flip</small></div><div class="b">${d}</div></div></button>`).join('');
+$('cards').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) c.classList.toggle('flip'); });
+
+/* ---------- quiz ---------- */
+const QUIZ = [
+  ['A tank level loop uses proportional-only control. After the outflow demand increases, the level settles 3% below setpoint. What is this called?', ['Integral windup', 'Offset', 'Derivative kick', 'Dead time'], 1, 'Proportional action needs error to produce a different output. With a new load, the loop settles with a steady error called offset. Adding integral removes it.'],
+  ['Which controller term eliminates steady-state error?', ['Proportional', 'Integral', 'Derivative', 'Bias'], 1, 'Integral accumulates error over time and keeps changing the output until the error is zero.'],
+  ['A controller is set to a proportional band of 50%. What is the equivalent controller gain?', ['0.5', '2', '5', '50'], 1, 'Kc = 100 ÷ PB = 100 ÷ 50 = 2.'],
+  ['You increase the integral time Ti from 10 s to 40 s. What happens to integral action?', ['It becomes stronger and faster', 'It becomes weaker and slower', 'It is switched off', 'It changes the controller action'], 1, 'Ti is in the denominator of the integral term. A longer integral time means weaker, slower integral action. (In repeats per minute the opposite is true, so always check units.)'],
+  ['Why is derivative action usually left off on flow loops?', ['Flow loops have too much dead time', 'Flow measurements are fast and noisy, and derivative amplifies the noise', 'Derivative only works on temperature', 'Flow valves cannot move fast enough'], 1, 'Derivative responds to rate of change. Noise has a high rate of change, so derivative makes the valve chatter. Lab 6 shows this.'],
+  ['As soon as a new loop is put in automatic, PV moves away from setpoint and the output drives to 100%. What is the most likely cause?', ['Integral time too long', 'Controller action configured incorrectly', 'Measurement noise', 'Setpoint tracking enabled'], 1, 'If the action does not match the process, the controller pushes PV the wrong way. Lab 7 shows this.'],
+  ['What makes a manual-to-automatic transfer bumpless?', ['Setting the output to 50% first', 'Initializing the controller so its output starts at the current manual output', 'Turning off integral action', 'Raising the gain'], 1, 'The controller back-calculates its bias or integral so the first automatic output equals the last manual output. Setpoint tracking also prevents a sudden error.'],
+  ['In a bump test, the output steps at t = 0. PV starts moving at t = 4 s and reaches 63% of its total change at t = 24 s. What is the time constant τ?', ['4 s', '20 s', '24 s', '28 s'], 1, 'τ is measured from when PV first moves, not from the step: 24 − 4 = 20 s. The 4 s before movement is the dead time θ.'],
+  ['Integral windup happens when…', ['the gain is too low', 'the output is saturated at a limit while error persists', 'derivative acts on error', 'the transmitter is noisy'], 1, 'With the output pinned, integral keeps accumulating error it cannot act on. When the error reverses, the large stored integral causes overshoot. Lab 8 shows this.'],
+  ['Why should changes to PID tuning parameters be access-controlled and logged in an OT environment?', ['Logging improves loop speed', 'Unauthorized or careless tuning changes can destabilize a process and create unsafe conditions', 'Tuning values are only cosmetic', 'Vendors require it for warranty only'], 1, 'Tuning directly changes how the plant behaves. ISA/IEC 62443 and management of change both require that such changes be authorized, traceable and reviewable.']
+];
+let score = 0, answered = 0;
+function renderQuiz() {
+  score = 0; answered = 0; $('score').textContent = `Score: 0 / ${QUIZ.length}`;
+  $('quizList').innerHTML = QUIZ.map((q, i) => `<div class="q" data-q="${i}"><p class="stem">${i + 1}. ${q[0]}</p><div class="opts">${q[1].map((o, j) => `<button data-o="${j}">${String.fromCharCode(65 + j)}. ${o}</button>`).join('')}</div><div class="fb" aria-live="polite"></div></div>`).join('');
+}
+$('quizList').addEventListener('click', e => {
+  const b = e.target.closest('[data-o]'); if (!b || b.disabled) return;
+  const qd = b.closest('.q'), q = QUIZ[+qd.dataset.q], pick = +b.dataset.o, ok = pick === q[2];
+  qd.querySelectorAll('[data-o]').forEach(x => { x.disabled = true; if (+x.dataset.o === q[2]) x.classList.add('right'); });
+  if (!ok) b.classList.add('wrong');
+  qd.querySelector('.fb').innerHTML = `<span class="${ok ? 'pass' : 'fail'}">${ok ? 'Correct.' : 'Not quite.'}</span> ${q[3]}`;
+  answered++; if (ok) score++;
+  $('score').textContent = `Score: ${score} / ${QUIZ.length}` + (answered === QUIZ.length ? (score >= 8 ? ' — ready for the challenges' : ' — review the tutorial and retake') : '');
+});
+$('quizReset').addEventListener('click', renderQuiz);
+renderQuiz();
+
+/* ---------- start ---------- */
+paintThemeBtn(); syncProcessUI();
+requestAnimationFrame(frame);
+</script>
+</body></html>
