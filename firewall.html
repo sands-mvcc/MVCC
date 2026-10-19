@@ -1,383 +1,1572 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stateful Firewall | Interactive Labs</title>
-    <style>
-        :root {
-            --primary-color: #006400; /* Dark Green */
-            --light-green: #e8f5e9;   /* Very Light Green */
-            --accent-color: #000000;  /* Black */
-            --bg-color: #ffffff;      /* White */
-            --text-color: #333333;
-            --border-color: #cccccc;
-            --success-color: #28a745;
-            --fail-color: #dc3545;
-            --btn-hover: #004d00;
-        }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Firewall Operations Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8EBEE; --panel:#F7F8FA; --panel-2:#DDE2E7; --ink:#18222D; --ink-2:#4B5663; --line:#C3CAD2;
+  --navy:#0047AB; --on-navy:#FFFFFF; --navy-soft:#D6E2F5; --green:#00A86B; --green-ink:#007A4D; --sp:#39424D;
+  --amber:#B97F00; --amber-bg:#FFF1CC; --red:#C62828; --red-bg:#FDE2E2;
+  --z-int:#B23A3A; --z-dmz:#B97F00; --z-lan:#0047AB; --z-data:#6B46C1;
+  --z-int-bg:#F8E3E3; --z-dmz-bg:#FBF0D6; --z-lan-bg:#DCE6F6; --z-data-bg:#E9E2F7;
+  --wire:#8A95A2; --brick:#C9653A;
+  --font:"Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --cond:"Barlow Semi Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  --mono:ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151B; --panel:#19212A; --panel-2:#232D38; --ink:#E3E9EF; --ink-2:#A2AEBB; --line:#34414E;
+    --navy:#6E9EF2; --on-navy:#0C1A30; --navy-soft:#1E2E4A; --green:#2FCB8E; --green-ink:#56DDA6; --sp:#CBD3DC;
+    --amber:#F2B53A; --amber-bg:#3A2E10; --red:#FF7070; --red-bg:#3D1A1A;
+    --z-int:#FF8A8A; --z-dmz:#F2B53A; --z-lan:#6E9EF2; --z-data:#B39AF2;
+    --z-int-bg:#2E1B1E; --z-dmz-bg:#2E2614; --z-lan-bg:#16243A; --z-data-bg:#231C38;
+    --wire:#5E6A77; --brick:#E0855C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151B; --panel:#19212A; --panel-2:#232D38; --ink:#E3E9EF; --ink-2:#A2AEBB; --line:#34414E;
+  --navy:#6E9EF2; --on-navy:#0C1A30; --navy-soft:#1E2E4A; --green:#2FCB8E; --green-ink:#56DDA6; --sp:#CBD3DC;
+  --amber:#F2B53A; --amber-bg:#3A2E10; --red:#FF7070; --red-bg:#3D1A1A;
+  --z-int:#FF8A8A; --z-dmz:#F2B53A; --z-lan:#6E9EF2; --z-data:#B39AF2;
+  --z-int-bg:#2E1B1E; --z-dmz-bg:#2E2614; --z-lan-bg:#16243A; --z-data-bg:#231C38;
+  --wire:#5E6A77; --brick:#E0855C;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 70px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+button,input,select{font:inherit;color:inherit}
+select,input[type=text]{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:5px 7px;width:100%}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+code,.mono{font-family:var(--mono);font-size:.86em}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
+/* Title bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar-in{max-width:1320px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand svg{flex:none}
+.brand h1{font-family:var(--cond);font-weight:700;font-size:1.35rem;margin:0;line-height:1.1;letter-spacing:.01em}
+.brand p{margin:0;color:var(--ink-2);font-size:.85rem}
+nav.tabs{display:flex;gap:2px;flex-wrap:wrap}
+nav.tabs button{background:none;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;color:var(--ink-2);font-weight:600;font-size:.95rem}
+nav.tabs button[aria-selected="true"]{background:var(--navy);color:var(--on-navy)}
+nav.tabs button:hover:not([aria-selected="true"]){background:var(--panel-2);color:var(--ink)}
+.theme-btn{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:.9rem}
 
-        /* --- Header --- */
-        header {
-            background-color: var(--bg-color);
-            color: var(--primary-color);
-            padding: 20px 40px;
-            border-bottom: 4px solid var(--primary-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+main{max-width:1320px;margin:0 auto;padding:18px 20px 60px}
+section[role="tabpanel"][hidden]{display:none}
 
-        header h1 { margin: 0; font-size: 2.2rem; color: var(--accent-color); }
-        header h2 { margin: 0; font-size: 1.2rem; color: var(--primary-color); }
+/* Panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.panel h2,.panel h3{font-family:var(--cond);font-weight:600;margin:0 0 8px;font-size:1.1rem;line-height:1.2}
+.ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.ph h2,.ph h3{margin:0}
+.hint{color:var(--ink-2);font-size:.88rem;margin:0}
 
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+/* Run bar */
+.runbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.runbar .lbl{font-family:var(--cond);font-weight:600;color:var(--ink-2)}
+.seg{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:3px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-weight:600;font-size:.92rem;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:.92rem}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.good{background:var(--green);border-color:var(--green);color:#fff}
+.btn.small{padding:4px 9px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:default}
+.spacer{flex:1}
+.modehint{font-size:.85rem;color:var(--ink-2);max-width:46ch}
 
-        /* --- Global Section Styles --- */
-        section {
-            background: #fff;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--primary-color);
-        }
+/* Active lab strip */
+.labstrip{border:1px solid var(--line);border-left:5px solid var(--green);background:var(--panel);border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:14px}
+.labstrip.free{border-left-color:var(--navy)}
+.labstrip h2{font-family:var(--cond);font-size:1.25rem;margin:0 0 4px;line-height:1.2}
+.labstrip .brief{margin:0 0 8px;max-width:90ch}
+.labstrip ol{margin:0 0 8px;padding-left:20px;font-size:.95rem}
+.labstrip .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.results{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px}
+.results .r{display:flex;gap:8px;align-items:flex-start;font-size:.88rem;background:var(--panel-2);border-radius:6px;padding:6px 9px}
+.results .r b{font-family:var(--cond);flex:none;min-width:2.6em}
+.results .r.ok b{color:var(--green-ink)} .results .r.no b{color:var(--red)}
+.banner{margin-top:10px;padding:8px 12px;border-radius:6px;font-weight:600}
+.banner.ok{background:color-mix(in srgb,var(--green) 16%,var(--panel));color:var(--green-ink)}
+.banner.no{background:var(--red-bg);color:var(--red)}
+.hintbox{margin-top:8px;font-size:.9rem;background:var(--amber-bg);border-radius:6px;padding:8px 12px}
+.hintbox[hidden]{display:none}
 
-        h3 {
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--light-green);
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
+/* Top grid */
+.top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px}
+.topo svg{width:100%;height:auto;display:block;user-select:none}
+.topo .cap{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 
-        /* --- Tables --- */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 0.90rem;
-        }
+/* topology svg */
+.t-zone{stroke-width:1.5;rx:10}
+.t-zlbl{font-family:var(--cond);font-weight:700;font-size:14px}
+.t-zsub{font-family:var(--font);font-size:11px;fill:var(--ink-2)}
+.t-wire{stroke:var(--wire);stroke-width:4;fill:none;stroke-linecap:round}
+.t-if{font-family:var(--mono);font-size:10px;fill:var(--ink-2)}
+.t-host{cursor:pointer}
+.t-host .hb{fill:var(--panel);stroke:var(--line);stroke-width:1.5;transition:stroke .15s}
+.t-host:hover .hb{stroke:var(--navy)}
+.t-host.src .hb{stroke:var(--navy);stroke-width:3}
+.t-host.dst .hb{stroke:var(--green);stroke-width:3}
+.t-host .hi{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round}
+.t-host .hn{font-family:var(--cond);font-weight:700;font-size:11.5px;fill:var(--ink);text-anchor:middle}
+.t-host .hip{font-family:var(--mono);font-size:9.5px;fill:var(--ink-2);text-anchor:middle}
+.t-host .tagsd{font-family:var(--cond);font-weight:700;font-size:10px;text-anchor:middle}
+.t-fw .body{fill:var(--panel);stroke:var(--sp);stroke-width:2}
+.t-fw .brk{fill:var(--brick)}
+.t-fw .mortar{stroke:var(--panel);stroke-width:2}
+.t-fw.flash-ok .body{stroke:var(--green);stroke-width:4}
+.t-fw.flash-no .body{stroke:var(--red);stroke-width:4}
+.t-fwl{font-family:var(--cond);font-weight:700;font-size:14px;fill:var(--ink);text-anchor:middle}
+.t-fwm{font-family:var(--font);font-size:11px;fill:var(--ink-2);text-anchor:middle}
+.t-pkt{stroke:var(--panel);stroke-width:2}
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
+/* Builder */
+.build{display:flex;flex-direction:column;gap:9px}
+.fld{display:flex;flex-direction:column;gap:3px}
+.fld label,.fld .l{font-weight:600;font-size:.86rem}
+.fld small{color:var(--ink-2);font-size:.78rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--navy)}
+.check small{display:block;color:var(--ink-2);font-size:.78rem}
 
-        th {
-            background-color: var(--primary-color);
-            color: white;
-            font-weight: 600;
-        }
+/* Trace */
+.coach{margin-top:12px;border-left:4px solid var(--navy);background:var(--navy-soft);padding:10px 14px;border-radius:0 6px 6px 0;font-size:.95rem}
+.coach.allow{border-left-color:var(--green);background:color-mix(in srgb,var(--green) 12%,var(--panel))}
+.coach.deny{border-left-color:var(--red);background:var(--red-bg)}
+.coach .vt{font-family:var(--cond);font-size:1.15rem;font-weight:700;margin:0 0 6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.trace{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:.88rem}
+.trace li{display:grid;grid-template-columns:20px 1fr;gap:6px;align-items:start}
+.trace li .ic{font-weight:700;text-align:center}
+.trace li.skip{color:var(--ink-2)}
+.trace li.hit{font-weight:600}
+.trace li.warn .ic,.trace li.warn{color:var(--amber)}
+.trace li.bad .ic{color:var(--red)}
+.trace li.good .ic{color:var(--green-ink)}
 
-        tr:nth-child(even) { background-color: #f9f9f9; }
+/* Rule table */
+.rules-wrap{margin-top:14px}
+.tbl-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table.rt{border-collapse:collapse;width:100%;min-width:980px;font-size:.88rem}
+.rt th{font-family:var(--cond);font-weight:600;text-align:left;background:var(--panel-2);padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--ink-2)}
+.rt td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.rt tr:last-child td{border-bottom:0}
+.rt tr.off td{opacity:.5}
+.rt tr.off td.ctl{opacity:1}
+.rt tr.hit td{animation:hitflash 1.4s ease-out}
+@keyframes hitflash{0%{background:color-mix(in srgb,var(--navy) 28%,var(--panel))}100%{background:transparent}}
+.rt tr.implicit td{background:var(--panel-2);font-style:italic}
+.rt .nm{font-weight:600}
+.rt .idx{font-family:var(--cond);font-weight:700;color:var(--navy)}
+.ztag{display:inline-block;font-family:var(--cond);font-weight:700;font-size:.8rem;padding:1px 7px;border-radius:10px;border:1px solid}
+.z-Internet{color:var(--z-int);background:var(--z-int-bg);border-color:var(--z-int)}
+.z-DMZ{color:var(--z-dmz);background:var(--z-dmz-bg);border-color:var(--z-dmz)}
+.z-LAN{color:var(--z-lan);background:var(--z-lan-bg);border-color:var(--z-lan)}
+.z-DATA{color:var(--z-data);background:var(--z-data-bg);border-color:var(--z-data)}
+.z-any{color:var(--ink-2);background:var(--panel-2);border-color:var(--line)}
+.act{font-family:var(--cond);font-weight:700;font-size:.85rem;padding:2px 8px;border-radius:4px;display:inline-block}
+.act.allow{background:color-mix(in srgb,var(--green) 18%,var(--panel));color:var(--green-ink)}
+.act.deny{background:var(--red-bg);color:var(--red)}
+.act.reject{background:var(--amber-bg);color:var(--amber)}
+.flag{font-size:.75rem;font-weight:700;font-family:var(--cond);border-radius:4px;padding:1px 6px;margin-right:3px;border:1px solid var(--line);color:var(--ink-2)}
+.flag.on{border-color:var(--navy);color:var(--navy)}
+.ctl{white-space:nowrap}
+.ib{border:1px solid var(--line);background:var(--panel);border-radius:5px;width:28px;height:28px;cursor:pointer;font-size:.9rem;line-height:1;padding:0}
+.ib:hover:not(:disabled){border-color:var(--navy)}
+.ib:disabled{opacity:.35;cursor:default}
+.sw{position:relative;display:inline-block;width:36px;height:20px;vertical-align:middle}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw span{position:absolute;inset:0;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:background .15s}
+.sw span::before{content:"";position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--ink-2);border-radius:50%;transition:transform .15s}
+.sw input:checked+span{background:var(--green);border-color:var(--green)}
+.sw input:checked+span::before{transform:translateX(16px);background:#fff}
+.sw input:focus-visible+span{outline:3px solid var(--navy);outline-offset:2px}
 
-        /* --- Forms & Buttons --- */
-        .control-panel {
-            background-color: var(--light-green);
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            align-items: end;
-        }
+/* Findings */
+.findings{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.findings[hidden]{display:none}
+.fd{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 12px;border-radius:6px;font-size:.9rem;background:var(--panel-2)}
+.fd .sev{font-family:var(--cond);font-weight:700;font-size:.8rem;border-radius:4px;padding:1px 7px;margin-top:2px}
+.fd.high .sev{background:var(--red-bg);color:var(--red)}
+.fd.med .sev{background:var(--amber-bg);color:var(--amber)}
+.fd.low .sev{background:var(--navy-soft);color:var(--navy)}
+.fd.ok .sev{background:color-mix(in srgb,var(--green) 18%,var(--panel));color:var(--green-ink)}
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: var(--primary-color);
-            font-size: 0.85rem;
-        }
+/* Lower grid */
+.lower{display:grid;grid-template-columns:1fr 1.35fr;gap:14px;margin-top:14px}
+table.mini{border-collapse:collapse;width:100%;font-size:.82rem}
+.mini th{font-family:var(--cond);font-weight:600;text-align:left;color:var(--ink-2);padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.mini td{padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.mini td.m{font-family:var(--mono);font-size:.78rem;white-space:nowrap}
+.empty{color:var(--ink-2);font-size:.88rem;padding:10px 0}
+.scrollbox{max-height:300px;overflow:auto}
+.nl{opacity:.55}
 
-        input, select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 0.9rem;
-        }
+/* Labs */
+.labs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;list-style:none;margin:0;padding:0}
+.labs li button{width:100%;height:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:10px 12px;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.labs li button:hover{border-color:var(--navy)}
+.labs li button.active{border-color:var(--navy);box-shadow:inset 3px 0 0 var(--navy)}
+.labs .n{font-family:var(--cond);font-weight:700;color:var(--navy);min-width:1.2em;font-size:1.1rem}
+.labs .t{font-weight:600;font-size:.95rem;line-height:1.3;flex:1}
+.labs .t small{display:block;font-weight:400;color:var(--ink-2);font-size:.82rem;margin-top:2px}
+.labs .done{color:var(--green-ink);font-weight:700;font-size:.8rem;font-family:var(--cond)}
+.labs-panel{margin-top:14px}
 
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 1rem;
-            transition: background 0.3s;
-            font-weight: 600;
-        }
+/* dialog */
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:0;width:min(640px,94vw)}
+dialog::backdrop{background:rgba(10,16,24,.45)}
+.dlg-h{padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.dlg-h h2{font-family:var(--cond);margin:0;font-size:1.25rem}
+.dlg-b{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.dlg-b .full{grid-column:1/-1}
+.dlg-b fieldset{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:0;display:flex;flex-direction:column;gap:6px}
+.dlg-b legend{font-family:var(--cond);font-weight:600;padding:0 4px;color:var(--ink-2)}
+.dlg-f{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.note{font-size:.8rem;color:var(--ink-2)}
+.note.warn{color:var(--amber)}
 
-        button:hover { background-color: var(--btn-hover); }
+/* Tutorial */
+.tut{display:grid;grid-template-columns:250px minmax(0,1fr);gap:20px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:90px;align-self:start}
+.steps button{width:100%;text-align:left;border:0;background:none;padding:9px 12px;border-radius:6px;cursor:pointer;display:flex;gap:10px;font-weight:600;color:var(--ink-2)}
+.steps button .k{font-family:var(--cond);color:var(--navy);min-width:1.1em}
+.steps button[aria-current="step"]{background:var(--panel);color:var(--ink);box-shadow:inset 3px 0 0 var(--navy)}
+.lesson{max-width:76ch}
+.lesson[hidden]{display:none}
+.lesson h2{font-family:var(--cond);font-size:1.7rem;font-weight:700;margin:0 0 6px;line-height:1.15}
+.lesson h3{font-family:var(--cond);font-size:1.15rem;margin:16px 0 6px}
+.lesson .lede{font-size:1.08rem;color:var(--ink-2);margin:0 0 14px}
+.lesson p{margin:0 0 12px}
+.lesson ul{margin:0 0 12px;padding-left:20px}
+.lesson li{margin-bottom:4px}
+.lesson-nav{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.analogy{border-left:4px solid var(--green);padding:6px 12px;background:var(--panel);margin:10px 0 14px;border-radius:0 6px 6px 0}
+.lesson svg{max-width:100%;height:auto;display:block}
+.ttable{border-collapse:collapse;width:100%;font-size:.9rem;margin:6px 0 14px}
+.ttable th,.ttable td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+.ttable th{background:var(--panel-2);font-family:var(--cond);font-weight:600}
+.ttable td:first-child{font-weight:600;white-space:nowrap}
+.figure{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0 14px}
+.figure .cap2{font-size:.85rem;color:var(--ink-2);margin-top:6px}
 
-        /* --- Activity Specific: Action Buttons in Table --- */
-        .btn-action {
-            padding: 4px 10px;
-            font-size: 0.8rem;
-            margin-right: 5px;
-        }
-        .btn-permit { background-color: var(--success-color); }
-        .btn-deny { background-color: var(--fail-color); }
-        
-        /* --- Concept Grid --- */
-        .concept-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .concept-card {
-            background-color: var(--light-green);
-            padding: 15px;
-            border-radius: 4px;
-        }
+/* layer inspector */
+.pk{display:flex;border-radius:6px;overflow:hidden;border:1px solid var(--line);margin:10px 0 6px;font-family:var(--cond);font-weight:600;font-size:.9rem}
+.pk div{padding:10px 8px;text-align:center;background:var(--panel-2);color:var(--ink-2);border-right:1px solid var(--line);transition:background .2s,color .2s}
+.pk div:last-child{border-right:0}
+.pk div.vis{background:var(--navy);color:var(--on-navy)}
+.pk div small{display:block;font-family:var(--font);font-weight:400;font-size:.72rem}
+.pk-note{font-size:.92rem;min-height:3em}
 
-        /* --- Firewall Status --- */
-        .firewall-status {
-            text-align: center;
-            font-size: 2rem;
-            margin: 20px;
-            padding: 10px;
-            border-radius: 8px;
-            background-color: #f8f9fa;
-            border: 2px dashed #ccc;
-        }
-        .status-open { color: var(--success-color); border-color: var(--success-color); }
-        .status-closed { color: var(--fail-color); border-color: var(--fail-color); }
-    </style>
+/* Competencies */
+.intro{max-width:80ch;margin:0 0 16px}
+.intro h2{font-family:var(--cond);font-size:1.7rem;margin:0 0 6px;line-height:1.15}
+.acc{border:1px solid var(--line);border-radius:8px;background:var(--panel);margin-bottom:8px;overflow:hidden}
+.acc>button{width:100%;text-align:left;border:0;background:none;padding:12px 16px;display:flex;gap:12px;align-items:center;cursor:pointer}
+.acc>button .ttl{font-family:var(--cond);font-weight:600;font-size:1.12rem;flex:1}
+.acc>button .lvl{font-size:.8rem;color:var(--ink-2)}
+.acc>button .chev{transition:transform .2s}
+.acc>button[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.acc .body{padding:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.acc .body[hidden]{display:none}
+.acc .body h4{margin:0 0 4px;font-size:.92rem;color:var(--ink-2)}
+.acc .body ul{margin:0;padding-left:18px;font-size:.93rem}
+.acc .body li{margin-bottom:4px}
+.acc .body .assess{grid-column:1/-1;font-size:.88rem;background:var(--panel-2);border-radius:6px;padding:8px 10px}
+.selfrate{display:flex;gap:6px;align-items:center;font-size:.85rem;margin-left:auto}
+.selfrate select{width:auto;padding:3px 6px}
+.compsum{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.meter{flex:1;min-width:200px;max-width:420px;height:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--green);transition:width .3s}
+
+/* Glossary */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.card{perspective:900px;height:170px;border:0;background:none;padding:0;cursor:pointer;text-align:left}
+.card .in{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.card.flip .in{transform:rotateY(180deg)}
+.card .f,.card .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:8px;border:1px solid var(--line);padding:14px;display:flex;flex-direction:column}
+.card .f{background:var(--panel);justify-content:space-between}
+.card .f strong{font-family:var(--cond);font-size:1.25rem;line-height:1.15}
+.card .f small{color:var(--ink-2);font-size:.8rem}
+.card .b{background:var(--navy-soft);transform:rotateY(180deg);font-size:.88rem;line-height:1.4;overflow:auto}
+.gsearch{max-width:320px;margin-bottom:12px}
+
+/* Quiz */
+.quiz{max-width:80ch}
+.q{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.q p.stem{margin:0 0 10px;font-weight:600}
+.q .opts{display:flex;flex-direction:column;gap:6px}
+.q .opts button{text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:8px 12px;cursor:pointer}
+.q .opts button:hover:not(:disabled){border-color:var(--navy)}
+.q .opts button.right{border-color:var(--green);background:color-mix(in srgb,var(--green) 14%,var(--panel))}
+.q .opts button.wrong{border-color:var(--red);background:var(--red-bg)}
+.q .opts button:disabled{cursor:default}
+.q .fb{margin-top:10px;font-size:.92rem}
+.pass{color:var(--green-ink);font-weight:700}
+.fail{color:var(--red);font-weight:700}
+.score{position:sticky;top:76px;display:inline-block;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-family:var(--cond);font-weight:700;margin-bottom:10px;z-index:2}
+
+@media (max-width:1060px){
+  .top{grid-template-columns:1fr}
+  .lower{grid-template-columns:1fr}
+  .labs{grid-template-columns:1fr 1fr}
+  .tut{grid-template-columns:1fr}
+  .steps{position:static;flex-direction:row;flex-wrap:wrap}
+  .steps button{width:auto}
+}
+@media (max-width:640px){
+  .labs{grid-template-columns:1fr}
+  .acc .body{grid-template-columns:1fr}
+  .dlg-b{grid-template-columns:1fr}
+  .bar-in{gap:10px}
+  nav.tabs{order:3;width:100%}
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
 </head>
 <body>
-
-<header>
-    <div>
-        <h1>CS 405: Cybersecurity</h1>
-        <h2>Module: Subnet Masks & Firewall Logic</h2>
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand">
+      <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><rect x="1" y="1" width="36" height="36" rx="6" fill="#0047AB"/><g fill="#fff"><rect x="7" y="10" width="11" height="5" rx="1"/><rect x="20" y="10" width="11" height="5" rx="1"/><rect x="7" y="17" width="5" height="5" rx="1"/><rect x="14" y="17" width="11" height="5" rx="1"/><rect x="27" y="17" width="4" height="5" rx="1"/><rect x="7" y="24" width="11" height="5" rx="1"/><rect x="20" y="24" width="11" height="5" rx="1"/></g><path d="M3 19 H8 M30 19 H35" stroke="#00a86b" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <div><h1>Firewall Operations Trainer</h1><p>Configure, test and audit a network firewall policy</p></div>
     </div>
-    <div>
-        <span>Prof. Instructor</span>
-    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" aria-selected="true" aria-controls="t-sim" id="tab-sim">Firewall lab</button>
+      <button role="tab" aria-selected="false" aria-controls="t-tut" id="tab-tut">How firewalls work</button>
+      <button role="tab" aria-selected="false" aria-controls="t-comp" id="tab-comp">Analyst skills</button>
+      <button role="tab" aria-selected="false" aria-controls="t-glos" id="tab-glos">Glossary</button>
+      <button role="tab" aria-selected="false" aria-controls="t-quiz" id="tab-quiz">Check yourself</button>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Switch to dark display"><span id="themeIcon">☾</span><span id="themeLbl">Dark</span></button>
+  </div>
 </header>
+<main>
+<!-- ================= LAB ================= -->
+<section role="tabpanel" id="t-sim" aria-labelledby="tab-sim">
+  <div class="runbar">
+    <span class="lbl">Firewall type</span>
+    <div class="seg" id="modeSeg" role="group" aria-label="Firewall inspection mode">
+      <button data-mode="pf" aria-pressed="false">Packet filter</button>
+      <button data-mode="stateful" aria-pressed="true">Stateful</button>
+      <button data-mode="ngfw" aria-pressed="false">Next-gen (NGFW)</button>
+    </div>
+    <span class="modehint" id="modeHint"></span>
+    <span class="spacer"></span>
+    <button class="btn" id="analyzeBtn">Audit rule base</button>
+    <button class="btn" id="resetBtn">Reset counters and logs</button>
+  </div>
 
-<div class="container">
+  <div class="labstrip free" id="labStrip"></div>
 
-    <section>
-        <h3>1. Concept Review: Understanding Masks</h3>
-        <p>Firewalls use <strong>Masks</strong> to determine the "scope" of a rule. A mask defines how many bits of the IP address must match exactly.</p>
-        <div class="concept-grid">
-            <div class="concept-card">
-                <h4 style="margin-top:0;">Single Host (Scope: 1 Device)</h4>
-                <p><strong>IP:</strong> 192.168.1.10<br><strong>Mask:</strong> 255.255.255.255 (/32)<br><em>Matches only this specific computer.</em></p>
-            </div>
-            <div class="concept-card">
-                <h4 style="margin-top:0;">Entire Subnet (Scope: ~254 Devices)</h4>
-                <p><strong>IP:</strong> 192.168.1.0<br><strong>Mask:</strong> 255.255.255.0 (/24)<br><em>Matches any device starting with 192.168.1.x</em></p>
-            </div>
+  <div class="top">
+    <div class="panel topo">
+      <div class="cap"><h2>Network</h2><p class="hint" id="pickHint">Select a host for the source, then another for the destination.</p></div>
+      <svg id="topo" viewBox="0 0 800 400" role="img" aria-label="Network diagram: Internet, edge firewall, and DMZ, LAN and DATA zones"></svg>
+      <div class="coach" id="trace" aria-live="polite">
+        <p class="vt">Ready</p>
+        <p class="hint" style="margin:0">Build a packet on the right or choose a traffic preset, then select <strong>Send packet</strong>. The firewall’s decision path appears here step by step.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><h2>Packet builder</h2></div>
+      <div class="build">
+        <div class="fld"><label for="preset">Traffic preset</label>
+          <select id="preset"><option value="">Choose a scenario…</option></select></div>
+        <div class="two">
+          <div class="fld"><label for="pSrc">Source</label><select id="pSrc"></select></div>
+          <div class="fld"><label for="pDst">Destination</label><select id="pDst"></select></div>
         </div>
-    </section>
+        <div class="fld"><label for="pSvc">Service (protocol/port)</label><select id="pSvc"></select></div>
+        <div class="fld"><label for="pApp">Actual application in the payload</label><select id="pApp"></select>
+          <small>Only a next-gen firewall can tell which application is really inside the traffic.</small></div>
+        <label class="check"><input type="checkbox" id="pReply"><span>Reply packet<small>Server answering a client (from the service port back to the client’s ephemeral port)</small></span></label>
+        <label class="check"><input type="checkbox" id="pThreat"><span>Contains an exploit payload<small>For example, SQL injection or a known CVE exploit string</small></span></label>
+        <button class="btn primary" id="sendBtn">Send packet</button>
+        <p class="hint mono" id="pPreview"></p>
+      </div>
+    </div>
+  </div>
 
-    <section>
-        <h3>2. Activity: Traffic Simulation</h3>
-        <p>Visualize how the firewall automatically handles "Established" traffic.</p>
-        
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; margin-bottom: 15px;">
-            <div id="sim-viz" style="font-weight: bold; font-size: 1.2rem; color: #555;">Waiting for traffic...</div>
+  <div class="panel rules-wrap">
+    <div class="ph"><h2>Security policy (rule base)</h2>
+      <span class="hint">Rules are evaluated top-down; the first match wins. Anything that matches no rule hits the implicit deny.</span>
+      <button class="btn small primary" id="addRule">Add rule</button></div>
+    <div class="tbl-scroll">
+      <table class="rt" id="ruleTable">
+        <thead><tr><th>#</th><th>Name</th><th>Source zone</th><th>Source</th><th>Dest. zone</th><th>Destination</th><th>Service</th><th>Application</th><th>Action</th><th>Options</th><th>Hits</th><th>On</th><th>Manage</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="findings" id="findings" hidden></div>
+  </div>
+
+  <div class="lower">
+    <div class="panel">
+      <div class="ph"><h2>Session (state) table</h2><button class="btn small" id="clearSess">Clear sessions</button></div>
+      <p class="hint" id="sessHint"></p>
+      <div class="scrollbox" id="sessBox"></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h2>Traffic log</h2>
+        <label class="check" style="margin-left:auto"><input type="checkbox" id="denyOnly"><span>Denies only</span></label>
+        <button class="btn small" id="copyLog">Copy as CSV</button></div>
+      <p class="hint">Faded rows were processed but <em>not</em> written to the log because logging is off for that rule.</p>
+      <div class="scrollbox" id="logBox"></div>
+    </div>
+  </div>
+
+  <div class="panel labs-panel">
+    <div class="ph"><h2>Guided labs</h2><span class="hint" id="labProg"></span></div>
+    <ul class="labs" id="labList"></ul>
+  </div>
+</section>
+
+<!-- ================= TUTORIAL ================= -->
+<section role="tabpanel" id="t-tut" aria-labelledby="tab-tut" hidden>
+  <div class="tut">
+    <ol class="steps" id="stepNav"></ol>
+    <div>
+      <article class="lesson" data-step="Why firewalls exist">
+        <h2>Why firewalls exist</h2>
+        <p class="lede">A network firewall enforces a security policy at the boundary between networks of different trust. It decides, packet by packet or session by session, what may cross.</p>
+        <p>Organizations divide their networks into <strong>zones</strong> that group systems with similar trust and exposure. A typical edge design has an untrusted Internet zone, a <strong>screened subnet</strong> (DMZ) for public-facing servers, an internal user zone, and a restricted data or server zone. The firewall sits between them and is the only path from one zone to another.</p>
+        <div class="analogy"><strong>Analogy.</strong> Think of a secure building’s lobby desk. Visitors (packets) state who they are and where they’re going; the guard checks a list (the rule base) from top to bottom and acts on the first entry that applies. Anyone not on the list is turned away.</div>
+        <h3>Default deny</h3>
+        <p>Well-designed policies <strong>deny by default</strong> and allow only what the business needs. Every vendor ends its rule base with an implicit deny for traffic between zones. The analyst’s job is to write the smallest set of allow rules that supports the business, a practice called <strong>least privilege</strong>.</p>
+        <h3>What a firewall cannot do</h3>
+        <ul>
+          <li>It can’t inspect traffic that never crosses it, such as two hosts on the same switch in the same zone.</li>
+          <li>It can’t see inside encrypted traffic unless it performs TLS decryption.</li>
+          <li>It doesn’t replace endpoint protection, patching, or identity controls; it is one layer of defense in depth.</li>
+        </ul>
+      </article>
+
+      <article class="lesson" data-step="Firewall types" hidden>
+        <h2>Firewall types and what each can see</h2>
+        <p class="lede">Firewall generations differ mainly in how deep into the packet they look and whether they remember conversations.</p>
+        <div class="figure">
+          <div class="seg" id="layerSeg" role="group" aria-label="Firewall type to inspect">
+            <button data-t="pf" aria-pressed="true">Packet filter</button>
+            <button data-t="st" aria-pressed="false">Stateful</button>
+            <button data-t="cg" aria-pressed="false">Circuit gateway</button>
+            <button data-t="px" aria-pressed="false">Proxy (ALG)</button>
+            <button data-t="ng" aria-pressed="false">NGFW</button>
+            <button data-t="waf" aria-pressed="false">WAF</button>
+          </div>
+          <div class="pk" id="pk">
+            <div data-l="2">Ethernet<small>L2 MAC</small></div>
+            <div data-l="3">IP header<small>L3 addresses</small></div>
+            <div data-l="4">TCP/UDP<small>L4 ports, flags</small></div>
+            <div data-l="5">Session<small>connection state</small></div>
+            <div data-l="6">TLS<small>encryption</small></div>
+            <div data-l="7" style="flex:1.6">Application data<small>L7 HTTP, SQL, files</small></div>
+          </div>
+          <p class="pk-note" id="pkNote"></p>
         </div>
-
-        <div class="control-panel">
-            <div>
-                <label>Traffic Type</label>
-                <select id="autoSimType">
-                    <option value="NEW">New Connection (SYN)</option>
-                    <option value="ESTABLISHED">Established (ACK)</option>
-                </select>
-            </div>
-            <div>
-                <button onclick="runAutoSim()">Send Packet</button>
-            </div>
-        </div>
-    </section>
-
-    <section id="manual-lab">
-        <h3>3. Lab: Manual Inspection with Masks</h3>
-        <p>Define the source and destination details below. Note the new <strong>Mask</strong> fields, which determine if the rule applies to a specific host (/32) or a whole network (/24).</p>
-
-        <div class="control-panel">
-            <div style="border-right: 1px solid #ccc; padding-right:10px;">
-                <label for="source-ip">Source IP</label>
-                <input type="text" id="source-ip" placeholder="192.168.1.10">
-            </div>
-            <div style="border-right: 1px solid #ccc; padding-right:10px;">
-                <label for="source-mask">Source Mask</label>
-                <select id="source-mask">
-                    <option value="255.255.255.255">/32 (Single Host)</option>
-                    <option value="255.255.255.0">/24 (Subnet)</option>
-                    <option value="255.255.0.0">/16 (Large Net)</option>
-                    <option value="0.0.0.0">/0 (Any)</option>
-                </select>
-            </div>
-
-            <div style="border-right: 1px solid #ccc; padding-right:10px;">
-                <label for="destination-ip">Dest IP</label>
-                <input type="text" id="destination-ip" placeholder="10.0.0.5">
-            </div>
-            <div style="border-right: 1px solid #ccc; padding-right:10px;">
-                <label for="destination-mask">Dest Mask</label>
-                <select id="destination-mask">
-                    <option value="255.255.255.255">/32 (Single Host)</option>
-                    <option value="255.255.255.0">/24 (Subnet)</option>
-                    <option value="255.255.0.0">/16 (Large Net)</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="protocol">Protocol</label>
-                <select id="protocol">
-                    <option value="TCP">TCP</option>
-                    <option value="UDP">UDP</option>
-                </select>
-            </div>
-            <div>
-                <label for="state">State</label>
-                <select id="state">
-                    <option value="NEW">NEW</option>
-                    <option value="ESTABLISHED">ESTABLISHED</option>
-                </select>
-            </div>
-            
-            <div style="grid-column: 1 / -1; margin-top:10px;">
-                <button onclick="addManualConnection()" style="width: 100%;">+ Add Rule / Connection</button>
-            </div>
-        </div>
-
-        <h4>Connection State Table</h4>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width:15%">Source IP</th>
-                    <th style="width:15%">Src Mask</th>
-                    <th style="width:15%">Dest IP</th>
-                    <th style="width:15%">Dst Mask</th>
-                    <th>Proto</th>
-                    <th>State</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="manual-state-table">
-                </tbody>
+        <table class="ttable">
+          <thead><tr><th>Type</th><th>How it decides</th><th>Strength</th><th>Limitation</th></tr></thead>
+          <tbody>
+            <tr><td>Packet filter (stateless)</td><td>Router ACLs that compare each packet’s IP addresses, protocol and ports against rules</td><td>Very fast, simple</td><td>No memory of connections; return traffic needs broad rules</td></tr>
+            <tr><td>Stateful inspection</td><td>Tracks each connection in a session table; replies to allowed sessions pass automatically</td><td>Blocks unsolicited inbound traffic; the modern baseline</td><td>Trusts anything on an allowed port</td></tr>
+            <tr><td>Circuit-level gateway</td><td>Validates the TCP handshake or SOCKS session, then relays it</td><td>Hides internal hosts</td><td>No content inspection</td></tr>
+            <tr><td>Application proxy (ALG)</td><td>Terminates the client connection and opens a new one to the server</td><td>Deep protocol checks, caching, anonymity</td><td>Slower; one proxy per protocol</td></tr>
+            <tr><td>Next-generation (NGFW)</td><td>Stateful engine plus application identification, user identity, IPS, URL filtering, TLS decryption and threat intelligence</td><td>Policy by app and user, not just port</td><td>Cost, tuning, and decryption privacy concerns</td></tr>
+            <tr><td>Web application firewall</td><td>Inspects HTTP(S) requests to a specific web app for attacks such as SQL injection and XSS</td><td>Protects custom web apps</td><td>Only covers web traffic</td></tr>
+            <tr><td>UTM appliance</td><td>Firewall, VPN, antivirus, content filtering in one box</td><td>Simple for small sites</td><td>Performance drops with every feature enabled</td></tr>
+          </tbody>
         </table>
+      </article>
 
-        <div id="firewall-icon" class="firewall-status status-closed">
-            🔒 FIREWALL LOCKED
+      <article class="lesson" data-step="Where firewalls live" hidden>
+        <h2>Form factors and deployment</h2>
+        <p class="lede">The same policy concepts appear in hardware, software and cloud services. Analysts are expected to recognize all of them.</p>
+        <h3>Form factors</h3>
+        <ul>
+          <li><strong>Network appliances</strong> at the perimeter or data center core, often in a high-availability pair (active/passive or active/active) that shares session state so failover doesn’t drop connections.</li>
+          <li><strong>Virtual firewalls</strong> running on hypervisors to segment virtual machines, sometimes enforcing policy at each VM’s network interface (microsegmentation).</li>
+          <li><strong>Host-based firewalls</strong> such as Windows Defender Firewall, <code>nftables</code>/<code>iptables</code>, <code>ufw</code>, or <code>firewalld</code>, which protect a single endpoint.</li>
+          <li><strong>Cloud-native controls</strong>: AWS security groups (stateful) and network ACLs (stateless), Azure network security groups, and managed cloud firewalls.</li>
+          <li><strong>Firewall as a service</strong> delivered from the cloud as part of a secure access service edge (SASE) design for remote users and branches.</li>
+        </ul>
+        <h3>Deployment modes</h3>
+        <ul>
+          <li><strong>Routed (Layer 3)</strong>: each interface has an IP address and the firewall is the default gateway for its zones. This lab uses routed mode.</li>
+          <li><strong>Transparent (Layer 2 or virtual wire)</strong>: the firewall bridges traffic without readdressing, useful when inserting a firewall into an existing network.</li>
+          <li><strong>Tap or mirror mode</strong>: the firewall sees a copy of traffic for visibility only and can’t block.</li>
+        </ul>
+        <h3>Common architectures</h3>
+        <p>A <strong>three-legged</strong> firewall connects Internet, DMZ and internal zones to one device. A <strong>back-to-back</strong> (dual-firewall) DMZ places the DMZ between an outer and inner firewall, often from different vendors. Internal segmentation firewalls separate user, server and operational technology networks to limit lateral movement.</p>
+      </article>
+
+      <article class="lesson" data-step="How a packet is processed" hidden>
+        <h2>How a packet is processed</h2>
+        <p class="lede">Vendors differ in detail, but a modern stateful or next-gen firewall handles a new connection in roughly this order.</p>
+        <div class="figure">
+          <svg viewBox="0 0 760 150" role="img" aria-label="Packet processing pipeline with eight stages">
+            <g id="pipe"></g>
+          </svg>
+          <p class="cap2">Select a stage to read what happens there.</p>
+          <p id="pipeNote" style="margin:6px 0 0"></p>
         </div>
-    </section>
+        <h3>First match wins</h3>
+        <p>The policy lookup stops at the first rule whose source zone, source address, destination zone, destination address, service and (on an NGFW) application all match. Rule order matters: a broad rule placed above a narrow one <strong>shadows</strong> it, so the narrow rule never takes effect. Place specific rules above general ones, and deny rules for exceptions above the allows they carve from.</p>
+        <h3>Deny, drop or reject?</h3>
+        <p><strong>Drop</strong> (shown as Deny in this lab) silently discards the packet; the sender waits and times out, which gives attackers less information. <strong>Reject</strong> discards it and returns a TCP reset or ICMP unreachable message, which fails fast for internal users but confirms the firewall’s presence to scanners.</p>
+      </article>
 
-</div>
+      <article class="lesson" data-step="State and sessions" hidden>
+        <h2>Stateless versus stateful</h2>
+        <p class="lede">The single most important leap in firewall history was remembering conversations.</p>
+        <p>When a user browses a website, the request leaves from a random <strong>ephemeral port</strong> (49152–65535) to port 443. The reply comes back <em>from</em> port 443 <em>to</em> that ephemeral port. A stateless packet filter has no memory, so to let replies in, an administrator must allow inbound traffic to high ports, which also lets an attacker reach any service listening on a high port, including RDP on 3389.</p>
+        <p>A stateful firewall records each allowed connection in a <strong>session table</strong>: source and destination address, ports, protocol, and TCP state. Replies that match an existing session are forwarded without a rule lookup. Unsolicited packets that claim to be replies, such as a TCP ACK with no matching session, are dropped. Sessions expire after an idle timeout, so the table doesn’t grow forever.</p>
+        <div class="analogy"><strong>Try it.</strong> In the lab, set the firewall type to Packet filter and send <em>User PC browses a website</em>, then send the reply. Switch to Stateful and repeat. Lab 3 grades you on this.</div>
+      </article>
 
+      <article class="lesson" data-step="NAT and VPN" hidden>
+        <h2>Address translation and VPNs</h2>
+        <p class="lede">Firewalls usually perform network address translation and terminate encrypted tunnels, so analysts must read both in logs.</p>
+        <h3>Network address translation</h3>
+        <ul>
+          <li><strong>Source NAT / PAT</strong> lets many private hosts share one public address. In this lab, outbound traffic is translated to <code>192.0.2.1</code>.</li>
+          <li><strong>Destination NAT</strong> (static NAT or port forwarding) publishes an internal server. Here, <code>192.0.2.10</code> maps to the web server at <code>172.16.10.10</code>.</li>
+          <li>Vendors differ on whether policy matches the pre-NAT or post-NAT address. Cisco ASA (8.3 and later) and this lab match the real (post-NAT) server address; Palo Alto Networks matches the pre-NAT destination IP but the post-NAT zone. Always check the platform documentation.</li>
+        </ul>
+        <h3>VPNs</h3>
+        <p>Firewalls commonly terminate <strong>site-to-site IPsec</strong> tunnels between offices and <strong>remote-access VPNs</strong> (IPsec or TLS) for users. Decrypted VPN traffic should land in its own zone so it is subject to the same policy as any other traffic, rather than being treated as fully trusted.</p>
+      </article>
+
+      <article class="lesson" data-step="Next-gen services" hidden>
+        <h2>Next-generation security services</h2>
+        <p class="lede">An NGFW shifts policy from “which port” to “which application, which user, and is it malicious”.</p>
+        <ul>
+          <li><strong>Application identification</strong> classifies traffic by its signatures and behavior, so BitTorrent or Tor tunneled over port 443 is recognized and can be blocked while normal HTTPS is allowed. Identification often takes several packets, so the session is initially allowed and then re-evaluated.</li>
+          <li><strong>User identification</strong> maps IP addresses to directory users and groups, enabling rules such as “Finance group may reach the ERP server”.</li>
+          <li><strong>Intrusion prevention (IPS)</strong> matches exploit and vulnerability signatures inside allowed sessions and drops malicious packets.</li>
+          <li><strong>TLS/SSL decryption</strong> lets the firewall inspect encrypted traffic. It requires a trusted certificate on endpoints and a policy that exempts sensitive categories such as health and banking.</li>
+          <li><strong>URL filtering, DNS security, sandboxing and threat-intelligence feeds</strong> block known-bad destinations and detonate unknown files.</li>
+        </ul>
+        <div class="analogy"><strong>Key idea.</strong> Allowing a service is not the same as trusting it. Attach threat-prevention profiles to every allow rule that faces untrusted networks. Lab 6 tests this.</div>
+      </article>
+
+      <article class="lesson" data-step="Managing firewalls" hidden>
+        <h2>Managing firewalls over time</h2>
+        <p class="lede">Most firewall breaches trace back to configuration drift, not product flaws.</p>
+        <h3>Daily and weekly operations</h3>
+        <ul>
+          <li>Review logs and alerts, and forward them to the SIEM with accurate time (NTP).</li>
+          <li>Investigate unexpected denies and spikes; correlate with IDS, endpoint and authentication data.</li>
+          <li>Process change requests: verify business justification, test, schedule a window, document, and have a rollback plan.</li>
+        </ul>
+        <h3>Periodic hygiene</h3>
+        <ul>
+          <li><strong>Rule base reviews</strong> to remove shadowed, redundant, unused, expired and overly permissive rules. Hit counters and audit tools support this; try <em>Audit rule base</em> in the lab.</li>
+          <li><strong>Hardening</strong>: restrict management access to a dedicated network, use MFA and role-based admin accounts, disable unused services, and change default credentials.</li>
+          <li><strong>Backups and version control</strong> of configurations, and tested restore procedures.</li>
+          <li><strong>Firmware and signature updates</strong> on a schedule, with emergency patching for exploited vulnerabilities.</li>
+          <li><strong>Compliance evidence</strong> for frameworks such as PCI DSS Requirement 1, NIST SP 800-41, and CIS Controls.</li>
+        </ul>
+      </article>
+      <div class="lesson-nav"><button class="btn" id="prevStep">Previous</button><button class="btn primary" id="nextStep">Next</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= COMPETENCIES ================= -->
+<section role="tabpanel" id="t-comp" aria-labelledby="tab-comp" hidden>
+  <div class="intro">
+    <h2>What a cybersecurity analyst needs to know and do</h2>
+    <p class="hint" style="font-size:1rem">Seven competency areas for analysts who configure, monitor and maintain network firewalls. Each lists the underpinning knowledge, the observable skills, and how this trainer supports assessment. Rate yourself as you go.</p>
+  </div>
+  <div class="compsum"><strong id="compScore">Self-rating: 0 of 7 areas at “Confident”</strong><div class="meter" aria-hidden="true"><i id="compMeter" style="width:0%"></i></div></div>
+  <div id="compList"></div>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section role="tabpanel" id="t-glos" aria-labelledby="tab-glos" hidden>
+  <div class="intro"><h2>Glossary</h2><p class="hint" style="font-size:1rem">Select a card to see its definition.</p></div>
+  <input type="text" class="gsearch" id="gsearch" placeholder="Filter terms" aria-label="Filter glossary terms">
+  <div class="cards" id="cards"></div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section role="tabpanel" id="t-quiz" aria-labelledby="tab-quiz" hidden>
+  <div class="intro"><h2>Check your understanding</h2><p class="hint" style="font-size:1rem">Twelve questions. Each answer is scored immediately with an explanation.</p></div>
+  <div class="quiz"><div class="score num" id="score">Score: 0 / 0</div><div id="quiz"></div>
+  <button class="btn" id="retake">Retake quiz</button></div>
+</section>
+</main>
+
+<dialog id="ruleDlg" aria-labelledby="dlgTitle">
+  <div class="dlg-h"><h2 id="dlgTitle">Edit rule</h2></div>
+  <div class="dlg-b">
+    <div class="fld full"><label for="rName">Rule name</label><input type="text" id="rName" maxlength="40"></div>
+    <fieldset><legend>Source</legend>
+      <div class="fld"><label for="rSz">Zone</label><select id="rSz"></select></div>
+      <div class="fld"><label for="rSa">Address</label><select id="rSa"></select></div>
+    </fieldset>
+    <fieldset><legend>Destination</legend>
+      <div class="fld"><label for="rDz">Zone</label><select id="rDz"></select></div>
+      <div class="fld"><label for="rDa">Address</label><select id="rDa"></select></div>
+    </fieldset>
+    <div class="fld"><label for="rSvc">Service</label><select id="rSvc"></select></div>
+    <div class="fld"><label for="rApp">Application</label><select id="rApp"></select><span class="note" id="rAppNote">Enforced only in Next-gen mode.</span></div>
+    <div class="fld"><label for="rAct">Action</label><select id="rAct"><option value="allow">Allow</option><option value="deny">Deny (silent drop)</option><option value="reject">Reject (send reset)</option></select></div>
+    <div class="fld"><span class="l">Options</span>
+      <label class="check"><input type="checkbox" id="rLog"><span>Log matching traffic</span></label>
+      <label class="check"><input type="checkbox" id="rIps"><span>Threat prevention (IPS) profile<small>Next-gen mode only; applies to Allow rules</small></span></label>
+    </div>
+    <p class="note warn full" id="rWarn"></p>
+  </div>
+  <div class="dlg-f"><button class="btn" id="rCancel">Cancel</button><button class="btn primary" id="rSave">Save rule</button></div>
+</dialog>
 <script>
-    // --- SECTION 2 LOGIC ---
-    function runAutoSim() {
-        const type = document.getElementById('autoSimType').value;
-        const viz = document.getElementById('sim-viz');
-        if(type === 'NEW') {
-            viz.innerHTML = `<span style="color:blue">New Connection Detected.</span> Checking ACLs...`;
-        } else {
-            viz.innerHTML = `<span style="color:purple">ESTABLISHED Packet.</span> State Table Match -> <span style="color:green">AUTO-PERMIT</span>.`;
-        }
+/*ENGINE-START*/
+const ZONES = ['Internet','DMZ','LAN','DATA'];
+const IFACE = {Internet:'eth1/1', DMZ:'eth1/2', LAN:'eth1/3', DATA:'eth1/4'};
+const HOSTS = [
+  {id:'remote',  name:'Remote user',   ip:'198.51.100.25', zone:'Internet', kind:'pc'},
+  {id:'attacker',name:'Unknown host',  ip:'203.0.113.66',  zone:'Internet', kind:'pc'},
+  {id:'site',    name:'Public website',ip:'198.51.100.80', zone:'Internet', kind:'srv'},
+  {id:'web',     name:'Web server',    ip:'172.16.10.10',  pub:'192.0.2.10', zone:'DMZ', kind:'srv'},
+  {id:'mail',    name:'Mail relay',    ip:'172.16.10.25',  pub:'192.0.2.25', zone:'DMZ', kind:'srv'},
+  {id:'user',    name:'User PC',       ip:'10.10.0.21',    zone:'LAN', kind:'pc'},
+  {id:'admin',   name:'Admin PC',      ip:'10.10.0.50',    zone:'LAN', kind:'pc'},
+  {id:'db',      name:'Database',      ip:'10.20.0.20',    zone:'DATA', kind:'srv'},
+  {id:'files',   name:'File server',   ip:'10.20.0.30',    zone:'DATA', kind:'srv'}
+];
+const H = Object.fromEntries(HOSTS.map(h => [h.id, h]));
+const SNAT_IP = '192.0.2.1';
+const ADDR = {
+  'any':        {label:'any'},
+  'LAN-Net':    {label:'LAN-Net (10.10.0.0/24)', cidr:'10.10.0.0/24'},
+  'Admin-PC':   {label:'Admin-PC (10.10.0.50)', cidr:'10.10.0.50/32'},
+  'User-PC':    {label:'User-PC (10.10.0.21)', cidr:'10.10.0.21/32'},
+  'DMZ-Net':    {label:'DMZ-Net (172.16.10.0/24)', cidr:'172.16.10.0/24'},
+  'Web-Server': {label:'Web-Server (172.16.10.10)', cidr:'172.16.10.10/32'},
+  'Mail-Relay': {label:'Mail-Relay (172.16.10.25)', cidr:'172.16.10.25/32'},
+  'DATA-Net':   {label:'DATA-Net (10.20.0.0/24)', cidr:'10.20.0.0/24'},
+  'DB-Server':  {label:'DB-Server (10.20.0.20)', cidr:'10.20.0.20/32'},
+  'File-Server':{label:'File-Server (10.20.0.30)', cidr:'10.20.0.30/32'},
+  'RFC1918':    {label:'RFC1918 private (10.0.0.0/8)', cidr:'10.0.0.0/8'}
+};
+const SVC = {
+  any:   {label:'any', proto:'any'},
+  http:  {label:'HTTP tcp/80', proto:'tcp', ports:[80]},
+  https: {label:'HTTPS tcp/443', proto:'tcp', ports:[443]},
+  web:   {label:'Web group tcp/80,443', proto:'tcp', ports:[80,443]},
+  dns:   {label:'DNS udp/53', proto:'udp', ports:[53]},
+  ssh:   {label:'SSH tcp/22', proto:'tcp', ports:[22]},
+  telnet:{label:'Telnet tcp/23', proto:'tcp', ports:[23]},
+  smtp:  {label:'SMTP tcp/25', proto:'tcp', ports:[25]},
+  smb:   {label:'SMB tcp/445', proto:'tcp', ports:[445]},
+  mssql: {label:'MS-SQL tcp/1433', proto:'tcp', ports:[1433]},
+  rdp:   {label:'RDP tcp/3389', proto:'tcp', ports:[3389]},
+  icmp:  {label:'ICMP echo (ping)', proto:'icmp'},
+  high:  {label:'High ports tcp/1024-65535', proto:'tcp', range:[1024,65535]}
+};
+const PKT_SVCS = ['https','http','dns','ssh','telnet','smtp','smb','mssql','rdp','icmp'];
+const APPS = ['any','web-browsing','ssl','dns','ssh','telnet','smtp','smb','mssql-db','ms-rdp','ping','bittorrent','tor'];
+const DEFAULT_APP = {http:'web-browsing', https:'ssl', dns:'dns', ssh:'ssh', telnet:'telnet', smtp:'smtp', smb:'smb', mssql:'mssql-db', rdp:'ms-rdp', icmp:'ping'};
+const MODES = {
+  pf:{name:'Packet filter', hint:'Stateless: every packet, including replies, is checked against the rules. No application awareness.'},
+  stateful:{name:'Stateful', hint:'Tracks sessions; replies to allowed connections pass automatically. Matches on ports, not applications.'},
+  ngfw:{name:'Next-gen', hint:'Stateful plus application identification and threat prevention (IPS) on allow rules.'}
+};
+
+function ip2n(ip){ return ip.split('.').reduce((a,o)=>(a*256)+(+o),0); }
+function inCidr(ip, cidr){ const [b,l]=cidr.split('/'); const m = l==0?0:Math.pow(2,32)-Math.pow(2,32-l); return (ip2n(ip) - (ip2n(ip) % Math.pow(2,32-l))) === (ip2n(b) - (ip2n(b) % Math.pow(2,32-l))); }
+function cidrRange(c){ const [b,l]=c.split('/'); const sz=Math.pow(2,32-l); const s=ip2n(b)-(ip2n(b)%sz); return [s,s+sz-1]; }
+function addrMatch(key, ip){ return key==='any' || inCidr(ip, ADDR[key].cidr); }
+function addrCovers(a,b){ if(a==='any') return true; if(b==='any') return false; const A=cidrRange(ADDR[a].cidr), B=cidrRange(ADDR[b].cidr); return A[0]<=B[0] && A[1]>=B[1]; }
+function zoneCovers(a,b){ return a==='any' || a===b; }
+function svcPorts(s){ return s.ports ? s.ports.map(p=>[p,p]) : s.range ? [s.range] : []; }
+function svcMatch(key, pkt){
+  const s=SVC[key]; if(s.proto==='any') return true;
+  if(s.proto!==pkt.proto) return false;
+  if(s.proto==='icmp') return true;
+  return svcPorts(s).some(([a,b]) => pkt.dport>=a && pkt.dport<=b);
+}
+function svcCovers(a,b){
+  const A=SVC[a], B=SVC[b]; if(A.proto==='any') return true; if(B.proto==='any') return false;
+  if(A.proto!==B.proto) return false; if(A.proto==='icmp') return true;
+  return svcPorts(B).every(([x,y]) => svcPorts(A).some(([p,q]) => p<=x && q>=y));
+}
+
+let _eph = 51000;
+function nextEph(){ _eph = _eph>=65000 ? 51000 : _eph+137; return _eph; }
+
+/* spec: {src,dst,svc,app,reply,threat} -> concrete packet */
+function buildPacket(spec, sessions){
+  const s=SVC[spec.svc];
+  const p = {src:spec.src, dst:spec.dst, svc:spec.svc, app:spec.app || DEFAULT_APP[spec.svc], reply:!!spec.reply, threat:!!spec.threat, proto:s.proto};
+  if(s.proto==='icmp'){ p.sport=null; p.dport=null; return p; }
+  const svcPort = s.ports[0];
+  if(!p.reply){ p.sport=nextEph(); p.dport=svcPort; }
+  else {
+    p.sport=svcPort;
+    const sess = sessions.find(x => x.client===spec.dst && x.server===spec.src && x.dport===svcPort && x.proto===s.proto);
+    p.dport = sess ? sess.sport : nextEph();
+  }
+  return p;
+}
+
+function ruleMismatch(r, pkt, mode){
+  const sh=H[pkt.src], dh=H[pkt.dst];
+  if(!r.enabled) return 'rule is disabled';
+  if(!zoneCovers(r.sz, sh.zone)) return `source zone ${sh.zone} ≠ ${r.sz}`;
+  if(!zoneCovers(r.dz, dh.zone)) return `destination zone ${dh.zone} ≠ ${r.dz}`;
+  if(!addrMatch(r.sa, sh.ip)) return `source ${sh.ip} not in ${r.sa}`;
+  if(!addrMatch(r.da, dh.ip)) return `destination ${dh.ip} not in ${r.da}`;
+  if(!svcMatch(r.svc, pkt)) return `service ${pktSvcText(pkt)} not in ${SVC[r.svc].label}`;
+  if(r.app!=='any' && mode==='ngfw' && r.app!==pkt.app) return `application ${pkt.app} ≠ ${r.app}`;
+  return null;
+}
+function pktSvcText(p){ return p.proto==='icmp' ? (p.reply?'icmp echo-reply':'icmp echo') : `${p.proto}/${p.dport}`; }
+
+/* state: {mode, rules, implicitLog, sessions}. commit=true mutates sessions/hits */
+function evaluate(pkt, state, commit){
+  const sh=H[pkt.src], dh=H[pkt.dst], mode=state.mode, T=[];
+  const out = {verdict:null, rule:null, ruleIdx:-1, via:null, trace:T, logged:false, nat:[], session:null, warn:[]};
+  const step=(cls,ic,txt)=>T.push({cls,ic,txt});
+  let dstShown = dh.ip;
+  if(sh.zone==='Internet' && dh.pub && !pkt.reply) dstShown = dh.pub;
+  step('', '›', `Arrives on ${IFACE[sh.zone]} (zone ${sh.zone}): ${sh.ip}${pkt.sport?':'+pkt.sport:''} → ${dstShown}${pkt.dport?':'+pkt.dport:''} ${pkt.proto.toUpperCase()}${pkt.reply?' (reply)':''}`);
+  if(sh.zone===dh.zone){
+    out.verdict='local'; out.via='local';
+    step('warn','!',`Source and destination are both in zone ${sh.zone}. The traffic is switched locally and never reaches the firewall, so no policy applies. Segment hosts into different zones if this traffic needs control.`);
+    return out;
+  }
+  if(dstShown!==dh.ip){ step('', '⇄', `Destination NAT: ${dh.pub} → ${dh.ip} (static publish). Policy is matched against the real server address.`); out.nat.push(`DNAT ${dh.pub}→${dh.ip}`); }
+  step('', '›', `Route lookup: ${dh.ip} is reached via ${IFACE[dh.zone]} (zone ${dh.zone}).`);
+  // session lookup
+  if(mode!=='pf'){
+    const key = pkt.proto==='icmp'
+      ? (x => x.proto==='icmp' && x.client===pkt.dst && x.server===pkt.src)
+      : (x => x.proto===pkt.proto && x.client===pkt.dst && x.server===pkt.src && x.sport===pkt.dport && x.dport===pkt.sport);
+    const sess = pkt.reply ? state.sessions.find(key) : null;
+    if(sess){
+      step('good','✓',`Session lookup: matches session #${sess.id} created by rule “${sess.ruleName}”. Forwarded as established traffic without a rule lookup.`);
+      if(commit){ sess.ttl = sess.max; }
+      out.verdict='allow'; out.via='session'; out.session=sess; out.logged=false;
+      if(sh.zone!=='Internet' && dh.zone==='Internet'){} 
+      return out;
     }
-
-    // --- SECTION 3 LOGIC (UPDATED) ---
-    function addManualConnection() {
-        // 1. Get Values
-        const srcIp = document.getElementById('source-ip').value;
-        const srcMask = document.getElementById('source-mask').value;
-        const dstIp = document.getElementById('destination-ip').value;
-        const dstMask = document.getElementById('destination-mask').value;
-        const proto = document.getElementById('protocol').value;
-        const state = document.getElementById('state').value;
-
-        // 2. Validation
-        if(!srcIp || !dstIp) {
-            alert("Please enter Source and Destination IPs.");
-            return;
-        }
-
-        // 3. Create Row
-        const table = document.getElementById('manual-state-table');
-        const row = table.insertRow();
-        
-        row.insertCell(0).innerText = srcIp;
-        row.insertCell(1).innerText = srcMask; // New Column
-        row.insertCell(2).innerText = dstIp;
-        row.insertCell(3).innerText = dstMask; // New Column
-        row.insertCell(4).innerText = proto;
-        row.insertCell(5).innerHTML = `<strong>${state}</strong>`;
-
-        // 4. Action Buttons
-        const actionCell = row.insertCell(6);
-        
-        const permitButton = document.createElement('button');
-        permitButton.innerText = 'Permit';
-        permitButton.className = 'btn-action btn-permit';
-        permitButton.onclick = () => permitConnection(row);
-        actionCell.appendChild(permitButton);
-
-        const denyButton = document.createElement('button');
-        denyButton.innerText = 'Deny';
-        denyButton.className = 'btn-action btn-deny';
-        denyButton.onclick = () => denyConnection(row);
-        actionCell.appendChild(denyButton);
-
-        // Clear IPs but leave Masks (common workflow)
-        document.getElementById('source-ip').value = '';
-        document.getElementById('destination-ip').value = '';
+    if(pkt.reply){
+      step('bad','✕', pkt.proto==='tcp'
+        ? 'Session lookup: no matching session. A TCP packet that is not a SYN cannot start a connection, so the stateful engine drops it as out-of-state before any rule is checked.'
+        : 'Session lookup: no matching session for this reply. Unsolicited replies are dropped.');
+      out.verdict='deny'; out.via='state'; out.logged=state.implicitLog;
+      return out;
     }
-
-    function permitConnection(row) {
-        row.style.backgroundColor = '#d4edda'; 
-        updateFirewallIcon();
+    step('', '›','Session lookup: no existing session. This is a new connection, so the policy is checked.');
+  } else {
+    step('warn','!','Stateless packet filter: there is no session table, so this packet is checked against the rules on its own.');
+  }
+  // policy
+  let matched=-1;
+  for(let i=0;i<state.rules.length;i++){
+    const r=state.rules[i];
+    const mm = ruleMismatch(r, pkt, mode);
+    if(mm){ step('skip','–',`Rule ${i+1} “${r.name}”: skip (${mm})`); continue; }
+    if(r.app!=='any' && mode!=='ngfw'){
+      step('warn','!',`Rule ${i+1} “${r.name}”: application criterion “${r.app}” is ignored because this firewall type has no application identification. The rule matches on addresses and ports alone.`);
+      out.warn.push('app-ignored');
     }
-
-    function denyConnection(row) {
-        row.style.backgroundColor = '#f8d7da'; 
-        updateFirewallIcon();
+    matched=i; break;
+  }
+  if(matched<0){
+    step('bad','✕','No rule matched: implicit deny. The packet is dropped.');
+    out.verdict='deny'; out.via='implicit'; out.logged=state.implicitLog;
+    if(!state.implicitLog) step('skip','–','Logging for the implicit deny is off, so this drop leaves no record.');
+    return out;
+  }
+  const r=state.rules[matched]; out.rule=r; out.ruleIdx=matched; out.via='rule'; out.logged=!!r.log;
+  if(commit) r.hits=(r.hits||0)+1;
+  if(r.action==='allow'){
+    if(pkt.threat){
+      if(mode==='ngfw' && r.ips){
+        step('hit','✓',`Rule ${matched+1} “${r.name}” matched: allow, with threat prevention attached.`);
+        step('bad','✕','IPS: exploit signature detected in the payload. Packet dropped and the session reset; a threat log entry is written.');
+        out.verdict='threat'; out.logged=true; return out;
+      }
+      step('hit','✓',`Rule ${matched+1} “${r.name}” matched: allow.`);
+      step('warn','!', mode==='ngfw' ? 'The packet carried an exploit payload, but this rule has no threat-prevention profile, so it was delivered.' : 'The packet carried an exploit payload. This firewall type does not inspect content, so it was delivered.');
+      out.warn.push('threat-passed');
+    } else {
+      step('hit','✓',`Rule ${matched+1} “${r.name}” matched: allow.`);
     }
-
-    function updateFirewallIcon() {
-        const table = document.getElementById('manual-state-table');
-        let permittedCount = 0;
-        for (let i = 0; i < table.rows.length; i++) {
-            if (table.rows[i].style.backgroundColor === 'rgb(212, 237, 218)' || table.rows[i].style.backgroundColor === '#d4edda') {
-                permittedCount++;
-            }
-        }
-        const firewallIcon = document.getElementById('firewall-icon');
-        if (permittedCount > 0) {
-            firewallIcon.className = 'firewall-status status-open';
-            firewallIcon.innerHTML = `🔓 TRAFFIC FLOWING (${permittedCount} Rules Active)`;
-        } else {
-            firewallIcon.className = 'firewall-status status-closed';
-            firewallIcon.innerHTML = '🔒 FIREWALL LOCKED';
-        }
+    if(mode==='ngfw' && pkt.app && pkt.app!==DEFAULT_APP[pkt.svc]) step('', 'i',`App-ID classified the traffic as ${pkt.app} (running on ${pktSvcText(pkt)}).`);
+    if(dh.zone==='Internet' && !pkt.reply){ step('', '⇄',`Source NAT: ${sh.ip} → ${SNAT_IP} (interface PAT).`); out.nat.push(`SNAT ${sh.ip}→${SNAT_IP}`); }
+    if(mode!=='pf' && !pkt.reply){
+      const max = pkt.proto==='tcp'?120:pkt.proto==='udp'?30:10;
+      const sess = {id:0, client:pkt.src, server:pkt.dst, sport:pkt.sport, dport:pkt.dport, proto:pkt.proto, app: mode==='ngfw'?pkt.app:'—', ruleName:r.name, ttl:max, max};
+      if(commit || state.sandbox){ state._sid=(state._sid||0)+1; sess.id=state._sid; state.sessions.unshift(sess); }
+      out.session=sess;
+      step('good','✓',`Session #${sess.id} created; replies will be matched against it for ${max} s of idle time.`);
     }
+    out.verdict='allow';
+  } else if(r.action==='reject'){
+    step('hit','✕',`Rule ${matched+1} “${r.name}” matched: reject. Packet dropped and a ${pkt.proto==='tcp'?'TCP reset':'ICMP unreachable'} returned to ${sh.ip}.`);
+    out.verdict='reject';
+  } else {
+    step('hit','✕',`Rule ${matched+1} “${r.name}” matched: deny. Packet silently dropped.`);
+    out.verdict='deny';
+  }
+  if(!r.log) step('skip','–','Logging is off for this rule, so nothing is recorded.');
+  return out;
+}
+
+function audit(state){
+  const F=[], R=state.rules;
+  const lbl=(i)=>`Rule ${i+1} “${R[i].name}”`;
+  R.forEach((r,j)=>{
+    if(!r.enabled){ F.push({sev:'low', t:`${lbl(j)} is disabled. Remove it if it is no longer needed, or document why it is kept.`}); return; }
+    for(let i=0;i<j;i++){
+      const a=R[i]; if(!a.enabled) continue;
+      const appCov = a.app==='any' || (a.app===r.app);
+      if(zoneCovers(a.sz,r.sz)&&zoneCovers(a.dz,r.dz)&&addrCovers(a.sa,r.sa)&&addrCovers(a.da,r.da)&&svcCovers(a.svc,r.svc)&&appCov){
+        if(a.action!==r.action) F.push({sev:'high', t:`${lbl(j)} is shadowed by ${lbl(i)}, which matches everything it would and takes the opposite action. ${lbl(j)} can never take effect; move it above rule ${i+1} or narrow rule ${i+1}.`});
+        else F.push({sev:'med', t:`${lbl(j)} is redundant: ${lbl(i)} already matches all of its traffic with the same action.`});
+        break;
+      }
+    }
+    if(r.action==='allow' && r.sa==='any' && r.da==='any' && r.svc==='any' && r.app==='any') F.push({sev:'high', t:`${lbl(j)} allows any source to any destination on any service${r.sz==='any'||r.dz==='any'?' across zones':''}. This defeats least privilege.`});
+    else if(r.action==='allow' && r.sz==='Internet' && r.dz!=='Internet' && (r.svc==='any'||r.svc==='high')) F.push({sev:'high', t:`${lbl(j)} allows Internet traffic into ${r.dz} on ${SVC[r.svc].label}. Inbound rules should name specific services.`});
+    else if(r.action==='allow' && r.svc==='any' && r.app==='any') F.push({sev:'med', t:`${lbl(j)} allows any service. Restrict it to the services the business needs.`});
+    if(!r.log) F.push({sev:'low', t:`${lbl(j)} does not log. Without logs, this traffic is invisible to monitoring and incident response.`});
+    if(r.app!=='any' && state.mode!=='ngfw') F.push({sev:'med', t:`${lbl(j)} uses an application criterion, but the firewall is not in Next-gen mode, so the criterion is ignored.`});
+    if(state.mode==='ngfw' && r.action==='allow' && (r.sz==='Internet'||r.sz==='any') && !r.ips) F.push({sev:'med', t:`${lbl(j)} allows traffic from an untrusted zone without a threat-prevention profile.`});
+    if(state.totalSent>0 && !r.hits) F.push({sev:'low', t:`${lbl(j)} has zero hits since counters were reset. Unused rules are candidates for removal after review.`});
+  });
+  if(!state.implicitLog) F.push({sev:'low', t:'Logging is off for the implicit deny, so blocked probes and misconfigurations leave no trace.'});
+  if(!F.length) F.push({sev:'ok', t:'No findings. The rule base is ordered, specific and logged.'});
+  const order={high:0,med:1,low:2,ok:3};
+  return F.sort((a,b)=>order[a.sev]-order[b.sev]);
+}
+
+const mk = (o) => Object.assign({enabled:true, sz:'any', sa:'any', dz:'any', da:'any', svc:'any', app:'any', action:'allow', log:true, ips:false, hits:0}, o);
+
+const LABS = [
+  { id:'L1', title:'Publish the DMZ servers', sub:'Write inbound allow rules with least privilege',
+    mode:'stateful', implicitLog:false,
+    brief:'The web server and mail relay in the DMZ must be reachable from the Internet. Only the services they actually provide should be exposed.',
+    tasks:['Allow the Internet to reach Web-Server on HTTP and HTTPS.','Allow the Internet to reach Mail-Relay on SMTP.','Everything else inbound must stay blocked; keep outbound browsing working.'],
+    hint:'Add two rules with source zone Internet. Rule A: destination DMZ / Web-Server, service Web group. Rule B: destination DMZ / Mail-Relay, service SMTP. Leave the source address as any; legitimate visitors can come from anywhere.',
+    rules:[ mk({name:'Allow-LAN-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'web'}), mk({name:'Allow-DNS-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'dns'}) ],
+    tests:[
+      {d:'Remote user → web server HTTPS', s:{src:'remote',dst:'web',svc:'https'}, e:'allow'},
+      {d:'Remote user → web server HTTP', s:{src:'remote',dst:'web',svc:'http'}, e:'allow'},
+      {d:'Remote user → mail relay SMTP', s:{src:'remote',dst:'mail',svc:'smtp'}, e:'allow'},
+      {d:'Unknown host → web server SSH', s:{src:'attacker',dst:'web',svc:'ssh'}, e:'deny'},
+      {d:'Unknown host → mail relay HTTPS', s:{src:'attacker',dst:'mail',svc:'https'}, e:'deny'},
+      {d:'Unknown host → web server SMTP', s:{src:'attacker',dst:'web',svc:'smtp'}, e:'deny'},
+      {d:'Unknown host → user PC RDP', s:{src:'attacker',dst:'user',svc:'rdp'}, e:'deny'},
+      {d:'User PC → public website HTTPS', s:{src:'user',dst:'site',svc:'https'}, e:'allow'}
+    ]},
+  { id:'L2', title:'Find the shadowed rules', sub:'Rule order and overly broad allows',
+    mode:'stateful', implicitLog:true,
+    brief:'After a ransomware scare, the team added rules to block SMB and RDP from users to the data tier, yet they still work. Only administrators may SSH to servers, and users need HTTPS to the internal apps.',
+    tasks:['SMB and RDP from the LAN to DATA must be denied.','Only Admin-PC may use SSH to DATA servers.','Users keep HTTPS to DATA servers; every other service stays blocked (least privilege).'],
+    hint:'Run Audit rule base first. Rule 1 allows any service from LAN-Net, so the deny rules below it never match. Reordering alone isn’t enough: change rule 1’s service from any to HTTPS, and the remaining traffic falls to the implicit deny.',
+    rules:[ mk({name:'Allow-LAN-to-DATA', sz:'LAN', sa:'LAN-Net', dz:'DATA', da:'DATA-Net'}),
+            mk({name:'Allow-Admin-SSH', sz:'LAN', sa:'Admin-PC', dz:'DATA', da:'DATA-Net', svc:'ssh'}),
+            mk({name:'Block-SMB', sz:'LAN', sa:'LAN-Net', dz:'DATA', da:'DATA-Net', svc:'smb', action:'deny'}),
+            mk({name:'Block-RDP', sz:'LAN', sa:'LAN-Net', dz:'DATA', da:'DATA-Net', svc:'rdp', action:'deny'}),
+            mk({name:'Allow-LAN-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'web'}) ],
+    tests:[
+      {d:'User PC → file server SMB', s:{src:'user',dst:'files',svc:'smb'}, e:'deny'},
+      {d:'User PC → database RDP', s:{src:'user',dst:'db',svc:'rdp'}, e:'deny'},
+      {d:'Admin PC → database SSH', s:{src:'admin',dst:'db',svc:'ssh'}, e:'allow'},
+      {d:'User PC → database SSH', s:{src:'user',dst:'db',svc:'ssh'}, e:'deny'},
+      {d:'User PC → file server HTTPS', s:{src:'user',dst:'files',svc:'https'}, e:'allow'},
+      {d:'User PC → database Telnet', s:{src:'user',dst:'db',svc:'telnet'}, e:'deny'},
+      {d:'User PC → public website HTTPS', s:{src:'user',dst:'site',svc:'https'}, e:'allow'}
+    ]},
+  { id:'L3', title:'Stateless versus stateful', sub:'Return traffic and the session table',
+    mode:'pf', implicitLog:true,
+    brief:'This firewall is running as a plain packet filter. Users report that web pages never load, even though the outbound rule exists. Restore browsing without opening the LAN to unsolicited Internet connections.',
+    tasks:['User web requests and the website’s replies must both get through.','A new, unsolicited RDP or SSH connection from the Internet to the LAN must be blocked.'],
+    hint:'Replies come back from port 443 to a high ephemeral port. A rule allowing Internet → LAN on high ports would also let RDP (3389) in. The real fix is the firewall type: switch to Stateful so replies match the session table.',
+    rules:[ mk({name:'Allow-Web-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'web'}), mk({name:'Allow-DNS-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'dns'}) ],
+    tests:[
+      {d:'User PC → website HTTPS request', s:{src:'user',dst:'site',svc:'https'}, e:'allow'},
+      {d:'Website → User PC HTTPS reply', s:{src:'site',dst:'user',svc:'https',reply:true}, e:'allow'},
+      {d:'User PC → website HTTP request', s:{src:'user',dst:'site',svc:'http'}, e:'allow'},
+      {d:'Website → User PC HTTP reply', s:{src:'site',dst:'user',svc:'http',reply:true}, e:'allow'},
+      {d:'Unknown host → User PC RDP (new)', s:{src:'attacker',dst:'user',svc:'rdp'}, e:'deny'},
+      {d:'Unknown host → Admin PC SSH (new)', s:{src:'attacker',dst:'admin',svc:'ssh'}, e:'deny'},
+      {d:'Unknown host → User PC forged “reply”', s:{src:'attacker',dst:'user',svc:'https',reply:true}, e:'deny'}
+    ]},
+  { id:'L4', title:'Segment the data tier', sub:'Three-tier access with least privilege',
+    mode:'stateful', implicitLog:true,
+    brief:'The web application in the DMZ needs its database. If the web server is compromised, the attacker must not be able to reach anything else in DATA. Users never talk to the database directly; administrators manage servers over SSH.',
+    tasks:['Web-Server → DB-Server on MS-SQL only.','No other DMZ host or service may reach DATA.','Admin-PC may SSH to any DATA server; ordinary users may not reach the database.'],
+    hint:'Two rules: (1) DMZ / Web-Server → DATA / DB-Server, service MS-SQL, allow. (2) LAN / Admin-PC → DATA / DATA-Net, service SSH, allow. The implicit deny handles everything else.',
+    rules:[ mk({name:'Allow-LAN-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'web'}), mk({name:'Allow-Web-In', sz:'Internet', dz:'DMZ', da:'Web-Server', svc:'web'}) ],
+    tests:[
+      {d:'Web server → database MS-SQL', s:{src:'web',dst:'db',svc:'mssql'}, e:'allow'},
+      {d:'Web server → database SSH', s:{src:'web',dst:'db',svc:'ssh'}, e:'deny'},
+      {d:'Web server → file server SMB', s:{src:'web',dst:'files',svc:'smb'}, e:'deny'},
+      {d:'Mail relay → database MS-SQL', s:{src:'mail',dst:'db',svc:'mssql'}, e:'deny'},
+      {d:'User PC → database MS-SQL', s:{src:'user',dst:'db',svc:'mssql'}, e:'deny'},
+      {d:'Admin PC → database SSH', s:{src:'admin',dst:'db',svc:'ssh'}, e:'allow'},
+      {d:'Admin PC → file server SSH', s:{src:'admin',dst:'files',svc:'ssh'}, e:'allow'},
+      {d:'User PC → file server SSH', s:{src:'user',dst:'files',svc:'ssh'}, e:'deny'}
+    ]},
+  { id:'L5', title:'Control applications, not ports', sub:'Next-gen application identification',
+    mode:'stateful', implicitLog:true,
+    brief:'Security operations found BitTorrent and Tor leaving the network over port 443, which the web rule allows. Block both applications while normal web browsing and HTTPS keep working.',
+    tasks:['BitTorrent and Tor over tcp/443 must be blocked.','Ordinary HTTPS (ssl) and HTTP (web-browsing) must still be allowed.'],
+    hint:'A port-based firewall can’t tell these apart. Switch to Next-gen, then add two deny rules above Allow-Web-Out: LAN → Internet, application bittorrent; and LAN → Internet, application tor. Leave service as any so the apps are blocked on every port.',
+    rules:[ mk({name:'Allow-Web-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'web'}), mk({name:'Allow-DNS-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'dns'}) ],
+    tests:[
+      {d:'User PC → website HTTPS (ssl)', s:{src:'user',dst:'site',svc:'https',app:'ssl'}, e:'allow'},
+      {d:'User PC → website HTTP (web-browsing)', s:{src:'user',dst:'site',svc:'http',app:'web-browsing'}, e:'allow'},
+      {d:'User PC → Internet BitTorrent on tcp/443', s:{src:'user',dst:'site',svc:'https',app:'bittorrent'}, e:'deny'},
+      {d:'Admin PC → Internet Tor on tcp/443', s:{src:'admin',dst:'site',svc:'https',app:'tor'}, e:'deny'},
+      {d:'User PC → Internet DNS', s:{src:'user',dst:'site',svc:'dns'}, e:'allow'}
+    ]},
+  { id:'L6', title:'Threat prevention and visibility', sub:'IPS profiles and logging',
+    mode:'ngfw', implicitLog:false,
+    brief:'Attackers are sending SQL injection to the public web server through the allowed HTTPS rule. Stop the exploits without blocking real visitors, and make sure the security team can see both allowed inbound traffic and dropped probes.',
+    tasks:['Exploit traffic to the web server must be dropped; normal requests still pass.','The inbound web rule must log.','The implicit deny must log.'],
+    hint:'Edit Allow-Web-In: turn on the threat prevention (IPS) profile and logging. Then switch on logging for the implicit deny row at the bottom of the rule base.',
+    rules:[ mk({name:'Allow-Web-In', sz:'Internet', dz:'DMZ', da:'Web-Server', svc:'web', log:false}), mk({name:'Allow-LAN-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'web'}) ],
+    tests:[
+      {d:'Remote user → web server HTTPS', s:{src:'remote',dst:'web',svc:'https'}, e:'allow'},
+      {d:'Unknown host → web server HTTPS + exploit', s:{src:'attacker',dst:'web',svc:'https',threat:true}, e:'deny'},
+      {d:'Unknown host → web server HTTP + exploit', s:{src:'attacker',dst:'web',svc:'http',threat:true}, e:'deny'},
+      {d:'Unknown host → web server SSH', s:{src:'attacker',dst:'web',svc:'ssh'}, e:'deny'}
+    ],
+    checks:[
+      {d:'A logging allow rule covers inbound web traffic', f:(st)=>st.rules.some(r=>r.enabled&&r.action==='allow'&&r.log&&zoneCovers(r.dz,'DMZ')&&r.sz==='Internet'&&addrMatch(r.da,'172.16.10.10')&&svcCovers(r.svc,'https'))},
+      {d:'Implicit deny logging is on', f:(st)=>st.implicitLog}
+    ]}
+];
+
+function runLab(lab, live){
+  const st = {mode:live.mode, rules:JSON.parse(JSON.stringify(live.rules)), implicitLog:live.implicitLog, sessions:[], sandbox:true, _sid:0};
+  const res = lab.tests.map(t => {
+    const p = buildPacket(t.s, st.sessions);
+    const o = evaluate(p, st, false);
+    const got = o.verdict==='allow' ? 'allow' : 'deny';
+    return {d:t.d, ok: got===t.e, expect:t.e, got, verdict:o.verdict};
+  });
+  (lab.checks||[]).forEach(c => res.push({d:c.d, ok:!!c.f(live), check:true}));
+  return res;
+}
+/*ENGINE-END*/
+/* ---------- content ---------- */
+const PRESETS = [
+  {n:'User PC browses a website (HTTPS)', s:{src:'user',dst:'site',svc:'https'}},
+  {n:'Website replies to the user PC', s:{src:'site',dst:'user',svc:'https',reply:true}},
+  {n:'User PC looks up a name (DNS)', s:{src:'user',dst:'site',svc:'dns'}},
+  {n:'Visitor opens the public web server', s:{src:'remote',dst:'web',svc:'https'}},
+  {n:'Scanner probes the web server on SSH', s:{src:'attacker',dst:'web',svc:'ssh'}},
+  {n:'Attacker tries RDP to a user PC', s:{src:'attacker',dst:'user',svc:'rdp'}},
+  {n:'Forged “reply” from the Internet', s:{src:'attacker',dst:'user',svc:'https',reply:true}},
+  {n:'SQL injection against the web server', s:{src:'attacker',dst:'web',svc:'https',threat:true}},
+  {n:'BitTorrent hidden on port 443', s:{src:'user',dst:'site',svc:'https',app:'bittorrent'}},
+  {n:'Tor hidden on port 443', s:{src:'admin',dst:'site',svc:'https',app:'tor'}},
+  {n:'Web server queries the database', s:{src:'web',dst:'db',svc:'mssql'}},
+  {n:'Compromised web server tries SMB to the file server', s:{src:'web',dst:'files',svc:'smb'}},
+  {n:'User PC copies files over SMB', s:{src:'user',dst:'files',svc:'smb'}},
+  {n:'Admin PC opens SSH to the database', s:{src:'admin',dst:'db',svc:'ssh'}},
+  {n:'Internet host pings the web server', s:{src:'remote',dst:'web',svc:'icmp'}},
+  {n:'User PC to Admin PC RDP (same zone)', s:{src:'user',dst:'admin',svc:'rdp'}}
+];
+
+const LAYERS = {
+  pf:{v:[3,4], t:'A stateless packet filter reads only the IP header (addresses, protocol) and the TCP/UDP header (ports, flags) of each packet in isolation. It has no memory of earlier packets and never looks at the payload. Router ACLs and cloud network ACLs work this way.'},
+  st:{v:[3,4,5], t:'A stateful firewall reads the same headers but also tracks each connection in a session table, so it knows whether a packet starts a new conversation or belongs to one it already allowed. It still trusts whatever runs on an allowed port.'},
+  cg:{v:[4,5], t:'A circuit-level gateway (for example, a SOCKS server) validates the TCP handshake or session setup and then relays bytes between the two sides without inspecting them. It hides internal addresses but does no content checks.'},
+  px:{v:[3,4,5,6,7], t:'An application proxy terminates the client’s connection and opens its own connection to the server, so it reads the full application protocol. Acting as a TLS proxy, it can decrypt and inspect content, at the cost of speed and per-protocol support.'},
+  ng:{v:[2,3,4,5,6,7], t:'A next-generation firewall combines stateful inspection with application identification, user identity, IPS and URL filtering. With TLS decryption enabled, it inspects application data inside encrypted sessions; without it, it relies on metadata such as certificates and server names.'},
+  waf:{v:[6,7], t:'A web application firewall sits in front of a specific web application, usually as a reverse proxy, and inspects HTTP requests and responses for attacks such as SQL injection, cross-site scripting and request smuggling. It ignores non-web traffic entirely.'}
+};
+
+const PIPE = [
+  ['Ingress checks','Packet arrives on an interface, which places it in a zone. Sanity checks drop malformed packets, spoofed sources (anti-spoofing, uRPF) and floods (zone protection, SYN cookies).'],
+  ['Session lookup','The firewall hashes the 5-tuple and checks its session table. A match means the packet belongs to an allowed conversation and skips straight to inspection and forwarding.'],
+  ['Destination NAT','For new connections, static NAT or port-forwarding rules translate a public address to the real internal server address.'],
+  ['Route and zone','A route lookup on the (translated) destination determines the egress interface and therefore the destination zone.'],
+  ['Policy lookup','Security rules are checked top-down using source/destination zone, address, service, and on an NGFW application and user. The first match decides allow, deny or reject; no match means implicit deny.'],
+  ['Inspection','On allowed traffic, an NGFW identifies the application, decrypts if policy says so, and applies IPS, antivirus, URL filtering and file-blocking profiles.'],
+  ['Source NAT','Outbound traffic is translated to a public address (often port address translation on the outside interface).'],
+  ['Forward and log','A session entry is created, the packet is forwarded, and traffic or threat logs are written according to the rule’s settings and sent to the SIEM.']
+];
+
+const COMP = [
+  {t:'Networking foundations for firewall work', lvl:'Prerequisite',
+   k:['OSI and TCP/IP models; how headers are encapsulated','IPv4/IPv6 addressing, subnetting and CIDR notation','TCP handshake, flags and states; UDP and ICMP behavior','Well-known ports and the services behind them (22, 25, 53, 80, 443, 445, 1433, 3389…)','Routing, VLANs and default gateways'],
+   s:['Read a packet capture and identify the 5-tuple','Calculate whether an address falls inside a CIDR block','Predict the ephemeral-port pattern of a client/server exchange'],
+   a:'Packet builder preview line, Lab 3 (return traffic), quiz items 2 and 4.'},
+  {t:'Firewall types, architectures and selection', lvl:'Core',
+   k:['Packet filter, stateful, circuit gateway, proxy, NGFW, WAF and UTM: what each inspects','Host-based, virtual, cloud-native (security groups, NACLs) and firewall-as-a-service','Routed, transparent and tap deployment modes; HA pairs','Zone and screened subnet (DMZ) architectures; internal segmentation'],
+   s:['Recommend a firewall type for a given risk and budget','Sketch a zone design that separates public, user and data systems','Explain why a stateless control needs different rules from a stateful one'],
+   a:'How firewalls work: layer inspector; mode selector in the lab; quiz items 1, 3 and 9.'},
+  {t:'Policy design and rule base configuration', lvl:'Core',
+   k:['Default deny and least privilege','First-match, top-down evaluation; implicit deny','Address, service and application objects and groups','Deny versus reject; rule shadowing and redundancy'],
+   s:['Translate a business requirement into specific allow rules','Order rules so exceptions sit above the rules they refine','Configure equivalent rules in vendor GUIs and CLIs (for example, iptables/nftables, Windows Defender Firewall, cloud security groups)'],
+   a:'Labs 1, 2 and 4 auto-grade policy design; the audit tool reports shadowed and permissive rules.'},
+  {t:'NAT, VPN and segmentation', lvl:'Core',
+   k:['Source NAT/PAT and destination (static) NAT','How NAT affects which address a rule must match on each platform','Site-to-site and remote-access VPNs; VPN traffic in its own zone','Microsegmentation and east-west controls'],
+   s:['Read NAT translations in a traffic log','Build three-tier access (web → app → database) with no lateral paths','Verify that a compromised DMZ host cannot reach internal zones'],
+   a:'Decision trace shows NAT steps; Lab 4 grades three-tier segmentation.'},
+  {t:'Next-generation security services', lvl:'Applied',
+   k:['Application identification and why port ≠ application','User-ID and group-based policy','IPS, antivirus, URL and DNS filtering, sandboxing, threat-intel feeds','TLS decryption: certificates, exemptions and privacy implications'],
+   s:['Write rules that block evasive applications without breaking legitimate ones','Attach threat-prevention profiles to every Internet-facing allow rule','Tune IPS to reduce false positives'],
+   a:'Labs 5 and 6 grade application control and threat prevention.'},
+  {t:'Monitoring, logging and incident response', lvl:'Applied',
+   k:['Traffic, threat, system and configuration logs; log fields','Syslog/SIEM integration and time synchronization','Indicators in firewall logs: scans, beaconing, data exfiltration','Firewall’s role in containment during an incident'],
+   s:['Filter logs to investigate a denied or allowed connection','Spot a port scan or repeated probe from deny logs','Write an emergency block rule and document it for later review'],
+   a:'Traffic log with deny filter and CSV export; Lab 6 checks logging coverage.'},
+  {t:'Administration, hardening and lifecycle management', lvl:'Professional',
+   k:['Change management: request, approval, testing, rollback','Periodic rule reviews; hit counts; rule expiry and ownership','Management-plane hardening, MFA, role-based admin, backups','Firmware and signature updates; HA failover testing','Frameworks: NIST SP 800-41, PCI DSS Requirement 1, CIS Controls 4, 12 and 13'],
+   s:['Run a rule base audit and propose remediations','Back up and restore a configuration','Produce compliance evidence for an auditor'],
+   a:'Audit rule base button; reset counters to measure unused rules; quiz items 10–12.'}
+];
+
+const GLOSS = [
+  ['Access control list (ACL)','An ordered list of permit and deny statements applied to an interface, typically stateless, on routers, switches and cloud subnets.'],
+  ['Implicit deny','The invisible final rule that drops any traffic not matched by an explicit rule.'],
+  ['Least privilege','Allowing only the specific sources, destinations and services required for a business function.'],
+  ['Zone','A group of interfaces and networks with the same trust level. Policy is written between zones.'],
+  ['Screened subnet (DMZ)','A zone for Internet-facing servers, isolated from internal networks so a compromise there is contained.'],
+  ['Stateful inspection','Tracking connections in a session table so return traffic is allowed automatically and unsolicited packets are dropped.'],
+  ['Session table','The firewall’s record of active connections: 5-tuple, state, rule, and idle timeout.'],
+  ['5-tuple','Source IP, destination IP, source port, destination port and protocol, which together identify a flow.'],
+  ['Ephemeral port','A temporary high-numbered source port (often 49152–65535) chosen by a client for an outbound connection.'],
+  ['Rule shadowing','A rule that can never match because a broader rule above it already catches all of its traffic.'],
+  ['NGFW','Next-generation firewall: stateful firewall plus application identification, user identity, IPS, URL filtering and often TLS decryption.'],
+  ['App-ID','Identification of the real application in a flow from signatures and behavior, regardless of port.'],
+  ['IPS','Intrusion prevention system: inline signature and anomaly detection that drops malicious traffic.'],
+  ['WAF','Web application firewall: protects HTTP applications from attacks such as SQL injection and XSS.'],
+  ['UTM','Unified threat management: an all-in-one appliance combining firewall, VPN, antivirus and filtering.'],
+  ['Proxy firewall','A firewall that terminates connections and re-originates them, inspecting the full application protocol.'],
+  ['Source NAT / PAT','Translating private source addresses to a public address, with port translation so many hosts share one IP.'],
+  ['Destination NAT','Translating a public destination address to a private server address to publish a service.'],
+  ['Deny versus reject','Deny silently drops; reject drops and returns a TCP reset or ICMP unreachable to the sender.'],
+  ['Security group','A stateful, instance-level cloud firewall (AWS); paired with stateless network ACLs at the subnet level.'],
+  ['Microsegmentation','Fine-grained policy between individual workloads to limit east-west lateral movement.'],
+  ['Hit counter','The number of times a rule matched; used to find unused rules during reviews.'],
+  ['TLS decryption','Intercepting and re-encrypting TLS sessions so the firewall can inspect their contents.'],
+  ['High availability (HA)','Two firewalls sharing configuration and session state so one takes over if the other fails.']
+];
+
+const QUIZ = [
+  {q:'A firewall rule base has no rule matching a packet from the Internet to an internal server. What happens?',
+   o:['It is forwarded, because firewalls allow by default','It is dropped by the implicit deny','It is sent to the IPS for a decision','It is logged and forwarded'], a:1,
+   e:'Firewalls end every policy with an implicit deny. Unmatched traffic between zones is dropped.'},
+  {q:'Users can send web requests through a stateless packet filter, but pages never load. What is the most likely cause?',
+   o:['DNS is blocked','The return traffic to the client’s ephemeral port matches no rule','The server is offline','NAT is misconfigured'], a:1,
+   e:'A stateless filter checks every packet independently. Replies from port 443 to a high ephemeral port need their own rule, which a stateful firewall makes unnecessary.'},
+  {q:'Which firewall type can block BitTorrent running over tcp/443 while still allowing normal HTTPS?',
+   o:['Stateless ACL','Stateful firewall','Next-generation firewall with application identification','Circuit-level gateway'], a:2,
+   e:'Only application identification looks past the port to classify the actual protocol in the payload.'},
+  {q:'A client at 10.10.0.21 opens HTTPS to a website. Which reply packet is correct?',
+   o:['Source 10.10.0.21:443','Source website:443 → destination 10.10.0.21:ephemeral port','Source website:ephemeral → destination 10.10.0.21:443','Source website:80 → destination 10.10.0.21:443'], a:1,
+   e:'The server answers from the service port (443) to the random high port the client used as its source.'},
+  {q:'Rule 1 allows LAN-Net to DATA-Net on any service. Rule 3 denies LAN-Net to DATA-Net on SMB. What is wrong?',
+   o:['Nothing; deny rules always take priority','Rule 3 is shadowed by rule 1 and never matches','Rule 3 needs logging to take effect','SMB cannot be filtered by a firewall'], a:1,
+   e:'Evaluation is top-down, first match wins. Rule 1 catches all SMB traffic first, so rule 3 is shadowed.'},
+  {q:'Why do many analysts prefer “deny” (silent drop) over “reject” on Internet-facing interfaces?',
+   o:['Reject uses more bandwidth','Silent drops give scanners less information and slow them down','Deny is logged and reject is not','Reject is not supported by NGFWs'], a:1,
+   e:'A reset or ICMP unreachable confirms that a device is there; silently dropping leaves the scanner waiting for a timeout.'},
+  {q:'An inbound rule allows HTTPS to the DMZ web server, and SQL injection is reaching the application. What is the best firewall-side fix?',
+   o:['Remove the rule','Attach an IPS/threat-prevention profile (or front the app with a WAF)','Change the action to reject','Move the rule to the bottom'], a:1,
+   e:'The service must stay reachable. Content inspection on the allowed traffic, by NGFW IPS or a WAF, stops the exploit.'},
+  {q:'In the lab, a User PC sends RDP to the Admin PC and the firewall never sees it. Why?',
+   o:['RDP is encrypted','Both hosts are in the same zone, so traffic is switched locally','The implicit deny is off','The session table is full'], a:1,
+   e:'A perimeter firewall only controls traffic that crosses it. Intra-zone control needs segmentation, host firewalls or microsegmentation.'},
+  {q:'AWS security groups and network ACLs differ in what important way?',
+   o:['Security groups are stateful; network ACLs are stateless','Both are stateless','Network ACLs inspect application data','Security groups only apply to IPv6'], a:0,
+   e:'Security groups track connections at the instance; network ACLs at the subnet need explicit rules for return traffic.'},
+  {q:'During a quarterly review, a rule shows zero hits for 90 days. What should the analyst do?',
+   o:['Delete it immediately','Verify with the rule owner and change process, then disable and later remove it if unneeded','Move it to the top','Turn off its logging'], a:1,
+   e:'Unused rules widen the attack surface, but removal should go through change management in case of seasonal or failover traffic.'},
+  {q:'Which practice best protects the firewall’s own management interface?',
+   o:['Expose HTTPS management to the Internet with a strong password','Restrict management to a dedicated network with MFA and role-based admin accounts','Use the default admin account for all staff','Disable logging of configuration changes'], a:1,
+   e:'Management-plane exposure is a frequent breach path. Isolate it, require MFA, use named accounts and log every change.'},
+  {q:'Which document is NIST’s guidance specifically on firewalls and firewall policy?',
+   o:['NIST SP 800-53','NIST SP 800-41','NIST SP 800-61','NIST SP 800-115'], a:1,
+   e:'SP 800-41 (Guidelines on Firewalls and Firewall Policy) covers firewall technologies, policy and lifecycle. 800-61 is incident handling and 800-115 is security testing.'}
+];
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} } };
+const clone = o => JSON.parse(JSON.stringify(o));
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NS = 'http://www.w3.org/2000/svg';
+
+/* ---------- theme (light by default) ---------- */
+function paintTheme(){
+  const d = document.documentElement.getAttribute('data-theme') === 'dark';
+  $('themeLbl').textContent = d ? 'Light' : 'Dark';
+  $('themeIcon').textContent = d ? '☀' : '☾';
+  $('themeBtn').setAttribute('aria-label', d ? 'Switch to light display' : 'Switch to dark display');
+}
+(function(){ const s = store.get('fw-theme'); document.documentElement.setAttribute('data-theme', s === 'dark' ? 'dark' : 'light'); paintTheme(); })();
+$('themeBtn').addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next); store.set('fw-theme', next); paintTheme();
+});
+
+/* ---------- tabs ---------- */
+const tabs = [...document.querySelectorAll('nav.tabs [role=tab]')];
+tabs.forEach(t => t.addEventListener('click', () => {
+  tabs.forEach(x => { const on = x === t; x.setAttribute('aria-selected', on); $(x.getAttribute('aria-controls')).hidden = !on; });
+  window.scrollTo({top:0});
+}));
+
+/* ---------- live state ---------- */
+const FREE_RULES = [
+  mk({name:'Allow-LAN-Web-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'web'}),
+  mk({name:'Allow-LAN-DNS-Out', sz:'LAN', sa:'LAN-Net', dz:'Internet', svc:'dns'}),
+  mk({name:'Allow-Web-In', sz:'Internet', dz:'DMZ', da:'Web-Server', svc:'web'})
+];
+const S = {mode:'stateful', rules:clone(FREE_RULES), implicitLog:true, implicitHits:0, sessions:[], totalSent:0, _sid:0, log:[]};
+let activeLab = -1;
+let labsDone = new Set(JSON.parse(store.get('fw-labs-done') || '[]'));
+
+/* ---------- topology ---------- */
+const POS = {remote:[121,110], attacker:[121,200], site:[121,290], web:[634,76], mail:[734,76], user:[634,205], admin:[734,205], db:[634,330], files:[734,330]};
+const ZBOX = {Internet:[16,30,210,340], DMZ:[580,20,204,110], LAN:[580,145,204,110], DATA:[580,270,204,110]};
+const ZSUB = {Internet:'untrust', DMZ:'screened subnet', LAN:'users', DATA:'servers'};
+const ZCOL = {Internet:'int', DMZ:'dmz', LAN:'lan', DATA:'data'};
+const FW = [400,200];
+const WIRE = {
+  Internet:[[400,200],[330,200],[226,200]],
+  DMZ:[[400,200],[470,170],[520,170],[520,75],[580,75]],
+  LAN:[[400,200],[470,200],[580,200]],
+  DATA:[[400,200],[470,230],[520,230],[520,325],[580,325]]
+};
+const IFPOS = {Internet:[278,192,'middle'], DMZ:[548,68,'middle'], LAN:[540,193,'middle'], DATA:[548,340,'middle']};
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); if(parent) parent.appendChild(e); return e; }
+function txt(tag, attrs, s, parent){ const e = el(tag, attrs, parent); e.textContent = s; return e; }
+let fwG, pktDot, fwModeTxt;
+function drawTopo(){
+  const svg = $('topo'); svg.innerHTML = '';
+  for(const z of ZONES){
+    const [x,y,w,h] = ZBOX[z]; const c = ZCOL[z];
+    el('rect',{x,y,width:w,height:h,rx:10,class:'t-zone',style:`fill:var(--z-${c}-bg);stroke:var(--z-${c})`},svg);
+    txt('text',{x:x+12,y:y+20,class:'t-zlbl',style:`fill:var(--z-${c})`}, z, svg);
+    txt('text',{x:x+w-12,y:y+20,class:'t-zsub','text-anchor':'end'}, ZSUB[z], svg);
+  }
+  for(const z of ZONES){
+    el('polyline',{points:WIRE[z].slice(1).map(p=>p.join(',')).join(' '),class:'t-wire'},svg);
+    const [ix,iy] = IFPOS[z]; txt('text',{x:ix,y:iy,class:'t-if','text-anchor':'middle'}, IFACE[z], svg);
+  }
+  // firewall
+  fwG = el('g',{class:'t-fw'},svg);
+  el('rect',{x:330,y:148,width:140,height:104,rx:8,class:'body'},fwG);
+  const rows = 4, bh = 15;
+  for(let r=0;r<rows;r++){
+    const off = r%2 ? -16 : 0;
+    for(let b=0;b<5;b++){
+      const bx = 342 + off + b*32; const x0 = Math.max(342,bx), x1 = Math.min(458,bx+30);
+      if(x1-x0>4) el('rect',{x:x0,y:160+r*(bh+3),width:x1-x0,height:bh,rx:2,class:'brk'},fwG);
+    }
+  }
+  txt('text',{x:400,y:274,class:'t-fwl'},'Edge firewall', svg);
+  fwModeTxt = txt('text',{x:400,y:290,class:'t-fwm'},'', svg);
+  txt('text',{x:400,y:306,class:'t-fwm'},'outside NAT 192.0.2.1', svg);
+  // hosts
+  for(const h of HOSTS){
+    const [cx,cy] = POS[h.id];
+    const g = el('g',{class:'t-host',id:'h-'+h.id,transform:`translate(${cx},${cy})`,tabindex:0,role:'button','aria-label':`${h.name}, ${h.ip}, zone ${h.zone}`},svg);
+    el('rect',{x:-46,y:-30,width:92,height:h.pub?66:62,rx:7,class:'hb'},g);
+    if(h.kind==='pc'){ el('rect',{x:-11,y:-25,width:22,height:14,rx:2,class:'hi'},g); el('path',{d:'M-6 -6 H6 M0 -11 V-6',class:'hi'},g); }
+    else { el('rect',{x:-10,y:-26,width:20,height:7,rx:1.5,class:'hi'},g); el('rect',{x:-10,y:-17,width:20,height:7,rx:1.5,class:'hi'},g); el('circle',{cx:6,cy:-22.5,r:1,class:'hi'},g); el('circle',{cx:6,cy:-13.5,r:1,class:'hi'},g); }
+    txt('text',{x:0,y:9,class:'hn'}, h.name, g);
+    txt('text',{x:0,y:22,class:'hip'}, h.ip, g); if(h.pub) txt('text',{x:0,y:33,class:'hip'}, 'pub '+h.pub, g);
+    txt('text',{x:0,y:h.pub?48:44,class:'tagsd',id:'tag-'+h.id}, '', g);
+    g.addEventListener('click', () => pickHost(h.id));
+    g.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pickHost(h.id); } });
+  }
+  pktDot = el('circle',{r:8,class:'t-pkt',cx:-50,cy:-50,style:'fill:var(--navy)'},svg);
+  paintPick(); paintMode();
+}
+let pickNext = 'src';
+function pickHost(id){
+  if(pickNext==='src'){ $('pSrc').value = id; pickNext='dst'; }
+  else { $('pDst').value = id; pickNext='src'; }
+  paintPick(); preview();
+}
+function paintPick(){
+  const s=$('pSrc').value, d=$('pDst').value;
+  HOSTS.forEach(h => {
+    const g=$('h-'+h.id); g.classList.toggle('src',h.id===s); g.classList.toggle('dst',h.id===d);
+    const t=$('tag-'+h.id); t.textContent = h.id===s ? 'SOURCE' : h.id===d ? 'DESTINATION' : '';
+    t.style.fill = h.id===s ? 'var(--navy)' : 'var(--green-ink)';
+  });
+  $('pickHint').textContent = pickNext==='src' ? 'Select a host to set the source.' : 'Now select the destination host.';
+}
+
+/* ---------- packet animation ---------- */
+function pathFor(src, dst){
+  const a=H[src], b=H[dst];
+  if(a.zone===b.zone) return {pts:[POS[src], POS[dst]], fwAt:-1};
+  const out = [...WIRE[a.zone]].reverse(); // zone port -> fw
+  const pts = [POS[src], ...out];
+  const fwAt = pts.length-1;
+  pts.push(...WIRE[b.zone].slice(1), POS[dst]);
+  return {pts, fwAt};
+}
+function seg(pts){ let L=[0]; for(let i=1;i<pts.length;i++){ L.push(L[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1])); } return L; }
+function animate(pts, color){
+  return new Promise(res => {
+    pktDot.style.fill = color;
+    if(reduceMotion || pts.length<2){ const p=pts[pts.length-1]; pktDot.setAttribute('cx',p[0]); pktDot.setAttribute('cy',p[1]); return res(); }
+    const L = seg(pts), total = L[L.length-1], dur = Math.max(350, total/0.55); let t0=null;
+    function f(ts){
+      if(t0===null) t0=ts; const k=Math.min(1,(ts-t0)/dur); const e = k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; const d=e*total;
+      let i=1; while(i<L.length-1 && L[i]<d) i++;
+      const r=(d-L[i-1])/((L[i]-L[i-1])||1); const x=pts[i-1][0]+(pts[i][0]-pts[i-1][0])*r, y=pts[i-1][1]+(pts[i][1]-pts[i-1][1])*r;
+      pktDot.setAttribute('cx',x); pktDot.setAttribute('cy',y);
+      if(k<1) requestAnimationFrame(f); else res();
+    }
+    requestAnimationFrame(f);
+  });
+}
+const wait = ms => new Promise(r => setTimeout(r, reduceMotion?0:ms));
+function flashFw(ok){ fwG.classList.remove('flash-ok','flash-no'); void fwG.getBBox(); fwG.classList.add(ok?'flash-ok':'flash-no'); setTimeout(()=>fwG.classList.remove('flash-ok','flash-no'), 900); }
+
+/* ---------- builder ---------- */
+function fillBuilder(){
+  const opt = () => ZONES.map(z => `<optgroup label="${z}">${HOSTS.filter(h=>h.zone===z).map(h=>`<option value="${h.id}">${esc(h.name)} (${h.ip})</option>`).join('')}</optgroup>`).join('');
+  $('pSrc').innerHTML = opt(); $('pDst').innerHTML = opt();
+  $('pSrc').value='user'; $('pDst').value='site';
+  $('pSvc').innerHTML = PKT_SVCS.map(k=>`<option value="${k}">${SVC[k].label}</option>`).join('');
+  $('pSvc').value='https';
+  $('pApp').innerHTML = APPS.filter(a=>a!=='any').map(a=>`<option>${a}</option>`).join('');
+  $('pApp').value='ssl';
+  $('preset').innerHTML = '<option value="">Choose a scenario…</option>' + PRESETS.map((p,i)=>`<option value="${i}">${esc(p.n)}</option>`).join('');
+}
+function specFromUI(){ return {src:$('pSrc').value, dst:$('pDst').value, svc:$('pSvc').value, app:$('pApp').value, reply:$('pReply').checked, threat:$('pThreat').checked}; }
+function setUI(s){
+  $('pSrc').value=s.src; $('pDst').value=s.dst; $('pSvc').value=s.svc; $('pApp').value=s.app||DEFAULT_APP[s.svc];
+  $('pReply').checked=!!s.reply; $('pThreat').checked=!!s.threat; pickNext='src'; paintPick(); preview();
+}
+function preview(){
+  const s=specFromUI(), a=H[s.src], b=H[s.dst], v=SVC[s.svc];
+  const dIP = (a.zone==='Internet' && b.pub && !s.reply) ? b.pub : b.ip;
+  let t;
+  if(v.proto==='icmp') t = `${a.ip} → ${dIP} ICMP ${s.reply?'echo-reply':'echo-request'}`;
+  else t = s.reply ? `${a.ip}:${v.ports[0]} → ${dIP}:ephemeral ${v.proto.toUpperCase()}` : `${a.ip}:ephemeral → ${dIP}:${v.ports[0]} ${v.proto.toUpperCase()}`;
+  $('pPreview').textContent = t + `  app=${s.app}${s.threat?'  +exploit':''}`;
+}
+['pSrc','pDst','pApp','pReply','pThreat'].forEach(id => $(id).addEventListener('change', () => { paintPick(); preview(); }));
+$('pSvc').addEventListener('change', () => { $('pApp').value = DEFAULT_APP[$('pSvc').value]; preview(); });
+$('preset').addEventListener('change', e => { const i=e.target.value; if(i==='') return; setUI(PRESETS[i].s); send(); });
+$('sendBtn').addEventListener('click', () => send());
+
+/* ---------- send ---------- */
+let busy=false;
+async function send(specOverride){
+  if(busy) return; busy=true; $('sendBtn').disabled=true;
+  const spec = specOverride || specFromUI();
+  if(spec.src===spec.dst){ showMsg('Choose different source and destination hosts.'); busy=false; $('sendBtn').disabled=false; return; }
+  const p = buildPacket(spec, S.sessions);
+  const o = evaluate(p, S, true);
+  S.totalSent++;
+  if(o.via==='implicit' || o.via==='state') S.implicitHits++;
+  const {pts, fwAt} = pathFor(p.src, p.dst);
+  const color = p.threat ? 'var(--red)' : p.reply ? 'var(--green)' : 'var(--navy)';
+  if(fwAt<0){ await animate(pts, color); }
+  else {
+    await animate(pts.slice(0,fwAt+1), color);
+    const ok = o.verdict==='allow';
+    flashFw(ok); await wait(380);
+    if(ok) await animate(pts.slice(fwAt), color);
+    else await wait(250);
+  }
+  pktDot.setAttribute('cx',-50); pktDot.setAttribute('cy',-50);
+  renderTrace(o, p, spec);
+  addLog(o, p);
+  renderRules(o.ruleIdx >= 0 ? o.ruleIdx : (o.via==='implicit'||o.via==='state') ? 'imp' : null);
+  renderSessions();
+  if(!$('findings').hidden) renderFindings();
+  $('preset').value='';
+  busy=false; $('sendBtn').disabled=false;
+}
+function showMsg(m){ const t=$('trace'); t.className='coach'; t.innerHTML=`<p class="vt">Check the packet</p><p style="margin:0">${esc(m)}</p>`; }
+const VERD = {allow:['Allowed','allow'], deny:['Denied','deny'], reject:['Rejected','deny'], threat:['Blocked by threat prevention','deny'], local:['Not inspected','']};
+function renderTrace(o, p, spec){
+  const t=$('trace'); let [label, cls] = VERD[o.verdict]; if(o.warn.includes('threat-passed')) label='Allowed, exploit delivered';
+  t.className = 'coach ' + cls;
+  const via = o.via==='session' ? 'via session table' : o.via==='rule' ? `by rule ${o.ruleIdx+1}` : o.via==='implicit' ? 'by implicit deny' : o.via==='state' ? 'out of state' : 'same zone';
+  let replyBtn = '';
+  if(o.verdict==='allow' && !p.reply && p.proto!=='icmp' && H[p.src].zone!==H[p.dst].zone) replyBtn = `<button class="btn small" id="sendReply">Send the reply</button>`;
+  t.innerHTML = `<p class="vt"><span>${label}</span><span class="hint" style="font-family:var(--font);font-weight:500">${via}${o.logged?' · logged':' · not logged'}</span>${replyBtn}</p>
+    <ol class="trace">${o.trace.map(s=>`<li class="${s.cls}"><span class="ic">${esc(s.ic)}</span><span>${esc(s.txt)}</span></li>`).join('')}</ol>`;
+  if(replyBtn) $('sendReply').addEventListener('click', () => { const r={src:spec.dst,dst:spec.src,svc:spec.svc,app:spec.app,reply:true,threat:false}; setUI(r); send(r); });
+}
+
+/* ---------- log ---------- */
+function addLog(o, p){
+  const d=new Date(); const tm=[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+  S.log.unshift({tm, src:`${H[p.src].ip}${p.sport?':'+p.sport:''}`, dst:`${H[p.dst].ip}${p.dport?':'+p.dport:''}`, svc:pktSvcText(p), app:S.mode==='ngfw'?p.app:'—',
+    rule: o.via==='rule' ? o.rule.name : o.via==='session' ? `session #${o.session.id}` : o.via==='implicit' ? 'implicit deny' : o.via==='state' ? 'out-of-state' : 'n/a',
+    v:o.verdict, logged:o.logged || o.via==='session', nat:o.nat.join(', ')});
+  if(S.log.length>60) S.log.pop();
+  renderLog();
+}
+function renderLog(){
+  const rows = S.log.filter(r => !$('denyOnly').checked || (r.v!=='allow' && r.v!=='local'));
+  if(!rows.length){ $('logBox').innerHTML = '<p class="empty">No traffic yet. Send a packet to see entries.</p>'; return; }
+  $('logBox').innerHTML = `<table class="mini"><thead><tr><th>Time</th><th>Source</th><th>Destination</th><th>Service</th><th>App</th><th>Rule</th><th>Action</th><th>NAT</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.logged?'':'nl'}"><td class="m">${r.tm}</td><td class="m">${r.src}</td><td class="m">${r.dst}</td><td class="m">${r.svc}</td><td>${r.app}</td><td>${esc(r.rule)}</td><td><span class="act ${r.v==='allow'?'allow':r.v==='reject'?'reject':r.v==='local'?'':'deny'}">${VERD[r.v][0].replace('Blocked by threat prevention','Threat')}</span></td><td class="m">${r.nat||''}</td></tr>`).join('')}</tbody></table>`;
+}
+$('denyOnly').addEventListener('change', renderLog);
+$('copyLog').addEventListener('click', async () => {
+  const csv = ['time,source,destination,service,app,rule,action,logged,nat', ...S.log.map(r=>[r.tm,r.src,r.dst,r.svc,r.app,r.rule,r.v,r.logged?'yes':'no',r.nat].map(x=>`"${String(x).replace(/"/g,'""')}"`).join(','))].join('\n');
+  try{ await navigator.clipboard.writeText(csv); $('copyLog').textContent='Copied'; }catch(e){ $('copyLog').textContent='Copy blocked'; }
+  setTimeout(()=>$('copyLog').textContent='Copy as CSV', 1600);
+});
+
+/* ---------- sessions ---------- */
+function renderSessions(){
+  $('sessHint').textContent = S.mode==='pf' ? 'A stateless packet filter keeps no session table. Every packet is judged on its own.' : 'Replies matching an entry are forwarded without a rule lookup. Entries expire after their idle timeout.';
+  if(!S.sessions.length){ $('sessBox').innerHTML = `<p class="empty">${S.mode==='pf'?'No state is tracked in this mode.':'No active sessions. Allow a new connection to create one.'}</p>`; return; }
+  $('sessBox').innerHTML = `<table class="mini"><thead><tr><th>#</th><th>Client</th><th>Server</th><th>Proto</th><th>App</th><th>Rule</th><th>Idle left</th></tr></thead><tbody>${S.sessions.map(s=>`<tr><td>${s.id}</td><td class="m">${H[s.client].ip}${s.sport?':'+s.sport:''}</td><td class="m">${H[s.server].ip}${s.dport?':'+s.dport:''}</td><td>${s.proto.toUpperCase()}</td><td>${s.app}</td><td>${esc(s.ruleName)}</td><td class="num">${s.ttl}s</td></tr>`).join('')}</tbody></table>`;
+}
+setInterval(() => { if(!S.sessions.length) return; S.sessions.forEach(s=>s.ttl--); S.sessions = S.sessions.filter(s=>s.ttl>0); renderSessions(); }, 1000);
+$('clearSess').addEventListener('click', () => { S.sessions=[]; renderSessions(); });
+
+/* ---------- rule table ---------- */
+const zt = z => `<span class="ztag z-${z}">${z}</span>`;
+function renderRules(hit){
+  const tb = $('ruleTable').tBodies[0]; const n=S.rules.length;
+  tb.innerHTML = S.rules.map((r,i)=>`<tr class="${r.enabled?'':'off'}${hit===i?' hit':''}">
+    <td class="idx">${i+1}</td><td class="nm">${esc(r.name)}</td><td>${zt(r.sz)}</td><td>${r.sa}</td><td>${zt(r.dz)}</td><td>${r.da}</td>
+    <td>${SVC[r.svc].label}</td><td>${r.app==='any'?'any':`<span title="${S.mode==='ngfw'?'Enforced':'Ignored outside Next-gen mode'}" style="${S.mode==='ngfw'?'':'text-decoration:line-through;color:var(--ink-2)'}">${r.app}</span>`}</td>
+    <td><span class="act ${r.action}">${r.action[0].toUpperCase()+r.action.slice(1)}</span></td>
+    <td><span class="flag ${r.log?'on':''}">LOG</span><span class="flag ${r.ips?'on':''}" title="${S.mode==='ngfw'?'':'IPS needs Next-gen mode'}">IPS</span></td>
+    <td class="num">${r.hits||0}</td>
+    <td class="ctl"><label class="sw" title="Enable or disable"><input type="checkbox" data-en="${i}" ${r.enabled?'checked':''} aria-label="Enable rule ${i+1}"><span></span></label></td>
+    <td class="ctl"><button class="ib" data-up="${i}" ${i===0?'disabled':''} aria-label="Move rule ${i+1} up">↑</button> <button class="ib" data-dn="${i}" ${i===n-1?'disabled':''} aria-label="Move rule ${i+1} down">↓</button> <button class="ib" data-ed="${i}" aria-label="Edit rule ${i+1}">✎</button> <button class="ib" data-del="${i}" aria-label="Delete rule ${i+1}">✕</button></td></tr>`).join('') +
+    `<tr class="implicit${hit==='imp'?' hit':''}"><td class="idx">—</td><td class="nm">Implicit deny</td><td>${zt('any')}</td><td>any</td><td>${zt('any')}</td><td>any</td><td>any</td><td>any</td><td><span class="act deny">Deny</span></td>
+    <td><label class="check" style="font-style:normal"><input type="checkbox" id="impLog" ${S.implicitLog?'checked':''}><span>Log</span></label></td><td class="num">${S.implicitHits}</td><td></td><td class="hint" style="font-style:normal">always last</td></tr>`;
+}
+$('ruleTable').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  const d=b.dataset;
+  if(d.up!==undefined){ const i=+d.up; [S.rules[i-1],S.rules[i]]=[S.rules[i],S.rules[i-1]]; }
+  else if(d.dn!==undefined){ const i=+d.dn; [S.rules[i+1],S.rules[i]]=[S.rules[i],S.rules[i+1]]; }
+  else if(d.ed!==undefined){ openRule(+d.ed); return; }
+  else if(d.del!==undefined){ const i=+d.del; if(!confirm(`Delete rule ${i+1} “${S.rules[i].name}”?`)) return; S.rules.splice(i,1); }
+  renderRules(); refreshFindings();
+});
+$('ruleTable').addEventListener('change', e => {
+  if(e.target.dataset.en!==undefined){ S.rules[+e.target.dataset.en].enabled = e.target.checked; renderRules(); refreshFindings(); }
+  if(e.target.id==='impLog'){ S.implicitLog = e.target.checked; refreshFindings(); }
+});
+
+/* ---------- rule dialog ---------- */
+let editIdx = -1;
+function fillDlg(){
+  const z = ['any',...ZONES].map(x=>`<option value="${x}">${x}</option>`).join('');
+  $('rSz').innerHTML=z; $('rDz').innerHTML=z;
+  const a = Object.keys(ADDR).map(k=>`<option value="${k}">${ADDR[k].label}</option>`).join('');
+  $('rSa').innerHTML=a; $('rDa').innerHTML=a;
+  $('rSvc').innerHTML = Object.keys(SVC).map(k=>`<option value="${k}">${SVC[k].label}</option>`).join('');
+  $('rApp').innerHTML = APPS.map(x=>`<option>${x}</option>`).join('');
+}
+function openRule(i){
+  editIdx=i; const r = i>=0 ? S.rules[i] : mk({name:'New-Rule', log:true});
+  $('dlgTitle').textContent = i>=0 ? `Edit rule ${i+1}` : 'Add rule';
+  $('rName').value=r.name; $('rSz').value=r.sz; $('rSa').value=r.sa; $('rDz').value=r.dz; $('rDa').value=r.da;
+  $('rSvc').value=r.svc; $('rApp').value=r.app; $('rAct').value=r.action; $('rLog').checked=r.log; $('rIps').checked=r.ips;
+  dlgWarn(); $('ruleDlg').showModal();
+}
+function dlgWarn(){
+  const w=[];
+  const sz=$('rSz').value, dz=$('rDz').value, sa=$('rSa').value, da=$('rDa').value;
+  if(sz!=='any' && sz===dz) w.push('Source and destination zones are the same. Traffic inside one zone never crosses this firewall.');
+  const zoneOf = k => { if(k==='any'||k==='RFC1918') return null; const h=HOSTS.find(h=>addrMatch(k,h.ip)); return h?h.zone:null; };
+  if(sa!=='any' && sz!=='any' && zoneOf(sa) && zoneOf(sa)!==sz) w.push(`${sa} lives in zone ${zoneOf(sa)}, not ${sz}. This rule can never match.`);
+  if(da!=='any' && dz!=='any' && zoneOf(da) && zoneOf(da)!==dz) w.push(`${da} lives in zone ${zoneOf(da)}, not ${dz}. This rule can never match.`);
+  if($('rAct').value==='allow' && sa==='any' && da==='any' && $('rSvc').value==='any' && $('rApp').value==='any') w.push('This allows any traffic between these zones. Consider least privilege.');
+  if($('rIps').checked && $('rAct').value!=='allow') w.push('Threat prevention only applies to traffic a rule allows.');
+  $('rAppNote').className = 'note' + ($('rApp').value!=='any' && S.mode!=='ngfw' ? ' warn' : '');
+  $('rAppNote').textContent = S.mode==='ngfw' ? 'Enforced in Next-gen mode.' : 'Enforced only in Next-gen mode; ignored by the current firewall type.';
+  $('rWarn').textContent = w.join(' ');
+}
+['rSz','rSa','rDz','rDa','rSvc','rApp','rAct','rIps'].forEach(id=>$(id).addEventListener('change', dlgWarn));
+$('rCancel').addEventListener('click', () => $('ruleDlg').close());
+$('rSave').addEventListener('click', () => {
+  const name = $('rName').value.trim() || 'Unnamed-Rule';
+  const r = {name, sz:$('rSz').value, sa:$('rSa').value, dz:$('rDz').value, da:$('rDa').value, svc:$('rSvc').value, app:$('rApp').value, action:$('rAct').value, log:$('rLog').checked, ips:$('rIps').checked};
+  if(editIdx>=0) Object.assign(S.rules[editIdx], r); else S.rules.push(mk(r));
+  $('ruleDlg').close(); renderRules(editIdx>=0?editIdx:S.rules.length-1); refreshFindings();
+});
+$('addRule').addEventListener('click', () => openRule(-1));
+
+/* ---------- audit ---------- */
+function renderFindings(){
+  const F = audit(S); const box=$('findings'); box.hidden=false;
+  const lab = {high:'High',med:'Medium',low:'Low',ok:'Clean'};
+  box.innerHTML = `<div class="ph" style="margin:6px 0 0"><h3>Audit findings (${F.filter(f=>f.sev!=='ok').length})</h3><button class="btn small" id="hideF">Hide</button></div>` + F.map(f=>`<div class="fd ${f.sev}"><span class="sev">${lab[f.sev]}</span><span>${esc(f.t)}</span></div>`).join('');
+  $('hideF').addEventListener('click', ()=>{ box.hidden=true; $('analyzeBtn').textContent='Audit rule base'; });
+}
+function refreshFindings(){ if(!$('findings').hidden) renderFindings(); }
+$('analyzeBtn').addEventListener('click', () => { renderFindings(); $('findings').scrollIntoView({behavior: reduceMotion?'auto':'smooth', block:'nearest'}); });
+
+/* ---------- mode ---------- */
+function paintMode(){
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===S.mode));
+  $('modeHint').textContent = MODES[S.mode].hint;
+  if(fwModeTxt) fwModeTxt.textContent = MODES[S.mode].name + (S.mode==='ngfw'?' · App-ID, IPS':'');
+}
+$('modeSeg').addEventListener('click', e => {
+  const b=e.target.closest('button'); if(!b || b.dataset.mode===S.mode) return;
+  S.mode=b.dataset.mode; S.sessions=[]; paintMode(); renderRules(); renderSessions(); refreshFindings();
+  const t=$('trace'); t.className='coach'; t.innerHTML=`<p class="vt">Firewall type changed to ${MODES[S.mode].name}</p><p style="margin:0">${MODES[S.mode].hint} The session table was cleared.</p>`;
+});
+$('resetBtn').addEventListener('click', () => {
+  S.rules.forEach(r=>r.hits=0); S.implicitHits=0; S.totalSent=0; S.log=[]; S.sessions=[];
+  renderRules(); renderLog(); renderSessions(); refreshFindings();
+});
+
+/* ---------- labs ---------- */
+function renderLabList(){
+  $('labList').innerHTML = LABS.map((l,i)=>`<li><button class="${i===activeLab?'active':''}" data-lab="${i}"><span class="n">${i+1}</span><span class="t">${esc(l.title)}<small>${esc(l.sub)}</small></span>${labsDone.has(l.id)?'<span class="done">Passed</span>':''}</button></li>`).join('');
+  $('labProg').textContent = `${labsDone.size} of ${LABS.length} labs passed`;
+}
+$('labList').addEventListener('click', e => { const b=e.target.closest('button[data-lab]'); if(b) loadLab(+b.dataset.lab); });
+function loadLab(i){
+  const l=LABS[i]; activeLab=i;
+  Object.assign(S, {mode:l.mode, rules:clone(l.rules), implicitLog:l.implicitLog, implicitHits:0, sessions:[], totalSent:0, log:[]});
+  $('findings').hidden=true;
+  paintMode(); renderRules(); renderLog(); renderSessions(); renderLabList(); renderStrip();
+  const t=$('trace'); t.className='coach'; t.innerHTML='<p class="vt">Lab loaded</p><p style="margin:0">Send test traffic to explore the problem, change the policy or firewall type, then select <strong>Run tests</strong>.</p>';
+  window.scrollTo({top:0, behavior: reduceMotion?'auto':'smooth'});
+}
+function renderStrip(results){
+  const s=$('labStrip');
+  if(activeLab<0){
+    s.className='labstrip free';
+    s.innerHTML = `<h2>Free practice</h2><p class="brief">The firewall is loaded with a starter policy in Stateful mode. Pick a traffic preset, watch the decision trace, then edit rules and switch firewall types to see what changes. When you’re ready, choose a guided lab at the bottom of the page; each one is auto-graded.</p>
+      <div class="acts"><button class="btn primary" id="goLab1">Start lab 1</button></div>`;
+    $('goLab1').addEventListener('click', ()=>loadLab(0));
+    return;
+  }
+  const l=LABS[activeLab];
+  s.className='labstrip';
+  let res='';
+  if(results){
+    const ok = results.every(r=>r.ok);
+    res = `<div class="results">${results.map((r,k)=>`<button class="r ${r.ok?'ok':'no'}" ${r.check?'disabled':`data-t="${k}"`} style="border:0;text-align:left;cursor:${r.check?'default':'pointer'}" title="${r.check?'':'Replay this test packet'}"><b>${r.ok?'Pass':'Fail'}</b><span>${esc(r.d)}${r.check?'':` — expected ${r.expect}, got ${r.verdict}`}</span></button>`).join('')}</div>
+      <div class="banner ${ok?'ok':'no'}">${ok?`All ${results.length} checks passed. Lab complete.`:`${results.filter(r=>!r.ok).length} of ${results.length} checks failed. Select a failed test to replay it and read the trace.`}</div>`;
+  }
+  s.innerHTML = `<h2>Lab ${activeLab+1}: ${esc(l.title)}</h2><p class="brief">${esc(l.brief)}</p>
+    <ol>${l.tasks.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>
+    <div class="acts"><button class="btn good" id="runLab">Run tests</button><button class="btn" id="hintBtn">Show hint</button><button class="btn" id="resetLab">Restart lab</button><button class="btn" id="exitLab">Free practice</button>${activeLab<LABS.length-1?'<button class="btn" id="nextLab">Next lab</button>':''}</div>
+    <div class="hintbox" id="hintBox" hidden>${esc(l.hint)}</div>${res}`;
+  $('runLab').addEventListener('click', () => {
+    const r = runLab(l, S); renderStrip(r);
+    if(r.every(x=>x.ok)){ labsDone.add(l.id); store.set('fw-labs-done', JSON.stringify([...labsDone])); renderLabList(); }
+  });
+  $('hintBtn').addEventListener('click', () => { const h=$('hintBox'); h.hidden=!h.hidden; $('hintBtn').textContent = h.hidden?'Show hint':'Hide hint'; });
+  $('resetLab').addEventListener('click', () => loadLab(activeLab));
+  $('exitLab').addEventListener('click', () => { activeLab=-1; Object.assign(S,{rules:clone(FREE_RULES), mode:'stateful', implicitLog:true, sessions:[], log:[], implicitHits:0, totalSent:0}); paintMode(); renderRules(); renderLog(); renderSessions(); renderLabList(); renderStrip(); });
+  if($('nextLab')) $('nextLab').addEventListener('click', () => loadLab(activeLab+1));
+  s.querySelectorAll('.results button[data-t]').forEach(b => b.addEventListener('click', () => { const t=l.tests[+b.dataset.t]; setUI(t.s); send(t.s); $('topo').scrollIntoView({behavior:reduceMotion?'auto':'smooth', block:'center'}); }));
+}
+
+/* ---------- tutorial ---------- */
+const lessons=[...document.querySelectorAll('.lesson')]; let cur=0;
+$('stepNav').innerHTML = lessons.map((l,i)=>`<li><button data-s="${i}"><span class="k">${i+1}</span><span>${esc(l.dataset.step)}</span></button></li>`).join('');
+function goStep(i){ cur=i; lessons.forEach((l,k)=>l.hidden=k!==i); document.querySelectorAll('#stepNav button').forEach((b,k)=>{ if(k===i) b.setAttribute('aria-current','step'); else b.removeAttribute('aria-current'); });
+  $('prevStep').disabled=i===0; $('nextStep').textContent = i===lessons.length-1 ? 'Go to the lab' : 'Next'; }
+$('stepNav').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) goStep(+b.dataset.s); });
+$('prevStep').addEventListener('click', ()=>goStep(Math.max(0,cur-1)));
+$('nextStep').addEventListener('click', ()=>{ if(cur===lessons.length-1) $('tab-sim').click(); else { goStep(cur+1); window.scrollTo({top:0}); } });
+function paintLayers(k){
+  document.querySelectorAll('#layerSeg button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.t===k));
+  document.querySelectorAll('#pk div').forEach(d=>d.classList.toggle('vis', LAYERS[k].v.includes(+d.dataset.l)));
+  $('pkNote').textContent = LAYERS[k].t;
+}
+$('layerSeg').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) paintLayers(b.dataset.t); });
+function drawPipe(){
+  const g=$('pipe'); const w=86, gap=10;
+  PIPE.forEach((p,i)=>{
+    const x=4+i*(w+gap);
+    const gg=el('g',{tabindex:0,role:'button',style:'cursor:pointer','aria-label':p[0],'data-i':i},g);
+    el('rect',{x,y:30,width:w,height:70,rx:7,style:'fill:var(--panel-2);stroke:var(--line);stroke-width:1.5',class:'pst'},gg);
+    txt('text',{x:x+w/2,y:22,'text-anchor':'middle',style:'font-family:var(--cond);font-weight:700;font-size:13px;fill:var(--navy)'},String(i+1),gg);
+    const words=p[0].split(' '); const lines = words.length>1 ? [words.slice(0,Math.ceil(words.length/2)).join(' '), words.slice(Math.ceil(words.length/2)).join(' ')] : [p[0]];
+    lines.forEach((ln,k)=>txt('text',{x:x+w/2,y:62+(k-(lines.length-1)/2)*15,'text-anchor':'middle',style:'font-family:var(--cond);font-weight:600;font-size:13px;fill:var(--ink)'},ln,gg));
+    if(i<PIPE.length-1) el('path',{d:`M${x+w+1} 65 l${gap-3} 0 m-4 -4 l4 4 l-4 4`,style:'stroke:var(--ink-2);fill:none;stroke-width:1.5'},g);
+    const act=()=>{ g.querySelectorAll('.pst').forEach((r,k)=>{ r.style.fill = k===i?'var(--navy-soft)':'var(--panel-2)'; r.style.stroke = k===i?'var(--navy)':'var(--line)'; }); $('pipeNote').innerHTML=`<strong>${esc(p[0])}.</strong> ${esc(p[1])}`; };
+    gg.addEventListener('click',act); gg.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); act(); } });
+    if(i===0) act();
+  });
+}
+
+/* ---------- competencies ---------- */
+let rates = JSON.parse(store.get('fw-comp') || '{}');
+function renderComp(){
+  $('compList').innerHTML = COMP.map((c,i)=>`<div class="acc"><button aria-expanded="false" aria-controls="cb${i}"><span class="chev">▸</span><span class="ttl">${esc(c.t)}</span><span class="lvl">${c.lvl}</span></button>
+    <div class="body" id="cb${i}" hidden><div><h4>Knowledge</h4><ul>${c.k.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div><h4>Skills</h4><ul>${c.s.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+    <div class="assess"><strong>In this trainer:</strong> ${esc(c.a)} <span class="selfrate" style="display:inline-flex;margin-left:12px"><label for="rate${i}">My level</label><select id="rate${i}" data-r="${i}"><option value="">Not rated</option><option value="1">Not yet</option><option value="2">Developing</option><option value="3">Confident</option></select></span></div></div></div>`).join('');
+  COMP.forEach((c,i)=>{ if(rates[i]) $('rate'+i).value=rates[i]; });
+  paintComp();
+}
+function paintComp(){ const n=Object.values(rates).filter(v=>v==='3').length; $('compScore').textContent=`Self-rating: ${n} of ${COMP.length} areas at “Confident”`; $('compMeter').style.width=(n/COMP.length*100)+'%'; }
+$('compList').addEventListener('click', e=>{ const b=e.target.closest('.acc>button'); if(!b) return; const on=b.getAttribute('aria-expanded')!=='true'; b.setAttribute('aria-expanded',on); $(b.getAttribute('aria-controls')).hidden=!on; });
+$('compList').addEventListener('change', e=>{ if(e.target.dataset.r!==undefined){ rates[e.target.dataset.r]=e.target.value; store.set('fw-comp',JSON.stringify(rates)); paintComp(); } });
+
+/* ---------- glossary ---------- */
+function renderGloss(){
+  const q=$('gsearch').value.toLowerCase();
+  $('cards').innerHTML = GLOSS.filter(g=>!q || (g[0]+g[1]).toLowerCase().includes(q)).map(g=>`<button class="card" aria-label="${esc(g[0])}: select to flip"><div class="in"><div class="f"><strong>${esc(g[0])}</strong><small>Select to flip</small></div><div class="b">${esc(g[1])}</div></div></button>`).join('');
+}
+$('cards').addEventListener('click', e=>{ const c=e.target.closest('.card'); if(c) c.classList.toggle('flip'); });
+$('gsearch').addEventListener('input', renderGloss);
+
+/* ---------- quiz ---------- */
+let qs={right:0,done:0};
+function renderQuiz(){
+  qs={right:0,done:0}; paintScore();
+  $('quiz').innerHTML = QUIZ.map((q,i)=>`<div class="q" data-q="${i}"><p class="stem">${i+1}. ${esc(q.q)}</p><div class="opts">${q.o.map((o,k)=>`<button data-k="${k}">${esc(o)}</button>`).join('')}</div><div class="fb" aria-live="polite"></div></div>`).join('');
+}
+function paintScore(){ $('score').textContent=`Score: ${qs.right} / ${qs.done}${qs.done===QUIZ.length?` (${Math.round(qs.right/QUIZ.length*100)}%)`:''}`; }
+$('quiz').addEventListener('click', e=>{
+  const b=e.target.closest('.opts button'); if(!b||b.disabled) return;
+  const box=b.closest('.q'); const q=QUIZ[+box.dataset.q]; const k=+b.dataset.k;
+  box.querySelectorAll('.opts button').forEach((x,j)=>{ x.disabled=true; if(j===q.a) x.classList.add('right'); });
+  if(k!==q.a) b.classList.add('wrong'); else qs.right++;
+  qs.done++; paintScore();
+  box.querySelector('.fb').innerHTML = `<span class="${k===q.a?'pass':'fail'}">${k===q.a?'Correct.':'Not quite.'}</span> ${esc(q.e)}`;
+});
+$('retake').addEventListener('click', ()=>{ renderQuiz(); window.scrollTo({top:0}); });
+
+/* ---------- init ---------- */
+fillBuilder(); fillDlg(); drawTopo(); preview();
+renderRules(); renderLog(); renderSessions(); renderLabList(); renderStrip();
+goStep(0); paintLayers('pf'); drawPipe(); renderComp(); renderGloss(); renderQuiz();
 </script>
-
-</body>
-</html>
+</body></html>
