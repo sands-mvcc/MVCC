@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stratum Defense Systems | CMMC Level 2 Case File</title>
+<style>
+:root{
+  --brand:#0047AB; --brand-ink:#00337d; --go:#00a86b; --flag:#b86e00; --gap:#c0392b;
+  --bg:#f3f6fa; --surface:#ffffff; --surface-2:#eef2f7; --ink:#18212f; --ink-2:#4b5668; --line:#d8dfe9;
+  --rail:#0a2a5c; --rail-ink:#dfe8f6; --rail-dim:#9db1d1; --rail-hi:#163d7a;
+  --flag-bg:#fff3dc; --gap-bg:#fdebe8; --go-bg:#e2f6ed; --info-bg:#e7effb;
+  --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --serif:Charter,"Bitstream Charter","Sitka Text",Cambria,Georgia,serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --brand:#6aa5ff; --brand-ink:#9cc2ff; --go:#33d197; --flag:#f2a93b; --gap:#ff7f70;
+    --bg:#0e1521; --surface:#162031; --surface-2:#1d2a3e; --ink:#e7edf6; --ink-2:#a7b4c8; --line:#2c3b54;
+    --rail:#08111f; --rail-ink:#dbe5f4; --rail-dim:#8195b5; --rail-hi:#15284a;
+    --flag-bg:#3a2a0f; --gap-bg:#3a1d1a; --go-bg:#113226; --info-bg:#152a4b;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --brand:#6aa5ff; --brand-ink:#9cc2ff; --go:#33d197; --flag:#f2a93b; --gap:#ff7f70;
+  --bg:#0e1521; --surface:#162031; --surface-2:#1d2a3e; --ink:#e7edf6; --ink-2:#a7b4c8; --line:#2c3b54;
+  --rail:#08111f; --rail-ink:#dbe5f4; --rail-dim:#8195b5; --rail-hi:#15284a;
+  --flag-bg:#3a2a0f; --gap-bg:#3a1d1a; --go-bg:#113226; --info-bg:#152a4b;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 70px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--surface)}
+a{color:var(--brand)}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px;border-radius:4px}
+.skip{position:absolute;left:-999px;top:0;background:var(--surface);padding:8px 12px;z-index:100}
+.skip:focus{left:12px;top:12px}
+
+/* Layout */
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100%}
+.rail{position:sticky;top:env(safe-area-inset-top,0px);height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;background:var(--rail);color:var(--rail-ink);display:flex;flex-direction:column}
+.rail-brand{padding:22px 20px 18px;border-bottom:1px solid var(--rail-hi)}
+.rail-brand strong{display:block;font-size:1.08rem;letter-spacing:.01em}
+.rail-brand span{font-size:.82rem;color:var(--rail-dim)}
+.mark{width:34px;height:34px;margin-bottom:10px}
+.nav-group{padding:14px 10px 4px}
+.nav-group h2{font-size:.78rem;font-weight:600;color:var(--rail-dim);margin:0 10px 6px}
+.nav-group button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:6px;color:var(--rail-ink);cursor:pointer;font-size:.94rem}
+.nav-group button:hover{background:var(--rail-hi)}
+.nav-group button:focus-visible{outline:2px solid #9cc2ff;outline-offset:-2px}
+.nav-group button[aria-current="page"]{background:var(--rail-hi);box-shadow:inset 3px 0 0 var(--go)}
+.dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--rail-dim);flex-shrink:0}
+.visited .dot{background:var(--go);border-color:var(--go)}
+.nav-count{margin-left:auto;font-size:.75rem;background:var(--flag);color:#1a1200;border-radius:10px;padding:0 7px;font-weight:700}
+.nav-count:empty{display:none}
+.rail-foot{margin-top:auto;padding:16px 20px;font-size:.8rem;color:var(--rail-dim);border-top:1px solid var(--rail-hi)}
+.progress{height:6px;background:var(--rail-hi);border-radius:3px;margin-top:6px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--go);width:0;transition:width .3s}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 24px;min-height:58px}
+.topbar h1{font-size:1.05rem;margin:0;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-btn{display:none}
+.btn{font:inherit;font-size:.88rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--brand)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#081428}
+.btn[aria-pressed="true"]{background:var(--info-bg);border-color:var(--brand);color:var(--brand-ink)}
+.btn.key[aria-pressed="true"]{background:var(--gap-bg);border-color:var(--gap);color:var(--gap)}
+.btn .n{background:var(--flag);color:#1a1200;border-radius:9px;padding:0 6px;font-size:.75rem;font-weight:700}
+
+main{padding:28px 32px 80px;max-width:1180px;width:100%}
+.section{display:none}
+.section.active{display:block}
+.section > h2{font-size:1.65rem;line-height:1.2;margin:0 0 6px;color:var(--ink);font-weight:650}
+.lede{color:var(--ink-2);max-width:68ch;margin:0 0 24px}
+h3{font-size:1.08rem;margin:28px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px}
+.panel > h4{margin:0 0 12px;font-size:.98rem;font-weight:650}
+.muted{color:var(--ink-2)}
+.small{font-size:.86rem}
+code,.mono{font-family:var(--mono);font-size:.86em}
+ul.plain{list-style:none;margin:0;padding:0}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--ink-2);background:var(--surface-2)}
+
+/* Evidence items */
+.ev{position:relative;padding:10px 92px 10px 12px;border-radius:6px;border:1px solid transparent;margin:0 0 6px}
+li.ev{list-style:none}
+.ev:hover{background:var(--surface-2)}
+tr.ev td:last-child{padding-right:92px;position:relative}
+.ev.flagged{background:var(--flag-bg);border-color:color-mix(in srgb,var(--flag) 45%,transparent);box-shadow:inset 4px 0 0 var(--flag)}
+tr.ev.flagged td{background:var(--flag-bg)}
+tr.ev.flagged td:first-child{box-shadow:inset 4px 0 0 var(--flag)}
+.flag-btn{position:absolute;right:8px;top:8px;font:inherit;font-size:.78rem;padding:3px 9px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer}
+.flag-btn:hover{border-color:var(--flag);color:var(--flag)}
+.flag-btn[aria-pressed="true"]{background:var(--flag);border-color:var(--flag);color:#1a1200;font-weight:600}
+.key-note{display:none;margin-top:8px;font-size:.84rem;border-left:3px solid var(--gap);background:var(--gap-bg);padding:7px 10px;border-radius:0 5px 5px 0;color:var(--ink)}
+.key-note.obs{border-color:var(--go);background:var(--go-bg)}
+.key-note b{font-weight:650}
+.key-on .key-note{display:block}
+tr.key-row{display:none}
+.key-on tr.key-row{display:table-row}
+tr.key-row td{border-bottom:1px solid var(--line);padding-top:0}
+
+/* Brief */
+.hero{background:var(--brand);color:#fff;border-radius:10px;padding:34px 34px 30px;margin-bottom:24px;position:relative;overflow:hidden}
+:root[data-theme="dark"] .hero{background:#0f3a80}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero{background:#0f3a80}}
+.hero h2{font-size:clamp(1.6rem,3.4vw,2.35rem);line-height:1.15;margin:0 0 14px;max-width:24ch;font-weight:650}
+.hero p{max-width:60ch;margin:0;color:#dbe7fb;font-size:1.04rem}
+.hero .stamp{position:absolute;right:28px;top:26px;border:2px solid rgba(255,255,255,.55);color:#fff;padding:6px 12px;border-radius:4px;transform:rotate(4deg);font-weight:700;font-size:.85rem;letter-spacing:.04em}
+.hero dl{display:flex;flex-wrap:wrap;gap:12px 32px;margin:24px 0 0}
+.hero dt{font-size:.8rem;color:#b9cdf0}
+.hero dd{margin:0;font-weight:600}
+ol.steps{list-style:none;padding:0;margin:0;counter-reset:s;display:grid;gap:10px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+ol.steps li::before{content:counter(s);width:30px;height:30px;border-radius:50%;background:var(--info-bg);color:var(--brand-ink);display:grid;place-items:center;font-weight:700}
+ol.steps b{display:block}
+ol.steps button{all:unset;color:var(--brand);cursor:pointer;text-decoration:underline;font-size:.88rem}
+.objectives li{margin-bottom:8px}
+
+/* Topology */
+.topo svg{width:100%;height:auto;display:block}
+.topo .link{stroke:var(--brand);stroke-width:2;stroke-dasharray:6 5;fill:none}
+.topo .node rect{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.topo .node.hub rect{fill:var(--info-bg);stroke:var(--brand);stroke-width:2}
+.topo .name{font:600 15px var(--sans);fill:var(--ink)}
+.topo .sub{font:12px var(--sans);fill:var(--ink-2)}
+.topo .tag{font:11px var(--sans);fill:var(--brand-ink)}
+
+/* Flows */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 4px}
+.flow span.step{background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:5px 10px;font-size:.88rem}
+.flow span.step.cloud{border-color:var(--brand);background:var(--info-bg)}
+.flow .arr{color:var(--ink-2)}
+
+/* Policies */
+.policy{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:28px 32px;margin-bottom:22px;font-family:var(--serif);line-height:1.68;max-width:78ch}
+.policy .ph{border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:16px}
+.policy .pt{font-size:1.22rem;font-weight:700}
+.policy .pm{font-family:var(--sans);font-size:.84rem;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:4px}
+.policy .ev{font-family:var(--serif)}
+.policy .ev b{display:block;font-family:var(--sans);font-size:.92rem}
+.note{background:var(--info-bg);border-left:4px solid var(--brand);padding:12px 16px;border-radius:0 6px 6px 0;margin:0 0 20px;max-width:78ch}
+
+/* Directory */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.chip{font:inherit;font-size:.84rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:16px;padding:4px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#081428}
+input[type="search"],select,textarea,input[type="text"]{font:inherit;font-size:.92rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+textarea{width:100%;resize:vertical}
+.dir-scroll{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:6px}
+.dir-scroll thead th{position:sticky;top:0}
+
+/* Scoping */
+.scope-item{display:grid;grid-template-columns:1fr minmax(200px,260px);gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);margin-bottom:8px}
+.scope-item .fb{grid-column:1/-1;font-size:.86rem;display:none;padding:8px 10px;border-radius:5px}
+.scope-item.right .fb{display:block;background:var(--go-bg)}
+.scope-item.wrong .fb{display:block;background:var(--gap-bg)}
+.scope-item.right{border-color:var(--go)}
+.scope-item.wrong{border-color:var(--gap)}
+.cat-defs dt{font-weight:650;margin-top:8px}
+.cat-defs dd{margin:0;color:var(--ink-2);font-size:.9rem}
+
+/* Findings */
+.finding{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--flag);border-radius:6px;padding:14px 16px;margin-bottom:12px}
+.finding header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
+.finding header b{font-size:.98rem}
+.finding header .src{font-size:.8rem;color:var(--ink-2)}
+.finding .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
+.finding label{font-size:.8rem;color:var(--ink-2);display:flex;flex-direction:column;gap:3px}
+.finding .remove{margin-left:auto;font-size:.8rem}
+.empty{border:2px dashed var(--line);border-radius:8px;padding:28px;text-align:center;color:var(--ink-2)}
+.score{display:none;margin-bottom:18px}
+.key-on .score{display:block}
+.score .bar{height:10px;background:var(--surface-2);border-radius:5px;overflow:hidden;margin:6px 0}
+.score .bar i{display:block;height:100%;background:var(--go)}
+.missed{columns:2 260px;font-size:.86rem;margin:6px 0 0;padding-left:18px}
+
+/* Notes drawer and dialog */
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(380px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:70;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 14px)}
+.drawer.open{transform:none;box-shadow:-8px 0 24px rgba(0,0,0,.18)}
+.drawer header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.drawer textarea{flex:1;font-family:var(--mono);font-size:.88rem}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);width:min(720px,94vw);padding:20px}
+dialog::backdrop{background:rgba(5,15,30,.55)}
+dialog textarea{height:42vh;font-family:var(--mono);font-size:.82rem}
+.dlg-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:flex-end}
+.scrim{display:none}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .rail{position:fixed;left:0;top:0;bottom:0;height:auto;width:min(290px,86vw);z-index:80;transform:translateX(-100%);transition:transform .25s;padding-top:env(safe-area-inset-top,0px)}
+  .rail.open{transform:none}
+  .scrim.show{display:block;position:fixed;inset:0;background:rgba(5,15,30,.45);z-index:75}
+  .menu-btn{display:inline-flex}
+  main{padding:20px 16px 80px}
+  .topbar{padding:8px 12px}
+  .topbar .lbl{display:none}
+  .hero{padding:26px 20px}
+  .hero .stamp{display:none}
+  .scope-item{grid-template-columns:1fr}
+  .policy{padding:20px 18px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{.rail,.topbar,.flag-btn,.drawer{display:none!important}.section{display:block!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<div class="app" id="app">
+  <aside class="rail" id="rail" aria-label="Case file sections">
+    <div class="rail-brand">
+      <svg class="mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="2" y="2" width="30" height="30" rx="6" fill="#0047AB" stroke="#9cc2ff"/><path d="M9 22h16M9 17h16M9 12h10" stroke="#00a86b" stroke-width="3" stroke-linecap="round"/></svg>
+      <strong>Stratum Defense Systems</strong>
+      <span>CMMC Level 2 case file</span>
+    </div>
+    <nav>
+      <div class="nav-group"><h2>Briefing</h2>
+        <button data-go="brief"><span class="dot"></span>Engagement brief</button>
+        <button data-go="profile"><span class="dot"></span>Company profile</button>
+      </div>
+      <div class="nav-group"><h2>Evidence</h2>
+        <button data-go="topology" data-evidence><span class="dot"></span>Network topology<span class="nav-count" data-count="topology"></span></button>
+        <button data-go="infrastructure" data-evidence><span class="dot"></span>Infrastructure and cloud<span class="nav-count" data-count="infrastructure"></span></button>
+        <button data-go="security" data-evidence><span class="dot"></span>Security configuration<span class="nav-count" data-count="security"></span></button>
+        <button data-go="cui" data-evidence><span class="dot"></span>CUI data flows<span class="nav-count" data-count="cui"></span></button>
+        <button data-go="ot" data-evidence><span class="dot"></span>Manufacturing (OT)<span class="nav-count" data-count="ot"></span></button>
+        <button data-go="directory" data-evidence><span class="dot"></span>Employee directory</button>
+        <button data-go="policies" data-evidence><span class="dot"></span>Policies<span class="nav-count" data-count="policies"></span></button>
+      </div>
+      <div class="nav-group"><h2>Analysis</h2>
+        <button data-go="scoping"><span class="dot"></span>Asset scoping</button>
+        <button data-go="findings"><span class="dot"></span>Findings log<span class="nav-count" id="navFindCount"></span></button>
+      </div>
+    </nav>
+    <div class="rail-foot">
+      Evidence reviewed: <span id="progTxt">0 of 7</span>
+      <div class="progress"><i id="progBar"></i></div>
+      <div style="margin-top:10px">Document version 2.0, company confidential</div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div>
+    <div class="topbar">
+      <button class="btn menu-btn" id="menuBtn" aria-label="Open sections menu" aria-expanded="false">☰</button>
+      <h1 id="pageTitle">Engagement brief</h1>
+      <button class="btn" id="notesBtn" aria-expanded="false" aria-controls="notes">🗒 <span class="lbl">Notes</span></button>
+      <button class="btn" id="findBtn">⚑ <span class="lbl">Findings</span> <span class="n" id="topCount">0</span></button>
+      <button class="btn key" id="keyBtn" aria-pressed="false" title="Show assessor notes for debrief">🔑 <span class="lbl">Assessor key</span></button>
+      <button class="btn" id="themeBtn" aria-label="Switch color theme">◐</button>
+    </div>
+
+    <main id="content">
+
+<!-- BRIEF -->
+<section class="section" id="brief" data-title="Engagement brief">
+  <div class="hero">
+    <div class="stamp">CUI</div>
+    <h2>Does Stratum run what it wrote down?</h2>
+    <p>Stratum Defense Systems wants a CMMC Level 2 certification to keep its defense contracts. You’ve been hired to do a readiness gap assessment before the official one. Your job is to compare their written policies with the systems they actually operate, and report every gap you can support with evidence.</p>
+    <dl>
+      <div><dt>Your role</dt><dd>Readiness assessor</dd></div>
+      <div><dt>Standard</dt><dd>CMMC Level 2 (NIST SP 800-171 r2)</dd></div>
+      <div><dt>Deliverable</dt><dd>Exported findings log</dd></div>
+    </dl>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h4>By the end of this case you will be able to</h4>
+      <ul class="objectives">
+        <li>Categorize assets using CMMC Level 2 scoping categories.</li>
+        <li>Identify gaps between documented policy and observed configuration.</li>
+        <li>Map each gap to a CMMC Level 2 practice (for example, <code>IA.L2-3.5.3</code>).</li>
+        <li>Separate true findings from risks that 800-171 doesn’t require you to fix.</li>
+        <li>Rate findings by severity so they can feed a POA&amp;M.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4>How to use this case file</h4>
+      <ul class="objectives">
+        <li>Every evidence item has a <b>Flag</b> button. Flag anything you’d raise with the client.</li>
+        <li>Not everything is a problem. Some evidence shows controls working.</li>
+        <li>Flagged items collect in the <b>Findings log</b>, where you add the practice, severity, and your reasoning.</li>
+        <li>Use <b>Notes</b> for loose observations. Everything saves in this browser.</li>
+        <li>Export your findings when you’re done and submit the file.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Assessment workflow</h3>
+  <ol class="steps">
+    <li><div><b>Learn the organization</b><span class="muted small">Sites, headcount, and what kind of CUI they handle. </span><button data-go="profile">Company profile</button></div></li>
+    <li><div><b>Scope the environment</b><span class="muted small">Decide which assets store, process, transmit, or protect CUI. </span><button data-go="scoping">Asset scoping</button></div></li>
+    <li><div><b>Review the evidence</b><span class="muted small">Work through all seven evidence sections and flag what concerns you. </span><button data-go="topology">Start with topology</button></div></li>
+    <li><div><b>Compare against policy</b><span class="muted small">Read each policy clause and check whether the configuration honors it. </span><button data-go="policies">Policies</button></div></li>
+    <li><div><b>Write and rate your findings</b><span class="muted small">Map each flag to a practice, set severity, and export. </span><button data-go="findings">Findings log</button></div></li>
+  </ol>
+</section>
+
+<!-- PROFILE -->
+<section class="section" id="profile" data-title="Company profile">
+  <h2>Company profile</h2>
+  <p class="lede">A 54-person precision manufacturer in the Defense Industrial Base. Stratum handles Controlled Unclassified Information (CUI) under DoD contracts that include DFARS 252.204-7012.</p>
+  <div class="grid">
+    <div class="panel">
+      <h4>Organization</h4>
+      <table>
+        <tr><th scope="row">Legal name</th><td>Stratum Defense Systems Inc.</td></tr>
+        <tr><th scope="row">Sector</th><td>Defense Industrial Base manufacturer</td></tr>
+        <tr><th scope="row">Headquarters</th><td>San Diego, CA</td></tr>
+        <tr><th scope="row">Primary data center</th><td>Phoenix, AZ</td></tr>
+        <tr><th scope="row">Employees</th><td>54 full-time</td></tr>
+        <tr><th scope="row">Work</th><td>Precision machining for aerospace and defense contracts</td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <h4>Sites and connectivity</h4>
+      <table>
+        <tr><th>Site</th><th>Function</th><th>Link to Phoenix</th></tr>
+        <tr><td>Phoenix, AZ</td><td>Data center, manufacturing, VPN hub</td><td>Hub</td></tr>
+        <tr><td>San Diego, CA</td><td>Corporate HQ</td><td>Site-to-site VPN</td></tr>
+        <tr><td>Seattle, WA</td><td>Engineering, manufacturing</td><td>Site-to-site VPN</td></tr>
+        <tr><td>Norfolk, VA</td><td>Engineering, manufacturing</td><td>Site-to-site VPN</td></tr>
+        <tr><td>AWS us-west-2</td><td>Cloud extension</td><td>VPN</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- TOPOLOGY -->
+<section class="section" id="topology" data-title="Network topology">
+  <h2>Network topology</h2>
+  <p class="lede">Hub-and-spoke WAN with Phoenix at the center. All branch and cloud traffic routes through the Phoenix firewall.</p>
+  <div class="panel topo">
+    <svg viewBox="0 0 760 380" role="img" aria-label="Phoenix hub connected by VPN tunnels to San Diego, Seattle, Norfolk, and AWS us-west-2">
+      <path class="link" d="M380 200 L150 80"/><path class="link" d="M380 200 L150 310"/>
+      <path class="link" d="M380 200 L620 80"/><path class="link" d="M380 200 L620 310"/>
+      <g class="node"><rect x="55" y="48" width="190" height="66" rx="8"/><text class="name" x="70" y="74">Seattle</text><text class="sub" x="70" y="92">Lumen Fiber 500/500</text><text class="tag" x="70" y="106">IPsec VPN</text></g>
+      <g class="node"><rect x="55" y="278" width="190" height="66" rx="8"/><text class="name" x="70" y="304">San Diego HQ</text><text class="sub" x="70" y="322">AT&amp;T Fiber 500/500</text><text class="tag" x="70" y="336">IPsec VPN</text></g>
+      <g class="node"><rect x="525" y="48" width="190" height="66" rx="8"/><text class="name" x="540" y="74">AWS us-west-2</text><text class="sub" x="540" y="92">VPC 10.100.0.0/16</text><text class="tag" x="540" y="106">VPN, no Direct Connect</text></g>
+      <g class="node"><rect x="525" y="278" width="190" height="66" rx="8"/><text class="name" x="540" y="304">Norfolk</text><text class="sub" x="540" y="322">Verizon Fios 300/300</text><text class="tag" x="540" y="336">IPsec VPN</text></g>
+      <g class="node hub"><rect x="275" y="160" width="210" height="80" rx="8"/><text class="name" x="292" y="190">Phoenix data center</text><text class="sub" x="292" y="208">Cox Business 1G/1G</text><text class="tag" x="292" y="226">Hub, FortiGate 600E</text></g>
+    </svg>
+    <p class="ev" data-ev="topo-ipsec" data-label="Site-to-site tunnels use AES-256, IKEv2">All site-to-site tunnels use AES-256 encryption with IKEv2.</p>
+  </div>
+
+  <h3>VLAN segmentation</h3>
+  <div class="grid">
+    <div class="panel"><h4>Phoenix data center (10.50.x.x)</h4>
+      <div class="table-wrap"><table>
+        <tr><th>ID</th><th>Name</th><th>Subnet</th></tr>
+        <tr><td>10</td><td>Server Infra</td><td class="mono">10.50.10.0/24</td></tr>
+        <tr><td>20</td><td>Engineering</td><td class="mono">10.50.20.0/23</td></tr>
+        <tr><td>30</td><td>Admin/Office</td><td class="mono">10.50.30.0/23</td></tr>
+        <tr><td>40</td><td>Mfg/Shop</td><td class="mono">10.50.40.0/24</td></tr>
+        <tr><td>50</td><td>Guest</td><td class="mono">10.50.50.0/24</td></tr>
+        <tr><td>60</td><td>IT Mgmt</td><td class="mono">10.50.60.0/24</td></tr>
+        <tr><td>99</td><td>Net Mgmt</td><td class="mono">10.50.99.0/28</td></tr>
+      </table></div>
+    </div>
+    <div class="panel"><h4>Branch offices</h4>
+      <div class="table-wrap"><table>
+        <tr><th>Site</th><th>VLAN</th><th>Subnet</th></tr>
+        <tr><td>San Diego</td><td>Server (110)</td><td class="mono">10.51.10.0/26</td></tr>
+        <tr><td>San Diego</td><td>Guest (150)</td><td class="mono">10.51.50.0/25</td></tr>
+        <tr><td>Seattle</td><td>Engineering (220)</td><td class="mono">10.52.20.0/25</td></tr>
+        <tr><td>Seattle</td><td>Mfg/Shop (240)</td><td class="mono">10.52.40.0/24</td></tr>
+        <tr><td>Norfolk</td><td>Engineering (320)</td><td class="mono">10.53.20.0/25</td></tr>
+        <tr><td>Norfolk</td><td>Mfg/Shop (340)</td><td class="mono">10.53.40.0/24</td></tr>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- INFRASTRUCTURE -->
+<section class="section" id="infrastructure" data-title="Infrastructure and cloud">
+  <h2>Infrastructure and cloud</h2>
+  <p class="lede">Key hardware in the Phoenix rack and the AWS environment that extends it.</p>
+  <h3>Phoenix rack</h3>
+  <div class="panel"><div class="table-wrap"><table>
+    <tr><th>Device</th><th>Role</th><th>Notes</th></tr>
+    <tr class="ev" data-ev="fw-ha" data-label="FortiGate 600E is a single unit (HA planned)"><td>Fortinet FortiGate 600E</td><td>Firewall</td><td>Single unit; HA pair planned</td></tr>
+    <tr><td>Cisco Catalyst 9300</td><td>Core switches</td><td>Redundant pair</td></tr>
+    <tr><td>Dell PowerEdge R750 (×6)</td><td>ESXi hosts</td><td>VMware vSphere</td></tr>
+    <tr><td>Dell EMC Unity 480</td><td>SAN storage</td><td>Primary storage array</td></tr>
+  </table></div></div>
+
+  <h3>AWS environment</h3>
+  <p class="muted small">VPC <code>vpc-0a1b2c3d4e5f6a7b8</code>, CIDR <code>10.100.0.0/16</code>, region us-west-2.</p>
+  <div class="grid">
+    <div class="panel"><h4>Compute and database</h4>
+      <ul class="plain">
+        <li class="ev" data-ev="aws-web" data-label="Public web tier EC2-WEB01/02"><b>Web tier (public):</b> EC2-WEB01, EC2-WEB02 (Amazon Linux 2, t3.large)</li>
+        <li><b>App tier (private):</b> EC2-APP01 through 04 (Windows Server 2019, m5.xlarge)</li>
+        <li><b>Database (private):</b> RDS-PROD01 (PostgreSQL 14.7, Multi-AZ)</li>
+        <li><b>Management:</b> EC2-BASTION01 (<code>10.100.99.10</code>)</li>
+      </ul>
+    </div>
+    <div class="panel"><h4>S3 buckets</h4>
+      <div class="table-wrap"><table>
+        <tr><th>Bucket</th><th>Encryption</th><th>Access logging</th></tr>
+        <tr class="ev" data-ev="s3-cui" data-label="stratum-cui-documents: access logging disabled"><td class="mono">stratum-cui-documents</td><td>SSE-S3</td><td>Disabled</td></tr>
+        <tr><td class="mono">stratum-engineering-archives</td><td>SSE-S3</td><td>Enabled</td></tr>
+        <tr class="ev" data-ev="s3-backups" data-label="stratum-backups: SSE-S3, logging enabled"><td class="mono">stratum-backups</td><td>SSE-S3</td><td>Enabled</td></tr>
+        <tr class="ev" data-ev="s3-applogs" data-label="stratum-application-logs: access logging disabled"><td class="mono">stratum-application-logs</td><td>SSE-S3</td><td>Disabled</td></tr>
+      </table></div>
+      <p class="ev small" data-ev="s3-enc" data-label="All buckets use SSE-S3 (AWS-managed keys)">All buckets use SSE-S3 with AWS-managed keys.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section class="section" id="security" data-title="Security configuration">
+  <h2>Security configuration</h2>
+  <p class="lede">Exported from the FortiGate, the wireless controller, and the SSL VPN dashboard on the day of the walkthrough.</p>
+  <h3>Firewall rules (FortiGate 600E)</h3>
+  <div class="grid">
+    <div class="panel"><h4>Inbound</h4><ul class="plain">
+      <li class="ev" data-ev="fw-vpn" data-label="Inbound allow VPN UDP 500/4500">Allow VPN (UDP 500, 4500)</li>
+      <li class="ev" data-ev="fw-https" data-label="Inbound allow HTTPS to decommissioned 10.50.10.50">Allow HTTPS (443) to DMZ web server <code>10.50.10.50</code>. IT notes the server was decommissioned; the rule is still active.</li>
+      <li class="ev" data-ev="fw-deny" data-label="Implicit deny only, blocked RDP not logged">Implicit deny for all other traffic. No explicit deny rule logs blocked RDP attempts.</li>
+    </ul></div>
+    <div class="panel"><h4>Outbound</h4><ul class="plain">
+      <li>Allow Server and Admin VLANs to internet (HTTPS)</li>
+      <li class="ev" data-ev="fw-ftp" data-label="Engineering VLAN allowed outbound FTP">Allow Engineering to internet (HTTP, HTTPS, FTP)</li>
+      <li>Allow Guest to internet only</li>
+      <li class="ev" data-ev="fw-guest" data-label="Guest denied to internal VLANs">Deny Guest to internal VLANs</li>
+    </ul></div>
+  </div>
+
+  <h3>Wireless and remote access</h3>
+  <div class="grid">
+    <div class="panel"><h4>Wireless networks</h4><div class="table-wrap"><table>
+      <tr><th>SSID</th><th>Authentication</th></tr>
+      <tr class="ev" data-ev="wifi-corp" data-label="Stratum-Corporate uses 802.1X"><td>Stratum-Corporate</td><td>802.1X (RADIUS)</td></tr>
+      <tr class="ev" data-ev="wifi-mfg" data-label="Stratum-Manufacturing uses WPA2-PSK"><td>Stratum-Manufacturing</td><td>WPA2-PSK</td></tr>
+      <tr class="ev" data-ev="wifi-guest" data-label="Stratum-Guest uses a shared WPA2-PSK"><td>Stratum-Guest</td><td>WPA2-PSK (shared password)</td></tr>
+    </table></div></div>
+    <div class="panel"><h4>SSL VPN (FortiClient)</h4><ul class="plain">
+      <li class="ev" data-ev="vpn-cap" data-label="VPN capacity 100 users, 45–60 active">Capacity: 100 users, typically 45–60 active</li>
+      <li class="ev" data-ev="vpn-mfa" data-label="VPN MFA at 63% adoption; 17% legacy exemptions">Authentication: Active Directory plus Duo MFA. Dashboard shows 63% enrollment; 17% of accounts carry a legacy MFA exemption.</li>
+      <li class="ev" data-ev="vpn-split" data-label="VPN split tunnel enabled, local LAN access allowed">Split tunneling is enabled, and remote clients can reach their local LAN while connected.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- CUI -->
+<section class="section" id="cui" data-title="CUI data flows">
+  <h2>CUI data flows</h2>
+  <p class="lede">How CUI moves through the environment, as described by the engineering and contracts teams. Trace each hop and ask what protects it.</p>
+  <div class="panel" style="margin-bottom:16px"><h4>Engineering CUI</h4>
+    <div class="flow" aria-label="CAD workstation to PLM01 to SQL01 to AWS S3"><span class="step">CAD workstation (VLAN 20)</span><span class="arr">➜</span><span class="step">PLM01 server</span><span class="arr">➜</span><span class="step">SQL01 database</span><span class="arr">➜</span><span class="step cloud">AWS S3</span></div>
+    <p class="ev" data-ev="cui-tape" data-label="FILE01 to Veeam to on-site tape library">Also flows from file share FILE01 to Veeam backup to an on-site tape library.</p>
+  </div>
+  <div class="panel" style="margin-bottom:16px"><h4>Contract CUI</h4>
+    <div class="flow" aria-label="Admin PC to SharePoint FILE02 to SharePoint Online"><span class="step">Admin PC (VLAN 30)</span><span class="arr">➜</span><span class="step">SharePoint server (FILE02)</span><span class="arr">➜</span><span class="step cloud">SharePoint Online (Microsoft 365)</span></div>
+    <p class="ev" data-ev="cui-m365" data-label="Contract CUI synced to SharePoint Online (M365)">Contract documents sync from FILE02 to SharePoint Online. IT couldn’t say which Microsoft 365 environment the tenant runs in.</p>
+  </div>
+  <div class="panel"><h4>Walkthrough and interview notes</h4><ul class="plain">
+    <li class="ev" data-ev="gap-dlp" data-label="No DLP tool deployed">IT Manager confirmed no data loss prevention tool is deployed.</li>
+    <li class="ev" data-ev="gap-usb" data-label="USB ports open on CUI workstations">USB storage devices mounted without restriction on two CAD workstations during the walkthrough.</li>
+    <li class="ev" data-ev="gap-email" data-label="Email scanning ignores CUI markings">Email attachment scanning checks for malware only; it doesn’t look for CUI markings.</li>
+    <li class="ev" data-ev="gap-local" data-label="CUI found on local workstation drives">Drawings marked CUI were found saved to local C: drives on engineering workstations.</li>
+  </ul></div>
+</section>
+
+<!-- OT -->
+<section class="section" id="ot" data-title="Manufacturing (OT)">
+  <h2>Manufacturing operations</h2>
+  <p class="ev lede" data-ev="ot-isolated" data-label="Plant manager describes shop floor as isolated">The plant manager describes the shop floor equipment as “isolated from the office network.”</p>
+  <div class="grid">
+    <div class="panel"><h4>Equipment inventory (Phoenix, VLAN 40)</h4><div class="table-wrap"><table>
+      <tr><th>Equipment</th><th>Units</th><th>Addresses</th></tr>
+      <tr><td>CNC-HAAS</td><td>12</td><td class="mono">10.50.40.101–112</td></tr>
+      <tr><td>CNC-MAZAK</td><td>8</td><td class="mono">10.50.40.121–128</td></tr>
+      <tr><td>CMM-HEXAGON</td><td>3</td><td class="mono">10.50.40.141–143</td></tr>
+      <tr><td>Industrial printers</td><td>9</td><td class="mono">10.50.40.151–159</td></tr>
+    </table></div></div>
+    <div class="panel"><h4>Observed during the floor walk</h4><ul class="plain">
+      <li class="ev" data-ev="ot-win7" data-label="CNC controllers run Windows 7">CNC machine controllers run Windows 7.</li>
+      <li class="ev" data-ev="ot-tv" data-label="Vendors use always-on TeamViewer">Machine vendors connect through TeamViewer, left running at all times.</li>
+      <li class="ev" data-ev="ot-pw" data-label="Default passwords on machine controllers">Machine controllers still use factory default passwords.</li>
+      <li class="ev" data-ev="ot-av" data-label="No antivirus on manufacturing equipment">No antivirus is installed on manufacturing equipment.</li>
+      <li class="ev" data-ev="ot-seg" data-label="No segmentation between individual machines">All machines share one flat subnet with no filtering between them.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- DIRECTORY -->
+<section class="section" id="directory" data-title="Employee directory">
+  <h2>Employee directory</h2>
+  <p class="lede">Use the directory to identify who owns systems and policies, and who you’d interview.</p>
+  <div class="panel">
+    <div class="filters" role="group" aria-label="Filter by department" id="deptChips"></div>
+    <div class="filters">
+      <input type="search" id="empSearch" placeholder="Search name or title" aria-label="Search employees" style="flex:1;min-width:180px">
+      <select id="locSel" aria-label="Filter by location"><option value="">All locations</option><option>Phoenix</option><option>San Diego</option><option>Seattle</option><option>Norfolk</option></select>
+      <span class="muted small" id="empCount" aria-live="polite"></span>
+    </div>
+    <div class="dir-scroll"><table><thead><tr><th>Name</th><th>Title</th><th>Department</th><th>Location</th></tr></thead><tbody id="empBody"></tbody></table></div>
+  </div>
+</section>
+
+<!-- POLICIES -->
+<section class="section" id="policies" data-title="Policies">
+  <h2>Policies and governance</h2>
+  <p class="note">These are Stratum’s approved policies. For each clause, find the evidence that shows whether it’s being followed. A policy the company doesn’t follow is a finding in its own right.</p>
+
+  <article class="policy">
+    <div class="ph"><div class="pt">Access Control Policy (AC-1)</div>
+      <div class="pm"><span>Ref: POL-AC-2024-01</span><span>Effective: Jan 1, 2024</span><span>Owner: CISO</span></div></div>
+    <p><b>3.1 Purpose.</b> To establish requirements for granting, monitoring, and revoking access to Stratum Defense Systems information assets.</p>
+    <div class="ev" data-ev="pol-mfa" data-label="Policy 3.4.2: MFA mandatory, no exemptions"><b>3.4.2 Multi-factor authentication</b>MFA is mandatory for all network access originating from outside the corporate physical network. This applies to all employees, contractors, and third-party vendors without exception. No legacy exemptions are permitted after Dec 31, 2023.</div>
+    <div class="ev" data-ev="pol-split" data-label="Policy 3.4.5: split tunneling prohibited"><b>3.4.5 Remote access</b>Split tunneling is strictly prohibited on all corporate VPN connections. All traffic from remote assets must tunnel through the corporate security stack for inspection.</div>
+  </article>
+
+  <article class="policy">
+    <div class="ph"><div class="pt">System and Communications Protection (SC-1)</div>
+      <div class="pm"><span>Ref: POL-SC-2024-03</span><span>Effective: Mar 15, 2024</span><span class="ev" data-ev="pol-owner" data-label="SC-1 owner listed as “IT Director”" style="padding:0 80px 0 0;margin:0">Owner: IT Director</span></div></div>
+    <div class="ev" data-ev="pol-eol" data-label="Policy 5.1.2: EOL systems prohibited on WAN segments"><b>5.1.2 Unsupported software</b>Unsupported or end-of-life operating systems (for example, Windows 7 or Server 2008) are prohibited on any network segment connected to the corporate WAN. Isolated “air-gapped” systems are the only exception and require written CISO approval.</div>
+    <div class="ev" data-ev="pol-dlp" data-label="Policy 5.2.1: DLP on all egress points"><b>5.2.1 Data loss prevention</b>All egress points, including email, web gateways, and USB interfaces, must have active DLP monitoring configured to detect and block the unauthorized transmission of CUI.</div>
+  </article>
+
+  <article class="policy">
+    <div class="ph"><div class="pt">Audit and Accountability Policy (AU-1)</div>
+      <div class="pm"><span>Ref: POL-AU-2024-02</span><span>Effective: Feb 1, 2024</span><span>Owner: Compliance Officer</span></div></div>
+    <div class="ev" data-ev="pol-log" data-label="Policy 4.1.3: logging on CUI and backup storage"><b>4.1.3 Cloud storage logging</b>Access logging must be enabled for all cloud storage containers (for example, AWS S3 or Azure Blob) that house CUI or system backups. Logs must be retained for a minimum of 365 days.</div>
+    <div class="ev" data-ev="pol-vendor" data-label="Policy 4.2.1: vendor sessions must be supervised"><b>4.2.1 Third-party access</b>All vendor remote access sessions must be attended (supervised) by internal IT staff. “Always-on” or unattended vendor access is strictly forbidden.</div>
+  </article>
+</section>
+
+<!-- SCOPING -->
+<section class="section" id="scoping" data-title="Asset scoping">
+  <h2>Asset scoping</h2>
+  <p class="lede">Before assessing controls, decide what’s in scope. Assign each asset to a CMMC Level 2 category, then check your answers.</p>
+  <div class="grid" style="align-items:start">
+    <div id="scopeList"></div>
+    <div class="panel" style="position:sticky;top:80px">
+      <h4>Categories</h4>
+      <dl class="cat-defs">
+        <dt>CUI Asset</dt><dd>Stores, processes, or transmits CUI. Fully assessed.</dd>
+        <dt>Security Protection Asset</dt><dd>Provides security functions for the CUI environment, even if it never touches CUI.</dd>
+        <dt>Contractor Risk Managed Asset</dt><dd>Can handle CUI but isn’t intended to, because of policy and procedure. Documented in the SSP.</dd>
+        <dt>Specialized Asset</dt><dd>OT, IoT, test equipment, government property, or restricted systems. Documented and managed through the SSP.</dd>
+        <dt>Out of scope</dt><dd>Can’t store, process, or transmit CUI and is separated from CUI assets.</dd>
+      </dl>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn primary" id="scopeCheck">Check answers</button>
+        <button class="btn" id="scopeReset">Reset</button>
+      </div>
+      <p id="scopeScore" class="small" aria-live="polite" style="margin-bottom:0"></p>
+    </div>
+  </div>
+</section>
+
+<!-- FINDINGS -->
+<section class="section" id="findings" data-title="Findings log">
+  <h2>Findings log</h2>
+  <p class="lede">Each flagged item appears here. Record the CMMC practice it fails, how serious it is, and the evidence that supports it. If something is a risk but not an 800-171 requirement, mark it as an observation.</p>
+  <div class="panel score" id="scorePanel"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    <button class="btn" id="addCustom">Add a finding</button>
+    <button class="btn primary" id="exportBtn">Export findings</button>
+    <button class="btn" id="clearAll">Clear all</button>
+  </div>
+  <div id="findList"></div>
+</section>
+
+    </main>
+  </div>
+</div>
+
+<aside class="drawer" id="notes" aria-label="Notes">
+  <header><b>Assessment notes</b><button class="btn" id="notesClose">Close</button></header>
+  <textarea id="notesTxt" placeholder="Type observations here. They save automatically in this browser."></textarea>
+</aside>
+
+<dialog id="exportDlg" aria-labelledby="expTitle">
+  <h3 id="expTitle" style="margin-top:0">Export findings</h3>
+  <p class="small muted">Download the file, or copy the text and paste it into your submission.</p>
+  <div class="filters"><button class="chip" data-fmt="md" aria-pressed="true">Markdown</button><button class="chip" data-fmt="csv" aria-pressed="false">CSV</button></div>
+  <textarea id="expTxt" readonly></textarea>
+  <div class="dlg-actions">
+    <span class="small muted" id="expMsg" aria-live="polite" style="margin-right:auto;align-self:center"></span>
+    <button class="btn" id="expCopy">Copy text</button>
+    <button class="btn" id="expDl">Download file</button>
+    <button class="btn primary" id="expClose">Close</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+const store = {
+  get(k,d){try{const v=localStorage.getItem('stratum.'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem('stratum.'+k,JSON.stringify(v));}catch(e){}}
+};
+
+/* ---------- Assessor key ---------- */
+const KEY = {
+ 'topo-ipsec':['obs','','SC.L2-3.13.11','AES-256 is strong, but CUI protection requires FIPS-validated cryptography. Ask for the FortiGate FIPS 140 certificate and confirm FIPS mode is on. Evidence request, not yet a finding.'],
+ 'fw-ha':['obs','','None','A single firewall is an availability risk, but NIST SP 800-171 doesn’t require redundancy. Report it as an observation, not a CMMC finding.'],
+ 'aws-web':['obs','','SC.L2-3.13.5','A public web tier in its own subnet is expected. Confirm it can’t reach CUI stores and that security groups limit it to 443.'],
+ 's3-cui':['find','High','AU.L2-3.3.1, AU.L2-3.3.2','The bucket that holds CUI has no access logging, so no one can show who read or downloaded files. Directly violates policy 4.1.3.'],
+ 's3-backups':['obs','','AU.L2-3.3.1','Working control. Logging is on for backups, which meets policy 4.1.3 for this bucket.'],
+ 's3-applogs':['find','Low','AU.L2-3.3.8','Access to the bucket holding audit logs isn’t itself logged, so tampering with log data can’t be traced. Policy 4.1.3 doesn’t name it, but protecting audit information is a separate requirement.'],
+ 's3-enc':['obs','','SC.L2-3.13.16, SC.L2-3.13.11','Encryption at rest is on. Ask how keys are managed and request evidence the encryption is FIPS-validated.'],
+ 'fw-vpn':['obs','','None','Expected rule for site-to-site and remote VPN. Not a gap.'],
+ 'fw-https':['find','Medium','CM.L2-3.4.6, SC.L2-3.13.5','A rule still permits inbound 443 to a decommissioned host; if the IP is reassigned it becomes exposed. The “DMZ” host sits in the Server Infra VLAN (10.50.10.0/24), so there’s no separate public subnetwork.'],
+ 'fw-deny':['find','Medium','AU.L2-3.3.1','Implicit deny with no logging leaves no record of blocked RDP attempts, so unauthorized activity can’t be investigated.'],
+ 'fw-ftp':['find','Medium','CM.L2-3.4.7, SC.L2-3.13.8','FTP sends credentials and files in cleartext from the VLAN that handles CAD data. Insecure, nonessential protocols should be blocked.'],
+ 'fw-guest':['obs','','SC.L2-3.13.1','Working control. Guest isolation supports treating the guest network as out of scope.'],
+ 'wifi-corp':['obs','','AC.L2-3.1.17','Working control. 802.1X authenticates each user.'],
+ 'wifi-mfg':['find','Medium','AC.L2-3.1.17, IA.L2-3.5.2','A shared PSK can’t identify individual users or devices and rarely changes when staff leave. This SSID reaches the VLAN where the CNC controllers live.'],
+ 'wifi-guest':['obs','','None','A shared guest password is acceptable when the guest network is isolated, which the firewall rules show.'],
+ 'vpn-cap':['obs','','None','Capacity is a sizing detail, not a security gap.'],
+ 'vpn-mfa':['find','High','IA.L2-3.5.3','MFA is required for network access. Legacy exemptions contradict policy 3.4.2. Also, 63% enrolled plus 17% exempt leaves 20% unexplained. Ask for the Duo enrollment report; unreconciled evidence is itself worth noting.'],
+ 'vpn-split':['find','High','SC.L2-3.13.7','Split tunneling lets a remote device connect to the corporate network and an untrusted network at the same time. Policy 3.4.5 prohibits it.'],
+ 'cui-tape':['obs','','MP.L2-3.8.9','Backups of CUI need the same confidentiality protection. Ask whether tapes are encrypted and how they’re stored and transported.'],
+ 'cui-m365':['find','High','SC.L2-3.13.8, AC.L2-3.1.3','Under DFARS 252.204-7012, cloud services that store CUI must meet FedRAMP Moderate or equivalent. Commercial Microsoft 365 generally doesn’t; GCC High does. IT not knowing which tenant they use is a red flag.'],
+ 'gap-dlp':['find','Medium','AC.L2-3.1.3','CMMC doesn’t name DLP as a product, but AC.L2-3.1.3 requires controlling CUI flow and policy 5.2.1 requires DLP. An unfollowed policy is a finding.'],
+ 'gap-usb':['find','High','MP.L2-3.8.7, MP.L2-3.8.8','Removable media must be controlled on systems that handle CUI.'],
+ 'gap-email':['find','Medium','AC.L2-3.1.3','Nothing stops CUI leaving by email. Policy 5.2.1 names email as an egress point.'],
+ 'gap-local':['find','Medium','MP.L2-3.8.1, AC.L2-3.1.3','CUI on local drives sits outside controlled repositories, backups, and logging. The company’s own walkthrough calls this a policy violation.'],
+ 'ot-isolated':['find','Medium','SC.L2-3.13.1','The shop floor is on routed VLAN 40 behind the same core switches, so it isn’t air-gapped. That means policy 5.1.2’s exception doesn’t apply.'],
+ 'ot-win7':['find','High','SI.L2-3.14.1','Unsupported OS can’t be patched. CNC controllers are Specialized Assets and need SSP documentation plus compensating controls, but policy 5.1.2 bans EOL systems on WAN-connected segments.'],
+ 'ot-tv':['find','High','MA.L2-3.7.5, AC.L2-3.1.12','Nonlocal maintenance requires MFA and must end when the work is done. Always-on TeamViewer violates policy 4.2.1.'],
+ 'ot-pw':['find','High','IA.L2-3.5.7, CM.L2-3.4.2','Default credentials are publicly documented and trivially exploited.'],
+ 'ot-av':['find','Medium','SI.L2-3.14.2','If antivirus can’t run on controllers, document compensating controls such as allowlisting and segmentation in the SSP.'],
+ 'ot-seg':['find','Medium','SC.L2-3.13.1, SC.L2-3.13.5','One compromised controller can reach every other machine. Segment and filter traffic to what each machine needs.'],
+ 'pol-owner':['find','Low','Governance','SC-1 names an “IT Director” as owner, but no one holds that title (James Wilson is IT Manager). An unowned policy is rarely maintained or enforced.'],
+ 'pol-mfa':['obs','','IA.L2-3.5.3','The policy is sound. Pair it with the VPN evidence showing exemptions.'],
+ 'pol-split':['obs','','SC.L2-3.13.7','The policy is sound. Pair it with the VPN split tunnel setting.'],
+ 'pol-eol':['obs','','SI.L2-3.14.1','The policy is sound. Pair it with the Windows 7 CNC controllers and the “isolated” claim.'],
+ 'pol-dlp':['obs','','AC.L2-3.1.3','The policy promises more than is deployed. Pair it with the interview notes.'],
+ 'pol-log':['obs','','AU.L2-3.3.1','The policy is sound. Pair it with the S3 logging settings.'],
+ 'pol-vendor':['obs','','MA.L2-3.7.5','The policy is sound. Pair it with the TeamViewer observation.']
+};
+const KEY_FINDINGS = Object.keys(KEY).filter(k=>KEY[k][0]==='find');
+
+/* ---------- Evidence registry ---------- */
+const EV = {};
+document.querySelectorAll('.ev').forEach(el=>{
+  const id = el.dataset.ev, sec = el.closest('.section');
+  EV[id] = {el, label:el.dataset.label, section:sec.id, sectionTitle:sec.dataset.title};
+  const b = document.createElement('button');
+  b.className='flag-btn'; b.type='button'; b.dataset.flag=id;
+  b.setAttribute('aria-pressed','false');
+  b.setAttribute('aria-label','Flag: '+el.dataset.label);
+  b.textContent='⚑ Flag';
+  const k = KEY[id];
+  const note = document.createElement('div');
+  note.className = 'key-note'+(k&&k[0]==='obs'?' obs':'');
+  if(k){ note.innerHTML = '<b>'+(k[0]==='find'?'Finding ('+k[1]+')':'Not a finding')+'</b>'+(k[2]&&k[2]!=='None'?' <code>'+k[2]+'</code>':'')+'<br>'+k[3]; }
+  if(el.tagName==='TR'){
+    el.lastElementChild.appendChild(b);
+    if(k){ const tr=document.createElement('tr'); tr.className='key-row'; const td=document.createElement('td'); td.colSpan=el.children.length; td.appendChild(note); tr.appendChild(td); el.after(tr); }
+  } else {
+    el.appendChild(b);
+    if(k) el.appendChild(note);
+  }
+});
+
+/* ---------- Findings state ---------- */
+let F = store.get('findings',{});
+const DOMAINS = ['','AC Access Control','AT Awareness and Training','AU Audit and Accountability','CM Configuration Management','IA Identification and Authentication','IR Incident Response','MA Maintenance','MP Media Protection','PE Physical Protection','PS Personnel Security','RA Risk Assessment','CA Security Assessment','SC System and Communications Protection','SI System and Information Integrity','Governance / policy','Observation (not an 800-171 requirement)'];
+function save(){store.set('findings',F);}
+function syncFlags(){
+  Object.keys(EV).forEach(id=>{
+    const on=!!F[id]; EV[id].el.classList.toggle('flagged',on);
+    const b=EV[id].el.querySelector('[data-flag]'); b.setAttribute('aria-pressed',on); b.textContent=on?'⚑ Flagged':'⚑ Flag';
+  });
+  const n=Object.keys(F).length;
+  document.getElementById('topCount').textContent=n;
+  document.getElementById('navFindCount').textContent=n||'';
+  document.querySelectorAll('[data-count]').forEach(s=>{
+    const c=Object.keys(F).filter(id=>EV[id]&&EV[id].section===s.dataset.count).length; s.textContent=c||'';
+  });
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-flag]'); if(!b) return;
+  const id=b.dataset.flag;
+  if(F[id]) delete F[id]; else F[id]={domain:'',practice:'',severity:'',note:'',t:Date.now()};
+  save(); syncFlags();
+});
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function labelOf(id){return EV[id]?EV[id].label:(F[id].label||'Custom finding');}
+function srcOf(id){return EV[id]?EV[id].sectionTitle:'Added by assessor';}
+
+function renderFindings(){
+  const list=document.getElementById('findList');
+  const ids=Object.keys(F).sort((a,b)=>F[a].t-F[b].t);
+  if(!ids.length){ list.innerHTML='<div class="empty">No findings yet. Open an evidence section and use <b>⚑ Flag</b> on anything you’d raise with Stratum.</div>'; renderScore(); return; }
+  list.innerHTML=ids.map(id=>{
+    const f=F[id], custom=!EV[id], k=KEY[id];
+    return '<article class="finding" data-id="'+id+'"><header>'+
+      (custom?'<input type="text" data-f="label" value="'+esc(f.label||'')+'" placeholder="Describe the finding" aria-label="Finding title" style="flex:1;min-width:200px">':'<b>'+esc(labelOf(id))+'</b>')+
+      '<span class="src">'+esc(srcOf(id))+'</span>'+
+      (custom?'':'<button class="btn" data-goev="'+id+'" style="font-size:.8rem;padding:3px 9px">View evidence</button>')+
+      '<button class="btn remove" data-remove="'+id+'">Remove</button></header>'+
+      '<div class="row">'+
+        '<label>Domain<select data-f="domain">'+DOMAINS.map(d=>'<option'+(d===f.domain?' selected':'')+'>'+esc(d)+'</option>').join('')+'</select></label>'+
+        '<label>Practice ID<input type="text" data-f="practice" value="'+esc(f.practice)+'" placeholder="e.g. IA.L2-3.5.3"></label>'+
+        '<label>Severity<select data-f="severity">'+['','High','Medium','Low','Observation'].map(s=>'<option'+(s===f.severity?' selected':'')+'>'+s+'</option>').join('')+'</select></label>'+
+      '</div>'+
+      '<label>Why this matters and what evidence supports it<textarea data-f="note" rows="3">'+esc(f.note)+'</textarea></label>'+
+      (k?'<div class="key-note'+(k[0]==='obs'?' obs':'')+'"><b>'+(k[0]==='find'?'Key: finding ('+k[1]+')':'Key: not a finding')+'</b>'+(k[2]&&k[2]!=='None'?' <code>'+k[2]+'</code>':'')+'<br>'+k[3]+'</div>':'')+
+    '</article>';
+  }).join('');
+  renderScore();
+}
+document.getElementById('findList').addEventListener('input',e=>{
+  const art=e.target.closest('.finding'); const fld=e.target.dataset.f; if(!art||!fld) return;
+  F[art.dataset.id][fld]=e.target.value; save();
+});
+document.getElementById('findList').addEventListener('click',e=>{
+  const r=e.target.closest('[data-remove]'); if(r){delete F[r.dataset.remove];save();syncFlags();renderFindings();return;}
+  const g=e.target.closest('[data-goev]'); if(g){const ev=EV[g.dataset.goev]; go(ev.section); setTimeout(()=>ev.el.scrollIntoView({block:'center'}),30);}
+});
+document.getElementById('addCustom').onclick=()=>{
+  const id='custom-'+Date.now(); F[id]={label:'',domain:'',practice:'',severity:'',note:'',t:Date.now()}; save(); syncFlags(); renderFindings();
+  const inp=document.querySelector('[data-id="'+id+'"] input'); if(inp) inp.focus();
+};
+document.getElementById('clearAll').onclick=e=>{
+  const b=e.currentTarget;
+  if(b.dataset.armed){F={};save();syncFlags();renderFindings();b.textContent='Clear all';delete b.dataset.armed;}
+  else{b.dataset.armed='1';b.textContent='Click again to clear';setTimeout(()=>{b.textContent='Clear all';delete b.dataset.armed;},3000);}
+};
+function renderScore(){
+  const hit=KEY_FINDINGS.filter(id=>F[id]);
+  const obs=Object.keys(F).filter(id=>KEY[id]&&KEY[id][0]==='obs');
+  const missed=KEY_FINDINGS.filter(id=>!F[id]);
+  const pct=Math.round(hit.length/KEY_FINDINGS.length*100);
+  document.getElementById('scorePanel').innerHTML='<h4>Coverage against the assessor key</h4>'+
+    '<div>Key findings flagged: <b>'+hit.length+' of '+KEY_FINDINGS.length+'</b> ('+pct+'%)</div><div class="bar"><i style="width:'+pct+'%"></i></div>'+
+    '<div class="small">Items flagged that aren’t findings: <b>'+obs.length+'</b>'+(obs.length?' (discuss why each one is or isn’t a gap)':'')+'</div>'+
+    (missed.length?'<div class="small" style="margin-top:8px">Not yet flagged:</div><ul class="missed">'+missed.map(id=>'<li>'+esc(EV[id].label)+'</li>').join('')+'</ul>':'');
+}
+
+/* ---------- Export ---------- */
+const dlg=document.getElementById('exportDlg'); let fmt='md';
+function buildExport(){
+  const ids=Object.keys(F).sort((a,b)=>F[a].t-F[b].t);
+  if(fmt==='csv'){
+    const q=s=>'"'+String(s||'').replace(/"/g,'""')+'"';
+    return ['Finding,Source,Domain,Practice,Severity,Notes'].concat(ids.map(id=>[labelOf(id),srcOf(id),F[id].domain,F[id].practice,F[id].severity,F[id].note].map(q).join(','))).join('\n');
+  }
+  let s='# Stratum Defense Systems: CMMC Level 2 gap findings\n\nExported '+new Date().toLocaleString()+'\nFindings: '+ids.length+'\n\n';
+  ids.forEach((id,i)=>{const f=F[id];
+    s+='## '+(i+1)+'. '+labelOf(id)+'\n\n- Source: '+srcOf(id)+'\n- Domain: '+(f.domain||'not set')+'\n- Practice: '+(f.practice||'not set')+'\n- Severity: '+(f.severity||'not set')+'\n\n'+(f.note||'_No notes._')+'\n\n';});
+  const notes=store.get('notes','');
+  if(notes) s+='## Working notes\n\n'+notes+'\n';
+  return s;
+}
+function openExport(){document.getElementById('expTxt').value=buildExport();document.getElementById('expMsg').textContent='';try{dlg.showModal();}catch(e){dlg.setAttribute('open','');}}
+document.getElementById('exportBtn').onclick=openExport;
+dlg.querySelectorAll('[data-fmt]').forEach(c=>c.onclick=()=>{fmt=c.dataset.fmt;dlg.querySelectorAll('[data-fmt]').forEach(x=>x.setAttribute('aria-pressed',x===c));document.getElementById('expTxt').value=buildExport();});
+document.getElementById('expClose').onclick=()=>dlg.close?dlg.close():dlg.removeAttribute('open');
+document.getElementById('expCopy').onclick=async()=>{
+  const t=document.getElementById('expTxt'), m=document.getElementById('expMsg');
+  try{await navigator.clipboard.writeText(t.value);m.textContent='Copied to clipboard.';}
+  catch(e){t.focus();t.select();m.textContent='Text selected. Press Ctrl+C or ⌘C to copy.';}
+};
+document.getElementById('expDl').onclick=()=>{
+  const m=document.getElementById('expMsg');
+  try{const blob=new Blob([document.getElementById('expTxt').value],{type:fmt==='csv'?'text/csv':'text/markdown'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='stratum-findings.'+(fmt==='csv'?'csv':'md');document.body.appendChild(a);a.click();a.remove();
+    m.textContent='If no download started, use Copy text instead.';}
+  catch(e){m.textContent='Download isn’t available here. Use Copy text instead.';}
+};
+
+/* ---------- Directory ---------- */
+const DIR=[["Robert Sterling","Chief Executive Officer","Executive","San Diego"],["Marcus Thorne","Chief Operating Officer","Executive","San Diego"],["Sarah Jenkins","Chief Financial Officer","Executive","San Diego"],["David Chen","Chief Information Security Officer","Executive","Phoenix"],["James Wilson","IT Manager","IT & Security","Phoenix"],["Emily Rodriguez","Network Engineer","IT & Security","Phoenix"],["Michael Chang","Systems Administrator","IT & Security","Phoenix"],["Lisa Kumar","Systems Administrator","IT & Security","San Diego"],["Alex Foster","Security Analyst","IT & Security","Phoenix"],["Dr. Alan Grant","Chief Engineer","Engineering","Norfolk"],["Rebecca Moore","Sr. Mechanical Engineer","Engineering","Seattle"],["Kevin O’Connor","Mechanical Engineer","Engineering","Seattle"],["Diana Prince","Mechanical Engineer","Engineering","Norfolk"],["Bruce Miller","Mechanical Engineer","Engineering","Phoenix"],["Gregory Hines","Mechanical Engineer","Engineering","Seattle"],["Brian Hughes","Electrical Engineer","Engineering","Norfolk"],["Jessica Wu","Electrical Engineer","Engineering","Phoenix"],["Samuel Jackson","CAD Designer","Engineering","Seattle"],["Patricia Lewis","CAD Designer","Engineering","Norfolk"],["Amanda Wallace","QA Manager","Quality Assurance","Phoenix"],["Jennifer Walters","Compliance Officer","Quality Assurance","San Diego"],["Peter Parks","Quality Inspector","Quality Assurance","Phoenix"],["Steven Rogers","Quality Inspector","Quality Assurance","Seattle"],["Natalie Roman","Quality Inspector","Quality Assurance","Norfolk"],["Clinton Barnes","Quality Inspector","Quality Assurance","Phoenix"],["Mary Watson","HR Director","Human Resources","San Diego"],["Piper Potts","HR Generalist","Human Resources","Phoenix"],["Harold Hogan","Office Manager","Administration","San Diego"],["Edward Leeds","Accountant","Finance","San Diego"],["Frank Castiglione","Plant Manager","Operations","Phoenix"],["Logan Hewitt","Shop Foreman","Operations","Phoenix"],["John Smith","CNC Machinist III","Operations","Phoenix"],["Robert Johnson","CNC Machinist III","Operations","Phoenix"],["Michael Williams","CNC Machinist II","Operations","Phoenix"],["David Brown","CNC Machinist II","Operations","Phoenix"],["James Jones","CNC Machinist I","Operations","Phoenix"],["Arthur Curry","Shop Foreman","Operations","Seattle"],["Thomas Miller","CNC Machinist II","Operations","Seattle"],["Richard Davis","CNC Machinist I","Operations","Seattle"],["Charles Garcia","CNC Machinist I","Operations","Seattle"],["Joseph Rodriguez","Assembly Tech","Operations","Seattle"],["Christopher Wilson","Assembly Tech","Operations","Seattle"],["Barry Allen","Shop Foreman","Operations","Norfolk"],["Daniel Martinez","CNC Machinist II","Operations","Norfolk"],["Paul Anderson","CNC Machinist I","Operations","Norfolk"],["Mark Taylor","CNC Machinist I","Operations","Norfolk"],["Donald Thomas","Assembly Tech","Operations","Norfolk"],["George Hernandez","Assembly Tech","Operations","Norfolk"],["Kenneth White","Maintenance Tech","Facilities","Phoenix"],["Steven Lopez","Maintenance Tech","Facilities","Seattle"],["Edward Scott","Logistics Coordinator","Logistics","Phoenix"],["Brian Green","Shipping/Receiving","Logistics","Phoenix"],["Ronald Adams","Shipping/Receiving","Logistics","Seattle"],["Anthony Baker","Shipping/Receiving","Logistics","Norfolk"]];
+let dept='';
+const depts=['All'].concat([...new Set(DIR.map(r=>r[2]))]);
+document.getElementById('deptChips').innerHTML=depts.map(d=>'<button class="chip" data-dept="'+(d==='All'?'':esc(d))+'" aria-pressed="'+(d==='All')+'">'+esc(d)+'</button>').join('');
+document.getElementById('deptChips').onclick=e=>{const c=e.target.closest('[data-dept]');if(!c)return;dept=c.dataset.dept;document.querySelectorAll('[data-dept]').forEach(x=>x.setAttribute('aria-pressed',x===c));renderDir();};
+function renderDir(){
+  const q=document.getElementById('empSearch').value.toLowerCase(), loc=document.getElementById('locSel').value;
+  const rows=DIR.filter(r=>(!dept||r[2]===dept)&&(!loc||r[3]===loc)&&(!q||(r[0]+' '+r[1]).toLowerCase().includes(q)));
+  document.getElementById('empBody').innerHTML=rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join('')||'<tr><td colspan="4" class="muted">No one matches. Clear the search or pick another department.</td></tr>';
+  document.getElementById('empCount').textContent=rows.length+' of '+DIR.length+' staff';
+}
+document.getElementById('empSearch').oninput=renderDir;document.getElementById('locSel').onchange=renderDir;renderDir();
+
+/* ---------- Scoping ---------- */
+const CATS=['CUI Asset','Security Protection Asset','Contractor Risk Managed Asset','Specialized Asset','Out of scope'];
+const SCOPE=[
+ ['s1','PLM01 server','Product lifecycle server that receives CAD files',0,'It stores and processes engineering CUI.'],
+ ['s2','SQL01 database','Database behind PLM01',0,'It stores CUI metadata and files passed from PLM01.'],
+ ['s3','S3 bucket stratum-cui-documents','AWS storage at the end of the engineering flow',0,'It stores CUI, so it’s a CUI Asset, and the cloud provider must meet FedRAMP Moderate or equivalent.'],
+ ['s4','Contracts admin PC (VLAN 30)','Used to prepare contract documents',0,'It processes contract CUI before upload to SharePoint.'],
+ ['s5','Veeam backup server and tape library','Backs up FILE01',0,'Backups contain CUI, so these assets store CUI.'],
+ ['s6','Cisco Catalyst 9300 core switches','Phoenix core network',0,'Assets that transmit CUI are CUI Assets. Every CUI flow in Phoenix crosses the core.'],
+ ['s7','FortiGate 600E firewall','Perimeter and VPN hub',1,'It provides boundary protection and VPN for the CUI environment, which makes it a Security Protection Asset.'],
+ ['s8','Duo MFA service','Second factor for VPN logins',1,'It provides an authentication security function, even though it never handles CUI.'],
+ ['s9','EC2-BASTION01','Admin jump host in AWS',1,'It controls administrative access to systems that hold CUI.'],
+ ['s10','Accountant’s workstation (Admin VLAN)','Finance user on the same VLAN as contract staff',2,'It can reach CUI shares on the Admin VLAN but policy says finance doesn’t handle CUI. Document it in the SSP as a Contractor Risk Managed Asset, or segment it out.'],
+ ['s11','CNC-HAAS machine controllers','Shop floor OT, VLAN 40',3,'Operational technology is a Specialized Asset. It must be in the asset inventory and SSP, with risk-based controls.'],
+ ['s12','CMM-HEXAGON measuring machines','Quality inspection equipment',3,'Test equipment is a Specialized Asset category.'],
+ ['s13','Stratum-Guest wireless network','Visitor internet access',4,'The firewall denies guest traffic to internal VLANs, so it can’t reach CUI. Keep evidence of that separation.']
+];
+let SA=store.get('scope',{});
+function renderScope(checked){
+  document.getElementById('scopeList').innerHTML=SCOPE.map(s=>{
+    const v=SA[s[0]], cls=checked&&v!==undefined&&v!==''?(Number(v)===s[3]?' right':' wrong'):'';
+    return '<div class="scope-item'+cls+'"><div><b>'+esc(s[1])+'</b><div class="small muted">'+esc(s[2])+'</div></div>'+
+      '<select data-s="'+s[0]+'" aria-label="Category for '+esc(s[1])+'"><option value="">Choose a category</option>'+CATS.map((c,i)=>'<option value="'+i+'"'+(String(v)===String(i)?' selected':'')+'>'+c+'</option>').join('')+'</select>'+
+      '<div class="fb">'+(cls===' right'?'Correct. ':'Answer: '+CATS[s[3]]+'. ')+esc(s[4])+'</div></div>';
+  }).join('');
+}
+document.getElementById('scopeList').onchange=e=>{const s=e.target.dataset.s;if(!s)return;SA[s]=e.target.value;store.set('scope',SA);const it=e.target.closest('.scope-item');it.classList.remove('right','wrong');};
+document.getElementById('scopeCheck').onclick=()=>{
+  renderScope(true);
+  const ans=SCOPE.filter(s=>SA[s[0]]!==undefined&&SA[s[0]]!=='');
+  const right=ans.filter(s=>Number(SA[s[0]])===s[3]).length;
+  document.getElementById('scopeScore').textContent=ans.length?right+' of '+SCOPE.length+' correct'+(ans.length<SCOPE.length?' ('+(SCOPE.length-ans.length)+' unanswered)':'')+'.':'Choose a category for at least one asset first.';
+};
+document.getElementById('scopeReset').onclick=()=>{SA={};store.set('scope',SA);renderScope(false);document.getElementById('scopeScore').textContent='';};
+renderScope(false);
+
+/* ---------- Navigation ---------- */
+const sections=[...document.querySelectorAll('.section')];
+const EVSECS=[...document.querySelectorAll('[data-evidence]')].map(b=>b.dataset.go);
+let visited=new Set(store.get('visited',[]));
+function go(id){
+  if(!document.getElementById(id)) id='brief';
+  sections.forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('.nav-group button').forEach(b=>{
+    if(b.dataset.go===id) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+    b.classList.toggle('visited',visited.has(b.dataset.go)||b.dataset.go===id);
+  });
+  visited.add(id); store.set('visited',[...visited]);
+  document.getElementById('pageTitle').textContent=document.getElementById(id).dataset.title;
+  const n=EVSECS.filter(s=>visited.has(s)).length;
+  document.getElementById('progTxt').textContent=n+' of '+EVSECS.length;
+  document.getElementById('progBar').style.width=(n/EVSECS.length*100)+'%';
+  if(id==='findings') renderFindings();
+  try{history.replaceState(null,'','#'+id);}catch(e){}
+  window.scrollTo(0,0); closeRail();
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b) go(b.dataset.go);});
+document.getElementById('findBtn').onclick=()=>go('findings');
+
+const rail=document.getElementById('rail'),scrim=document.getElementById('scrim'),menuBtn=document.getElementById('menuBtn');
+function closeRail(){rail.classList.remove('open');scrim.classList.remove('show');menuBtn.setAttribute('aria-expanded','false');}
+menuBtn.onclick=()=>{rail.classList.add('open');scrim.classList.add('show');menuBtn.setAttribute('aria-expanded','true');};
+scrim.onclick=closeRail;
+
+/* ---------- Notes ---------- */
+const notes=document.getElementById('notes'),notesTxt=document.getElementById('notesTxt'),notesBtn=document.getElementById('notesBtn');
+notesTxt.value=store.get('notes','');
+notesTxt.oninput=()=>store.set('notes',notesTxt.value);
+notesBtn.onclick=()=>{const o=notes.classList.toggle('open');notesBtn.setAttribute('aria-expanded',o);if(o)notesTxt.focus();};
+document.getElementById('notesClose').onclick=()=>{notes.classList.remove('open');notesBtn.setAttribute('aria-expanded','false');notesBtn.focus();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(notes.classList.contains('open'))document.getElementById('notesClose').click();closeRail();}});
+
+/* ---------- Key and theme ---------- */
+const keyBtn=document.getElementById('keyBtn');
+function setKey(on){document.body.classList.toggle('key-on',on);keyBtn.setAttribute('aria-pressed',on);store.set('key',on);}
+keyBtn.onclick=()=>setKey(keyBtn.getAttribute('aria-pressed')!=='true');
+setKey(store.get('key',false));
+
+const root=document.documentElement;
+function applyTheme(t){if(t)root.setAttribute('data-theme',t);else root.removeAttribute('data-theme');}
+applyTheme(store.get('theme',null));
+document.getElementById('themeBtn').onclick=()=>{
+  const cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  const next=cur==='dark'?'light':'dark'; applyTheme(next); store.set('theme',next);
+};
+
+syncFlags();
+go((location.hash||'').slice(1)||'brief');
+})();
+</script>
+</body>
+</html>
