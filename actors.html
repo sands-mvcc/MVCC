@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 3: Threat Actors &amp; Attack Surface Simulator | Security+ SY0-701</title>
+<meta name="description" content="Interactive SIEM lab for CompTIA Security+ SY0-701 Domain 2: identify attack vectors in Dunder Mifflin's logs.">
+<style>
+/* ======================================================================
+   DESIGN TOKENS — light default, dark via [data-theme="dark"]
+   Contrast (text on --panel): ink 15.8:1, muted 7.4:1, brand 8.6:1,
+   ok 5.5:1, warn 6.3:1, danger 6.0:1. Dark values all >= 7:1.
+   ====================================================================== */
+:root{
+  --bg:#e9edf2; --panel:#ffffff; --panel-2:#f5f7fa; --ink:#17202b; --muted:#495466;
+  --line:#cfd6e0; --line-strong:#9aa6b6;
+  --brand:#0047ab; --brand-ink:#ffffff; --brand-soft:#e3ecfa; --chrome:#0b3a80;
+  --ok:#00794f; --ok-bg:#e2f4eb; --warn:#8a5300; --warn-bg:#fff2d4;
+  --danger:#b3261e; --danger-bg:#fce6e3; --info:#0047ab; --info-bg:#e3ecfa;
+  --bar:#00a86b; --bar-sel:#0047ab; --flag:#b3261e; --key:#6b3fa0;
+  --focus:#c05b00;
+  --mono:"Cascadia Mono","Consolas","SFMono-Regular",ui-monospace,monospace;
+  --sans:"Segoe UI","Segoe UI Variable",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r-s:4px; --r-m:8px;
+  --fs-xs:.75rem; --fs-s:.8125rem; --fs-m:.9375rem; --fs-l:1.125rem; --fs-xl:1.375rem;
+  color-scheme:light;
+}
+[data-theme="dark"]{
+  --bg:#0d141e; --panel:#151f2c; --panel-2:#1b2737; --ink:#e7edf5; --muted:#aab6c6;
+  --line:#2b3a4e; --line-strong:#4a5c74;
+  --brand:#7aabff; --brand-ink:#0d141e; --brand-soft:#1c2f4d; --chrome:#0a2550;
+  --ok:#5bd8a2; --ok-bg:#123629; --warn:#f3be55; --warn-bg:#3a2c10;
+  --danger:#ff9389; --danger-bg:#3e1b19; --info:#7aabff; --info-bg:#1c2f4d;
+  --bar:#3cc98e; --bar-sel:#7aabff; --flag:#ff9389; --key:#c9a7f5;
+  --focus:#ffb35c;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 var(--fs-m)/1.5 var(--sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:-999px;top:0;background:var(--brand);color:var(--brand-ink);padding:.5rem 1rem;z-index:50}
+.skip:focus{left:.5rem}
+.mono{font-family:var(--mono);font-size:var(--fs-s)}
+
+/* ---------- App chrome ---------- */
+.app-head{background:var(--chrome);color:#fff;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem 1.5rem;padding:.6rem 1.25rem}
+.brand{display:flex;align-items:center;gap:.75rem;min-width:0}
+.brand svg{flex:none}
+.product{margin:0;font-size:var(--fs-xs);opacity:.85;letter-spacing:.02em}
+.app-head h1{margin:0;font-size:var(--fs-l);font-weight:600;line-height:1.25}
+.head-tools{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.clock{font-family:var(--mono);font-size:var(--fs-s);background:rgba(255,255,255,.12);padding:.3rem .6rem;border-radius:var(--r-s)}
+.score{display:flex;align-items:baseline;gap:.35rem;background:#fff;color:#0b3a80;padding:.25rem .7rem;border-radius:var(--r-s);font-size:var(--fs-s)}
+.score strong{font-size:var(--fs-l)}
+.score.bump{animation:bump .5s ease}
+@keyframes bump{40%{transform:scale(1.12)}}
+.hbtn{background:transparent;border:1px solid rgba(255,255,255,.55);color:#fff;border-radius:var(--r-s);padding:.35rem .7rem;cursor:pointer;font-size:var(--fs-s)}
+.hbtn:hover{background:rgba(255,255,255,.14)}
+.hbtn[aria-pressed="true"]{background:#fff;color:#0b3a80}
+
+/* ---------- Progress ---------- */
+.progress-wrap{background:var(--panel);border-bottom:1px solid var(--line);padding:.5rem 1.25rem;overflow-x:auto}
+.progress{list-style:none;margin:0;padding:0;display:flex;gap:.25rem;min-width:max-content}
+.progress li{display:flex;align-items:center;gap:.4rem;padding:.3rem .6rem;border-radius:999px;font-size:var(--fs-xs);color:var(--muted);border:1px solid transparent}
+.progress .dot{width:1.35rem;height:1.35rem;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line-strong);font-weight:700;font-size:.7rem;background:var(--panel)}
+.progress li.done .dot{background:var(--ok);border-color:var(--ok);color:var(--panel)}
+.progress li.current{border-color:var(--brand);color:var(--ink);background:var(--brand-soft)}
+.progress li.current .dot{border-color:var(--brand);color:var(--brand)}
+.progress .pt{font-weight:600}
+
+/* ---------- Layout ---------- */
+.layout{display:grid;grid-template-columns:minmax(320px,410px) minmax(0,1fr);gap:1rem;padding:1rem 1.25rem;align-items:start}
+.task-pane{position:sticky;top:.75rem;max-height:calc(100vh - 1.5rem);overflow:auto;display:flex;flex-direction:column;gap:.75rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-m);padding:1rem 1.1rem}
+.objective{border-left:4px solid var(--brand)}
+.objective h2{margin:0 0 .25rem;font-size:var(--fs-s);color:var(--brand);font-weight:700}
+.objective p{margin:0;font-size:var(--fs-s)}
+.task-meta{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-size:var(--fs-xs);color:var(--muted);margin-bottom:.35rem}
+.badge{display:inline-flex;align-items:center;gap:.25rem;padding:.1rem .5rem;border-radius:999px;font-size:var(--fs-xs);font-weight:600;border:1px solid currentColor}
+.badge.scaf{color:var(--brand)}
+.badge.ok{color:var(--ok);background:var(--ok-bg)}
+.task-card h2{margin:0 0 .5rem;font-size:var(--fs-xl);line-height:1.25}
+.task-card p{margin:.4rem 0}
+.steps{margin:.6rem 0;padding-left:1.25rem;font-size:var(--fs-s)}
+.steps li{margin:.3rem 0}
+.field{margin:.85rem 0 .5rem}
+.field label{display:block;font-weight:600;font-size:var(--fs-s);margin-bottom:.3rem}
+select,input[type=text],input[type=search],input[type=number],textarea{background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--r-s);padding:.45rem .55rem;width:100%}
+textarea{min-height:4.5rem;resize:vertical}
+.btn{display:inline-flex;align-items:center;gap:.4rem;border-radius:var(--r-s);padding:.5rem .9rem;border:1px solid var(--line-strong);background:var(--panel);cursor:pointer;font-weight:600;font-size:var(--fs-s)}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+.avail{font-size:var(--fs-xs);color:var(--muted);margin-top:.6rem}
+.hints{margin-top:.6rem;display:grid;gap:.4rem}
+.hint{font-size:var(--fs-s);padding:.5rem .65rem;border-radius:var(--r-s);background:var(--panel-2);border:1px dashed var(--line-strong)}
+.hint b{color:var(--brand)}
+.keybox{margin-top:.75rem;padding:.6rem .7rem;border:2px dashed var(--key);border-radius:var(--r-s);font-size:var(--fs-s)}
+.keybox h3{margin:0 0 .25rem;font-size:var(--fs-s);color:var(--key)}
+.keybox code{font-family:var(--mono);font-size:var(--fs-xs);word-break:break-all}
+.thr-status{margin:.6rem 0 0;font-size:var(--fs-s)}
+.map-row{display:grid;gap:.25rem;margin:.6rem 0}
+.map-row label{font-weight:600;font-size:var(--fs-s)}
+
+/* ---------- Feedback (never color alone: icon + label + border style) ---------- */
+.feedback{border-radius:var(--r-m);padding:.75rem .9rem;font-size:var(--fs-s);border:1px solid var(--line);background:var(--panel);display:flex;gap:.6rem;align-items:flex-start;min-height:3rem}
+.feedback:empty{display:none}
+.feedback .ico{flex:none;width:1.4rem;height:1.4rem}
+.feedback strong{display:block}
+.fb-ok{background:var(--ok-bg);border-color:var(--ok);border-left:6px solid var(--ok)}
+.fb-ok strong{color:var(--ok)}
+.fb-warn{background:var(--warn-bg);border-color:var(--warn);border-left:6px dashed var(--warn)}
+.fb-warn strong{color:var(--warn)}
+.fb-err{background:var(--danger-bg);border-color:var(--danger);border-left:6px double var(--danger)}
+.fb-err strong{color:var(--danger)}
+.fb-info{background:var(--info-bg);border-color:var(--info);border-left:6px solid var(--info)}
+.fb-info strong{color:var(--info)}
+.feedback.enter{animation:fbIn .35s ease}
+@keyframes fbIn{from{transform:translateY(-4px);opacity:.3}}
+.coach{border:2px solid var(--brand);background:var(--brand-soft)}
+.coach h2{margin:0 0 .3rem;font-size:var(--fs-m)}
+.coach p{margin:.2rem 0 .6rem;font-size:var(--fs-s)}
+
+/* ---------- Console ---------- */
+.console{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-m);min-width:0;overflow:hidden}
+.console:focus{outline:none}
+.mini-task{display:none;position:sticky;top:0;z-index:5;background:var(--brand);color:var(--brand-ink);padding:.45rem .8rem;font-size:var(--fs-s);font-weight:600}
+.c-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;padding:.5rem .75rem;background:var(--panel-2);border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:.25rem}
+.tab{border:1px solid transparent;border-bottom:none;background:transparent;padding:.45rem .85rem;border-radius:var(--r-s) var(--r-s) 0 0;cursor:pointer;font-weight:600;font-size:var(--fs-s);color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--panel);border-color:var(--line);color:var(--brand);box-shadow:inset 0 3px 0 var(--brand)}
+.tab .pip{display:inline-block;margin-left:.3rem;font-size:var(--fs-xs);padding:0 .35rem;border-radius:999px;background:var(--danger);color:var(--panel)}
+.c-src{font-size:var(--fs-xs);color:var(--muted)}
+.searchbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:.5rem;padding:.75rem;border-bottom:1px solid var(--line)}
+.searchbar input{font-family:var(--mono);font-size:var(--fs-s)}
+.subbar{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;padding:.5rem .75rem;border-bottom:1px solid var(--line);font-size:var(--fs-s)}
+.subbar select{width:auto;max-width:100%}
+.subbar label.chk{display:inline-flex;gap:.35rem;align-items:center}
+.qhelp{font-size:var(--fs-xs);color:var(--muted);padding:0 .75rem .5rem}
+.histo{padding:.5rem .75rem;border-bottom:1px solid var(--line)}
+.histo h3{margin:0 0 .25rem;font-size:var(--fs-s);display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+.histo svg{width:100%;height:auto;display:block}
+.histo .barg{cursor:pointer}
+.histo .barg rect.b{fill:var(--bar);transition:fill .15s}
+.histo .barg:hover rect.b,.histo .barg:focus rect.b{fill:var(--bar-sel)}
+.histo .barg.sel rect.b{fill:var(--bar-sel)}
+.histo .barg.sel rect.hit{stroke:var(--ink);stroke-width:2;stroke-dasharray:4 2}
+.histo .barg:focus{outline:none}
+.histo .barg:focus rect.hit{stroke:var(--focus);stroke-width:3}
+.histo text{fill:var(--muted);font:11px var(--sans)}
+.histo text.cnt{fill:var(--ink);font-weight:600}
+.workarea{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:420px}
+.fields{border-right:1px solid var(--line);padding:.6rem;font-size:var(--fs-s);background:var(--panel-2)}
+.fields h3{margin:0 0 .4rem;font-size:var(--fs-s)}
+.fields details{margin:.15rem 0;border-bottom:1px solid var(--line);padding:.2rem 0}
+.fields summary{cursor:pointer;font-weight:600;padding:.15rem 0}
+.fields summary span{color:var(--muted);font-weight:400}
+.fields ul{list-style:none;margin:.2rem 0 .3rem;padding:0}
+.pivot{width:100%;display:flex;justify-content:space-between;gap:.4rem;background:transparent;border:1px solid transparent;border-radius:var(--r-s);padding:.15rem .3rem;cursor:pointer;text-align:left;font-family:var(--mono);font-size:var(--fs-xs)}
+.pivot:hover{border-color:var(--line-strong);background:var(--panel)}
+.pivot .v{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.results{min-width:0}
+.rmeta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem;align-items:center;padding:.5rem .75rem;font-size:var(--fs-s);border-bottom:1px solid var(--line)}
+.rmeta .chip{display:inline-flex;align-items:center;gap:.3rem;background:var(--brand-soft);border:1px solid var(--brand);color:var(--brand);border-radius:999px;padding:.05rem .5rem;font-size:var(--fs-xs);cursor:pointer}
+.tbl-wrap{overflow-x:auto}
+table.events{width:100%;border-collapse:collapse;font-size:var(--fs-s)}
+table.events caption{text-align:left;padding:.4rem .75rem;font-size:var(--fs-xs);color:var(--muted)}
+table.events th{position:sticky;top:0;background:var(--panel-2);text-align:left;font-size:var(--fs-xs);color:var(--muted);font-weight:700;padding:.4rem .5rem;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+table.events td{padding:.35rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}
+tr.ev:hover td{background:var(--panel-2)}
+tr.ev.is-flagged td{background:var(--danger-bg)}
+tr.ev.is-flagged td:first-child{box-shadow:inset 4px 0 0 var(--flag)}
+tr.ev.is-key td:last-child{box-shadow:inset -4px 0 0 var(--key)}
+tr.ev.flash td{animation:rowIn .6s ease}
+@keyframes rowIn{from{background:var(--brand-soft)}}
+.td-time{font-family:var(--mono);font-size:var(--fs-xs);white-space:nowrap}
+.td-st{font-family:var(--mono);font-size:var(--fs-xs);white-space:nowrap;color:var(--muted)}
+.td-code{font-family:var(--mono);font-size:var(--fs-xs)}
+.flagbtn{width:2rem;height:2rem;display:grid;place-items:center;border:1px solid var(--line-strong);border-radius:var(--r-s);background:var(--panel);cursor:pointer;color:var(--muted)}
+.flagbtn[aria-pressed="true"]{border-color:var(--flag);color:var(--flag);background:var(--panel)}
+.flagbtn[aria-pressed="true"] svg{animation:pop .3s ease}
+@keyframes pop{50%{transform:scale(1.35)}}
+.expbtn{background:none;border:none;padding:0;text-align:left;cursor:pointer;color:var(--ink);display:flex;gap:.35rem;align-items:flex-start;width:100%}
+.expbtn .car{flex:none;transition:transform .15s;color:var(--muted)}
+.expbtn[aria-expanded="true"] .car{transform:rotate(90deg)}
+.tagf{display:inline-block;font-size:.68rem;font-weight:700;padding:0 .35rem;border-radius:var(--r-s);border:1px solid var(--flag);color:var(--flag);margin-left:.35rem;white-space:nowrap}
+.tagk{display:inline-block;font-size:.68rem;font-weight:700;padding:0 .35rem;border-radius:var(--r-s);border:1px dashed var(--key);color:var(--key);margin-left:.35rem}
+tr.detail td{background:var(--panel-2);padding:.6rem .75rem}
+.detail-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:.75rem}
+pre.raw{margin:0;font-family:var(--mono);font-size:var(--fs-xs);background:var(--panel);border:1px solid var(--line);border-radius:var(--r-s);padding:.6rem;overflow:auto;max-height:320px;white-space:pre}
+table.kv{width:100%;border-collapse:collapse;font-size:var(--fs-xs)}
+table.kv th,table.kv td{text-align:left;padding:.2rem .3rem;border-bottom:1px solid var(--line);vertical-align:top}
+table.kv th{font-family:var(--mono);color:var(--muted);font-weight:600;white-space:nowrap}
+table.kv td{font-family:var(--mono);word-break:break-word}
+.addf{font-size:.68rem;padding:.05rem .35rem;border:1px solid var(--line-strong);border-radius:var(--r-s);background:var(--panel);cursor:pointer;margin-left:.3rem}
+.more{padding:.6rem .75rem}
+.empty{padding:1.5rem .75rem;color:var(--muted)}
+
+/* ---------- Correlation rules ---------- */
+.rules{padding:1rem .9rem}
+.rule{border:1px solid var(--line);border-radius:var(--r-m);padding:1rem}
+.rule h3{margin:0 0 .25rem;font-size:var(--fs-l)}
+.spl{font-family:var(--mono);font-size:var(--fs-xs);background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-s);padding:.5rem;margin:.5rem 0;overflow-x:auto;white-space:pre}
+.thr{display:grid;grid-template-columns:minmax(0,1fr) 5.5rem;gap:.75rem;align-items:center;margin:.4rem 0 .9rem}
+.thr input[type=range]{width:100%;accent-color:var(--brand)}
+.st-alert{color:var(--danger);font-weight:700;display:inline-flex;gap:.3rem;align-items:center}
+.st-quiet{color:var(--muted);display:inline-flex;gap:.3rem;align-items:center}
+tr.alerting td{background:var(--danger-bg)}
+tr.alerting .st-alert svg{animation:pulse 1.2s ease-in-out 2}
+@keyframes pulse{50%{transform:scale(1.3)}}
+.verdict{margin-top:.8rem}
+
+/* ---------- Footer & dialogs ---------- */
+.foot{padding:.75rem 1.25rem 1.5rem;font-size:var(--fs-xs);color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem}
+.foot p{margin:0;max-width:75ch}
+.keytoggle{background:none;border:none;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:var(--fs-xs);padding:.2rem}
+dialog{border:none;border-radius:var(--r-m);padding:0;max-width:min(760px,94vw);width:100%;background:var(--panel);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(8,16,30,.6)}
+.dlg-head{background:var(--chrome);color:#fff;padding:1rem 1.25rem}
+.dlg-head p{margin:0;font-size:var(--fs-s);opacity:.9}
+.dlg-head h2{margin:.15rem 0 0;font-size:var(--fs-xl)}
+.dlg-body{padding:1rem 1.25rem;max-height:70vh;overflow:auto}
+.dlg-body h3{font-size:var(--fs-m);margin:1rem 0 .3rem}
+.dlg-body p,.dlg-body li{font-size:var(--fs-s)}
+.dlg-foot{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:flex-end;padding:.8rem 1.25rem;border-top:1px solid var(--line)}
+.alertcard{display:flex;gap:.75rem;border:1px solid var(--danger);background:var(--danger-bg);border-radius:var(--r-m);padding:.75rem;margin-bottom:.75rem}
+.alertcard p{margin:.15rem 0}
+.authnote{border:1px dashed var(--line-strong);border-radius:var(--r-s);padding:.5rem .7rem;font-size:var(--fs-xs);color:var(--muted)}
+table.sum{width:100%;border-collapse:collapse;font-size:var(--fs-s)}
+table.sum th,table.sum td{text-align:left;border-bottom:1px solid var(--line);padding:.35rem .4rem}
+.demo-focus{outline:3px solid var(--focus)!important;outline-offset:3px;animation:demoGlow 1.4s ease-in-out 2}
+@keyframes demoGlow{50%{outline-offset:6px}}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1050px){
+  .layout{grid-template-columns:1fr}
+  .task-pane{position:static;max-height:none}
+  .mini-task{display:block}
+}
+@media (max-width:720px){
+  .workarea{grid-template-columns:1fr}
+  .fields{border-right:none;border-bottom:1px solid var(--line)}
+  .searchbar{grid-template-columns:1fr 1fr}
+  .searchbar input{grid-column:1/-1}
+  .detail-grid{grid-template-columns:1fr}
+  .col-st,.col-host{display:none}
+  .app-head h1{font-size:var(--fs-m)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+@media print{.app-head .head-tools,.progress-wrap,.console,.foot{display:none}}
+</style>
+</head>
+<body>
+<a class="skip" href="#console">Skip to SIEM console</a>
+
+<header class="app-head">
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="6" fill="#fff"/><path d="M6 23 L11 15 L15 19 L20 9 L24 17 L28 13" fill="none" stroke="#0047ab" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="20" cy="9" r="2.6" fill="#00a86b"/></svg>
+    <div>
+      <p class="product">Sentinel Desk SIEM, Dunder Mifflin SOC</p>
+      <h1>Lesson 3: Threat Actors &amp; Attack Surface Simulator</h1>
+    </div>
+  </div>
+  <div class="head-tools">
+    <span class="clock" title="Scenario clock">Mon 2026-10-19 08:05</span>
+    <div class="score" id="scoreBox"><span>Score</span><strong id="score">0</strong><span>/ <span id="scoreMax">100</span></span></div>
+    <button class="hbtn" id="btnDemo" type="button">Guided walkthrough</button>
+    <button class="hbtn" id="btnTheme" type="button" aria-pressed="false">Dark mode</button>
+    <button class="hbtn" id="btnReset" type="button">Reset lab</button>
+  </div>
+</header>
+
+<nav class="progress-wrap" aria-label="Lab progress"><ol class="progress" id="progress"></ol></nav>
+
+<main class="layout">
+  <section class="task-pane" aria-label="Instructions">
+    <div class="card objective"><h2>Learning objective</h2><p id="objective"></p></div>
+    <div class="card coach" id="coach" hidden role="region" aria-label="Guided walkthrough" aria-live="polite"></div>
+    <div class="card task-card" id="taskCard"></div>
+    <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+  </section>
+
+  <section id="console" class="console" aria-label="SIEM console" tabindex="-1">
+    <div class="mini-task" id="miniTask"></div>
+    <div class="c-head">
+      <div class="tabs" role="tablist" aria-label="Console views">
+        <button class="tab" role="tab" id="tabSearch" aria-controls="panelSearch" aria-selected="true" type="button">Search</button>
+        <button class="tab" role="tab" id="tabRules" aria-controls="panelRules" aria-selected="false" tabindex="-1" type="button">Correlation rules<span class="pip" id="rulePip" hidden></span></button>
+      </div>
+      <span class="c-src">Index: dm_security, window 2026-10-19 00:00 to 08:05</span>
+    </div>
+
+    <div id="panelSearch" role="tabpanel" aria-labelledby="tabSearch">
+      <form class="searchbar" id="searchForm" role="search">
+        <label for="q" class="sr">Search query</label>
+        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. EventCode=4625 src_ip=203.0.113.*">
+        <button class="btn primary" type="submit">Run search</button>
+        <button class="btn" type="button" id="btnClear">Clear</button>
+      </form>
+      <div class="subbar">
+        <label for="saved">Saved queries</label>
+        <select id="saved"><option value="">Choose a saved query</option></select>
+        <label class="chk"><input type="checkbox" id="flagOnly"> Flagged events only</label>
+      </div>
+      <p class="qhelp">Terms combine with AND. Use <code>field=value</code>, <code>field!=value</code>, <code>*</code> wildcards, quotes for spaces, or free text.</p>
+      <div class="histo">
+        <h3><span>Event timeline (30-minute buckets)</span><span id="histoNote" class="c-src"></span></h3>
+        <svg id="histo" viewBox="0 0 700 130" role="group" aria-label="Event count histogram. Select a bar to filter by time."></svg>
+      </div>
+      <div class="workarea">
+        <aside class="fields" aria-label="Field pivots">
+          <h3>Fields in results</h3>
+          <div id="fields"></div>
+        </aside>
+        <div class="results">
+          <div class="rmeta"><span id="rcount" aria-live="polite"></span><span id="rchips"></span></div>
+          <div class="tbl-wrap">
+            <table class="events">
+              <caption>Search results, newest first. Use the flag button to mark evidence and the summary to expand details.</caption>
+              <thead><tr><th scope="col">Flag</th><th scope="col">Time</th><th scope="col" class="col-st">Source type</th><th scope="col" class="col-host">Host</th><th scope="col">Event</th><th scope="col">Summary</th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <div class="more" id="more"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panelRules" role="tabpanel" aria-labelledby="tabRules" hidden>
+      <div class="rules">
+        <div class="rule">
+          <h3>Excessive failed logons</h3>
+          <p>Raises an alert when one source IP produces too many failed logons (Event ID 4625) inside any 10-minute window.</p>
+          <div class="spl" aria-label="Rule logic">EventCode=4625
+| bin _time span=10m
+| stats count AS failures, dc(user) AS accounts BY src_ip, _time
+| where failures &gt;= <span id="thrEcho">50</span></div>
+          <label for="thr"><b>Alert threshold</b> (failures per source in 10 minutes)</label>
+          <div class="thr">
+            <input type="range" id="thr" min="1" max="60" step="1" aria-describedby="thrDesc">
+            <input type="number" id="thrNum" min="1" max="60" step="1" aria-label="Threshold value">
+          </div>
+          <p id="thrDesc" class="c-src">Lower values catch more attacks but raise more false positives. Higher values are quieter but can miss attacks.</p>
+          <div class="tbl-wrap">
+            <table class="events">
+              <caption>Live preview of the rule against the last 8 hours.</caption>
+              <thead><tr><th scope="col">Source IP</th><th scope="col">Peak failures / 10 min</th><th scope="col">Accounts tried</th><th scope="col">Rule status</th></tr></thead>
+              <tbody id="ruleRows"></tbody>
+            </table>
+          </div>
+          <div id="ruleVerdict" class="verdict"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p><b>Authorized use only.</b> Every log, host, and address here is fictional and simulated in your browser. Practice investigation and testing techniques only on systems you own or are explicitly authorized to assess. IPs use documentation ranges (RFC 5737).</p>
+  <button class="keytoggle" id="btnKey" type="button" aria-pressed="false">Instructor key</button>
+</footer>
+
+<dialog id="dlgStart" aria-labelledby="startTitle">
+  <div class="dlg-head"><p>Monday, October 19, 2026, 8:05 AM</p><h2 id="startTitle">Attack notification</h2></div>
+  <div class="dlg-body" id="startBody"></div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="btnStartDemo">Watch walkthrough first</button>
+    <button class="btn primary" type="button" id="btnStart">Start investigation</button>
+  </div>
+</dialog>
+
+<dialog id="dlgDebrief" aria-labelledby="debTitle">
+  <div class="dlg-head"><p>Lab complete</p><h2 id="debTitle">Debrief: Dunder Mifflin attack surface</h2></div>
+  <div class="dlg-body" id="debBody"></div>
+  <div class="dlg-foot">
+    <button class="btn" type="button" id="btnPrint">Print summary</button>
+    <button class="btn" type="button" id="btnReplay">Replay lab</button>
+    <button class="btn primary" type="button" id="btnCloseDeb">Return to console</button>
+  </div>
+</dialog>
+
+<script>
+'use strict';
+/* =============================================================================
+   1. LAB DATA — INSTRUCTORS EDIT HERE
+   -----------------------------------------------------------------------------
+   Everything a learner reads (tasks, expected answers, hints, feedback,
+   debrief) lives in LAB. Log evidence lives in buildEvents() (section 2).
+   - tasks[].targets   : event IDs that MUST be flagged to pass the task
+   - tasks[].related   : event IDs that are fine to flag (no penalty, not required)
+   - tasks[].answer    : the correct vector id (see LAB.vectors)
+   - tasks[].wrong     : misconception feedback keyed by wrong vector id
+                         (any wrong choice without an entry gets generic
+                          feedback built from the vector's definition)
+   - tasks[].hints     : [nudge, clue, answer]; cost 0, 1, then 3 more points
+   - tasks[].threshold : optional {min,max,default} for the correlation rule
+   - Decoy events carry decoyFor + why (see buildEvents) and cost 1 point
+     if flagged during that task.
+   ============================================================================= */
+const LAB = {
+  meta: {
+    storageKey: 'dm-sec701-l3-siem-v1',
+    themeKey: 'dm-sec701-theme',
+    objective: 'Identify the attack vectors an adversary used to reach Dunder Mifflin\u2019s systems, users, and information by analyzing SIEM evidence, then recommend how to reduce each part of the attack surface (SY0-701 Objective 2.2).'
+  },
+  scoring: { attemptPenalty: 2, hintCost: [0, 0, 1, 4], wrongFlagPenalty: 1 },
+
+  vectors: [
+    { id: 'msg_email',     label: 'Message-based: email',                       def: 'a lure delivered to a person by email (phishing)' },
+    { id: 'msg_sms',       label: 'Message-based: SMS or instant message',     def: 'a lure delivered by text or chat message (smishing)' },
+    { id: 'image',         label: 'Image-based',                                def: 'malicious content hidden in an image file or QR code' },
+    { id: 'file',          label: 'File-based',                                 def: 'a malicious file (document macro, script, executable) that runs code when opened' },
+    { id: 'voice',         label: 'Voice call',                                 def: 'a phone call that manipulates a person into acting (vishing)' },
+    { id: 'removable',     label: 'Removable device',                           def: 'media such as a USB drive that physically carries code onto a host' },
+    { id: 'vuln_sw',       label: 'Vulnerable software',                        def: 'an exploitable flaw in supported software that a patch could fix' },
+    { id: 'unsupported',   label: 'Unsupported systems and applications',       def: 'end-of-life software that no longer receives security updates' },
+    { id: 'unsecure_net',  label: 'Unsecure network (wireless, wired, Bluetooth)', def: 'a network the attacker joins or listens on directly' },
+    { id: 'ports',         label: 'Open service ports',                         def: 'a listening network service the attacker can reach' },
+    { id: 'default_creds', label: 'Default credentials',                        def: 'factory usernames and passwords that were never changed' },
+    { id: 'supply_chain',  label: 'Supply chain (MSP, vendor, supplier)',       def: 'a trusted third party\u2019s access or product used as the way in' }
+  ],
+
+  savedQueries: [
+    { name: 'Email: delivered macro-enabled attachments', q: 'sourcetype=email:gateway action=delivered attachment=*.xlsm' },
+    { name: 'Email: all gateway events',                   q: 'sourcetype=email:gateway' },
+    { name: 'Process creation (4688)',                     q: 'EventCode=4688' },
+    { name: 'Failed logons (4625)',                        q: 'EventCode=4625' },
+    { name: 'Firewall: inbound traffic',                   q: 'sourcetype=firewall direction=inbound' },
+    { name: 'All events',                                  q: '' }
+  ],
+
+  tasks: [
+    { id: 't1', short: 'Email', title: 'Triage the delivered phishing email', scaffold: 'Worked example', points: 10, floor: 3,
+      brief: 'David Wallace forwards a user report: Jim Halpert opened an \u201coverdue invoice\u201d from a paper supplier first thing this morning. Start where the attacker first touched a person: the email gateway.',
+      steps: [
+        'Open Saved queries and choose \u201cEmail: delivered macro-enabled attachments.\u201d The search runs automatically.',
+        'Expand the result. Read the sender domain, the spf and dmarc results, and the attachment name.',
+        'Select the flag button on the malicious message.',
+        'Choose the attack vector below, then select Submit finding.'
+      ],
+      targets: ['E-1001'], related: [], answer: 'msg_email',
+      success: 'The attacker reached a user through an email message from a look-alike domain (paper-supp1y.example, with a digit 1 for the letter l) that failed SPF and DMARC and was still delivered. Message-based vectors aim at people, which is why users count as part of the attack surface.',
+      wrong: {
+        file: 'The attachment matters, and Task 2 covers it. This task asks how the attacker first reached Jim: the delivery channel was an email message.',
+        msg_sms: 'Right family, wrong channel. The evidence comes from the email gateway (sourcetype=email:gateway), not a mobile carrier or chat app.',
+        supply_chain: 'The sender pretends to be a supplier, but no real supplier\u2019s systems or access were used. Impersonating a vendor in email is still a message-based (phishing) vector.',
+        image: 'Nothing here is an image or QR code. The lure is an email carrying a spreadsheet.'
+      },
+      missing: 'Flag the message from the look-alike supplier domain. Check the action field: only delivered mail reached a user.',
+      hints: [
+        'Start with the email gateway. A saved query is ready for you.',
+        'Run \u201cEmail: delivered macro-enabled attachments.\u201d Look for SPF/DMARC failures and a domain that imitates a real supplier.',
+        'Flag E-1001 (FINAL NOTICE: Overdue Invoice #0412) and choose \u201cMessage-based: email.\u201d'
+      ],
+      key: { query: 'sourcetype=email:gateway action=delivered attachment=*.xlsm', flags: ['E-1001'] }
+    },
+    { id: 't2', short: 'File', title: 'Trace what the attachment did', scaffold: 'Guided practice', points: 10, floor: 3,
+      brief: 'Jim admits he selected \u201cEnable Content\u201d when the spreadsheet asked. Find the process evidence on his laptop, JH-LT01.',
+      steps: [
+        'Run the saved query \u201cProcess creation (4688)\u201d or search host=JH-LT01 EventCode=4688.',
+        'Expand each result and compare the Creator Process Name (the parent).',
+        'Flag the event where an Office application launched a script interpreter.',
+        'Choose the vector and submit.'
+      ],
+      targets: ['E-2001'], related: ['E-2002'], answer: 'file',
+      success: 'EXCEL.EXE launching a hidden PowerShell with an encoded command is the signature of a malicious macro. The code traveled inside the file, so this is a file-based vector chained after the message-based delivery. A single intrusion often uses more than one vector.',
+      wrong: {
+        msg_email: 'Email carried the file to Jim, but this event shows code running from the document. The vector that executes code is the file itself.',
+        vuln_sw: 'No software flaw was exploited. Excel did what macros are allowed to do once the user enabled them. That makes it file-based, not vulnerable software.',
+        image: 'The attachment is an .xlsm macro-enabled workbook, not an image.'
+      },
+      missing: 'Flag the 4688 event on JH-LT01 whose Creator Process Name is EXCEL.EXE and whose New Process Name is powershell.exe.',
+      hints: [
+        'Event ID 4688 records every new process along with the process that started it.',
+        'Search host=JH-LT01 EventCode=4688 and compare parents. Office apps rarely need to start PowerShell.',
+        'Flag E-2001 (EXCEL.EXE started powershell.exe) and choose \u201cFile-based.\u201d'
+      ],
+      key: { query: 'host=JH-LT01 EventCode=4688', flags: ['E-2001'] }
+    },
+    { id: 't3', short: 'Port', title: 'Tune the brute-force rule and find the way in', scaffold: 'Supported practice', points: 10, floor: 3,
+      brief: 'The overnight failed-logon rule never fired, yet the MSSP says TS01 talked to an unknown internet address around 02:00. Tune the rule so it catches the attack without alerting on ordinary typos, then find how the attacker reached TS01 and got in.',
+      steps: [
+        'Open the Correlation rules tab and adjust the threshold. Watch which sources alert.',
+        'Back in Search, find the inbound firewall connection that let the attacker reach TS01.',
+        'Find the successful logon (Event ID 4624) that followed the failures.',
+        'Flag both events, choose the vector, and submit.'
+      ],
+      targets: ['E-3001', 'E-3002'], related: 'ATTACKER_4625', answer: 'ports',
+      threshold: { min: 5, max: 38, default: 50 },
+      success: 'Firewall rule NAT-Legacy-RDP-TS01 exposed Remote Desktop (tcp/3389) to the internet. That open service port let 203.0.113.45 make 38 guesses in ten minutes and then log on interactively (4624, Logon Type 10). Closing the port, or putting it behind a VPN with MFA, removes this entry point entirely.',
+      wrong: {
+        default_creds: 'trn_admin is not a factory default account, and the attacker needed many failures to get in. The exposure that made guessing possible at all was the open RDP port.',
+        unsecure_net: 'The attacker came from the internet to a listening service. They never joined Dunder Mifflin\u2019s wireless or wired network.',
+        vuln_sw: 'No software flaw was used. RDP worked exactly as designed; it simply should not have been reachable from the internet.'
+      },
+      missing: 'You need two flags: the inbound firewall allow to 192.0.2.20 on port 3389, and the 4624 logon from 203.0.113.45.',
+      thresholdMsg: {
+        low: 'Threshold {n}: Dwight\u2019s and Kevin\u2019s mistyped passwords now raise alerts. Those are false positives, and noisy rules teach analysts to ignore alerts.',
+        high: 'Threshold {n}: the attacker\u2019s 38 failures stay under the line. That is a false negative, which is exactly why nobody was paged overnight.',
+        good: 'Threshold {n}: the brute-force source alerts and ordinary typos stay quiet. That is good tuning.'
+      },
+      hints: [
+        'The rule counts 4625 events per source IP in a 10-minute window. Compare the busiest source with normal users.',
+        'Any threshold from 5 to 38 works. Then search src_ip=203.0.113.45 and look at the firewall event and the 4624 event.',
+        'Set the threshold to 10, flag E-3001 (inbound allow tcp/3389) and E-3002 (4624 Logon Type 10), and choose \u201cOpen service ports.\u201d'
+      ],
+      key: { query: 'src_ip=203.0.113.45', flags: ['E-3001', 'E-3002'], extra: 'Threshold 5 to 38 (for example 10).' }
+    },
+    { id: 't4', short: 'EOL', title: 'Follow the attacker to an old server', scaffold: 'Supported practice', points: 10, floor: 3,
+      brief: 'From TS01 (192.0.2.20) the attacker moved inward. One system they touched should not still be on the network. The host_os field is your friend.',
+      steps: [
+        'Search for activity coming from TS01.',
+        'Use the field pivots to check which operating systems are involved.',
+        'Flag the connection to the outdated system and the logon that followed, then classify and submit.'
+      ],
+      targets: ['E-4001', 'E-4002'], related: [], answer: 'unsupported',
+      success: 'LEGACY-INV01 runs Windows Server 2008 R2, which reached end of support in January 2020, and the attacker negotiated the obsolete SMBv1 protocol with it before logging on. End-of-life systems stop receiving patches, so every new flaw stays open. Unsupported systems are a standing part of the attack surface until they are retired or isolated.',
+      wrong: {
+        vuln_sw: 'Close. Vulnerable software is a flaw in software that can still be patched. The bigger problem here is that the OS is past end of support, so no patch is coming.',
+        ports: 'SMB (tcp/445) is listening, but only inside the network. The weakness that sets this host apart is its end-of-life operating system.',
+        unsecure_net: 'The traffic moved across the internal wired network, but the network isn\u2019t what failed. The target system is what\u2019s out of support.'
+      },
+      missing: 'Flag both the IDS event where 192.0.2.20 negotiates SMBv1 with LEGACY-INV01 and the 4624 logon on LEGACY-INV01 that followed.',
+      hints: [
+        'Pivot on src_ip=192.0.2.20, then open the host_os field in the left panel.',
+        'One operating system in the results is far older than the others. Check what Microsoft says about its support status.',
+        'Flag E-4001 (SMBv1 negotiation to LEGACY-INV01) and E-4002 (4624 on LEGACY-INV01), then choose \u201cUnsupported systems and applications.\u201d'
+      ],
+      key: { query: 'src_ip=192.0.2.20', flags: ['E-4001', 'E-4002'] }
+    },
+    { id: 't5', short: 'Creds', title: 'Check the warehouse label printer', scaffold: 'Supported practice', points: 10, floor: 3,
+      brief: 'TS01 also connected to the warehouse label printer, WH-LABEL-01, which has its own web admin page. Find out how the attacker logged in and what they changed.',
+      steps: [
+        'Search the appliance\u2019s logs.',
+        'Compare the admin logins and read the credential_status field.',
+        'Flag the attacker\u2019s login, classify, and submit.'
+      ],
+      targets: ['E-5001'], related: ['E-5002'], answer: 'default_creds',
+      success: 'The appliance\u2019s factory admin password was never changed, so the attacker logged in on the first try with zero failures. Default credentials are published in vendor manuals and online, so a device left on defaults is effectively unlocked.',
+      wrong: {
+        ports: 'The web interface is reachable, but the attacker didn\u2019t need to guess. A single clean login as admin with a never-changed password points to default credentials.',
+        unsupported: 'The firmware isn\u2019t listed as end of life. The weakness is the unchanged factory password.',
+        supply_chain: 'The printer came from a vendor, but no vendor access or tampered product was involved. The customer never changed the shipped password.'
+      },
+      missing: 'Flag the successful admin login on WH-LABEL-01 that came from 192.0.2.20.',
+      hints: [
+        'Search host=WH-LABEL-01.',
+        'Two different logins succeeded. Look at the source address and at credential_status.',
+        'Flag E-5001 (admin login from 192.0.2.20, factory default password) and choose \u201cDefault credentials.\u201d'
+      ],
+      key: { query: 'host=WH-LABEL-01', flags: ['E-5001'] }
+    },
+    { id: 't6', short: 'USB', title: 'A USB drive from the parking lot', scaffold: 'Independent practice', points: 10, floor: 3,
+      brief: 'At 07:25 Darryl Philbin called. He found a USB drive labeled \u201cQ4 bonuses\u201d in the parking lot and plugged it into WH-PC07 to find its owner. Confirm what happened.',
+      steps: [
+        'Find device and process evidence on WH-PC07.',
+        'Tell storage devices apart from ordinary peripherals.',
+        'Flag the evidence, classify, and submit.'
+      ],
+      targets: ['E-6001', 'E-6002'], related: [], answer: 'removable',
+      success: 'Event 6416 shows a DiskDrive-class USB device appearing, and 4688 shows an executable running from drive E: a minute later. Removable media skips the email filter and the perimeter firewall by carrying code in by hand. A curiosity-bait label is a common delivery trick.',
+      wrong: {
+        file: 'An executable did run, but the question is how it reached the host. It arrived on a physical USB drive, which is the removable device vector.',
+        unsecure_net: 'No network connection delivered this file. It came in on physical media.'
+      },
+      missing: 'You need two flags on WH-PC07: the 6416 event for the storage device and the 4688 event for the program that ran from E:.',
+      hints: [
+        'Event ID 6416 means Windows recognized a new external device.',
+        'Search host=WH-PC07. The Class Name field separates DiskDrive (storage) from HIDClass (keyboards and mice).',
+        'Flag E-6001 (6416, DiskDrive) and E-6002 (4688, E:\\Q4_Bonus_Schedule.exe), then choose \u201cRemovable device.\u201d'
+      ],
+      key: { query: 'host=WH-PC07', flags: ['E-6001', 'E-6002'] }
+    },
+    { id: 't7', short: 'Voice', title: 'The urgent password reset', scaffold: 'Independent practice', points: 10, floor: 3,
+      brief: 'Michael Scott is at his desk today, yet his account signed in to the VPN from an unknown address at 07:52. Work out how the attacker got his password.',
+      steps: [
+        'Investigate account mscott across the helpdesk, Windows, and VPN logs.',
+        'Flag the evidence that shows how the credential was obtained.',
+        'Classify and submit.'
+      ],
+      targets: ['E-7001', 'E-7002'], related: ['E-7003'], answer: 'voice',
+      success: 'A caller impersonated Michael, pushed urgency, and the helpdesk skipped callback verification before resetting his password (4724). The vector was a voice call aimed at a person in a trusted role. No technical control was bypassed; a process was.',
+      wrong: {
+        msg_sms: 'The ticket records an inbound phone call, not a text message.',
+        default_creds: 'Michael\u2019s password wasn\u2019t a factory default. The attacker talked the helpdesk into setting a new one.',
+        msg_email: 'No email was involved. The ticket notes say the request came in by phone.'
+      },
+      missing: 'Flag the helpdesk ticket for the phone request and the 4724 password reset on DC01 that followed it.',
+      hints: [
+        'A free-text search for mscott pulls every log that mentions the account.',
+        'Read helpdesk ticket INC-40877 closely: how did the request arrive, and was identity verified?',
+        'Flag E-7001 (ticket INC-40877) and E-7002 (4724 reset of mscott), then choose \u201cVoice call.\u201d'
+      ],
+      key: { query: 'mscott', flags: ['E-7001', 'E-7002'] }
+    },
+    { id: 't8', short: 'MSP', title: 'Overnight activity from a trusted partner', scaffold: 'Independent practice', points: 10, floor: 3,
+      brief: 'Vance Refrigeration IT Services, a managed service provider (MSP), manages part of Dunder Mifflin\u2019s fleet through the remote monitoring and management (RMM) console. Review RMM activity overnight.',
+      steps: [
+        'Find the RMM audit logs.',
+        'Decide which activity is approved and which is not.',
+        'Flag the suspicious activity, classify, and submit.'
+      ],
+      targets: ['E-8001', 'E-8002'], related: [], answer: 'supply_chain',
+      success: 'The MSP technician account logged in at 03:12 from 198.51.100.23 with no MFA and no scheduled change, then pushed a script to 14 endpoints. When a provider\u2019s access is abused, the trust you extended becomes the attack vector. That is supply chain risk through a managed service provider.',
+      wrong: {
+        default_creds: 'The account belongs to the MSP and isn\u2019t a factory default. The risk is the third party\u2019s trusted, standing access.',
+        ports: 'The RMM console was reached by an approved partner account. The problem is the trust relationship, not an exposed port.',
+        vuln_sw: 'The RMM tool worked as designed. The attacker used legitimate partner access.'
+      },
+      missing: 'Flag the MSP technician\u2019s 03:12 console login and the script deployment that followed.',
+      hints: [
+        'Search sourcetype=rmm:audit.',
+        'Approved jobs reference a change ticket (CHG-) and run in a maintenance window. One session has neither and no MFA.',
+        'Flag E-8001 (msp_vance login, no MFA) and E-8002 (script pushed to 14 endpoints), then choose \u201cSupply chain (MSP, vendor, supplier).\u201d'
+      ],
+      key: { query: 'sourcetype=rmm:audit', flags: ['E-8001', 'E-8002'] }
+    },
+    { id: 't9', short: 'Finding', title: 'Build the finding: shrink the attack surface', scaffold: 'Independent synthesis', points: 20, floor: 8, final: true,
+      brief: 'You confirmed eight vectors. For each one, choose the control that most directly removes or reduces that part of the attack surface. This becomes the recommendation section of your Tier 1 escalation to Tier 2.',
+      steps: [
+        'Match each confirmed vector with one mitigation. Each mitigation is used once.',
+        'Submit the finding. Feedback explains any mismatches.'
+      ],
+      hints: [
+        'Ask what made each vector possible, then pick the control that removes that condition.',
+        'Look for keyword matches: callback (phone), device control (USB), decommission (end of life), MFA plus approved windows (third party).',
+        'Each vector pairs with the mitigation that names its own weakness. The instructor key shows the full answer set.'
+      ],
+      mitigations: [
+        { id: 'supply_chain',  text: 'Require MFA, named accounts, approved change windows, and least privilege for MSP remote access; monitor it' },
+        { id: 'ports',         text: 'Remove the internet-facing RDP rule; allow remote admin only through VPN with MFA; review firewall rules regularly' },
+        { id: 'voice',         text: 'Require callback to the number on file (or in-person verification) before any password reset' },
+        { id: 'msg_email',     text: 'Enforce DMARC rejection, quarantine messages that fail authentication, and run phishing-awareness training' },
+        { id: 'default_creds', text: 'Change factory passwords at installation and track appliance credentials in an inventory' },
+        { id: 'removable',     text: 'Use device control to block USB mass storage and disable AutoPlay; teach staff to hand found media to IT' },
+        { id: 'file',          text: 'Block macros in Office files from the internet and use application allow-listing for script interpreters' },
+        { id: 'unsupported',   text: 'Decommission or isolate the end-of-life server and disable SMBv1 across the network' }
+      ],
+      mapOrder: ['msg_email', 'file', 'ports', 'unsupported', 'default_creds', 'removable', 'voice', 'supply_chain']
+    }
+  ],
+
+  scenarioIntro: {
+    alert: 'Sentinel Desk: 3 user reports and 1 MSSP notice received since 07:40. Overnight brute-force rule produced 0 alerts.',
+    paragraphs: [
+      'You are a Tier 1 SOC analyst at Dunder Mifflin, a paper retailer with a growing e-commerce store. It is 8:05 AM on Monday and the queue is lit up: Jim Halpert reports an \u201cinvoice\u201d that did nothing when he opened it, the warehouse is calling about a USB drive, Michael Scott swears he never used the VPN this morning, and the company\u2019s managed security provider asks why TS01 talked to an unknown IP overnight.',
+      'Your job is to work the SIEM, prove each way the attacker got in, and recommend how to shrink the attack surface. You have about 20 to 30 minutes.'
+    ],
+    skills: [
+      'Search, filter, and pivot through Windows Active Directory, firewall, email, IDS, appliance, helpdesk, VPN, and RMM logs',
+      'Tune a detection threshold and weigh false positives against false negatives',
+      'Classify evidence by SY0-701 attack vector and separate it from benign noise',
+      'Recommend an attack-surface reduction for each vector'
+    ]
+  },
+
+  debrief: {
+    takeaways: [
+      'The attack surface is every point where an attacker can try to get in or get data out. You found eight different entry points in one morning.',
+      'Vectors chain together: email delivered a malicious file; an open port led to an unsupported server and an appliance on default credentials.',
+      'People are part of the attack surface. The email, USB, and phone vectors all succeeded because a person was persuaded to act.',
+      'Detection depends on tuning. A threshold set too high hid a 38-attempt brute force; one set too low would bury analysts in typos.',
+      'Reducing the attack surface means closing, retiring, changing, verifying, controlling, or governing the condition that made each vector possible.'
+    ],
+    reflections: [
+      'Which single vector from today would you fix first at Dunder Mifflin, and what evidence convinced you it carries the most risk?',
+      'Three vectors relied on a person being persuaded (email, USB, phone). What do they have in common, and how would you test whether training actually reduced that risk?',
+      'Think of a system you use at work or school. What is its attack surface, and which vector from this lab would most likely reach it?'
+    ]
+  }
+};
+
+/* =============================================================================
+   2. SCENARIO LOG DATA (deterministic)
+   Internal network 192.0.2.0/24. External: 198.51.100.0/24 and 203.0.113.0/24.
+   Event fields: id, t (HH:MM:SS on 2026-10-19), sourcetype, host, code (Windows
+   Event ID or ''), summary, f (searchable fields), raw (full record text).
+   decoyFor + why mark plausible-but-benign events for a task.
+   ============================================================================= */
+const DOMAIN = 'DUNDERMIFFLIN', FQDN = 'dundermifflin.example.com';
+const HOSTS = {
+  'DC01': { ip: '192.0.2.10', os: 'Windows Server 2022' },
+  'FS01': { ip: '192.0.2.15', os: 'Windows Server 2022' },
+  'TS01': { ip: '192.0.2.20', os: 'Windows Server 2019' },
+  'LEGACY-INV01': { ip: '192.0.2.60', os: 'Windows Server 2008 R2' },
+  'WH-LABEL-01': { ip: '192.0.2.75', os: 'Label printer firmware 4.2' },
+  'JH-LT01': { ip: '192.0.2.101', os: 'Windows 11 Enterprise' },
+  'DS-PC01': { ip: '192.0.2.102', os: 'Windows 11 Enterprise' },
+  'KM-PC01': { ip: '192.0.2.103', os: 'Windows 11 Enterprise' },
+  'WH-PC07': { ip: '192.0.2.140', os: 'Windows 11 Enterprise' }
+};
+
+function buildEvents() {
+  const E = [];
+  const add = (id, t, st, host, code, summary, fields, raw, extra) => {
+    const h = HOSTS[host];
+    const f = Object.assign({ sourcetype: st, host: host }, code ? { EventCode: String(code) } : {}, (h && st.indexOf('WinEventLog') === 0) || (h && st === 'appliance:auth') ? { host_os: h.os } : {}, fields);
+    E.push(Object.assign({ id, t, sec: toSec(t), sourcetype: st, host, code: code ? String(code) : '', summary, f, raw }, extra || {}));
+  };
+  const win = (t, host, code, msg, body) => `2026-10-19 ${t}  ${host}.${FQDN}\nLogName=Security\nEventCode=${code}\nComputerName=${host}.${FQDN}\nMessage=${msg}\n\n${body}`;
+  const w4625 = (t, host, user, sub, src, ws) => win(t, host, 4625, 'An account failed to log on.',
+`Subject:
+	Security ID:		NULL SID
+	Account Name:		-
+	Account Domain:		-
+	Logon ID:		0x0
+
+Logon Type:			3
+
+Account For Which Logon Failed:
+	Security ID:		NULL SID
+	Account Name:		${user}
+	Account Domain:		${DOMAIN}
+
+Failure Information:
+	Failure Reason:		Unknown user name or bad password.
+	Status:			0xC000006D
+	Sub Status:		${sub}
+
+Network Information:
+	Workstation Name:	${ws}
+	Source Network Address:	${src}
+	Source Port:		0
+
+Detailed Authentication Information:
+	Logon Process:		NtLmSsp
+	Authentication Package:	NTLM`);
+  const w4624 = (t, host, user, type, src, ws, proc, pkg) => win(t, host, 4624, 'An account was successfully logged on.',
+`Logon Information:
+	Logon Type:		${type}
+	Restricted Admin Mode:	-
+	Virtual Account:		No
+	Elevated Token:		${type === 10 ? 'Yes' : 'No'}
+
+New Logon:
+	Account Name:		${user}
+	Account Domain:		${DOMAIN}
+	Logon ID:		0x${(0x3E7A000 + toSec(t)).toString(16).toUpperCase()}
+
+Network Information:
+	Workstation Name:	${ws}
+	Source Network Address:	${src}
+	Source Port:		0
+
+Detailed Authentication Information:
+	Logon Process:		${proc}
+	Authentication Package:	${pkg}`);
+  const w4688 = (t, host, user, newp, parent, cmd, pid, ppid) => win(t, host, 4688, 'A new process has been created.',
+`Creator Subject:
+	Account Name:		${user}
+	Account Domain:		${DOMAIN}
+
+Process Information:
+	New Process ID:		0x${pid}
+	New Process Name:	${newp}
+	Token Elevation Type:	%%1938
+	Mandatory Label:		Mandatory Label\\Medium Mandatory Level
+	Creator Process ID:	0x${ppid}
+	Creator Process Name:	${parent}
+	Process Command Line:	${cmd}`);
+
+  /* ---------- Task 1: phishing email ---------- */
+  add('E-1001', '06:58:12', 'email:gateway', 'MAIL-GW', '', 'Delivered \u201cFINAL NOTICE: Overdue Invoice #0412\u201d from accounts@paper-supp1y.example',
+    { action: 'delivered', sender: 'accounts@paper-supp1y.example', recipient: 'jhalpert@' + FQDN, subject: 'FINAL NOTICE: Overdue Invoice #0412', attachment: 'Invoice_0412.xlsm', src_ip: '198.51.100.140', spf: 'fail', dkim: 'none', dmarc: 'fail', verdict: 'suspicious (policy: deliver with banner)', user: 'jhalpert' },
+`2026-10-19T06:58:12-04:00 MAIL-GW msg_id=<8f21c0@mx.paper-supp1y.example>
+action=delivered direction=inbound
+sender=accounts@paper-supp1y.example  sender_ip=198.51.100.140
+recipient=jhalpert@${FQDN}
+subject="FINAL NOTICE: Overdue Invoice #0412"
+attachment=Invoice_0412.xlsm  attachment_type=application/vnd.ms-excel.sheet.macroEnabled.12
+auth: spf=fail (198.51.100.140 not permitted) dkim=none dmarc=fail (p=none)
+verdict=suspicious policy="deliver with external-sender banner"`);
+  add('E-1002', '06:31:40', 'email:gateway', 'MAIL-GW', '', 'Delivered \u201cYour October pay statement is available\u201d from noreply@payroll.example.com',
+    { action: 'delivered', sender: 'noreply@payroll.example.com', recipient: 'all-staff@' + FQDN, subject: 'Your October pay statement is available', attachment: 'none', src_ip: '198.51.100.210', spf: 'pass', dkim: 'pass', dmarc: 'pass', verdict: 'clean' },
+`2026-10-19T06:31:40-04:00 MAIL-GW action=delivered direction=inbound
+sender=noreply@payroll.example.com sender_ip=198.51.100.210
+recipient=all-staff@${FQDN} subject="Your October pay statement is available"
+attachment=none auth: spf=pass dkim=pass dmarc=pass verdict=clean`,
+    { decoyFor: 't1', why: 'This message passed SPF, DKIM, and DMARC, carries no attachment, and comes from the payroll provider\u2019s expected domain. Routine mail is not evidence of an attack vector.' });
+  add('E-1003', '07:12:05', 'email:gateway', 'MAIL-GW', '', 'Quarantined \u201cYou won a $500 gift card\u201d from promo@deals.example.net',
+    { action: 'quarantined', sender: 'promo@deals.example.net', recipient: 'kmalone@' + FQDN, subject: 'You won a $500 gift card', attachment: 'claim_card.zip', src_ip: '203.0.113.150', spf: 'fail', dkim: 'none', dmarc: 'fail', verdict: 'malicious', user: 'kmalone' },
+`2026-10-19T07:12:05-04:00 MAIL-GW action=quarantined direction=inbound
+sender=promo@deals.example.net sender_ip=203.0.113.150 recipient=kmalone@${FQDN}
+subject="You won a $500 gift card" attachment=claim_card.zip
+auth: spf=fail dkim=none dmarc=fail verdict=malicious`,
+    { decoyFor: 't1', why: 'Good instinct, but the gateway quarantined this message, so it never reached Kevin. Your task is the delivered message that a user actually opened.' });
+
+  /* ---------- Task 2: macro to PowerShell ---------- */
+  add('E-2002', '07:02:31', 'WinEventLog:Security', 'JH-LT01', 4688, 'Process created: EXCEL.EXE (parent OUTLOOK.EXE) by jhalpert',
+    { user: 'jhalpert', process: 'EXCEL.EXE', parent_process: 'OUTLOOK.EXE' },
+    w4688('07:02:31', 'JH-LT01', 'jhalpert', 'C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE', 'C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE',
+      '"EXCEL.EXE" "C:\\Users\\jhalpert\\AppData\\Local\\Microsoft\\Windows\\INetCache\\Content.Outlook\\8QX2LM4T\\Invoice_0412.xlsm"', '2a10', '1b88'));
+  add('E-2001', '07:02:40', 'WinEventLog:Security', 'JH-LT01', 4688, 'Process created: powershell.exe (parent EXCEL.EXE) by jhalpert',
+    { user: 'jhalpert', process: 'powershell.exe', parent_process: 'EXCEL.EXE' },
+    w4688('07:02:40', 'JH-LT01', 'jhalpert', 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', 'C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE',
+      'powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand [payload removed for training]', '1d4c', '2a10'));
+  add('E-2003', '06:45:18', 'WinEventLog:Security', 'DS-PC01', 4688, 'Process created: powershell.exe (parent explorer.exe) by dschrute',
+    { user: 'dschrute', process: 'powershell.exe', parent_process: 'explorer.exe' },
+    w4688('06:45:18', 'DS-PC01', 'dschrute', 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', 'C:\\Windows\\explorer.exe',
+      'powershell.exe -File C:\\Scripts\\Get-InventoryReport.ps1', '0f30', '0a1c'),
+    { decoyFor: 't2', why: 'The parent is explorer.exe, which means Dwight started PowerShell himself, running a named script from a local folder. The file-based pattern is an Office document spawning a script interpreter.' });
+
+  /* ---------- Task 3: open RDP port, brute force, success ---------- */
+  add('E-3001', '01:58:03', 'firewall', 'FW01', '', 'Allowed inbound tcp/3389 203.0.113.45 \u2192 TS01 (rule NAT-Legacy-RDP-TS01)',
+    { action: 'allow', direction: 'inbound', src_ip: '203.0.113.45', dest_ip: '192.0.2.20', dest_port: '3389', proto: 'tcp', rule: 'NAT-Legacy-RDP-TS01', app: 'ms-rdp' },
+    `Oct 19 01:58:03 FW01 action=allow direction=inbound rule="NAT-Legacy-RDP-TS01"\nproto=tcp src=203.0.113.45:51544 dst=192.0.2.20:3389 app=ms-rdp\nsession_end=02:41:57 bytes_in=4818233 bytes_out=79120411`);
+  add('E-3003', '01:41:22', 'firewall', 'FW01', '', 'Denied inbound tcp/22 203.0.113.99 \u2192 192.0.2.20 (rule default-deny)',
+    { action: 'deny', direction: 'inbound', src_ip: '203.0.113.99', dest_ip: '192.0.2.20', dest_port: '22', proto: 'tcp', rule: 'default-deny' },
+    `Oct 19 01:41:22 FW01 action=deny direction=inbound rule="default-deny"\nproto=tcp src=203.0.113.99:40112 dst=192.0.2.20:22`,
+    { decoyFor: 't3', why: 'This connection was denied, so it never reached a service. Internet background scanning that the firewall blocks is noise, not the way in.' });
+  const tried = ['administrator', 'admin', 'trn_admin', 'backup', 'scanner', 'test', 'rdpuser'];
+  for (let i = 0; i < 38; i++) {
+    const s = toSec('02:00:05') + i * 15 + (i % 3);
+    const t = fmt(s), user = tried[i % tried.length];
+    const sub = user === 'trn_admin' ? '0xC000006A' : '0xC0000064';
+    add('E-31' + String(i).padStart(2, '0'), t, 'WinEventLog:Security', 'TS01', 4625, `Failed logon (type 3) ${user} from 203.0.113.45`,
+      { user, src_ip: '203.0.113.45', logon_type: '3', status: '0xC000006D', sub_status: sub, workstation: '-' },
+      w4625(t, 'TS01', user, sub, '203.0.113.45', '-'), { attacker4625: true });
+  }
+  add('E-3002', '02:10:17', 'WinEventLog:Security', 'TS01', 4624, 'Successful logon (type 10) trn_admin from 203.0.113.45',
+    { user: 'trn_admin', src_ip: '203.0.113.45', logon_type: '10', workstation: 'TS01' },
+    w4624('02:10:17', 'TS01', 'trn_admin', 10, '203.0.113.45', 'TS01', 'User32', 'Negotiate'));
+  [['07:31:02', 'dschrute'], ['07:31:15', 'dschrute'], ['07:31:31', 'dschrute'], ['07:31:50', 'dschrute']].forEach((r, i) =>
+    add('E-391' + i, r[0], 'WinEventLog:Security', 'FS01', 4625, `Failed logon (type 3) ${r[1]} from 192.0.2.102`,
+      { user: r[1], src_ip: '192.0.2.102', logon_type: '3', status: '0xC000006D', sub_status: '0xC000006A', workstation: 'DS-PC01' },
+      w4625(r[0], 'FS01', r[1], '0xC000006A', '192.0.2.102', 'DS-PC01'),
+      { decoyFor: 't3', why: 'Four failures for one real account from Dwight\u2019s own workstation, then normal activity. That is a user mistyping a password after a weekend, not an attack.' }));
+  [['07:49:40', 'kmalone'], ['07:49:58', 'kmalone'], ['07:50:20', 'kmalone']].forEach((r, i) =>
+    add('E-392' + i, r[0], 'WinEventLog:Security', 'FS01', 4625, `Failed logon (type 3) ${r[1]} from 192.0.2.103`,
+      { user: r[1], src_ip: '192.0.2.103', logon_type: '3', status: '0xC000006D', sub_status: '0xC000006A', workstation: 'KM-PC01' },
+      w4625(r[0], 'FS01', r[1], '0xC000006A', '192.0.2.103', 'KM-PC01'),
+      { decoyFor: 't3', why: 'Three failures for Kevin\u2019s own account from his own PC. Ordinary typos like these are what a well-tuned threshold should ignore.' }));
+
+  /* ---------- Task 4: unsupported system ---------- */
+  add('E-4001', '02:31:44', 'ids:alert', 'IDS01', '', 'SMBv1 negotiation 192.0.2.20 \u2192 LEGACY-INV01 (Windows Server 2008 R2)',
+    { signature: 'SMBv1 protocol negotiation observed', severity: 'medium', src_ip: '192.0.2.20', dest_ip: '192.0.2.60', dest_port: '445', dest_host: 'LEGACY-INV01', dest_os: 'Windows Server 2008 R2', proto: 'tcp' },
+    `2026-10-19T02:31:44-04:00 IDS01 sid=900145 rev=2\nsignature="SMBv1 protocol negotiation observed" severity=medium\nsrc=192.0.2.20:49822 dst=192.0.2.60:445 proto=tcp\nasset_lookup: dest_host=LEGACY-INV01 dest_os="Windows Server 2008 R2" support_status="end of support 2020-01-14"`);
+  add('E-4002', '02:33:02', 'WinEventLog:Security', 'LEGACY-INV01', 4624, 'Successful logon (type 3) trn_admin from 192.0.2.20',
+    { user: 'trn_admin', src_ip: '192.0.2.20', logon_type: '3', workstation: 'TS01' },
+    w4624('02:33:02', 'LEGACY-INV01', 'trn_admin', 3, '192.0.2.20', 'TS01', 'NtLmSsp', 'NTLM'));
+  add('E-4003', '01:15:09', 'ids:alert', 'IDS01', '', 'Port sweep from VULN-SCAN01 192.0.2.5 (authorized, CHG-2231)',
+    { signature: 'TCP port sweep', severity: 'low', src_ip: '192.0.2.5', dest_ip: '192.0.2.0/24', dest_port: 'multiple', src_host: 'VULN-SCAN01', note: 'authorized weekly scan CHG-2231', proto: 'tcp' },
+    `2026-10-19T01:15:09-04:00 IDS01 sid=900021 signature="TCP port sweep" severity=low\nsrc=192.0.2.5 dst=192.0.2.0/24 ports=multiple\nasset_lookup: src_host=VULN-SCAN01 tag=authorized-scanner change=CHG-2231`,
+    { decoyFor: 't4', why: 'This sweep comes from the company\u2019s own vulnerability scanner under an approved change (CHG-2231). Authorized scanning is how you find unsupported systems, not how attackers reach them.' });
+
+  /* ---------- Task 5: default credentials ---------- */
+  add('E-5001', '02:47:10', 'appliance:auth', 'WH-LABEL-01', '', 'Web admin login success user=admin from 192.0.2.20',
+    { action: 'success', user: 'admin', src_ip: '192.0.2.20', interface: 'web (http/80)', failures_before: '0', credential_status: 'factory default, never changed (asset record)' },
+    `Oct 19 02:47:10 WH-LABEL-01 httpd: admin login OK user=admin src=192.0.2.20 iface=web\nprior_failures=0\nasset_db: credential_status="factory default, never changed since install 2019-03-02"`);
+  add('E-5002', '02:48:31', 'appliance:auth', 'WH-LABEL-01', '', 'Config changed by admin: job forwarding host set to 203.0.113.45',
+    { action: 'config_change', user: 'admin', src_ip: '192.0.2.20', setting: 'job_forward_host', new_value: '203.0.113.45' },
+    `Oct 19 02:48:31 WH-LABEL-01 cfgd: user=admin changed job_forward_host "" -> "203.0.113.45"`);
+  add('E-5003', '06:10:44', 'appliance:auth', 'WH-LABEL-01', '', 'Web admin login success user=whsuper from 192.0.2.141',
+    { action: 'success', user: 'whsuper', src_ip: '192.0.2.141', interface: 'web (https/443)', failures_before: '0', credential_status: 'rotated 2026-09-01' },
+    `Oct 19 06:10:44 WH-LABEL-01 httpd: login OK user=whsuper src=192.0.2.141 iface=web-tls\nprior_failures=0\nasset_db: credential_status="rotated 2026-09-01"`,
+    { decoyFor: 't5', why: 'This is the warehouse supervisor\u2019s named account from a warehouse PC at shift start, with a recently rotated password. It\u2019s normal admin activity.' });
+
+  /* ---------- Task 6: removable device ---------- */
+  add('E-6001', '07:20:05', 'WinEventLog:Security', 'WH-PC07', 6416, 'New external device recognized: Generic Flash Disk (DiskDrive)',
+    { device_name: 'Generic Flash Disk USB Device', class_name: 'DiskDrive', logged_on_user: 'dphilbin' },
+    win('07:20:05', 'WH-PC07', 6416, 'A new external device was recognized on the system.',
+`Subject:
+	Security ID:		SYSTEM
+	Account Name:		WH-PC07$
+	Account Domain:		${DOMAIN}
+
+Device ID:		USBSTOR\\DISK&VEN_GENERIC&PROD_FLASH_DISK&REV_8.07\\7&1A2B3C4D&0
+Device Name:		Generic Flash Disk USB Device
+Class ID:		{4d36e967-e325-11ce-bfc1-08002be10318}
+Class Name:		DiskDrive
+Vendor IDs:		USBSTOR\\DiskGENERIC_FLASH_DISK_____8.07
+Compatible IDs:		USBSTOR\\Disk  GenDisk
+Location Information:	Port_#0002.Hub_#0001`));
+  add('E-6002', '07:21:40', 'WinEventLog:Security', 'WH-PC07', 4688, 'Process created: E:\\Q4_Bonus_Schedule.exe (parent explorer.exe) by dphilbin',
+    { user: 'dphilbin', process: 'Q4_Bonus_Schedule.exe', parent_process: 'explorer.exe' },
+    w4688('07:21:40', 'WH-PC07', 'dphilbin', 'E:\\Q4_Bonus_Schedule.exe', 'C:\\Windows\\explorer.exe', '"E:\\Q4_Bonus_Schedule.exe"', '22e8', '0b14'));
+  add('E-6003', '06:40:12', 'WinEventLog:Security', 'KM-PC01', 6416, 'New external device recognized: USB Input Device (HIDClass)',
+    { device_name: 'USB Input Device', class_name: 'HIDClass', logged_on_user: 'kmalone' },
+    win('06:40:12', 'KM-PC01', 6416, 'A new external device was recognized on the system.',
+`Subject:
+	Security ID:		SYSTEM
+	Account Name:		KM-PC01$
+	Account Domain:		${DOMAIN}
+
+Device ID:		USB\\VID_046D&PID_C31C\\6&2F8E1A&0&3
+Device Name:		USB Input Device
+Class ID:		{745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+Class Name:		HIDClass
+Location Information:	Port_#0003.Hub_#0001`),
+    { decoyFor: 't6', why: 'Class Name HIDClass is a human interface device such as a keyboard or mouse (Kevin got a new keyboard). It isn\u2019t storage, so it can\u2019t carry files onto the host.' });
+
+  /* ---------- Task 7: vishing ---------- */
+  add('E-7001', '07:41:22', 'helpdesk:ticket', 'HELPDESK', '', 'INC-40877 password reset by phone for mscott (verification skipped)',
+    { ticket: 'INC-40877', channel: 'phone', user: 'mscott', opened_by: 'nbernard', caller_id: '+1-570-555-0147', verification: 'skipped' },
+    `INC-40877  opened 2026-10-19 07:41:22 by nbernard  category=Account / Password reset\nchannel=phone  caller_id=+1-570-555-0147 (not on file for mscott)\nnotes: "Caller states he is Michael Scott, traveling, locked out right before a client\nmeeting. Very insistent, says he'll escalate to corporate. Callback to number on file:\nSKIPPED (caller cited urgency). Reset completed, temp password read to caller."`);
+  add('E-7002', '07:44:03', 'WinEventLog:Security', 'DC01', 4724, 'Password reset attempt: nbernard reset mscott',
+    { user: 'nbernard', target_user: 'mscott' },
+    win('07:44:03', 'DC01', 4724, 'An attempt was made to reset an account\u2019s password.',
+`Subject:
+	Security ID:		${DOMAIN}\\nbernard
+	Account Name:		nbernard
+	Account Domain:		${DOMAIN}
+	Logon ID:		0x5C1A2B
+
+Target Account:
+	Security ID:		${DOMAIN}\\mscott
+	Account Name:		mscott
+	Account Domain:		${DOMAIN}`));
+  add('E-7003', '07:52:19', 'vpn:auth', 'VPN01', '', 'VPN login success mscott from 203.0.113.88 (MFA not enrolled)',
+    { action: 'success', user: 'mscott', src_ip: '203.0.113.88', mfa: 'not enrolled', geo: 'unknown' },
+    `Oct 19 07:52:19 VPN01 auth: user=mscott result=success src=203.0.113.88 mfa=not-enrolled\nassigned_ip=192.0.2.230 geo=unknown`);
+  add('E-7004', '06:20:30', 'helpdesk:ticket', 'HELPDESK', '', 'INC-40871 self-service reset for pvance (MFA verified)',
+    { ticket: 'INC-40871', channel: 'self-service portal', user: 'pvance', opened_by: 'portal', verification: 'MFA push approved' },
+    `INC-40871  opened 2026-10-19 06:20:30 by portal  category=Account / Password reset\nchannel=self-service  verification=MFA push approved on enrolled device`,
+    { decoyFor: 't7', why: 'Phyllis reset her own password through the self-service portal, and identity was verified by MFA on her enrolled device. That is the control working as intended.' });
+
+  /* ---------- Task 8: MSP supply chain ---------- */
+  add('E-8001', '03:12:55', 'rmm:audit', 'RMM01', '', 'Console login technician msp_vance from 198.51.100.23 (no MFA, no change scheduled)',
+    { action: 'console_login', user: 'msp_vance', org: 'Vance Refrigeration IT Services (MSP)', src_ip: '198.51.100.23', mfa: 'none', change_ticket: 'none' },
+    `2026-10-19 03:12:55 RMM01 audit: event=console_login tech=msp_vance@vancerefrigeration.example\norg="Vance Refrigeration IT Services" role=MSP-Technician src=198.51.100.23\nmfa=none change_window=none scheduled`);
+  add('E-8002', '03:15:40', 'rmm:audit', 'RMM01', '', 'Script job inventory_sync.ps1 pushed to 14 endpoints by msp_vance',
+    { action: 'script_deploy', user: 'msp_vance', script: 'inventory_sync.ps1', targets: '14 endpoints', change_ticket: 'none' },
+    `2026-10-19 03:15:40 RMM01 audit: event=script_deploy by=msp_vance script=inventory_sync.ps1\ntargets=14 endpoints run_as=SYSTEM change_ticket=none`);
+  add('E-8003', '00:30:00', 'rmm:audit', 'RMM01', '', 'Scheduled patch job run by rmm_patch (CHG-2229 approved)',
+    { action: 'patch_job', user: 'rmm_patch', change_ticket: 'CHG-2229', window: 'Sun 23:00 to Mon 01:00' },
+    `2026-10-19 00:30:00 RMM01 audit: event=patch_job by=rmm_patch job="Monthly OS updates"\nchange_ticket=CHG-2229 status=approved window="Sun 23:00-Mon 01:00" targets=212`,
+    { decoyFor: 't8', why: 'This job ran from a service account under an approved change ticket inside the maintenance window. Third-party tools doing scheduled, approved work is the expected baseline.' });
+
+  /* ---------- Background noise (seeded, deterministic) ---------- */
+  const rnd = mulberry32(31337);
+  let n = 0;
+  for (let s = toSec('00:10:00'); s < toSec('08:05:00'); s += 1800) {
+    const t = fmt(s + Math.floor(rnd() * 600));
+    add('N-' + (100 + n++), t, 'firewall', 'FW01', '', 'Allowed outbound tcp/443 DC01 \u2192 198.51.100.200 (update service)',
+      { action: 'allow', direction: 'outbound', src_ip: '192.0.2.10', dest_ip: '198.51.100.200', dest_port: '443', proto: 'tcp', rule: 'allow-updates', app: 'ssl' },
+      `Oct 19 ${t} FW01 action=allow direction=outbound rule="allow-updates"\nproto=tcp src=192.0.2.10:${50000 + n} dst=198.51.100.200:443 app=ssl`);
+  }
+  const staff = [['jhalpert', '101', 'JH-LT01'], ['dschrute', '102', 'DS-PC01'], ['kmalone', '103', 'KM-PC01'], ['pbeesly', '104', 'PB-PC01'], ['amartin', '105', 'AM-PC01'],
+    ['omartinez', '106', 'OM-PC01'], ['nbernard', '107', 'NB-PC01'], ['shudson', '108', 'SH-PC01'], ['plapin', '109', 'PL-PC01'], ['kkapoor', '110', 'KK-PC01'],
+    ['mpalmer', '111', 'MP-PC01'], ['cbratton', '112', 'CB-PC01'], ['tflenderson', '113', 'TF-PC01'], ['dphilbin', '140', 'WH-PC07']];
+  staff.forEach(([u, oct, ws]) => {
+    const t = fmt(toSec('06:30:00') + Math.floor(rnd() * 5600));
+    add('N-' + (100 + n++), t, 'WinEventLog:Security', 'FS01', 4624, `Successful logon (type 3) ${u} from 192.0.2.${oct}`,
+      { user: u, src_ip: '192.0.2.' + oct, logon_type: '3', workstation: ws }, w4624(t, 'FS01', u, 3, '192.0.2.' + oct, ws, 'Kerberos', 'Kerberos'));
+  });
+  for (let i = 0; i < 12; i++) {
+    const u = staff[Math.floor(rnd() * staff.length)];
+    const t = fmt(toSec('06:40:00') + Math.floor(rnd() * 5000));
+    add('N-' + (100 + n++), t, 'firewall', 'FW01', '', `Allowed outbound tcp/443 192.0.2.${u[1]} \u2192 198.51.100.201 (web)`,
+      { action: 'allow', direction: 'outbound', src_ip: '192.0.2.' + u[1], dest_ip: '198.51.100.201', dest_port: '443', proto: 'tcp', rule: 'allow-web', app: 'ssl' },
+      `Oct 19 ${t} FW01 action=allow direction=outbound rule="allow-web"\nproto=tcp src=192.0.2.${u[1]}:${51000 + i} dst=198.51.100.201:443 app=ssl`);
+  }
+  [['06:05:12', 'orders@sabre-printing.example.com', 'PO 7781 confirmation', 'PO7781.pdf'], ['06:47:51', 'news@paperindustry.example.org', 'Weekly pulp price index', 'none'],
+   ['07:15:33', 'ap@blue-cross-paper.example.com', 'Remittance advice 10/16', 'remit_1016.pdf'], ['07:58:09', 'corporate@' + FQDN, 'Q4 town hall reminder', 'none']].forEach(r => {
+    add('N-' + (100 + n++), r[0], 'email:gateway', 'MAIL-GW', '', `Delivered \u201c${r[2]}\u201d from ${r[1]}`,
+      { action: 'delivered', sender: r[1], recipient: 'staff@' + FQDN, subject: r[2], attachment: r[3], spf: 'pass', dkim: 'pass', dmarc: 'pass', verdict: 'clean' },
+      `2026-10-19T${r[0]}-04:00 MAIL-GW action=delivered sender=${r[1]}\nsubject="${r[2]}" attachment=${r[3]} auth: spf=pass dkim=pass dmarc=pass verdict=clean`);
+  });
+  return E;
+}
+
+/* =============================================================================
+   3. UTILITIES
+   ============================================================================= */
+function toSec(t) { const p = t.split(':').map(Number); return p[0] * 3600 + p[1] * 60 + (p[2] || 0); }
+function fmt(s) { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return [h, m, x].map(v => String(v).padStart(2, '0')).join(':'); }
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const $ = s => document.querySelector(s);
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EVENTS = buildEvents();
+const BY_ID = Object.fromEntries(EVENTS.map(e => [e.id, e]));
+EVENTS.forEach(e => { e.blob = (e.id + ' ' + e.raw + ' ' + Object.values(e.f).join(' ') + ' ' + e.summary).toLowerCase(); e.lf = Object.fromEntries(Object.entries(e.f).map(([k, v]) => [k.toLowerCase(), String(v)])); });
+const ALL_FIELDS = new Set(EVENTS.flatMap(e => Object.keys(e.lf)));
+LAB.tasks.forEach(t => { if (t.related === 'ATTACKER_4625') t.related = EVENTS.filter(e => e.attacker4625).map(e => e.id); });
+const VEC = Object.fromEntries(LAB.vectors.map(v => [v.id, v]));
+const MAX_SCORE = LAB.tasks.reduce((a, t) => a + t.points, 0);
+const ICON = {
+  ok: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor" opacity=".15"/><path d="M6.5 12.5l3.5 3.5 7.5-8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warn: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5L22.5 21h-21z" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9v5.5M12 17.5v.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  err: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="2"/><path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+  info: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  flag: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 15V1.5M3 2h9l-2 3.25L12 8.5H3" fill="FILL" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  bell: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a4 4 0 0 0-4 4V9L2.5 11.5h11L12 9V5.5a4 4 0 0 0-4-4zM6.5 13a1.5 1.5 0 0 0 3 0" fill="currentColor"/></svg>',
+  dash: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  car: '<svg class="car" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>'
+};
+
+/* =============================================================================
+   4. STATE MODEL (single source of truth, persisted to localStorage)
+   state = {
+     started, taskIndex, finished, instructor, tab,
+     t: [{ attempts, hints, wrongFlags[], done, earned, answer }],  // per task
+     flags[]: flagged event IDs,  mapping{vectorId: mitigationId},
+     query, bucket (null | bucket index), flagOnly, threshold, expanded[], showCount,
+     reflections[]
+   }
+   ============================================================================= */
+function freshState() {
+  return {
+    started: false, taskIndex: 0, finished: false, instructor: false, tab: 'search',
+    t: LAB.tasks.map(() => ({ attempts: 0, hints: 0, wrongFlags: [], done: false, earned: 0, answer: '' })),
+    flags: [], mapping: {}, query: '', bucket: null, flagOnly: false,
+    threshold: (LAB.tasks.find(t => t.threshold) || { threshold: { default: 50 } }).threshold.default,
+    expanded: [], showCount: 50, reflections: ['', '', '']
+  };
+}
+let state = load();
+let lastFeedback = null;
+let demo = null;
+function load() {
+  try {
+    const raw = localStorage.getItem(LAB.meta.storageKey);
+    if (raw) { const s = JSON.parse(raw); const f = freshState(); if (s && Array.isArray(s.t) && s.t.length === f.t.length) return Object.assign(f, s); }
+  } catch (e) { /* storage unavailable: run in memory */ }
+  return freshState();
+}
+function save() { if (demo) return; try { localStorage.setItem(LAB.meta.storageKey, JSON.stringify(state)); } catch (e) { /* ignore */ } }
+
+/* =============================================================================
+   5. QUERY ENGINE (subset of SPL-style search, simulated)
+   ============================================================================= */
+function parseQuery(q) {
+  const re = /([A-Za-z_][\w.]*)(!=|=)("([^"]*)"|\S+)|"([^"]*)"|(\S+)/g; const out = []; let m;
+  while ((m = re.exec(q))) {
+    if (m[1]) out.push({ field: m[1].toLowerCase(), neg: m[2] === '!=', val: m[4] !== undefined ? m[4] : m[3] });
+    else out.push({ term: (m[5] !== undefined ? m[5] : m[6]).toLowerCase() });
+  }
+  return out;
+}
+function wild(v) { return new RegExp('^' + v.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i'); }
+function runQuery(q) {
+  const toks = parseQuery(q.trim()); const unknown = toks.filter(t => t.field && !ALL_FIELDS.has(t.field)).map(t => t.field);
+  const res = EVENTS.filter(e => toks.every(t => {
+    if (t.term !== undefined) return e.blob.includes(t.term.replace(/\*/g, ''));
+    const v = e.lf[t.field]; const hit = v !== undefined && wild(t.val).test(v);
+    return t.neg ? !hit : hit;
+  }));
+  return { res, unknown };
+}
+const BUCKET = 1800, NBUCKETS = 17;
+function currentResults() {
+  const { res, unknown } = runQuery(state.query);
+  let base = state.flagOnly ? res.filter(e => state.flags.includes(e.id)) : res;
+  const shown = state.bucket === null ? base : base.filter(e => Math.floor(e.sec / BUCKET) === state.bucket);
+  return { base, shown: shown.slice().sort((a, b) => b.sec - a.sec || (a.id < b.id ? 1 : -1)), unknown };
+}
+
+/* =============================================================================
+   6. SCORING
+   ============================================================================= */
+function penalty(i) { const ts = state.t[i]; return ts.attempts * LAB.scoring.attemptPenalty + LAB.scoring.hintCost[ts.hints] + ts.wrongFlags.length * LAB.scoring.wrongFlagPenalty; }
+function available(i) { const t = LAB.tasks[i]; return Math.max(t.floor, t.points - penalty(i)); }
+function totalScore() { return state.t.reduce((a, ts) => a + (ts.done ? ts.earned : 0), 0); }
+
+/* =============================================================================
+   7. RENDERING (each reads state, writes DOM)
+   ============================================================================= */
+function setFeedback(kind, title, body, opts) {
+  lastFeedback = { kind, title, body };
+  const el = $('#feedback');
+  el.className = 'feedback fb-' + kind;
+  el.innerHTML = ICON[kind] + `<div><strong>${esc(title)}</strong><span>${body}</span></div>`;
+  if (!reduceMotion()) { el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); }
+  if (opts && opts.focus) el.setAttribute('tabindex', '-1');
+}
+function renderHeader() {
+  const sc = $('#score'); const prev = sc.textContent; sc.textContent = totalScore();
+  $('#scoreMax').textContent = MAX_SCORE;
+  if (prev !== sc.textContent && !reduceMotion()) { const b = $('#scoreBox'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); }
+  $('#progress').innerHTML = LAB.tasks.map((t, i) => {
+    const ts = state.t[i]; const cur = i === state.taskIndex && !state.finished;
+    const cls = ts.done ? 'done' : cur ? 'current' : '';
+    const status = ts.done ? 'completed' : cur ? 'current task' : 'not started';
+    return `<li class="${cls}" ${cur ? 'aria-current="step"' : ''}><span class="dot" aria-hidden="true">${ts.done ? '\u2713' : i + 1}</span><span class="pt">${esc(t.short)}</span><span class="sr">Task ${i + 1}, ${esc(t.title)}, ${status}</span></li>`;
+  }).join('');
+  const theme = document.documentElement.dataset.theme;
+  $('#btnTheme').setAttribute('aria-pressed', theme === 'dark'); $('#btnTheme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  $('#btnKey').setAttribute('aria-pressed', state.instructor);
+  $('#objective').textContent = LAB.meta.objective;
+}
+function renderTask() {
+  const i = state.taskIndex, t = LAB.tasks[i], ts = state.t[i];
+  $('#miniTask').textContent = `Task ${i + 1} of ${LAB.tasks.length}: ${t.title}`;
+  let h = `<div class="task-meta"><span>Task ${i + 1} of ${LAB.tasks.length}</span><span class="badge scaf">${esc(t.scaffold)}</span>${ts.done ? `<span class="badge ok">\u2713 Complete, ${ts.earned} pts</span>` : ''}</div>
+    <h2 id="taskTitle">${esc(t.title)}</h2><p>${esc(t.brief)}</p><ol class="steps">${t.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>`;
+  if (t.final) {
+    h += `<fieldset style="border:none;padding:0;margin:0"><legend class="sr">Match vectors to mitigations</legend>` + t.mapOrder.map(v =>
+      `<div class="map-row"><label for="map-${v}">${esc(VEC[v].label)}</label><select id="map-${v}" data-map="${v}" ${ts.done ? 'disabled' : ''}><option value="">Choose a mitigation</option>${t.mitigations.map(m => `<option value="${m.id}" ${state.mapping[v] === m.id ? 'selected' : ''}>${esc(m.text)}</option>`).join('')}</select></div>`).join('') + `</fieldset>`;
+  } else {
+    h += `<div class="field"><label for="vectorSel">Which attack vector does this evidence show?</label><select id="vectorSel" ${ts.done ? 'disabled' : ''}><option value="">Choose a vector</option>${LAB.vectors.map(v => `<option value="${v.id}" ${ts.answer === v.id ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select></div>`;
+    const flaggedHere = t.targets.filter(id => state.flags.includes(id)).length;
+    h += `<p class="avail" aria-live="polite">Evidence flagged for this task: ${flaggedHere} of ${t.targets.length} required${t.threshold ? `. Rule threshold: ${state.threshold}` : ''}.</p>`;
+  }
+  if (!ts.done) {
+    h += `<div class="actions"><button class="btn primary" type="button" id="btnSubmit">Submit finding</button><button class="btn" type="button" id="btnHint" ${ts.hints >= 3 ? 'disabled' : ''}>${ts.hints >= 3 ? 'All hints shown' : `Show hint ${ts.hints + 1} of 3${ts.hints === 1 ? ' (\u22121 pt)' : ts.hints === 2 ? ' (\u22123 pts)' : ''}`}</button></div>
+      <p class="avail">Points available now: ${available(i)} of ${t.points}. Each incorrect submission costs ${LAB.scoring.attemptPenalty}; each unrelated flag costs ${LAB.scoring.wrongFlagPenalty}.</p>`;
+  } else {
+    const last = i === LAB.tasks.length - 1;
+    h += `<div class="actions"><button class="btn primary" type="button" id="btnNext">${last ? 'Open the debrief' : 'Next task'}</button></div>`;
+  }
+  if (ts.hints) h += `<div class="hints">${t.hints.slice(0, ts.hints).map((x, k) => `<p class="hint"><b>${['Nudge', 'Clue', 'Answer'][k]}:</b> ${esc(x)}</p>`).join('')}</div>`;
+  if (state.instructor) {
+    h += `<div class="keybox"><h3>Instructor key</h3>`;
+    if (t.final) h += `<ul>${t.mapOrder.map(v => `<li>${esc(VEC[v].label)}: ${esc(t.mitigations.find(m => m.id === v).text)}</li>`).join('')}</ul>`;
+    else h += `<p>Query: <code>${esc(t.key.query)}</code></p><p>Flag: ${t.key.flags.join(', ')}</p><p>Vector: ${esc(VEC[t.answer].label)}</p>${t.key.extra ? `<p>${esc(t.key.extra)}</p>` : ''}`;
+    h += `</div>`;
+  }
+  $('#taskCard').innerHTML = h;
+}
+function renderHisto(base) {
+  const counts = Array(NBUCKETS).fill(0); base.forEach(e => { const b = Math.floor(e.sec / BUCKET); if (b < NBUCKETS) counts[b]++; });
+  const max = Math.max(1, ...counts), W = 700, H = 130, top = 16, bot = 22, left = 4, bw = (W - left * 2) / NBUCKETS;
+  let s = `<line x1="${left}" y1="${H - bot}" x2="${W - left}" y2="${H - bot}" stroke="var(--line-strong)"/>`;
+  counts.forEach((c, i) => {
+    const bh = c ? Math.max(3, (H - top - bot) * c / max) : 0, x = left + i * bw + 3, y = H - bot - bh;
+    const lab = `${fmt(i * BUCKET).slice(0, 5)} to ${fmt((i + 1) * BUCKET).slice(0, 5)}`;
+    s += `<g class="barg${state.bucket === i ? ' sel' : ''}" tabindex="0" role="button" aria-pressed="${state.bucket === i}" data-bucket="${i}" aria-label="${lab}, ${c} events${state.bucket === i ? ', filter active' : ''}">
+      <rect class="hit" x="${x - 2}" y="${top - 4}" width="${bw - 2}" height="${H - top - bot + 4}" fill="transparent" rx="3"/>
+      <rect class="b" x="${x}" y="${y}" width="${bw - 6}" height="${bh}" rx="2"/>${c ? `<text class="cnt" x="${x + (bw - 6) / 2}" y="${y - 3}" text-anchor="middle">${c}</text>` : ''}</g>`;
+    if (i % 2 === 0) s += `<text x="${x}" y="${H - 6}">${fmt(i * BUCKET).slice(0, 5)}</text>`;
+  });
+  $('#histo').innerHTML = s;
+  $('#histoNote').textContent = state.bucket === null ? 'Select a bar to filter by time' : `Filtered to ${fmt(state.bucket * BUCKET).slice(0, 5)} to ${fmt((state.bucket + 1) * BUCKET).slice(0, 5)}`;
+}
+const PIVOT_FIELDS = ['sourcetype', 'host', 'EventCode', 'user', 'src_ip', 'dest_port', 'action', 'host_os', 'logon_type', 'parent_process', 'class_name'];
+function renderFields(shown) {
+  $('#fields').innerHTML = PIVOT_FIELDS.map(fn => {
+    const k = fn.toLowerCase(); const m = new Map(); shown.forEach(e => { const v = e.lf[k]; if (v !== undefined) m.set(v, (m.get(v) || 0) + 1); });
+    if (!m.size) return '';
+    const top = [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    return `<details ${['sourcetype', 'host_os'].includes(fn) || state.openField === fn ? 'open' : ''} data-field="${fn}"><summary>${esc(fn)} <span>(${m.size})</span></summary><ul>${top.map(([v, c]) =>
+      `<li><button type="button" class="pivot" data-pivot="${esc(fn)}" data-val="${esc(v)}" title="Add ${esc(fn)}=${esc(v)} to search"><span class="v">${esc(v)}</span><span>${c}</span></button></li>`).join('')}</ul></details>`;
+  }).join('') || '<p class="c-src">No fields to show.</p>';
+}
+function renderRows(shown, unknown) {
+  const key = state.instructor && !LAB.tasks[state.taskIndex].final ? LAB.tasks[state.taskIndex].targets : [];
+  const list = shown.slice(0, state.showCount);
+  $('#rcount').textContent = `${shown.length} event${shown.length === 1 ? '' : 's'} found` + (unknown.length ? `. Unknown field: ${unknown.join(', ')}` : '');
+  let chips = '';
+  if (state.bucket !== null) chips += `<button type="button" class="chip" data-clear="bucket">Time ${fmt(state.bucket * BUCKET).slice(0, 5)} \u2715<span class="sr"> remove time filter</span></button> `;
+  if (state.flagOnly) chips += `<button type="button" class="chip" data-clear="flagonly">Flagged only \u2715<span class="sr"> show all</span></button>`;
+  $('#rchips').innerHTML = chips;
+  if (!list.length) {
+    $('#rows').innerHTML = `<tr><td colspan="6" class="empty">${unknown.length ? `No events have a field named \u201c${esc(unknown[0])}\u201d. Check the Fields panel for valid names.` : 'No events match. Remove a filter or try a saved query.'}</td></tr>`;
+    $('#more').innerHTML = ''; return;
+  }
+  $('#rows').innerHTML = list.map(e => {
+    const fl = state.flags.includes(e.id), ex = state.expanded.includes(e.id), k = key.includes(e.id);
+    let r = `<tr class="ev${fl ? ' is-flagged' : ''}${k ? ' is-key' : ''}" data-id="${e.id}">
+      <td><button type="button" class="flagbtn" data-flag="${e.id}" aria-pressed="${fl}" aria-label="${fl ? 'Unflag' : 'Flag'} event ${e.id}">${ICON.flag.replace('FILL', fl ? 'currentColor' : 'none')}</button></td>
+      <td class="td-time">${e.t}</td><td class="td-st col-st">${esc(e.sourcetype)}</td><td class="col-host">${esc(e.host)}</td><td class="td-code">${e.code || '\u2014'}</td>
+      <td><button type="button" class="expbtn" data-exp="${e.id}" aria-expanded="${ex}" aria-controls="d-${e.id}">${ICON.car}<span><span class="sr">${e.id} </span>${esc(e.summary)}${fl ? '<span class="tagf">\u2691 Flagged</span>' : ''}${k ? '<span class="tagk">KEY</span>' : ''}</span></button></td></tr>`;
+    if (ex) r += `<tr class="detail" id="d-${e.id}"><td colspan="6"><div class="detail-grid"><div><p class="c-src" style="margin:0 0 .3rem">Raw event ${e.id}</p><pre class="raw" tabindex="0" aria-label="Raw event text">${esc(e.raw)}</pre></div>
+      <div><p class="c-src" style="margin:0 0 .3rem">Extracted fields</p><table class="kv"><tbody>${Object.entries(e.f).map(([k2, v]) => `<tr><th scope="row">${esc(k2)}</th><td>${esc(v)}<button type="button" class="addf" data-pivot="${esc(k2)}" data-val="${esc(v)}" aria-label="Filter on ${esc(k2)} equals ${esc(v)}">Filter</button></td></tr>`).join('')}</tbody></table></div></div></td></tr>`;
+    return r;
+  }).join('');
+  $('#more').innerHTML = shown.length > state.showCount ? `<button type="button" class="btn" id="btnMore">Show ${Math.min(50, shown.length - state.showCount)} more of ${shown.length - state.showCount} remaining</button>` : '';
+}
+function ruleRows() {
+  const by = {}; EVENTS.filter(e => e.code === '4625').forEach(e => { (by[e.f.src_ip] = by[e.f.src_ip] || []).push(e); });
+  return Object.entries(by).map(([ip, evs]) => {
+    const secs = evs.map(e => e.sec).sort((a, b) => a - b); let peak = 0, j = 0;
+    for (let i = 0; i < secs.length; i++) { while (secs[i] - secs[j] >= 600) j++; peak = Math.max(peak, i - j + 1); }
+    return { ip, peak, accounts: new Set(evs.map(e => e.f.user)).size };
+  }).sort((a, b) => b.peak - a.peak);
+}
+function renderRules() {
+  const thr = state.threshold; $('#thr').value = thr; $('#thrNum').value = thr; $('#thrEcho').textContent = thr;
+  const rows = ruleRows(); const firing = rows.filter(r => r.peak >= thr);
+  $('#ruleRows').innerHTML = rows.map(r => {
+    const a = r.peak >= thr;
+    return `<tr class="${a ? 'alerting' : ''}"><td class="td-time">${r.ip}</td><td>${r.peak}</td><td>${r.accounts}</td><td>${a ? `<span class="st-alert">${ICON.bell} Alert</span>` : `<span class="st-quiet">${ICON.dash} Quiet</span>`}</td></tr>`;
+  }).join('');
+  const t3 = LAB.tasks.find(t => t.threshold); const ok = thr >= t3.threshold.min && thr <= t3.threshold.max;
+  const kind = ok ? 'ok' : thr < t3.threshold.min ? 'warn' : 'err';
+  const msg = (ok ? t3.thresholdMsg.good : thr < t3.threshold.min ? t3.thresholdMsg.low : t3.thresholdMsg.high).replace('{n}', thr);
+  $('#ruleVerdict').className = 'verdict feedback fb-' + kind;
+  $('#ruleVerdict').innerHTML = ICON[kind] + `<div><strong>${firing.length} alert${firing.length === 1 ? '' : 's'} would fire</strong><span>${esc(msg)}</span></div>`;
+  const pip = $('#rulePip'); pip.hidden = !firing.length; pip.textContent = firing.length;
+}
+function renderConsole() {
+  $('#q').value = state.query; $('#flagOnly').checked = state.flagOnly;
+  const { base, shown, unknown } = currentResults();
+  renderHisto(base); renderFields(shown); renderRows(shown, unknown); renderRules();
+  const s = state.tab === 'search';
+  $('#tabSearch').setAttribute('aria-selected', s); $('#tabRules').setAttribute('aria-selected', !s);
+  $('#tabSearch').tabIndex = s ? 0 : -1; $('#tabRules').tabIndex = s ? -1 : 0;
+  $('#panelSearch').hidden = !s; $('#panelRules').hidden = s;
+}
+function renderAll(focusSel) {
+  renderHeader(); renderTask(); renderConsole(); save();
+  if (focusSel) { const el = document.querySelector(focusSel); if (el) el.focus({ preventScroll: false }); }
+}
+
+/* =============================================================================
+   8. ACTIONS (mutate state, give immediate feedback, re-render)
+   ============================================================================= */
+function doSearch(q, flash) {
+  state.query = q; state.showCount = 50; state.bucket = null; state.tab = 'search';
+  renderAll();
+  if (flash && !reduceMotion()) document.querySelectorAll('#rows tr.ev').forEach(r => r.classList.add('flash'));
+}
+function taskOwning(id) { return LAB.tasks.findIndex(t => !t.final && (t.targets.includes(id) || t.related.includes(id))); }
+function toggleFlag(id) {
+  const e = BY_ID[id]; const i = state.taskIndex, t = LAB.tasks[i], ts = state.t[i];
+  if (state.flags.includes(id)) {
+    state.flags = state.flags.filter(x => x !== id);
+    setFeedback('info', `Flag removed from ${id}`, 'The event is no longer part of your finding.');
+  } else {
+    state.flags.push(id);
+    const owner = taskOwning(id);
+    if (ts.done || t.final) setFeedback('info', `Flagged ${id}`, 'Added to your finding.');
+    else if (t.targets.includes(id)) setFeedback('ok', `Flagged ${id}: relevant evidence`, `This event supports the current task. ${t.targets.filter(x => state.flags.includes(x)).length} of ${t.targets.length} required events flagged.`);
+    else if (t.related.includes(id)) setFeedback('info', `Flagged ${id}: related context`, 'This event is part of the same activity. It is fine to keep, but look for the event that best proves the vector.');
+    else if (owner > -1) setFeedback('info', `Flagged ${id}: suspicious, different thread`, 'This looks malicious but belongs to another part of the investigation. Keep it for your final finding; no penalty.');
+    else {
+      if (!ts.wrongFlags.includes(id)) ts.wrongFlags.push(id);
+      const why = e.why ? esc(e.why) : 'Nothing in this event points to the current task\u2019s attack vector. It looks like routine activity. Keep flags focused on evidence.';
+      setFeedback('warn', `Reconsider ${id} (\u2212${LAB.scoring.wrongFlagPenalty} pt)`, why + ' Select the flag again to remove it.');
+    }
+  }
+  renderAll(`[data-flag="${id}"]`);
+}
+function showHint() {
+  const i = state.taskIndex, ts = state.t[i]; if (ts.hints >= 3) return;
+  ts.hints++;
+  setFeedback('info', ['Nudge revealed', 'Clue revealed (\u22121 pt)', 'Answer revealed (\u22123 pts)'][ts.hints - 1], esc(LAB.tasks[i].hints[ts.hints - 1]));
+  renderAll('#btnHint');
+}
+function submitTask() {
+  const i = state.taskIndex, t = LAB.tasks[i], ts = state.t[i];
+  if (ts.done) return;
+  if (t.final) return submitFinal();
+  const fail = (kind, title, body) => { ts.attempts++; setFeedback(kind, title + ` (\u2212${LAB.scoring.attemptPenalty} pts)`, body); renderAll('#feedback'); };
+  if (t.threshold && (state.threshold < t.threshold.min || state.threshold > t.threshold.max)) {
+    const m = state.threshold < t.threshold.min ? t.thresholdMsg.low : t.thresholdMsg.high;
+    return fail('err', 'Rule not tuned yet', esc(m.replace('{n}', state.threshold)) + ' Open the Correlation rules tab to adjust it.');
+  }
+  const decoysHeld = state.flags.filter(id => BY_ID[id].decoyFor === t.id);
+  if (decoysHeld.length) return fail('warn', `Remove the flag on ${decoysHeld[0]}`, esc(BY_ID[decoysHeld[0]].why));
+  const missing = t.targets.filter(id => !state.flags.includes(id));
+  if (missing.length) return fail('err', `Evidence incomplete: ${missing.length} required event${missing.length > 1 ? 's' : ''} not flagged`, esc(t.missing));
+  if (!ts.answer) { setFeedback('warn', 'Choose a vector', 'Your evidence is flagged. Now choose the attack vector it demonstrates. No points were deducted.'); renderAll('#vectorSel'); return; }
+  if (ts.answer !== t.answer) {
+    const v = VEC[ts.answer];
+    const body = t.wrong[ts.answer] || `\u201c${v.label}\u201d means ${v.def}. Re-read the flagged evidence: which condition let the attacker in here?`;
+    return fail('err', `Not ${v.label}`, esc(body) + ` <em>Concept: attack vectors (SY0-701 2.2).</em>`);
+  }
+  ts.done = true; ts.earned = available(i);
+  setFeedback('ok', `Correct: ${VEC[t.answer].label} (+${ts.earned} pts)`, esc(t.success));
+  renderAll('#btnNext');
+}
+function submitFinal() {
+  const i = state.taskIndex, t = LAB.tasks[i], ts = state.t[i];
+  const blank = t.mapOrder.filter(v => !state.mapping[v]);
+  if (blank.length) { setFeedback('warn', `${blank.length} vector${blank.length > 1 ? 's' : ''} still need a mitigation`, `Choose a mitigation for: ${blank.map(v => esc(VEC[v].label)).join(', ')}. No points were deducted.`); renderAll(`#map-${blank[0]}`); return; }
+  const wrong = t.mapOrder.filter(v => state.mapping[v] !== v);
+  if (wrong.length) {
+    ts.attempts++;
+    const lines = wrong.map(v => `<br>\u2022 <b>${esc(VEC[v].label)}</b>: the control you chose addresses ${esc(VEC[state.mapping[v]].label.toLowerCase())}, not ${esc(VEC[v].def)}.`).join('');
+    setFeedback('err', `${t.mapOrder.length - wrong.length} of ${t.mapOrder.length} matched (\u2212${LAB.scoring.attemptPenalty} pts)`, 'Mitigations work by removing the specific condition each vector relies on.' + lines);
+    renderAll('#feedback'); return;
+  }
+  ts.done = true; ts.earned = available(i); state.finished = true;
+  setFeedback('ok', `Finding complete (+${ts.earned} pts)`, 'Every vector is matched to the control that removes its enabling condition. That is attack-surface reduction in practice.');
+  renderAll(); openDebrief();
+}
+function nextTask() {
+  if (state.taskIndex < LAB.tasks.length - 1) {
+    state.taskIndex++; state.bucket = null;
+    setFeedback('info', `Task ${state.taskIndex + 1}: ${LAB.tasks[state.taskIndex].title}`, 'Read the brief on the left, then investigate in the console.');
+    renderAll('#taskTitle'); const h = $('#taskTitle'); if (h) { h.tabIndex = -1; h.focus(); }
+  } else openDebrief();
+}
+function resetLab() {
+  if (!confirm('Reset the lab? Your flags, answers, and score will be cleared.')) return;
+  const theme = document.documentElement.dataset.theme; state = freshState(); state.started = true;
+  document.documentElement.dataset.theme = theme;
+  setFeedback('info', 'Lab reset', 'You are back at Task 1 with a full score available.');
+  renderAll('#taskTitle');
+}
+
+/* =============================================================================
+   9. GUIDED WALKTHROUGH (demonstrates Task 1, then restores your progress)
+   ============================================================================= */
+const DEMO_STEPS = [
+  { say: 'Task 1 starts at the email gateway, where the attacker first reached a person. Saved queries hold searches analysts reuse, so we pick one.', act: () => { $('#saved').value = '0'; return '#saved'; } },
+  { say: 'Running it narrows about 130 events to one delivered, macro-enabled message. The histogram and Fields panel update to match.', act: () => { state.query = LAB.savedQueries[0].q; state.bucket = null; state.tab = 'search'; renderConsole(); return '#rows tr.ev'; } },
+  { say: 'Expanding the event shows the evidence: a look-alike domain (paper-supp1y with a digit 1), spf=fail, dmarc=fail, an .xlsm attachment, and action=delivered.', act: () => { state.expanded = ['E-1001']; renderConsole(); return '#d-E-1001'; } },
+  { say: 'Flagging adds the event to the finding. In your own run, feedback appears right after each flag.', act: () => { state.flags = ['E-1001']; renderConsole(); return '[data-flag="E-1001"]'; } },
+  { say: 'The vector is how the attacker reached the user: an email message. So the classification is \u201cMessage-based: email,\u201d followed by Submit finding.', act: () => { state.taskIndex = 0; state.t[0].answer = 'msg_email'; renderTask(); return '#vectorSel'; } },
+  { say: 'That is the whole pattern: search, read the evidence, flag, classify, submit. The demo is over and your lab is exactly where you left it. Your turn.', act: () => null }
+];
+function startDemo() {
+  if (demo) return;
+  demo = { step: 0, snap: JSON.stringify(state) };
+  state.taskIndex = 0; state.t[0] = Object.assign({}, state.t[0], { done: false, answer: '' }); state.flags = []; state.expanded = []; state.query = '';
+  renderHeader(); renderTask(); renderConsole();
+  $('#coach').hidden = false; demoStep();
+}
+function demoStep() {
+  document.querySelectorAll('.demo-focus').forEach(el => el.classList.remove('demo-focus'));
+  const s = DEMO_STEPS[demo.step]; const sel = s.act();
+  const last = demo.step === DEMO_STEPS.length - 1;
+  $('#coach').innerHTML = `<h2>Guided walkthrough, step ${demo.step + 1} of ${DEMO_STEPS.length}</h2><p>${esc(s.say)}</p><div class="actions" style="margin-top:0">${last ? '' : '<button class="btn primary" type="button" id="demoNext">Next step</button>'}<button class="btn" type="button" id="demoStop">${last ? 'Start Task 1 myself' : 'Stop walkthrough'}</button></div>`;
+  if (sel) { const el = document.querySelector(sel); if (el) { el.classList.add('demo-focus'); el.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }); } }
+  const b = $('#demoNext') || $('#demoStop'); if (b) b.focus({ preventScroll: true });
+}
+function stopDemo() {
+  if (!demo) return;
+  state = Object.assign(freshState(), JSON.parse(demo.snap)); state.started = true; demo = null;
+  document.querySelectorAll('.demo-focus').forEach(el => el.classList.remove('demo-focus'));
+  $('#coach').hidden = true; $('#coach').innerHTML = '';
+  setFeedback('info', 'Walkthrough finished', 'Your progress was restored. Work the current task in the console.');
+  renderAll('#taskTitle'); const h = $('#taskTitle'); if (h) { h.tabIndex = -1; h.focus(); }
+}
+
+/* =============================================================================
+   10. DIALOGS: start screen and debrief
+   ============================================================================= */
+function openStart() {
+  const s = LAB.scenarioIntro;
+  $('#startBody').innerHTML = `<div class="alertcard">${ICON.err.replace('class="ico"', 'class="ico" style="color:var(--danger);width:1.6rem;height:1.6rem;flex:none"')}<div><p><b>Incoming notification, 08:05</b></p><p>${esc(s.alert)}</p></div></div>
+    ${s.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}
+    <h3>Learning objective</h3><p>${esc(LAB.meta.objective)}</p>
+    <h3>What you will practice</h3><ul>${s.skills.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    <h3>How scoring works</h3><p>Each task is worth 10 points (the final finding is worth 20). Incorrect submissions cost 2, the second and third hints cost 1 and 3, and flagging unrelated events costs 1. Completing a task always earns at least its minimum.</p>
+    <p class="authnote"><b>Authorized use only.</b> Everything here is simulated in your browser with fictional data. Practice these techniques only on systems you are authorized to test.</p>`;
+  $('#dlgStart').showModal();
+}
+function openDebrief() {
+  const total = totalScore();
+  const band = total >= 90 ? 'Exam-ready on this objective.' : total >= 75 ? 'Solid. Review the tasks where you lost points.' : 'Replay the lab and use the hints as worked examples.';
+  $('#debBody').innerHTML = `<p><b>Final score: ${total} of ${MAX_SCORE}.</b> ${esc(band)}</p>
+    <div class="tbl-wrap"><table class="sum"><caption class="sr">Performance by task</caption><thead><tr><th scope="col">Task</th><th scope="col">Vector</th><th scope="col">Points</th><th scope="col">Wrong tries</th><th scope="col">Hints</th></tr></thead><tbody>
+    ${LAB.tasks.map((t, i) => { const ts = state.t[i]; return `<tr><td>${i + 1}. ${esc(t.title)}</td><td>${t.final ? 'All eight' : esc(VEC[t.answer].label)}</td><td>${ts.done ? ts.earned : 0} / ${t.points}</td><td>${ts.attempts}</td><td>${ts.hints}</td></tr>`; }).join('')}
+    </tbody></table></div>
+    <h3>Key takeaways</h3><ul>${LAB.debrief.takeaways.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    <h3>Reflection</h3>${LAB.debrief.reflections.map((r, k) => `<div class="field"><label for="refl${k}">${esc(r)}</label><textarea id="refl${k}" data-refl="${k}">${esc(state.reflections[k] || '')}</textarea></div>`).join('')}
+    <p class="authnote">Your reflections are saved in this browser only.</p>`;
+  $('#dlgDebrief').showModal();
+}
+
+/* =============================================================================
+   11. EVENT WIRING
+   ============================================================================= */
+function applyTheme(t) { document.documentElement.dataset.theme = t; try { localStorage.setItem(LAB.meta.themeKey, t); } catch (e) { } }
+function init() {
+  let th = null; try { th = localStorage.getItem(LAB.meta.themeKey); } catch (e) { }
+  document.documentElement.dataset.theme = th || 'light';
+  $('#saved').innerHTML += LAB.savedQueries.map((s, i) => `<option value="${i}">${esc(s.name)}</option>`).join('');
+
+  $('#searchForm').addEventListener('submit', ev => { ev.preventDefault(); if (demo) return; doSearch($('#q').value, true); });
+  $('#btnClear').addEventListener('click', () => { if (demo) return; $('#saved').value = ''; doSearch('', false); $('#q').focus(); });
+  $('#saved').addEventListener('change', ev => { if (demo || ev.target.value === '') return; doSearch(LAB.savedQueries[+ev.target.value].q, true); });
+  $('#flagOnly').addEventListener('change', ev => { state.flagOnly = ev.target.checked; state.showCount = 50; renderAll(); });
+
+  $('#histo').addEventListener('click', ev => { const g = ev.target.closest('[data-bucket]'); if (g && !demo) toggleBucket(+g.dataset.bucket); });
+  $('#histo').addEventListener('keydown', ev => {
+    const g = ev.target.closest('[data-bucket]'); if (!g || demo) return;
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggleBucket(+g.dataset.bucket); }
+    if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { ev.preventDefault(); const n = +g.dataset.bucket + (ev.key === 'ArrowRight' ? 1 : -1); const t = document.querySelector(`[data-bucket="${n}"]`); if (t) t.focus(); }
+  });
+  function toggleBucket(b) { state.bucket = state.bucket === b ? null : b; state.showCount = 50; renderAll(`[data-bucket="${b}"]`); }
+
+  $('#fields').addEventListener('toggle', ev => { if (ev.target.open) state.openField = ev.target.dataset.field; }, true);
+  document.addEventListener('click', ev => {
+    if (demo && !ev.target.closest('#coach') && !ev.target.closest('#btnTheme')) { if (ev.target.closest('#console,#taskCard')) { ev.preventDefault(); } }
+    const pv = ev.target.closest('[data-pivot]');
+    if (pv && !demo) {
+      const term = /\s/.test(pv.dataset.val) ? `${pv.dataset.pivot}="${pv.dataset.val}"` : `${pv.dataset.pivot}=${pv.dataset.val}`;
+      const q = state.query.trim(); if (!q.includes(term)) doSearch((q ? q + ' ' : '') + term, true);
+      setFeedback('info', 'Pivot added', `Search now includes <code>${esc(term)}</code>.`); $('#q').focus(); return;
+    }
+    const fl = ev.target.closest('[data-flag]'); if (fl && !demo) { toggleFlag(fl.dataset.flag); return; }
+    const ex = ev.target.closest('[data-exp]');
+    if (ex && !demo) { const id = ex.dataset.exp; state.expanded = state.expanded.includes(id) ? state.expanded.filter(x => x !== id) : [...state.expanded, id]; renderAll(`[data-exp="${id}"]`); return; }
+    const ch = ev.target.closest('[data-clear]');
+    if (ch) { if (ch.dataset.clear === 'bucket') state.bucket = null; else state.flagOnly = false; renderAll('#q'); return; }
+    if (ev.target.id === 'btnMore') { state.showCount += 50; renderAll(); return; }
+    if (ev.target.id === 'btnSubmit' && !demo) { submitTask(); return; }
+    if (ev.target.id === 'btnHint' && !demo) { showHint(); return; }
+    if (ev.target.id === 'btnNext') { nextTask(); return; }
+    if (ev.target.id === 'demoNext') { demo.step++; demoStep(); return; }
+    if (ev.target.id === 'demoStop') { stopDemo(); return; }
+  });
+  document.addEventListener('change', ev => {
+    if (demo) return;
+    if (ev.target.id === 'vectorSel') { state.t[state.taskIndex].answer = ev.target.value; save(); }
+    if (ev.target.dataset.map) { state.mapping[ev.target.dataset.map] = ev.target.value; save(); }
+  });
+  document.addEventListener('input', ev => { if (ev.target.dataset && ev.target.dataset.refl !== undefined) { state.reflections[+ev.target.dataset.refl] = ev.target.value; save(); } });
+
+  const tabs = [$('#tabSearch'), $('#tabRules')];
+  tabs.forEach((tb, k) => {
+    tb.addEventListener('click', () => { if (demo) return; state.tab = k ? 'rules' : 'search'; renderAll(k ? '#tabRules' : '#tabSearch'); });
+    tb.addEventListener('keydown', ev => { if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { ev.preventDefault(); const o = tabs[1 - k]; o.click(); o.focus(); } });
+  });
+  let thrTimer = null;
+  const onThr = v => {
+    const n = Math.min(60, Math.max(1, parseInt(v, 10) || 1)); if (n === state.threshold) return;
+    state.threshold = n; renderRules(); renderTask(); save();
+    clearTimeout(thrTimer);
+    thrTimer = setTimeout(() => { const t3 = LAB.tasks.find(t => t.threshold); const ok = n >= t3.threshold.min && n <= t3.threshold.max; setFeedback(ok ? 'ok' : n < t3.threshold.min ? 'warn' : 'err', ok ? 'Rule tuned' : n < t3.threshold.min ? 'False positives' : 'False negative', esc((ok ? t3.thresholdMsg.good : n < t3.threshold.min ? t3.thresholdMsg.low : t3.thresholdMsg.high).replace('{n}', n))); }, 450);
+  };
+  $('#thr').addEventListener('input', ev => { if (!demo) onThr(ev.target.value); });
+  $('#thrNum').addEventListener('change', ev => { if (!demo) onThr(ev.target.value); });
+
+  $('#btnTheme').addEventListener('click', () => { applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); renderHeader(); });
+  $('#btnReset').addEventListener('click', () => { if (demo) stopDemo(); resetLab(); });
+  $('#btnDemo').addEventListener('click', () => { if (!$('#dlgStart').open) startDemo(); });
+  $('#btnKey').addEventListener('click', () => { state.instructor = !state.instructor; setFeedback('info', state.instructor ? 'Instructor key shown' : 'Instructor key hidden', state.instructor ? 'Correct actions appear in the task panel, and required rows are marked KEY.' : 'Answers are hidden again.'); renderAll('#btnKey'); });
+  $('#btnStart').addEventListener('click', () => { state.started = true; $('#dlgStart').close(); setFeedback('info', 'Investigation started', 'Task 1 is on the left. The console is on the right.'); renderAll('#taskTitle'); });
+  $('#btnStartDemo').addEventListener('click', () => { state.started = true; save(); $('#dlgStart').close(); startDemo(); });
+  $('#dlgStart').addEventListener('cancel', ev => { ev.preventDefault(); });
+  $('#btnCloseDeb').addEventListener('click', () => $('#dlgDebrief').close());
+  $('#btnReplay').addEventListener('click', () => { $('#dlgDebrief').close(); resetLab(); });
+  $('#btnPrint').addEventListener('click', () => window.print());
+
+  renderAll();
+  if (!state.started) openStart();
+  else if (state.finished) setFeedback('ok', 'Lab complete', `Final score ${totalScore()} of ${MAX_SCORE}. Use Reset lab to replay.`);
+  else setFeedback('info', 'Welcome back', `You are on Task ${state.taskIndex + 1}. Your flags and progress were restored.`);
+}
+init();
+</script>
+</body>
+</html>
