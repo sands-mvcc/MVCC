@@ -1,1029 +1,1422 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diffie-Hellman Key Exchange - Interactive Learning</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffie-Hellman Paint Lab: mixing a secret in plain sight</title>
+<meta name="description" content="An interactive Diffie-Hellman key exchange lab: mix paints, play as Eve, stop Mallory in the middle, explore modular arithmetic, race a brute-force attack, and run a two-device classroom exchange.">
+<style>
+:root{
+  --bg:#EEF2F7;
+  --surface:#FFFFFF;
+  --surface-2:#E3E9F1;
+  --ink:#1B2436;
+  --muted:#4F5B73;
+  --line:#C9D2E0;
+  --alice:#2A55C9;
+  --alice-tint:#E6ECFB;
+  --bob:#14744A;
+  --bob-tint:#E2F3EA;
+  --eve:#7340B0;
+  --eve-tint:#F1EAFA;
+  --mallory:#B42318;
+  --mallory-tint:#FCE9E7;
+  --ok:#14744A;
+  --bad:#B42318;
+  --focus:#E0A100;
+  --metal:#C3CAD6;
+  --metal-edge:#7D889B;
+  --pot:#5A6478;
+  --pot-edge:#3E475A;
+  --on-paint-dark:#11151C;
+  --on-paint-light:#FFFFFF;
+  --shade-dark:#000000;
+  --shade-light:#FFFFFF;
+  --font-body:"Avenir Next","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --font-display:"Rockwell","Roboto Slab","Museo Slab","Bookman Old Style",Georgia,serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --r-lg:20px;
+  --r-md:12px;
+  --r-sm:7px;
+  --gap:clamp(12px,2vw,22px);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#121826;
+    --surface:#1B2333;
+    --surface-2:#263147;
+    --ink:#E9EDF5;
+    --muted:#A7B1C5;
+    --line:#38445C;
+    --alice:#89A6FF;
+    --alice-tint:#1F2A4A;
+    --bob:#5BCB93;
+    --bob-tint:#183427;
+    --eve:#BE96F2;
+    --eve-tint:#2A2142;
+    --mallory:#FF8A7D;
+    --mallory-tint:#3D1F1D;
+    --ok:#5BCB93;
+    --bad:#FF8A7D;
+    --focus:#FFC83D;
+    --metal:#8C96A8;
+    --metal-edge:#C3CAD6;
+    --pot:#6C778C;
+    --pot-edge:#9AA4B8;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:1.0625rem;line-height:1.55}
+h1,h2,h3,h4{font-family:var(--font-display);line-height:1.15;margin:0}
+h2{font-size:clamp(1.6rem,3vw,2.2rem)}
+h3{font-size:1.3rem}
+h4{font-size:1rem;font-family:var(--font-body);font-weight:650;color:var(--muted)}
+p{margin:.4em 0 .8em}
+a{color:var(--alice)}
+code,.mono{font-family:var(--font-mono);font-size:.92em}
+.skip-link{position:absolute;left:-999px;top:8px;background:var(--surface);color:var(--ink);padding:10px 14px;border-radius:var(--r-sm);z-index:10}
+.skip-link:focus{left:8px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 clamp(14px,3vw,32px)}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #ffffff;
-            color: #000000;
-            line-height: 1.6;
-        }
+/* header */
+.site-head{padding:clamp(22px,4vw,44px) 0 10px}
+.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:var(--gap);align-items:center}
+.hero h1{font-size:clamp(2.1rem,5.2vw,3.7rem);letter-spacing:-.01em;max-width:13ch}
+.hero .lede{font-size:1.15rem;color:var(--muted);max-width:52ch}
+.hero-eq{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px}
+.hero-eq .op{font-family:var(--font-display);font-size:1.6rem;color:var(--muted)}
+.hero-eq .mini{width:64px}
+.hero-eq figure{margin:0;text-align:center;font-size:.8rem;color:var(--muted)}
+.hero-eq figcaption{margin-top:2px}
+@media (max-width:820px){.hero{grid-template-columns:1fr}}
 
-        header {
-            background: linear-gradient(135deg, #1e7e34 0%, #0056b3 100%);
-            color: white;
-            padding: 2rem 0;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+/* tabs */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;overflow-x:auto;padding:14px 0 6px;scrollbar-width:thin}
+.tab{flex:0 0 auto;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;cursor:pointer}
+.tab .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--surface-2);font-size:.8rem;font-weight:700}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab[aria-selected="true"] .n{background:var(--bg);color:var(--ink)}
 
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
+main{padding-bottom:40px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(16px,3vw,32px);margin-top:10px}
+.panel-head{max-width:70ch;margin-bottom:14px}
+.panel-head p{color:var(--muted)}
 
-        header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
+/* buttons and inputs */
+button,.btn{font:inherit;min-height:44px;min-width:44px;padding:8px 16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:650}
+button:disabled{opacity:.45;cursor:not-allowed}
+.switch{display:inline-flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;user-select:none}
+.switch input{appearance:none;width:46px;height:26px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);position:relative;cursor:pointer;margin:0;flex:0 0 auto}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform .2s}
+.switch input:checked{background:var(--ink);border-color:var(--ink)}
+.switch input:checked::after{transform:translateX(20px);background:var(--bg)}
+input[type=text],textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;min-height:44px;width:100%}
+textarea{font-family:var(--font-mono);font-size:.9rem;resize:vertical;word-break:break-all}
+label.field{display:block;font-weight:600;font-size:.95rem;margin-bottom:10px}
+label.field span.hint{display:block;font-weight:400;color:var(--muted);font-size:.85rem}
+fieldset{border:0;padding:0;margin:0 0 12px}
+legend{font-weight:650;margin-bottom:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{position:relative}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg span{display:inline-grid;place-items:center;min-height:44px;min-width:52px;padding:6px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2);cursor:pointer}
+.seg input:checked + span{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
+.row-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
 
-        nav {
-            background-color: #f8f9fa;
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+/* vessels */
+.vessel{width:96px;margin:0 auto}
+.vessel svg{display:block;width:100%;height:auto;overflow:visible}
+.can-body{fill:var(--metal);stroke:var(--metal-edge);stroke-width:2}
+.can-rim{fill:var(--metal);stroke:var(--metal-edge);stroke-width:2}
+.can-handle{stroke:var(--metal-edge);stroke-width:3;fill:none}
+.paint-fill{transition:fill .7s ease}
+.pot-edge{fill:none;stroke:var(--pot-edge);stroke-width:2.5}
+.pot-lip{fill:none;stroke:var(--pot-edge);stroke-width:3}
+.pot-shade{fill:var(--shade-dark);opacity:.16}
+.pot-top-shade{fill:var(--shade-light);opacity:.12}
+.pot-gloss{fill:none;stroke:var(--shade-light);stroke-width:3;stroke-linecap:round;opacity:.35}
+.vessel.empty .pot-shade,.vessel.empty .pot-gloss,.vessel.empty .pot-top-shade{opacity:0}
+.swirl{fill:none;stroke-width:2;stroke-linecap:round;opacity:.4;transform-origin:50px 26px}
+.vessel.empty .paint-fill{fill:var(--surface-2)}
+.vessel.empty .swirl,.vessel.empty .can-sym{opacity:0}
+.vessel.stirring .swirl{animation:stir 1.2s ease-out}
+@keyframes stir{0%{transform:scale(.3);opacity:.8}60%{transform:scale(1.15);opacity:.6}100%{transform:scale(1);opacity:.4}}
+.can-sym{font-size:20px;text-anchor:middle;dominant-baseline:middle;font-family:var(--font-body)}
+.on-light{fill:var(--on-paint-dark);color:var(--on-paint-dark)}
+.on-dark{fill:var(--on-paint-light);color:var(--on-paint-light)}
+.cap{text-align:center;font-size:.9rem;margin:6px 0 0;min-height:1.4em}
+.math{display:none;text-align:center;font-family:var(--font-mono);font-size:.85rem;background:var(--surface-2);border-radius:var(--r-sm);padding:4px 8px;margin:6px auto 0;max-width:260px}
+body.show-math .math{display:block}
 
-        nav ul {
-            list-style: none;
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 2rem;
-            padding: 0 1rem;
-        }
+/* palettes */
+.palette{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:6px 0 10px}
+.swatch{min-height:44px;min-width:0;padding:0;border-radius:var(--r-sm);border:2px solid transparent;display:grid;place-items:center;font-size:1.05rem;position:relative}
+.swatch[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+.swatch[aria-pressed="true"]::after{content:"✓";position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:.75rem;display:grid;place-items:center}
 
-        nav a {
-            color: #0056b3;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            transition: all 0.3s;
-        }
+/* studio */
+.studio-bar{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.stepper{list-style:none;display:flex;gap:4px;padding:0;margin:0;flex-wrap:wrap}
+.stepper li{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:.9rem}
+.stepper li b{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--surface);font-size:.8rem}
+.stepper li[aria-current="step"]{background:var(--ink);color:var(--bg)}
+.stepper li[aria-current="step"] b{background:var(--bg);color:var(--ink)}
+.stepper li.done b::before{content:"✓"}
+.stepper li.done b span{display:none}
+.toggles{display:flex;flex-wrap:wrap;gap:4px 22px}
+.prompt{font-size:1.1rem;background:var(--surface-2);border-radius:var(--r-md);padding:12px 16px;margin:8px 0 16px}
+.lanes{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:0;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.lane{padding:16px;min-width:0}
+.lane > h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.lane-alice{background:var(--alice-tint)}
+.lane-alice > h3{color:var(--alice)}
+.lane-bob{background:var(--bob-tint)}
+.lane-bob > h3{color:var(--bob)}
+.lane-channel{background:var(--eve-tint);border-left:3px dashed var(--eve);border-right:3px dashed var(--eve)}
+.lane-channel > h3{color:var(--eve)}
+.tag{font-family:var(--font-body);font-size:.78rem;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--surface);color:var(--eve);border:1px solid var(--eve)}
+.slot{background:var(--surface);border-radius:var(--r-md);padding:12px;margin-bottom:12px;min-height:180px;transition:opacity .3s}
+.slot.locked{opacity:.38}
+.slot.locked .palette{pointer-events:none}
+.slot .lock-note{display:none;text-align:center;font-size:.85rem;color:var(--muted)}
+.slot.locked .lock-note{display:block}
+.recipe{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;padding:2px 8px 2px 2px;border-radius:999px;background:var(--surface-2)}
+.chip i{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:.7rem}
+.notes{list-style:none;padding:0;margin:0}
+.notes li{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.notes li:last-child{border-bottom:0}
+.notes .dot{flex:0 0 26px;height:26px;border-radius:50%;border:1px solid var(--line)}
+.notes .empty-note{color:var(--muted);font-style:italic}
+.transit{display:grid;gap:8px}
+.parcel{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:6px 10px;font-size:.88rem;visibility:hidden}
+.parcel .dot{flex:0 0 30px;height:30px;border-radius:50%}
+.parcel.to-alice{flex-direction:row-reverse;text-align:right}
+.parcel.show{visibility:visible}
+.parcel.fly.to-bob{animation:flyR 1.1s ease-out}
+.parcel.fly.to-alice{animation:flyL 1.1s ease-out}
+@keyframes flyR{from{transform:translateX(-70%);opacity:0}to{transform:none;opacity:1}}
+@keyframes flyL{from{transform:translateX(70%);opacity:0}to{transform:none;opacity:1}}
+body.eve-view .secret-only{filter:blur(9px) grayscale(1);pointer-events:none}
+body.eve-view .lane-alice,body.eve-view .lane-bob{background:var(--surface-2)}
+.result{border-radius:var(--r-md);padding:14px 18px;margin-top:16px;font-size:1.05rem}
+.result:empty{display:none}
+.result.good{background:var(--bob-tint);border:1px solid var(--ok)}
+.result.bad{background:var(--mallory-tint);border:1px solid var(--bad)}
+.result.neutral{background:var(--surface-2);border:1px solid var(--line)}
+.shortcut{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;margin-top:8px}
+details.aside{margin-top:18px;background:var(--surface-2);border-radius:var(--r-md);padding:12px 16px}
+details.aside summary{cursor:pointer;font-weight:650;min-height:32px}
+@media (max-width:900px){
+  .lanes{grid-template-columns:1fr}
+  .lane-channel{border-left:0;border-right:0;border-top:3px dashed var(--eve);border-bottom:3px dashed var(--eve)}
+  .slot{min-height:0}
+  .slot.locked{display:none}
+  .tabs{flex-wrap:nowrap}
+}
 
-        nav a:hover {
-            background-color: #1e7e34;
-            color: white;
-        }
+/* Eve game */
+.evidence{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap);max-width:620px;margin:8px 0}
+.evidence figure{margin:0;text-align:center}
+.evidence figcaption{font-size:.9rem;margin-top:4px}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.95rem;color:var(--muted)}
+.stats b{color:var(--ink);font-variant-numeric:tabular-nums}
+.cand-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin:12px 0}
+.cand{min-height:44px;padding:0;border-radius:var(--r-sm);border:2px solid transparent;font-size:.95rem;font-weight:700}
+.cand.tested{opacity:.35}
+.cand.found{border-color:var(--ink);box-shadow:0 0 0 3px var(--ok)}
+.insight{border-left:4px solid var(--eve);padding:8px 14px;background:var(--eve-tint);border-radius:0 var(--r-md) var(--r-md) 0;margin-top:12px}
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-        }
+/* Mallory */
+.mitm{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-top:12px}
+.mitm .col{padding:14px;min-width:0}
+.mitm .col h3{margin-bottom:8px}
+.mitm .col-alice{background:var(--alice-tint)}
+.mitm .col-alice h3{color:var(--alice)}
+.mitm .col-bob{background:var(--bob-tint)}
+.mitm .col-bob h3{color:var(--bob)}
+.mitm .col-mid{background:var(--eve-tint);border-left:3px dashed var(--eve);border-right:3px dashed var(--eve)}
+.mitm .col-mid h3{color:var(--eve)}
+body .mitm.has-mallory .col-mid{background:var(--mallory-tint);border-color:var(--mallory)}
+body .mitm.has-mallory .col-mid h3{color:var(--mallory)}
+.mini-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mini-slot{background:var(--surface);border-radius:var(--r-md);padding:8px;text-align:center}
+.mini-slot .vessel{width:100%;max-width:74px}
+.mini-slot p{font-size:.82rem;margin:4px 0 0}
+.seal{display:inline-block;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:4px}
+.seal.okay{background:var(--bob-tint);color:var(--ok);border:1px solid var(--ok)}
+.seal.fail{background:var(--mallory-tint);color:var(--bad);border:1px solid var(--bad)}
+.log{margin:14px 0 0;padding-left:1.4em}
+.log li{margin:4px 0}
+.log li.warn{color:var(--bad)}
+@media (max-width:820px){
+  .mitm{grid-template-columns:1fr}
+  .mitm .col-mid{border-left:0;border-right:0;border-top:3px dashed var(--eve);border-bottom:3px dashed var(--eve)}
+}
 
-        section {
-            margin-bottom: 4rem;
-            padding: 2rem;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
+/* math lab */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+@media (max-width:900px){.two-col{grid-template-columns:1fr}}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(14px,2.4vw,22px);min-width:0}
+.card h3{margin-bottom:6px}
+.controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#clockSvg{width:100%;max-width:380px;display:block;margin:6px auto}
+.clock-ring{fill:none;stroke:var(--line);stroke-width:2}
+.clock-node{fill:var(--surface);stroke:var(--muted);stroke-width:1.5;transition:fill .25s}
+.clock-node.visited{fill:var(--alice);stroke:var(--alice)}
+.clock-node.current{fill:var(--focus);stroke:var(--ink);stroke-width:2.5}
+.clock-label{font-size:11px;text-anchor:middle;dominant-baseline:central;fill:var(--ink);font-family:var(--font-body);pointer-events:none}
+.clock-label.visited{fill:var(--bg);font-weight:700}
+.clock-path{fill:none;stroke:var(--alice);stroke-width:1.6;opacity:.6}
+.clock-center{font-family:var(--font-display);font-size:22px;text-anchor:middle;fill:var(--ink)}
+.clock-sub{font-size:11px;text-anchor:middle;fill:var(--muted);font-family:var(--font-body)}
+.panel-note{color:var(--muted);font-size:.95rem;max-width:75ch}
+.seq{font-family:var(--font-mono);font-size:.85rem;color:var(--muted);word-break:break-word;min-height:1.4em}
+.msg{border-radius:var(--r-sm);padding:8px 12px;margin:8px 0;font-size:.95rem}
+.msg:empty{display:none}
+.msg.err{background:var(--mallory-tint);border:1px solid var(--bad)}
+.msg.info{background:var(--surface-2);border:1px solid var(--line)}
+.out-table{width:100%;border-collapse:collapse;font-size:.92rem;margin-top:8px}
+.out-table th,.out-table td{text-align:left;vertical-align:top;padding:7px 6px;border-bottom:1px solid var(--line)}
+.out-table th{font-weight:650;width:38%}
+.big{font-family:var(--font-mono);font-size:.85rem;word-break:break-all}
+.big details summary{cursor:pointer;color:var(--alice)}
+.who{font-size:.75rem;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:4px;white-space:nowrap}
+.who.pub{background:var(--eve-tint);color:var(--eve)}
+.who.sec{background:var(--surface-2);color:var(--muted)}
 
-        h2 {
-            color: #1e7e34;
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-            border-bottom: 3px solid #0056b3;
-            padding-bottom: 0.5rem;
-        }
+/* race */
+.puzzle{display:flex;flex-wrap:wrap;gap:8px 26px;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 16px;margin:10px 0;font-family:var(--font-mono)}
+.bar{height:14px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin:10px 0}
+.bar div{height:100%;width:0;background:var(--eve);transition:width .2s}
+.scale-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.95rem}
+.scale-table caption{text-align:left;font-weight:650;margin-bottom:6px}
+.scale-table th,.scale-table td{text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+.scale-table td{font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;min-height:44px;accent-color:var(--eve)}
 
-        h3 {
-            color: #0056b3;
-            font-size: 1.5rem;
-            margin: 1.5rem 0 1rem;
-        }
+/* classroom */
+.class-steps{list-style:none;counter-reset:cs;padding:0;margin:0;display:grid;gap:14px}
+.class-steps > li{counter-increment:cs;display:grid;grid-template-columns:44px 1fr;gap:14px;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px}
+.class-steps > li::before{content:counter(cs);display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--bg);font-family:var(--font-display);font-size:1.2rem}
+.class-steps h3{margin-bottom:4px}
+.role-pick{display:flex;gap:10px;flex-wrap:wrap}
+.role-pick button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.code{font-family:var(--font-mono);font-size:clamp(2rem,6vw,3.2rem);letter-spacing:.06em;font-weight:700}
+.side{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.side .vessel{margin:0;flex:0 0 120px}
+#classPalette{grid-template-columns:repeat(8,minmax(0,64px))}
+@media (max-width:520px){#classPalette{grid-template-columns:repeat(4,minmax(0,1fr))}}
+body.hide-secret .class-secret{filter:blur(12px) grayscale(1)}
+.teacher{margin-top:16px;border-left:4px solid var(--alice);padding:8px 14px;background:var(--alice-tint);border-radius:0 var(--r-md) var(--r-md) 0}
 
-        .highlight-box {
-            background-color: #e7f4e4;
-            border-left: 4px solid #1e7e34;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-        }
+/* world */
+.uses{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 28px}
+.uses li{padding:10px 0;border-bottom:1px solid var(--line)}
+.uses b{display:block;font-family:var(--font-display);font-size:1.05rem}
+.quiz-q{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin:10px 0}
+.quiz-q h4{color:var(--ink);font-size:1.02rem;margin-bottom:8px}
+.quiz-q .opts{display:grid;gap:6px}
+.quiz-q .opts button{text-align:left;background:var(--surface)}
+.quiz-q .opts button.right{border-color:var(--ok);background:var(--bob-tint)}
+.quiz-q .opts button.wrong{border-color:var(--bad);background:var(--mallory-tint)}
+.quiz-q .fb{margin:8px 0 0;font-size:.95rem}
+.score{font-weight:650}
 
-        .info-box {
-            background-color: #e3f2fd;
-            border-left: 4px solid #0056b3;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-        }
-
-        .warning-box {
-            background-color: #fff3cd;
-            border-left: 4px solid #ff9800;
-            padding: 1.5rem;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-        }
-
-        .paint-demo {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin: 2rem 0;
-        }
-
-        .paint-container {
-            text-align: center;
-            padding: 1.5rem;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            border: 2px solid #dee2e6;
-        }
-
-        .paint-box {
-            width: 100%;
-            height: 150px;
-            border-radius: 8px;
-            margin: 1rem 0;
-            border: 2px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #000;
-            text-shadow: 1px 1px 2px white;
-        }
-
-        .color-picker-group {
-            margin: 1rem 0;
-        }
-
-        .color-picker-group input[type="color"] {
-            width: 100%;
-            height: 60px;
-            border: 2px solid #000;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .color-picker-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .math-steps {
-            background-color: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .step-by-step {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            margin: 2rem 0;
-        }
-
-        .step {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding: 1.5rem;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #1e7e34;
-        }
-
-        .step-number {
-            background-color: #1e7e34;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-
-        .calculator {
-            background-color: #f8f9fa;
-            padding: 2rem;
-            border-radius: 8px;
-            margin: 2rem 0;
-        }
-
-        .input-group {
-            margin: 1rem 0;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #0056b3;
-        }
-
-        input[type="number"] {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #dee2e6;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-
-        button {
-            background-color: #1e7e34;
-            color: white;
-            padding: 0.75rem 2rem;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin: 0.5rem 0.5rem 0.5rem 0;
-        }
-
-        button:hover {
-            background-color: #155d27;
-        }
-
-        .reset-btn {
-            background-color: #0056b3;
-        }
-
-        .reset-btn:hover {
-            background-color: #004085;
-        }
-
-        .result-box {
-            background-color: #d4edda;
-            border: 2px solid #1e7e34;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-        }
-
-        .result-box h4 {
-            color: #1e7e34;
-            margin-bottom: 1rem;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-        }
-
-        th, td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        th {
-            background-color: #1e7e34;
-            color: white;
-            font-weight: 600;
-        }
-
-        tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        .concept-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin: 2rem 0;
-        }
-
-        .concept-card {
-            background-color: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 8px;
-            border-top: 4px solid #0056b3;
-        }
-
-        .concept-card h4 {
-            color: #1e7e34;
-            margin-bottom: 0.5rem;
-        }
-
-        .security-indicator {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            margin: 0.5rem 0;
-        }
-
-        .indicator-icon {
-            font-size: 2rem;
-        }
-
-        footer {
-            background-color: #1e7e34;
-            color: white;
-            text-align: center;
-            padding: 2rem;
-            margin-top: 4rem;
-        }
-
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 1.8rem;
-            }
-
-            nav ul {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-
-            h2 {
-                font-size: 1.5rem;
-            }
-
-            .paint-demo {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+footer{color:var(--muted);font-size:.9rem;padding:24px 0 40px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+</style>
 </head>
 <body>
-    <header>
-        <h1>🔐 Diffie-Hellman Key Exchange</h1>
-        <p>Secure Key Establishment Over Insecure Channels</p>
-    </header>
+<a href="#main" class="skip-link">Skip to main content</a>
 
-    <nav>
-        <ul>
-            <li><a href="#overview">Overview</a></li>
-            <li><a href="#analogy">Paint Analogy</a></li>
-            <li><a href="#mathematics">Mathematics</a></li>
-            <li><a href="#steps">Step-by-Step</a></li>
-            <li><a href="#calculator">Interactive Calculator</a></li>
-            <li><a href="#applications">Real-World Uses</a></li>
-            <li><a href="#security">Security</a></li>
-        </ul>
-    </nav>
-
-    <div class="container">
-        <section id="overview">
-            <h2>What is Diffie-Hellman Key Exchange?</h2>
-            
-            <p>The Diffie-Hellman Key Exchange is a revolutionary cryptographic protocol published in 1976 by Whitfield Diffie and Martin Hellman. It allows two parties who have never met before to establish a shared secret key over an insecure communication channel.</p>
-
-            <div class="highlight-box">
-                <h3>🎯 Key Problem It Solves</h3>
-                <p><strong>The Challenge:</strong> How can Alice and Bob create a shared secret key for encrypted communication when they can only communicate over a public channel that may be monitored by eavesdroppers?</p>
-                <p><strong>The Solution:</strong> They exchange public information that allows each to independently calculate the same shared secret, without ever transmitting that secret.</p>
-            </div>
-
-            <div class="concept-grid">
-                <div class="concept-card">
-                    <h4>🔓 Public Information</h4>
-                    <p>Information that can be shared openly without compromising security (like the base color in paint mixing).</p>
-                </div>
-                <div class="concept-card">
-                    <h4>🔐 Private Keys</h4>
-                    <p>Secret values known only to each party (like each person's secret color).</p>
-                </div>
-                <div class="concept-card">
-                    <h4>🔑 Shared Secret</h4>
-                    <p>The final value that both parties compute independently but arrive at the same result.</p>
-                </div>
-                <div class="concept-card">
-                    <h4>⚡ One-Way Function</h4>
-                    <p>Mathematical operations that are easy to compute but extremely difficult to reverse.</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="analogy">
-            <h2>Understanding Through Paint Mixing</h2>
-            
-            <p>The best way to understand Diffie-Hellman is through a paint mixing analogy. Imagine mixing paint colors is easy, but separating mixed colors back to their original components is nearly impossible.</p>
-
-            <h3>The Scenario</h3>
-            <p>Alice and Bob want to create a shared secret color, but Eve (an eavesdropper) is watching everything they send to each other.</p>
-
-            <div class="info-box">
-                <h4>🎨 Try it yourself!</h4>
-                <p>Select colors below to see how the mixing works. Notice how both Alice and Bob arrive at the same final color!</p>
-            </div>
-
-            <div id="paintDemo" class="paint-demo">
-                <!-- Will be populated by JavaScript -->
-            </div>
-
-            <div class="step-by-step">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <div>
-                        <h4>Agree on Public Color</h4>
-                        <p>Alice and Bob publicly agree on a common starting color (e.g., yellow). This is shared openly, and Eve knows it too.</p>
-                    </div>
-                </div>
-
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <div>
-                        <h4>Choose Secret Colors</h4>
-                        <p>Alice secretly chooses red. Bob secretly chooses blue. They never share these secret colors with anyone.</p>
-                    </div>
-                </div>
-
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <div>
-                        <h4>Mix and Exchange</h4>
-                        <p>Alice mixes yellow + red = orange, sends orange to Bob. Bob mixes yellow + blue = green, sends green to Alice. Eve sees both mixtures but can't easily determine the secret colors.</p>
-                    </div>
-                </div>
-
-                <div class="step">
-                    <div class="step-number">4</div>
-                    <div>
-                        <h4>Final Mix - Shared Secret!</h4>
-                        <p>Alice adds her secret red to Bob's green = brown. Bob adds his secret blue to Alice's orange = brown. They both arrive at the same color without ever directly sharing it!</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="info-box">
-                <strong>Why Eve Can't Figure It Out:</strong> Even though Eve saw the public yellow, the orange from Alice, and the green from Bob, she cannot easily "unmix" these colors to find Alice's red or Bob's blue. Therefore, she cannot recreate the final brown color.
-            </div>
-        </section>
-
-        <section id="mathematics">
-            <h2>The Mathematics Behind It</h2>
-            
-            <p>Diffie-Hellman uses <strong>modular exponentiation</strong> and relies on the difficulty of the <strong>discrete logarithm problem</strong> to ensure security.</p>
-
-            <h3>🔢 Core Concepts</h3>
-            
-            <div class="concept-grid">
-                <div class="concept-card">
-                    <h4>Prime Number (p)</h4>
-                    <p>A large prime number that defines the modulus for all calculations. Typical size: 2048 bits or larger.</p>
-                </div>
-                <div class="concept-card">
-                    <h4>Generator (g)</h4>
-                    <p>A primitive root modulo p. A smaller number (often 2 or 5) used as the base for exponentials.</p>
-                </div>
-                <div class="concept-card">
-                    <h4>Private Keys (a, b)</h4>
-                    <p>Secret random numbers chosen independently by Alice and Bob.</p>
-                </div>
-                <div class="concept-card">
-                    <h4>Public Keys (A, B)</h4>
-                    <p>Values calculated and shared publicly: A = g^a mod p, B = g^b mod p</p>
-                </div>
-            </div>
-
-            <h3>📐 Mathematical Process</h3>
-            
-            <div class="math-steps">
-                <p><strong>Public Parameters (agreed by both parties):</strong></p>
-                <p>• p = large prime number (e.g., 23)</p>
-                <p>• g = generator (e.g., 5)</p>
-                <br>
-                <p><strong>Alice's Calculations:</strong></p>
-                <p>1. Choose secret: a = 6 (private)</p>
-                <p>2. Calculate: A = g^a mod p = 5^6 mod 23 = 8 (public)</p>
-                <p>3. Receive B from Bob</p>
-                <p>4. Calculate shared secret: s = B^a mod p</p>
-                <br>
-                <p><strong>Bob's Calculations:</strong></p>
-                <p>1. Choose secret: b = 15 (private)</p>
-                <p>2. Calculate: B = g^b mod p = 5^15 mod 23 = 19 (public)</p>
-                <p>3. Receive A from Alice</p>
-                <p>4. Calculate shared secret: s = A^b mod p</p>
-                <br>
-                <p><strong>The Magic:</strong></p>
-                <p>Both calculate the same value!</p>
-                <p>Alice: s = B^a mod p = 19^6 mod 23 = 2</p>
-                <p>Bob: s = A^b mod p = 8^15 mod 23 = 2</p>
-                <p><strong>Because: (g^a)^b = (g^b)^a = g^(ab) mod p</strong></p>
-            </div>
-
-            <div class="highlight-box">
-                <h4>🛡️ The Discrete Logarithm Problem</h4>
-                <p>The security relies on this being hard: Given g, p, and A = g^a mod p, find the secret value 'a'.</p>
-                <p>For small numbers this is easy, but with 2048-bit primes, it's computationally infeasible with current technology (except quantum computers).</p>
-            </div>
-        </section>
-
-        <section id="steps">
-            <h2>Step-by-Step Protocol</h2>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>Step</th>
-                        <th>Action</th>
-                        <th>Public Knowledge</th>
-                        <th>Secret Knowledge</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Alice and Bob agree on p and g</td>
-                        <td>p, g</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>Alice chooses secret a</td>
-                        <td>p, g</td>
-                        <td>Alice knows: a</td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td>Bob chooses secret b</td>
-                        <td>p, g</td>
-                        <td>Alice knows: a<br>Bob knows: b</td>
-                    </tr>
-                    <tr>
-                        <td>4</td>
-                        <td>Alice calculates A = g^a mod p</td>
-                        <td>p, g</td>
-                        <td>Alice knows: a, A<br>Bob knows: b</td>
-                    </tr>
-                    <tr>
-                        <td>5</td>
-                        <td>Bob calculates B = g^b mod p</td>
-                        <td>p, g</td>
-                        <td>Alice knows: a, A<br>Bob knows: b, B</td>
-                    </tr>
-                    <tr>
-                        <td>6</td>
-                        <td>Alice sends A to Bob</td>
-                        <td>p, g, A</td>
-                        <td>Alice knows: a, A<br>Bob knows: b, B</td>
-                    </tr>
-                    <tr>
-                        <td>7</td>
-                        <td>Bob sends B to Alice</td>
-                        <td>p, g, A, B</td>
-                        <td>Alice knows: a, A, B<br>Bob knows: b, A, B</td>
-                    </tr>
-                    <tr>
-                        <td>8</td>
-                        <td>Alice calculates s = B^a mod p</td>
-                        <td>p, g, A, B</td>
-                        <td>Alice knows: a, s<br>Bob knows: b</td>
-                    </tr>
-                    <tr>
-                        <td>9</td>
-                        <td>Bob calculates s = A^b mod p</td>
-                        <td>p, g, A, B</td>
-                        <td>Alice knows: a, s<br>Bob knows: b, s</td>
-                    </tr>
-                    <tr>
-                        <td>10</td>
-                        <td>Shared secret established!</td>
-                        <td>p, g, A, B</td>
-                        <td>Both know: s (same value!)</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="warning-box">
-                <strong>⚠️ What Eve (Eavesdropper) Knows:</strong> Eve can see p, g, A, and B. However, to find the shared secret s, she would need to solve for either 'a' or 'b', which requires solving the discrete logarithm problem - computationally infeasible for large numbers.
-            </div>
-        </section>
-
-        <section id="calculator">
-            <h2>Interactive Diffie-Hellman Calculator</h2>
-            
-            <p>Try it yourself! Enter small numbers to see how the algorithm works. In practice, much larger numbers (2048+ bits) are used for security.</p>
-
-            <div class="calculator">
-                <h3>Public Parameters</h3>
-                <div class="input-group">
-                    <label for="prime">Prime Number (p):</label>
-                    <input type="number" id="prime" value="23" min="2">
-                    <small>Choose a prime number (e.g., 23, 29, 31, 37, 41)</small>
-                </div>
-                
-                <div class="input-group">
-                    <label for="generator">Generator (g):</label>
-                    <input type="number" id="generator" value="5" min="2">
-                    <small>Choose a generator (e.g., 2, 3, 5)</small>
-                </div>
-
-                <h3>Private Keys</h3>
-                <div class="input-group">
-                    <label for="aliceSecret">Alice's Secret (a):</label>
-                    <input type="number" id="aliceSecret" value="6" min="1">
-                    <small>Alice's private random number</small>
-                </div>
-                
-                <div class="input-group">
-                    <label for="bobSecret">Bob's Secret (b):</label>
-                    <input type="number" id="bobSecret" value="15" min="1">
-                    <small>Bob's private random number</small>
-                </div>
-
-                <button onclick="calculate()">Calculate Exchange</button>
-                <button class="reset-btn" onclick="resetCalculator()">Reset</button>
-
-                <div id="results"></div>
-            </div>
-        </section>
-
-        <section id="applications">
-            <h2>Real-World Applications</h2>
-            
-            <p>Diffie-Hellman is fundamental to modern internet security and is used in many protocols you interact with daily:</p>
-
-            <div class="concept-grid">
-                <div class="concept-card">
-                    <h4>🌐 TLS/SSL (HTTPS)</h4>
-                    <p>Secures web browsing by establishing encryption keys between your browser and websites.</p>
-                </div>
-                <div class="concept-card">
-                    <h4>🔒 VPNs (IPsec)</h4>
-                    <p>Creates secure tunnels for corporate networks and private internet access.</p>
-                </div>
-                <div class="concept-card">
-                    <h4>💬 Secure Messaging</h4>
-                    <p>WhatsApp, Signal, and other apps use variants (like ECDH) for end-to-end encryption.</p>
-                </div>
-                <div class="concept-card">
-                    <h4>🔑 SSH</h4>
-                    <p>Secures remote server access and file transfers (SFTP).</p>
-                </div>
-                <div class="concept-card">
-                    <h4>📧 Email Encryption</h4>
-                    <p>PGP and S/MIME protocols use DH for secure key exchange.</p>
-                </div>
-                <div class="concept-card">
-                    <h4>📞 VoIP</h4>
-                    <p>Secures voice and video calls over the internet.</p>
-                </div>
-            </div>
-
-            <h3>🚀 Modern Variants</h3>
-            <div class="info-box">
-                <p><strong>Elliptic Curve Diffie-Hellman (ECDH):</strong> Uses elliptic curve mathematics instead of modular exponentiation. Provides equivalent security with much smaller key sizes (256-bit ECDH ≈ 3072-bit DH), making it faster and more efficient.</p>
-                <p><strong>Ephemeral Diffie-Hellman (DHE/EDH):</strong> Generates new key pairs for each session, providing forward secrecy - even if long-term keys are compromised, past sessions remain secure.</p>
-            </div>
-        </section>
-
-        <section id="security">
-            <h2>Security Considerations</h2>
-            
-            <h3>✅ Strengths</h3>
-            <div class="security-indicator">
-                <div class="indicator-icon">🛡️</div>
-                <div>
-                    <strong>Forward Secrecy</strong>
-                    <p>When using ephemeral keys, compromising one session doesn't affect others.</p>
-                </div>
-            </div>
-
-            <div class="security-indicator">
-                <div class="indicator-icon">🔐</div>
-                <div>
-                    <strong>No Prior Communication Required</strong>
-                    <p>Two parties who've never met can establish a shared secret.</p>
-                </div>
-            </div>
-
-            <div class="security-indicator">
-                <div class="indicator-icon">⚡</div>
-                <div>
-                    <strong>Computationally Efficient</strong>
-                    <p>Fast to compute, even with large numbers.</p>
-                </div>
-            </div>
-
-            <h3>⚠️ Vulnerabilities and Limitations</h3>
-            
-            <div class="warning-box">
-                <h4>1. Man-in-the-Middle (MITM) Attacks</h4>
-                <p><strong>The Problem:</strong> Basic Diffie-Hellman provides no authentication. An attacker could intercept communications and establish separate key exchanges with both parties.</p>
-                <p><strong>The Solution:</strong> Use authentication mechanisms like digital signatures (RSA), certificates (PKI), or pre-shared keys (PSK) to verify identities.</p>
-            </div>
-
-            <div class="warning-box">
-                <h4>2. Small Subgroup Attacks</h4>
-                <p><strong>The Problem:</strong> If parameters are chosen poorly, attackers can exploit mathematical weaknesses.</p>
-                <p><strong>The Solution:</strong> Use standardized DH groups (RFC 3526, RFC 7919) with validated parameters.</p>
-            </div>
-
-            <div class="warning-box">
-                <h4>3. Quantum Computing Threat</h4>
-                <p><strong>The Problem:</strong> Quantum computers running Shor's algorithm could solve the discrete logarithm problem efficiently.</p>
-                <p><strong>The Solution:</strong> Post-quantum cryptography research is developing quantum-resistant alternatives.</p>
-            </div>
-
-            <div class="warning-box">
-                <h4>4. Weak Parameters</h4>
-                <p><strong>The Problem:</strong> Keys under 2048 bits are vulnerable to specialized attacks (like Logjam).</p>
-                <p><strong>The Solution:</strong> Use minimum 2048-bit keys; 3072-bit or 4096-bit for high-security applications.</p>
-            </div>
-
-            <h3>🔒 Best Practices</h3>
-            <ul style="margin-left: 2rem; margin-top: 1rem;">
-                <li>Use standardized DH groups with proven security properties</li>
-                <li>Implement authentication to prevent MITM attacks</li>
-                <li>Use ephemeral keys (DHE/ECDHE) for forward secrecy</li>
-                <li>Prefer ECDH when performance matters (mobile, IoT)</li>
-                <li>Use minimum 2048-bit keys for classical DH</li>
-                <li>Regularly update cryptographic libraries</li>
-                <li>Consider post-quantum alternatives for long-term security</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>Key Takeaways</h2>
-            
-            <div class="highlight-box">
-                <h3>🎓 What You Should Remember</h3>
-                <ol style="margin-left: 2rem; line-height: 2;">
-                    <li><strong>Purpose:</strong> Diffie-Hellman enables two parties to create a shared secret over an insecure channel</li>
-                    <li><strong>Security:</strong> Based on the difficulty of discrete logarithm problem</li>
-                    <li><strong>Process:</strong> Exchange public values, compute shared secret independently</li>
-                    <li><strong>Limitation:</strong> Doesn't provide authentication - must be combined with other methods</li>
-                    <li><strong>Applications:</strong> Foundation of modern secure communications (TLS, VPNs, messaging)</li>
-                    <li><strong>Evolution:</strong> Modern variants like ECDH provide better efficiency</li>
-                </ol>
-            </div>
-
-            <div class="info-box">
-                <h4>📚 Further Learning</h4>
-                <p>To deepen your understanding, explore these topics:</p>
-                <ul style="margin-left: 2rem; margin-top: 0.5rem;">
-                    <li>Modular arithmetic and number theory</li>
-                    <li>Cyclic groups and primitive roots</li>
-                    <li>Elliptic curve cryptography</li>
-                    <li>Public Key Infrastructure (PKI)</li>
-                    <li>Post-quantum cryptography</li>
-                </ul>
-            </div>
-        </section>
+<header class="site-head">
+  <div class="wrap hero">
+    <div>
+      <h1>Mixing a secret in plain sight</h1>
+      <p class="lede">Diffie-Hellman lets two people who have never met agree on a secret while someone listens to every word. Start with paint, then follow the same idea into the math your browser uses on every HTTPS connection.</p>
     </div>
+    <div class="hero-eq" aria-label="Public paint plus Alice's secret plus Bob's secret makes the same pot for both of them">
+      <figure><div class="vessel mini" data-kind="can" id="heroP"></div><figcaption>Public</figcaption></figure>
+      <span class="op" aria-hidden="true">+</span>
+      <figure><div class="vessel mini" data-kind="can" id="heroA"></div><figcaption>Alice's secret</figcaption></figure>
+      <span class="op" aria-hidden="true">+</span>
+      <figure><div class="vessel mini" data-kind="can" id="heroB"></div><figcaption>Bob's secret</figcaption></figure>
+      <span class="op" aria-hidden="true">=</span>
+      <figure><div class="vessel mini" data-kind="pot" id="heroS"></div><figcaption>Shared secret</figcaption></figure>
+    </div>
+  </div>
+  <div class="wrap">
+    <nav aria-label="Lab sections">
+      <div class="tabs" role="tablist" id="tablist">
+        <button class="tab" role="tab" id="tab-studio" aria-controls="panel-studio" aria-selected="true" tabindex="0"><span class="n">1</span>Paint studio</button>
+        <button class="tab" role="tab" id="tab-eve" aria-controls="panel-eve" aria-selected="false" tabindex="-1"><span class="n">2</span>Play as Eve</button>
+        <button class="tab" role="tab" id="tab-mallory" aria-controls="panel-mallory" aria-selected="false" tabindex="-1"><span class="n">3</span>Mallory in the middle</button>
+        <button class="tab" role="tab" id="tab-math" aria-controls="panel-math" aria-selected="false" tabindex="-1"><span class="n">4</span>From paint to math</button>
+        <button class="tab" role="tab" id="tab-race" aria-controls="panel-race" aria-selected="false" tabindex="-1"><span class="n">5</span>Brute-force race</button>
+        <button class="tab" role="tab" id="tab-classroom" aria-controls="panel-classroom" aria-selected="false" tabindex="-1"><span class="n">6</span>Classroom mode</button>
+        <button class="tab" role="tab" id="tab-world" aria-controls="panel-world" aria-selected="false" tabindex="-1"><span class="n">7</span>Real world and quiz</button>
+      </div>
+    </nav>
+  </div>
+</header>
 
-    <footer>
-        <p>&copy; 2025 Diffie-Hellman Educational Resource | Cybersecurity & AI Training</p>
-        <p>Created for educational purposes in cryptography and network security</p>
-    </footer>
+<main id="main" class="wrap">
 
-    <script>
-        // Paint mixing demo with interactive colors
-        let publicColor = '#FFD700'; // Yellow
-        let aliceSecret = '#DC143C'; // Red
-        let bobSecret = '#1E90FF'; // Blue
+<!-- 1 STUDIO -->
+<section class="panel" id="panel-studio" role="tabpanel" aria-labelledby="tab-studio">
+  <div class="panel-head">
+    <h2>Paint studio</h2>
+    <p>Alice and Bob want the same secret paint. Everything they send crosses a public channel, and Eve copies all of it. Mixing paint is easy; un-mixing it is not.</p>
+  </div>
+  <div class="studio-bar">
+    <ol class="stepper" id="studioSteps">
+      <li><b><span>1</span></b>Agree on a public paint</li>
+      <li><b><span>2</span></b>Pick secret paints</li>
+      <li><b><span>3</span></b>Mix and send</li>
+      <li><b><span>4</span></b>Add your own secret</li>
+    </ol>
+    <div class="row-actions">
+      <button id="studioBack">Back</button>
+      <button id="studioNext" class="primary">Next step</button>
+    </div>
+  </div>
+  <div class="toggles">
+    <label class="switch"><input type="checkbox" id="mathToggle"> Show the math under each paint</label>
+    <label class="switch"><input type="checkbox" id="eveView"> See only what Eve sees</label>
+  </div>
+  <p class="prompt" id="studioPrompt" aria-live="polite"></p>
 
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : null;
-        }
+  <div class="lanes">
+    <article class="lane lane-alice" aria-labelledby="aliceLaneH">
+      <h3 id="aliceLaneH">Alice</h3>
+      <div class="slot" data-step="2">
+        <h4>Alice's secret paint</h4>
+        <div class="secret-only">
+          <div class="palette" id="alicePalette" role="group" aria-label="Choose Alice's secret paint"></div>
+          <div class="vessel" data-kind="can" id="aliceSecretCan"></div>
+          <p class="cap" id="aliceSecretCap"></p>
+          <p class="math" id="aliceSecretMath"></p>
+        </div>
+        <p class="lock-note">Unlocks at step 2</p>
+      </div>
+      <div class="slot" data-step="3">
+        <h4>Alice's mix to send</h4>
+        <div class="vessel" data-kind="pot" id="aliceMixPot"></div>
+        <div class="recipe" id="aliceMixRecipe"></div>
+        <p class="math" id="aliceMixMath"></p>
+        <p class="lock-note">Unlocks at step 3</p>
+      </div>
+      <div class="slot" data-step="4">
+        <h4>Alice's final pot</h4>
+        <div class="secret-only">
+          <p class="cap">Bob's mix + Alice's secret</p>
+          <div class="vessel" data-kind="pot" id="aliceFinalPot"></div>
+          <div class="recipe" id="aliceFinalRecipe"></div>
+          <p class="math" id="aliceFinalMath"></p>
+        </div>
+        <p class="lock-note">Unlocks at step 4</p>
+      </div>
+    </article>
 
-        function rgbToHex(r, g, b) {
-            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-        }
+    <article class="lane lane-channel" aria-labelledby="chanLaneH">
+      <h3 id="chanLaneH">Public channel <span class="tag">Eve is copying everything</span></h3>
+      <div class="slot" data-step="1">
+        <h4>Public paint (everyone knows it)</h4>
+        <div class="palette" id="publicPalette" role="group" aria-label="Choose the public paint"></div>
+        <div class="vessel" data-kind="can" id="publicCan"></div>
+        <p class="cap" id="publicCap"></p>
+        <p class="math" id="publicMath"></p>
+      </div>
+      <div class="slot" data-step="3">
+        <h4>In transit</h4>
+        <div class="transit">
+          <div class="parcel to-bob" id="parcelA"><span class="dot" id="parcelADot"></span><span>Alice's mix, on its way to Bob</span></div>
+          <div class="parcel to-alice" id="parcelB"><span class="dot" id="parcelBDot"></span><span>Bob's mix, on its way to Alice</span></div>
+        </div>
+        <p class="lock-note">Unlocks at step 3</p>
+      </div>
+      <div class="slot" data-step="1">
+        <h4>Eve's notebook</h4>
+        <ul class="notes" id="eveNotes"></ul>
+        <div id="shortcutBox" hidden>
+          <button id="shortcutBtn">Try Eve's shortcut: pour both mixes together</button>
+          <div class="shortcut" id="shortcutResult" hidden>
+            <div class="vessel" data-kind="pot" id="evePot"></div>
+            <div><p id="shortcutText" aria-live="polite"></p><p class="math" id="shortcutMath"></p></div>
+          </div>
+        </div>
+      </div>
+    </article>
 
-        function mixColors(color1, color2) {
-            const rgb1 = hexToRgb(color1);
-            const rgb2 = hexToRgb(color2);
-            
-            // Average the RGB values
-            const r = Math.round((rgb1.r + rgb2.r) / 2);
-            const g = Math.round((rgb1.g + rgb2.g) / 2);
-            const b = Math.round((rgb1.b + rgb2.b) / 2);
-            
-            return rgbToHex(r, g, b);
-        }
+    <article class="lane lane-bob" aria-labelledby="bobLaneH">
+      <h3 id="bobLaneH">Bob</h3>
+      <div class="slot" data-step="2">
+        <h4>Bob's secret paint</h4>
+        <div class="secret-only">
+          <div class="palette" id="bobPalette" role="group" aria-label="Choose Bob's secret paint"></div>
+          <div class="vessel" data-kind="can" id="bobSecretCan"></div>
+          <p class="cap" id="bobSecretCap"></p>
+          <p class="math" id="bobSecretMath"></p>
+        </div>
+        <p class="lock-note">Unlocks at step 2</p>
+      </div>
+      <div class="slot" data-step="3">
+        <h4>Bob's mix to send</h4>
+        <div class="vessel" data-kind="pot" id="bobMixPot"></div>
+        <div class="recipe" id="bobMixRecipe"></div>
+        <p class="math" id="bobMixMath"></p>
+        <p class="lock-note">Unlocks at step 3</p>
+      </div>
+      <div class="slot" data-step="4">
+        <h4>Bob's final pot</h4>
+        <div class="secret-only">
+          <p class="cap">Alice's mix + Bob's secret</p>
+          <div class="vessel" data-kind="pot" id="bobFinalPot"></div>
+          <div class="recipe" id="bobFinalRecipe"></div>
+          <p class="math" id="bobFinalMath"></p>
+        </div>
+        <p class="lock-note">Unlocks at step 4</p>
+      </div>
+    </article>
+  </div>
+  <div class="result" id="studioResult" aria-live="polite"></div>
 
-        function getContrastColor(hexColor) {
-            const rgb = hexToRgb(hexColor);
-            const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-            return brightness > 128 ? '#000000' : '#FFFFFF';
-        }
+  <details class="aside">
+    <summary>Where the paint analogy breaks</summary>
+    <p>Paint is a great picture of the idea, but it isn't a perfect model. A chemist with a spectrometer could probably work out which pigments went into a mix, so "un-mixing" is hard rather than impossible. Real Diffie-Hellman replaces paint with modular exponentiation, where reversing the step (the discrete logarithm problem) has no known fast method for well-chosen numbers on classical computers.</p>
+    <p>Paint also hides how much secret is in play. There are only a few thousand paint colors anyone could tell apart, while a 2048-bit Diffie-Hellman secret has a number of possibilities with more than 600 digits. The <em>Play as Eve</em> and <em>Brute-force race</em> tabs make that difference concrete.</p>
+  </details>
+</section>
 
-        function updatePaintDemo() {
-            // Calculate mixed colors
-            const aliceMix = mixColors(publicColor, aliceSecret);
-            const bobMix = mixColors(publicColor, bobSecret);
-            const aliceFinal = mixColors(bobMix, aliceSecret);
-            const bobFinal = mixColors(aliceMix, bobSecret);
+<!-- 2 EVE -->
+<section class="panel" id="panel-eve" role="tabpanel" aria-labelledby="tab-eve" hidden>
+  <div class="panel-head">
+    <h2>Play as Eve</h2>
+    <p>You copied the public paint and Alice's mix off the channel. Your job: find Alice's secret paint. Pick a candidate and you'll see what it makes when mixed with the public paint. If your test pot matches the intercepted pot exactly, you've cracked it.</p>
+  </div>
+  <fieldset>
+    <legend>How many paints could Alice have chosen from?</legend>
+    <div class="seg" id="eveSize">
+      <label><input type="radio" name="eveN" value="6" checked><span>6</span></label>
+      <label><input type="radio" name="eveN" value="12"><span>12</span></label>
+      <label><input type="radio" name="eveN" value="24"><span>24</span></label>
+      <label><input type="radio" name="eveN" value="48"><span>48</span></label>
+      <label><input type="radio" name="eveN" value="96"><span>96</span></label>
+    </div>
+  </fieldset>
+  <div class="evidence">
+    <figure><div class="vessel" data-kind="can" id="egPublic"></div><figcaption>Public paint</figcaption></figure>
+    <figure><div class="vessel" data-kind="pot" id="egTarget"></div><figcaption>Alice's mix (intercepted)</figcaption></figure>
+    <figure><div class="vessel" data-kind="pot" id="egTest"></div><figcaption>Your test mix</figcaption></figure>
+  </div>
+  <p class="prompt" id="eveVerdict" aria-live="polite">Pick a candidate paint below to test it.</p>
+  <div class="stats">
+    <span>Tries: <b id="eveTries">0</b></span>
+    <span>Paints left to test: <b id="eveLeft">6</b></span>
+    <span>Secret strength: <b id="eveBits">2.6 bits</b></span>
+  </div>
+  <div class="cand-grid" id="eveGrid" role="group" aria-label="Candidate secret paints"></div>
+  <div class="row-actions">
+    <button id="eveAuto">Let a computer test every paint</button>
+    <button id="eveNew" class="primary">New round</button>
+  </div>
+  <div class="insight" id="eveInsight"></div>
+</section>
 
-            const demoHTML = `
-                <div class="paint-container">
-                    <h4>🎨 Public Color</h4>
-                    <div class="color-picker-group">
-                        <label>Choose public color:</label>
-                        <input type="color" id="publicColorPicker" value="${publicColor}">
-                    </div>
-                    <div class="paint-box" style="background-color: ${publicColor}; color: ${getContrastColor(publicColor)};">
-                        Public Color
-                    </div>
-                    <p><strong>Everyone knows this</strong></p>
-                </div>
-                
-                <div class="paint-container">
-                    <h4>👤 Alice</h4>
-                    <div class="color-picker-group">
-                        <label>Alice's secret color:</label>
-                        <input type="color" id="aliceColorPicker" value="${aliceSecret}">
-                    </div>
-                    <div class="paint-box" style="background-color: ${aliceSecret}; color: ${getContrastColor(aliceSecret)};">
-                        Alice's Secret
-                    </div>
-                    <p><strong>Only Alice knows ↓</strong></p>
-                    <div class="paint-box" style="background-color: ${aliceMix}; color: ${getContrastColor(aliceMix)};">
-                        Public + Alice's Secret
-                    </div>
-                    <p><strong>Sends to Bob →</strong></p>
-                </div>
-                
-                <div class="paint-container">
-                    <h4>👤 Bob</h4>
-                    <div class="color-picker-group">
-                        <label>Bob's secret color:</label>
-                        <input type="color" id="bobColorPicker" value="${bobSecret}">
-                    </div>
-                    <div class="paint-box" style="background-color: ${bobSecret}; color: ${getContrastColor(bobSecret)};">
-                        Bob's Secret
-                    </div>
-                    <p><strong>Only Bob knows ↓</strong></p>
-                    <div class="paint-box" style="background-color: ${bobMix}; color: ${getContrastColor(bobMix)};">
-                        Public + Bob's Secret
-                    </div>
-                    <p><strong>Sends to Alice →</strong></p>
-                </div>
-                
-                <div class="paint-container">
-                    <h4>🔐 Shared Secret</h4>
-                    <div class="paint-box" style="background-color: ${aliceFinal}; color: ${getContrastColor(aliceFinal)};">
-                        Alice's Final Mix
-                    </div>
-                    <p><strong>Alice:</strong> Bob's Mix + Alice's Secret</p>
-                    <div class="paint-box" style="background-color: ${bobFinal}; color: ${getContrastColor(bobFinal)};">
-                        Bob's Final Mix
-                    </div>
-                    <p><strong>Bob:</strong> Alice's Mix + Bob's Secret</p>
-                    ${aliceFinal === bobFinal ? 
-                        '<p style="color: #1e7e34; font-weight: bold; font-size: 1.1rem;">✅ Same color! Shared secret established! 🎉</p>' : 
-                        '<p style="color: #dc3545; font-weight: bold;">⚠️ Colors are very similar (due to mixing algorithm)</p>'}
-                </div>
-            `;
-            
-            document.getElementById('paintDemo').innerHTML = demoHTML;
+<!-- 3 MALLORY -->
+<section class="panel" id="panel-mallory" role="tabpanel" aria-labelledby="tab-mallory" hidden>
+  <div class="panel-head">
+    <h2>Mallory in the middle</h2>
+    <p>Eve only listens. Mallory can also grab pots off the channel and send her own in their place. Plain Diffie-Hellman never checks who a pot came from, so watch what happens.</p>
+  </div>
+  <div class="toggles">
+    <label class="switch"><input type="checkbox" id="malloryOn" checked> Mallory controls the channel</label>
+    <label class="switch"><input type="checkbox" id="sealsOn"> Alice and Bob seal their pots (digital signatures)</label>
+  </div>
+  <div class="row-actions"><button class="primary" id="runMitm">Run the exchange</button></div>
+  <div class="mitm has-mallory" id="mitmBoard">
+    <div class="col col-alice">
+      <h3>Alice</h3>
+      <div class="mini-slots">
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mAliceSent"></div><p>Sends</p><div id="mAliceSentSeal"></div></div>
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mAliceGot"></div><p>Receives "from Bob"</p><div id="mAliceGotSeal"></div></div>
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mAliceKey"></div><p>Alice's key</p></div>
+      </div>
+    </div>
+    <div class="col col-mid">
+      <h3 id="mMidTitle">Mallory</h3>
+      <div class="mini-slots">
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mMalMix"></div><p>Mallory's own mix</p></div>
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mMalKeyA"></div><p>Key she shares with Alice</p></div>
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mMalKeyB"></div><p>Key she shares with Bob</p></div>
+      </div>
+    </div>
+    <div class="col col-bob">
+      <h3>Bob</h3>
+      <div class="mini-slots">
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mBobSent"></div><p>Sends</p><div id="mBobSentSeal"></div></div>
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mBobGot"></div><p>Receives "from Alice"</p><div id="mBobGotSeal"></div></div>
+        <div class="mini-slot"><div class="vessel" data-kind="pot" id="mBobKey"></div><p>Bob's key</p></div>
+      </div>
+    </div>
+  </div>
+  <ol class="log" id="mitmLog" aria-live="polite"></ol>
+  <div class="result" id="mitmResult" aria-live="polite"></div>
+  <details class="aside">
+    <summary>How real protocols seal the pot</summary>
+    <p>In TLS 1.3 the server signs the handshake, including its key share, with the private key behind its certificate. Your browser checks that signature against a certificate chain it trusts. Mallory can still swap key shares, but she can't produce a valid signature for someone else's domain, so the connection fails instead of quietly leaking. SSH does the same job with host keys, which is why SSH warns you when a server's host key changes.</p>
+  </details>
+</section>
 
-            // Add event listeners to color pickers
-            setTimeout(() => {
-                document.getElementById('publicColorPicker').addEventListener('input', (e) => {
-                    publicColor = e.target.value;
-                    updatePaintDemo();
-                });
-                
-                document.getElementById('aliceColorPicker').addEventListener('input', (e) => {
-                    aliceSecret = e.target.value;
-                    updatePaintDemo();
-                });
-                
-                document.getElementById('bobColorPicker').addEventListener('input', (e) => {
-                    bobSecret = e.target.value;
-                    updatePaintDemo();
-                });
-            }, 0);
-        }
+<!-- 4 MATH -->
+<section class="panel" id="panel-math" role="tabpanel" aria-labelledby="tab-math" hidden>
+  <div class="panel-head">
+    <h2>From paint to math</h2>
+    <p>The public paint becomes a number <i>g</i>, and mixing in a secret <i>a</i> becomes <i>g<sup>a</sup></i> mod <i>p</i>. "Mod <i>p</i>" means you keep only the remainder after dividing by <i>p</i>, so every answer lands somewhere on a clock with <i>p</i> − 1 positions.</p>
+  </div>
+  <div class="two-col">
+    <article class="card">
+      <h3>Modular clock</h3>
+      <p>Watch the powers of <i>g</i> hop around the clock. A good generator visits every position, so every secret gives a different public value.</p>
+      <div class="controls-grid">
+        <label class="field">Prime p<select id="clockP"></select></label>
+        <label class="field">Generator g<select id="clockG"></select></label>
+      </div>
+      <div class="row-actions">
+        <button class="primary" id="clockPlay">Play</button>
+        <button id="clockStep">Step</button>
+        <button id="clockReset">Reset</button>
+      </div>
+      <svg id="clockSvg" viewBox="0 0 340 340" role="img" aria-labelledby="clockTitle"><title id="clockTitle">Positions visited by powers of g mod p</title></svg>
+      <p class="seq" id="clockSeq"></p>
+      <p id="clockVerdict" aria-live="polite"></p>
+      <p class="seq" id="clockGood"></p>
+    </article>
+    <article class="card">
+      <h3>Exact calculator, any size</h3>
+      <p>Uses JavaScript BigInt, so the answers stay exact from two digits up to a real 2048-bit group.</p>
+      <label class="field">Prime p<textarea id="cP" rows="1" spellcheck="false">23</textarea></label>
+      <div class="controls-grid">
+        <label class="field">Generator g<textarea id="cG" rows="1" spellcheck="false">5</textarea></label>
+        <span></span>
+        <label class="field">Alice's secret a<span class="hint">2 to p − 2</span><textarea id="cA" rows="1" spellcheck="false">6</textarea></label>
+        <label class="field">Bob's secret b<span class="hint">2 to p − 2</span><textarea id="cB" rows="1" spellcheck="false">15</textarea></label>
+      </div>
+      <div class="row-actions">
+        <button class="primary" id="calcRun">Run the exchange</button>
+        <button id="calcBig">Run a real 2048-bit exchange</button>
+        <button id="calcReset">Back to p = 23</button>
+      </div>
+      <div class="msg" id="calcMsg" role="alert"></div>
+      <div id="calcOut"></div>
+    </article>
+  </div>
+</section>
 
-        function initPaintDemo() {
-            updatePaintDemo();
-        }
+<!-- 5 RACE -->
+<section class="panel" id="panel-race" role="tabpanel" aria-labelledby="tab-race" hidden>
+  <div class="panel-head">
+    <h2>Brute-force race</h2>
+    <p>Eve's simplest attack: try <i>g</i><sup>1</sup>, <i>g</i><sup>2</sup>, <i>g</i><sup>3</sup>… until one equals Alice's public value <i>A</i>. Your device is the attacker. Every extra bit in <i>p</i> roughly doubles the work.</p>
+  </div>
+  <fieldset>
+    <legend>What should Eve attack?</legend>
+    <div class="seg" id="raceSource">
+      <label><input type="radio" name="raceSrc" value="random" checked><span>A random puzzle</span></label>
+      <label><input type="radio" name="raceSrc" value="class"><span>A classmate's code</span></label>
+    </div>
+  </fieldset>
+  <div id="raceRandomBox">
+    <label class="field" for="raceBits">Size of the prime p: <output id="raceBitsOut">20</output> bits</label>
+    <input type="range" id="raceBits" min="12" max="36" step="1" value="20">
+    <div class="row-actions"><button id="raceNew">New puzzle</button></div>
+  </div>
+  <div id="raceClassBox" hidden>
+    <label class="field">Code you overheard (Alice's or Bob's public mix)<span class="hint">Classroom mode uses p = 999,983 and g = 5</span><input type="text" id="raceCode" inputmode="numeric" placeholder="e.g. 482 913"></label>
+    <div class="row-actions"><button id="raceUseCode">Use this code</button></div>
+  </div>
+  <div class="puzzle" id="racePuzzle" aria-live="polite"></div>
+  <div class="row-actions">
+    <button class="primary" id="raceStart">Start cracking</button>
+    <button id="raceStop" disabled>Stop</button>
+  </div>
+  <div class="stats">
+    <span>Tries: <b id="raceTries">0</b></span>
+    <span>Time: <b id="raceTime">0.0 s</b></span>
+    <span>Speed: <b id="raceRate">–</b></span>
+  </div>
+  <div class="bar" role="progressbar" aria-label="Share of all possible secrets tested" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="raceBar"><div id="raceBarFill"></div></div>
+  <div class="result" id="raceResult" aria-live="polite"></div>
+  <table class="scale-table" id="raceScale">
+    <caption>How long would brute force take at the speed your device just measured?</caption>
+    <thead><tr><th scope="col">Size of p</th><th scope="col">Worst-case time</th></tr></thead>
+    <tbody id="raceScaleBody"><tr><td colspan="2">Run a crack first to measure your device's speed.</td></tr></tbody>
+  </table>
+  <p class="panel-note">Real attackers use smarter algorithms than counting (the number field sieve), which is why 2048-bit Diffie-Hellman is rated at about 112 bits of security rather than 2048. That's the last row above, and it's still out of reach.</p>
+</section>
 
-        // Modular exponentiation function
-        function modPow(base, exponent, modulus) {
-            if (modulus === 1) return 0;
-            let result = 1;
-            base = base % modulus;
-            while (exponent > 0) {
-                if (exponent % 2 === 1) {
-                    result = (result * base) % modulus;
-                }
-                exponent = Math.floor(exponent / 2);
-                base = (base * base) % modulus;
-            }
-            return result;
-        }
+<!-- 6 CLASSROOM -->
+<section class="panel" id="panel-classroom" role="tabpanel" aria-labelledby="tab-classroom" hidden>
+  <div class="panel-head">
+    <h2>Classroom mode: two devices, one secret</h2>
+    <p>Pair up. One person is Alice and the other is Bob, each on their own phone or laptop. Everyone else in the room is Eve, and gets to hear every code you say out loud. This runs real Diffie-Hellman with p = 999,983 and g = 5, and turns each number into a paint color.</p>
+  </div>
+  <ol class="class-steps">
+    <li>
+      <div>
+        <h3>Pick your role</h3>
+        <div class="role-pick">
+          <button id="roleAlice" aria-pressed="true">I'm Alice</button>
+          <button id="roleBob" aria-pressed="false">I'm Bob</button>
+        </div>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Pick a secret paint</h3>
+        <p>Each paint hides a different random secret number. Keep your screen away from Eve.</p>
+        <div class="class-secret">
+          <div class="palette" id="classPalette" role="group" aria-label="Choose your secret paint"></div>
+        </div>
+        <div class="row-actions">
+          <label class="switch"><input type="checkbox" id="hideSecret"> Hide my secret on screen</label>
+          <button id="classShuffle">Shuffle paints</button>
+        </div>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Say your public mix out loud</h3>
+        <div class="side">
+          <div class="vessel" data-kind="pot" id="classMyPot"></div>
+          <div>
+            <p>Your code for your partner (Eve can hear it too):</p>
+            <p class="code" id="classMyCode" aria-live="polite">––– –––</p>
+          </div>
+        </div>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Type in your partner's code</h3>
+        <label class="field">Partner's code<input type="text" id="classPartner" inputmode="numeric" autocomplete="off" placeholder="e.g. 482 913"></label>
+        <div class="row-actions"><button class="primary" id="classMix">Mix in my secret</button></div>
+        <div class="msg" id="classMsg" role="alert"></div>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Hold up your pots</h3>
+        <div class="side">
+          <div class="vessel" data-kind="pot" id="classSharedPot"></div>
+          <div>
+            <p id="classSharedText">Your shared paint appears here.</p>
+            <label class="switch"><input type="checkbox" id="showSharedNum"> Show the shared number</label>
+            <p class="code" id="classSharedNum" hidden></p>
+          </div>
+        </div>
+      </div>
+    </li>
+  </ol>
+  <div class="teacher">
+    <h3>Running it with a class</h3>
+    <p><b>Eve's challenge.</b> Students playing Eve write down both codes, then open the <em>Brute-force race</em> tab and choose "A classmate's code." With p under a million, a laptop cracks it in well under a second. Ask the room what that says about key size.</p>
+    <p><b>Mallory variation.</b> Seat a third student between the pair. Alice and Bob pass codes on paper through Mallory, who keeps them and passes along her own code instead (Mallory pairs with each of them separately on two browser tabs). Then Alice and Bob hold up their pots: different colors, and each matches one of Mallory's.</p>
+    <p><b>Fresh secrets.</b> "Shuffle paints" picks new random secrets, which is what ephemeral Diffie-Hellman (DHE/ECDHE) does for every session.</p>
+  </div>
+</section>
 
-        // Check if number is prime
-        function isPrime(n) {
-            if (n <= 1) return false;
-            if (n <= 3) return true;
-            if (n % 2 === 0 || n % 3 === 0) return false;
-            for (let i = 5; i * i <= n; i += 6) {
-                if (n % i === 0 || n % (i + 2) === 0) return false;
-            }
-            return true;
-        }
+<!-- 7 WORLD -->
+<section class="panel" id="panel-world" role="tabpanel" aria-labelledby="tab-world" hidden>
+  <div class="panel-head">
+    <h2>Real world and quiz</h2>
+    <p>You've almost certainly used Diffie-Hellman today. Modern systems mostly use the elliptic-curve version (ECDH), which gives the same security with much smaller numbers.</p>
+  </div>
+  <ul class="uses">
+    <li><b>HTTPS (TLS 1.3)</b>Every connection runs a fresh ephemeral exchange, usually X25519. Browsers now also mix in ML-KEM, a post-quantum algorithm standardized by NIST in 2024, as a hybrid.</li>
+    <li><b>SSH</b>The key exchange that runs before you even type a password. Host keys play the seal role from the Mallory tab.</li>
+    <li><b>VPNs</b>IPsec's IKE and WireGuard both run Diffie-Hellman to set up tunnel keys.</li>
+    <li><b>Secure messaging</b>Signal, and WhatsApp's use of the Signal protocol, run chains of ECDH exchanges so each message gets fresh keys.</li>
+  </ul>
+  <details class="aside" open>
+    <summary>See it yourself in Wireshark</summary>
+    <p>Start a capture, visit any HTTPS site, and filter with <code>tls.handshake.type == 1</code> to find the Client Hello. Expand <i>Extension: key_share</i> and you'll see the group your browser offered and its public value, the number Eve gets to see. The Server Hello carries the server's half. Nothing in the capture reveals the shared secret.</p>
+  </details>
+  <details class="aside">
+    <summary>Strengths, limits, and what to use</summary>
+    <p><b>Forward secrecy</b> comes from ephemeral exchanges (DHE, ECDHE), with new secrets every session, so stealing a server's long-term key later doesn't unlock old recordings. <b>Authentication</b> isn't built in; pair the exchange with signatures and certificates or Mallory wins. <b>Parameters matter</b>: the 2015 Logjam attack forced connections down to 512-bit "export" groups and showed that widely shared 1024-bit primes were within reach of precomputation. Use standard groups (RFC 7919 for finite-field DH) of at least 2048 bits, or prefer X25519. <b>Quantum computers</b> running Shor's algorithm would break both DH and ECDH, which is why hybrid post-quantum key exchange is already rolling out.</p>
+  </details>
+  <h3 style="margin-top:22px">Check yourself</h3>
+  <div id="quiz"></div>
+  <p class="score" id="quizScore" aria-live="polite"></p>
+  <div class="row-actions"><button id="quizReset">Shuffle and retry</button></div>
+</section>
+</main>
 
-        function calculate() {
-            const p = parseInt(document.getElementById('prime').value);
-            const g = parseInt(document.getElementById('generator').value);
-            const a = parseInt(document.getElementById('aliceSecret').value);
-            const b = parseInt(document.getElementById('bobSecret').value);
+<footer class="wrap">
+  <p>Built for cybersecurity and networking courses at Brookdale Community College, 2026. Adapted and expanded from an interactive lesson by John Sands, Moraine Valley Community College. Open educational resource.</p>
+</footer>
 
-            // Validation
-            if (!isPrime(p)) {
-                alert('Please enter a prime number for p!');
-                return;
-            }
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r => setTimeout(r, reduced ? 0 : ms));
 
-            if (g >= p || g < 2) {
-                alert('Generator g must be between 2 and p-1!');
-                return;
-            }
+/* ---------- color science: pigment-style mixing ---------- */
+function hexToRgb(h){h=h.replace('#','');return [0,2,4].map(i=>parseInt(h.substr(i,2),16)/255);}
+function toLin(c){return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
+function toSrgb(c){return c<=0.0031308?12.92*c:1.055*Math.pow(c,1/2.4)-0.055;}
+function rgbToHex(rgb){return '#'+rgb.map(c=>Math.round(Math.min(1,Math.max(0,c))*255).toString(16).padStart(2,'0')).join('');}
+/* weighted geometric mean of linear reflectance: behaves like subtractive paint, order-independent */
+function mixHex(list){
+  const acc=[0,0,0];
+  list.forEach(h=>{hexToRgb(h).map(toLin).forEach((c,i)=>{acc[i]+=Math.log(Math.max(c,0.03));});});
+  /* blend mostly-subtractive with a little additive so mixes stay vivid instead of muddy */
+  const lin=list.map(h=>hexToRgb(h).map(toLin));
+  const ar=[0,1,2].map(i=>lin.reduce((t,c)=>t+c[i],0)/list.length);
+  return rgbToHex(acc.map((v,i)=>toSrgb(0.72*Math.exp(v/list.length)+0.28*ar[i])));
+}
+function isLight(color){
+  let rgb;
+  if(color.startsWith('#')) rgb=hexToRgb(color);
+  else { const m=color.match(/hsl\((\d+\.?\d*),\s*(\d+\.?\d*)%,\s*(\d+\.?\d*)%\)/); rgb=hslToRgb(+m[1],+m[2]/100,+m[3]/100); }
+  const L=0.2126*toLin(rgb[0])+0.7152*toLin(rgb[1])+0.0722*toLin(rgb[2]);
+  return L>0.22;
+}
+function hslToRgb(h,s,l){const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return [f(0),f(8),f(4)];}
+function hslHex(h,s,l){return rgbToHex(hslToRgb(h,s,l));}
 
-            if (a >= p || a < 1) {
-                alert('Alice\'s secret must be between 1 and p-1!');
-                return;
-            }
+const PAINTS=[
+  {id:'sun',name:'Sun yellow',hex:'#F2C81F',sym:'☀'},
+  {id:'crimson',name:'Crimson',hex:'#C41E3A',sym:'♥'},
+  {id:'cobalt',name:'Cobalt blue',hex:'#1F4FB5',sym:'◆'},
+  {id:'leaf',name:'Leaf green',hex:'#3E9B3A',sym:'✿'},
+  {id:'tangerine',name:'Tangerine',hex:'#F07C1B',sym:'●'},
+  {id:'violet',name:'Violet',hex:'#6E3FA3',sym:'★'},
+  {id:'sky',name:'Sky blue',hex:'#59B7E8',sym:'▼'},
+  {id:'rose',name:'Rose',hex:'#E86A9A',sym:'✱'},
+  {id:'teal',name:'Teal',hex:'#138A86',sym:'▲'},
+  {id:'ochre',name:'Ochre',hex:'#C08A2C',sym:'■'},
+  {id:'white',name:'Titanium white',hex:'#F4F4EF',sym:'○'},
+  {id:'umber',name:'Burnt umber',hex:'#6B3E26',sym:'✚'}
+];
+const paint = id => PAINTS.find(p=>p.id===id);
 
-            if (b >= p || b < 1) {
-                alert('Bob\'s secret must be between 1 and p-1!');
-                return;
-            }
+/* ---------- vessels (SVG cans and pots) ---------- */
+const NS='http://www.w3.org/2000/svg';
+function buildVessel(el){
+  const kind=el.dataset.kind;
+  if(kind==='can'){
+    el.innerHTML='<svg viewBox="0 0 80 100" aria-hidden="true"><path class="can-handle" d="M12 22 Q40 -4 68 22"/>'+
+      '<path class="can-body" d="M10 20 V82 A30 9 0 0 0 70 82 V20"/>'+
+      '<ellipse class="can-rim" cx="40" cy="20" rx="30" ry="9"/>'+
+      '<ellipse class="paint-fill" cx="40" cy="20" rx="25" ry="6.5"/>'+
+      '<rect class="paint-fill" x="10" y="42" width="60" height="28"/>'+
+      '<text class="can-sym" x="40" y="57"></text></svg>';
+  } else {
+    el.innerHTML='<svg viewBox="0 0 100 82" aria-hidden="true">'+
+      '<path class="paint-fill" d="M6 26 Q8 78 50 79 Q92 78 94 26 Z"/>'+
+      '<path class="pot-shade" d="M60 30 Q86 34 90 30 Q88 70 54 77 Q76 60 60 30 Z"/>'+
+      '<path class="pot-gloss" d="M16 36 Q18 58 32 68"/>'+
+      '<ellipse class="paint-fill" cx="50" cy="26" rx="43" ry="11"/>'+
+      '<ellipse class="pot-top-shade" cx="50" cy="26" rx="43" ry="11"/>'+
+      '<ellipse class="swirl" cx="50" cy="26" rx="22" ry="5"/>'+
+      '<path class="pot-edge" d="M6 26 Q8 78 50 79 Q92 78 94 26"/>'+
+      '<ellipse class="pot-lip" cx="50" cy="26" rx="44" ry="12"/></svg>';
+  }
+  el.classList.add('empty');
+}
+document.querySelectorAll('.vessel').forEach(buildVessel);
+function setVessel(id,color,sym,stir){
+  const el=typeof id==='string'?$(id):id;
+  if(!el) return;
+  if(!color){el.classList.add('empty');return;}
+  el.classList.remove('empty');
+  const light=isLight(color);
+  el.querySelectorAll('.paint-fill').forEach(n=>{n.style.fill=color;});
+  const sw=el.querySelector('.swirl'); if(sw){sw.style.stroke=light?'var(--shade-dark)':'var(--shade-light)';}
+  const t=el.querySelector('.can-sym');
+  if(t){t.textContent=sym||'';t.setAttribute('class','can-sym '+(light?'on-light':'on-dark'));}
+  if(stir&&!reduced){el.classList.remove('stirring');void el.offsetWidth;el.classList.add('stirring');}
+}
+function recipeHTML(ids){
+  const counts={};ids.forEach(i=>counts[i]=(counts[i]||0)+1);
+  return Object.keys(counts).map(id=>{const p=paint(id);return '<span class="chip"><i class="'+(isLight(p.hex)?'on-light':'on-dark')+'" style="background:'+p.hex+'">'+p.sym+'</i>'+counts[id]+(counts[id]>1?' parts ':' part ')+p.name+'</span>';}).join('');
+}
+const mixIds = ids => mixHex(ids.map(i=>paint(i).hex));
 
-            // Calculate public keys
-            const A = modPow(g, a, p);
-            const B = modPow(g, b, p);
+/* hero */
+setVessel('heroP',paint('sun').hex,'☀');setVessel('heroA',paint('crimson').hex,'♥');setVessel('heroB',paint('cobalt').hex,'◆');
+setVessel('heroS',mixIds(['sun','crimson','cobalt']),null,true);
 
-            // Calculate shared secrets
-            const aliceShared = modPow(B, a, p);
-            const bobShared = modPow(A, b, p);
+/* ---------- tabs ---------- */
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function selectTab(t,focus){
+  tabs.forEach(x=>{const on=x===t;x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1;$(x.getAttribute('aria-controls')).hidden=!on;});
+  if(focus)t.focus();
+  try{history.replaceState(null,'','#'+t.id.replace('tab-',''));}catch(e){}
+  if(t.id==='tab-math') drawClock();
+}
+tabs.forEach((t,i)=>{
+  t.addEventListener('click',()=>selectTab(t));
+  t.addEventListener('keydown',e=>{
+    let j=null;
+    if(e.key==='ArrowRight')j=(i+1)%tabs.length;
+    else if(e.key==='ArrowLeft')j=(i-1+tabs.length)%tabs.length;
+    else if(e.key==='Home')j=0; else if(e.key==='End')j=tabs.length-1;
+    if(j!==null){e.preventDefault();selectTab(tabs[j],true);}
+  });
+});
 
-            // Display results
-            const resultsHTML = `
-                <div class="result-box">
-                    <h4>📊 Calculation Results</h4>
-                    
-                    <h4 style="color: #0056b3; margin-top: 1.5rem;">Public Parameters:</h4>
-                    <p><strong>Prime (p):</strong> ${p}</p>
-                    <p><strong>Generator (g):</strong> ${g}</p>
-                    
-                    <h4 style="color: #0056b3; margin-top: 1.5rem;">Alice's Calculations:</h4>
-                    <p><strong>Private Key (a):</strong> ${a} 🔒</p>
-                    <p><strong>Public Key (A):</strong> g^a mod p = ${g}^${a} mod ${p} = <strong>${A}</strong> 📢</p>
-                    <p><strong>Shared Secret:</strong> B^a mod p = ${B}^${a} mod ${p} = <strong>${aliceShared}</strong> 🎯</p>
-                    
-                    <h4 style="color: #0056b3; margin-top: 1.5rem;">Bob's Calculations:</h4>
-                    <p><strong>Private Key (b):</strong> ${b} 🔒</p>
-                    <p><strong>Public Key (B):</strong> g^b mod p = ${g}^${b} mod ${p} = <strong>${B}</strong> 📢</p>
-                    <p><strong>Shared Secret:</strong> A^b mod p = ${A}^${b} mod ${p} = <strong>${bobShared}</strong> 🎯</p>
-                    
-                    <h4 style="color: #1e7e34; margin-top: 1.5rem;">✅ Result:</h4>
-                    ${aliceShared === bobShared ? 
-                        `<p style="font-size: 1.2rem; color: #1e7e34;"><strong>SUCCESS! Both parties computed the same shared secret: ${aliceShared}</strong></p>
-                        <p>This shared secret can now be used as an encryption key! 🔐</p>` :
-                        `<p style="color: red;"><strong>ERROR: Shared secrets don't match!</strong></p>`
-                    }
-                    
-                    <h4 style="color: #ff9800; margin-top: 1.5rem;">🕵️ What Eve Knows:</h4>
-                    <p>Eve (eavesdropper) can see: p = ${p}, g = ${g}, A = ${A}, B = ${B}</p>
-                    <p>But Eve does NOT know: a = ${a}, b = ${b}, or shared secret = ${aliceShared}</p>
-                    <p>To find the shared secret, Eve would need to solve the discrete logarithm problem!</p>
-                </div>
-            `;
+/* ---------- small math helpers ---------- */
+function modPowN(b,e,m){let r=1;b%=m;while(e>0){if(e&1)r=r*b%m;b=b*b%m;e>>=1;}return r;}
+function modPowB(b,e,m){let r=1n;b%=m;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n;}return r;}
+function isProbPrime(n){
+  if(n<2n)return false;
+  for(const q of [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){if(n===q)return true;if(n%q===0n)return false;}
+  let d=n-1n,s=0;while((d&1n)===0n){d>>=1n;s++;}
+  const bases=[2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n,41n];
+  outer: for(const a of bases){
+    let x=modPowB(a,d,n);if(x===1n||x===n-1n)continue;
+    for(let r=1;r<s;r++){x=x*x%n;if(x===n-1n)continue outer;}
+    return false;
+  }
+  return true;
+}
+function factorsN(n){const f=[];let d=2;while(d*d<=n){if(n%d===0){f.push(d);while(n%d===0)n/=d;}d++;}if(n>1)f.push(n);return f;}
+function isPrimRootN(g,p){return factorsN(p-1).every(q=>modPowN(g,(p-1)/q,p)!==1);}
+function randBig(bits){
+  const bytes=Math.ceil(bits/8),arr=new Uint8Array(bytes);crypto.getRandomValues(arr);
+  let n=0n;arr.forEach(b=>{n=(n<<8n)|BigInt(b);});
+  return n&((1n<<BigInt(bits))-1n);
+}
+function randRange(lo,hi){const span=hi-lo+1;const a=new Uint32Array(2);crypto.getRandomValues(a);return lo+Math.floor((a[0]*4294967296+a[1])/18446744073709551616*span);}
+const sup = n => '<sup>'+n+'</sup>';
+const fmt = n => n.toLocaleString('en-US');
 
-            document.getElementById('results').innerHTML = resultsHTML;
-        }
+/* ---------- 1 STUDIO ---------- */
+const S={step:1,pub:'sun',alice:'crimson',bob:'cobalt',sent:false,shortcut:false};
+const SP=23,SG=5;
+const EXP={sun:0,crimson:6,cobalt:15,leaf:3,tangerine:9,violet:13,sky:4,rose:17,teal:8,ochre:11,white:19,umber:7};
+const PROMPTS={
+  1:'Alice and Bob agree out loud on a starting paint. Pick one. Eve hears it too, and that\'s fine.',
+  2:'Each of them secretly picks a second paint. Try switching on "See only what Eve sees" to check what stays hidden.',
+  3:'Each mixes equal parts public paint and their own secret, then sends the pot across the channel. Eve copies both pots.',
+  4:'Each pours their own secret into the pot they received. Compare the two final pots.'
+};
+function buildPalette(container,onPick,getSel){
+  PAINTS.forEach(p=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='swatch '+(isLight(p.hex)?'on-light':'on-dark');
+    b.style.background=p.hex;b.textContent=p.sym;b.dataset.id=p.id;
+    b.setAttribute('aria-label',p.name);b.title=p.name;
+    b.addEventListener('click',()=>{onPick(p.id);});
+    container.appendChild(b);
+  });
+  return ()=>{container.querySelectorAll('.swatch').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===getSel()));};
+}
+const refreshPub=buildPalette($('publicPalette'),id=>{S.pub=id;S.shortcut=false;renderStudio(true);},()=>S.pub);
+const refreshAlice=buildPalette($('alicePalette'),id=>{S.alice=id;S.shortcut=false;renderStudio(true);},()=>S.alice);
+const refreshBob=buildPalette($('bobPalette'),id=>{S.bob=id;S.shortcut=false;renderStudio(true);},()=>S.bob);
 
-        function resetCalculator() {
-            document.getElementById('prime').value = 23;
-            document.getElementById('generator').value = 5;
-            document.getElementById('aliceSecret').value = 6;
-            document.getElementById('bobSecret').value = 15;
-            document.getElementById('results').innerHTML = '';
-        }
+function renderStudio(stir){
+  refreshPub();refreshAlice();refreshBob();
+  const st=S.step;
+  [...$('studioSteps').children].forEach((li,i)=>{
+    if(i+1===st)li.setAttribute('aria-current','step');else li.removeAttribute('aria-current');
+    li.classList.toggle('done',i+1<st);
+  });
+  $('studioPrompt').textContent=PROMPTS[st];
+  $('studioBack').disabled=st===1;
+  $('studioNext').textContent=st===4?'Start over':'Next step';
+  document.querySelectorAll('#panel-studio .slot').forEach(s=>s.classList.toggle('locked',+s.dataset.step>st));
 
-        // Initialize on page load
-        window.onload = function() {
-            initPaintDemo();
-        };
+  const P=paint(S.pub),A=paint(S.alice),B=paint(S.bob);
+  const a=EXP[S.alice]||2,b=EXP[S.bob]||2;
+  const Av=modPowN(SG,a,SP),Bv=modPowN(SG,b,SP),s=modPowN(Bv,a,SP);
+  setVessel('publicCan',P.hex,P.sym);
+  $('publicCap').textContent=P.name;
+  $('publicMath').innerHTML='g = '+SG+', p = '+SP+' (public)';
+  if(st>=2){
+    setVessel('aliceSecretCan',A.hex,A.sym);$('aliceSecretCap').textContent=A.name;
+    setVessel('bobSecretCan',B.hex,B.sym);$('bobSecretCap').textContent=B.name;
+  } else {setVessel('aliceSecretCan',null);setVessel('bobSecretCan',null);$('aliceSecretCap').textContent='';$('bobSecretCap').textContent='';}
+  $('aliceSecretMath').innerHTML='a = '+a+' (secret)';
+  $('bobSecretMath').innerHTML='b = '+b+' (secret)';
 
-        // Smooth scrolling for navigation
-        document.querySelectorAll('nav a').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-        });
-    </script>
+  const aMix=mixIds([S.pub,S.alice]),bMix=mixIds([S.pub,S.bob]);
+  if(st>=3){
+    setVessel('aliceMixPot',aMix,null,stir);setVessel('bobMixPot',bMix,null,stir);
+    $('aliceMixRecipe').innerHTML=recipeHTML([S.pub,S.alice]);$('bobMixRecipe').innerHTML=recipeHTML([S.pub,S.bob]);
+    $('parcelADot').style.background=aMix;$('parcelBDot').style.background=bMix;
+    ['parcelA','parcelB'].forEach(id=>$(id).classList.add('show'));
+  } else {
+    setVessel('aliceMixPot',null);setVessel('bobMixPot',null);$('aliceMixRecipe').innerHTML='';$('bobMixRecipe').innerHTML='';
+    ['parcelA','parcelB'].forEach(id=>$(id).classList.remove('show','fly'));
+  }
+  $('aliceMixMath').innerHTML='A = '+SG+sup(a)+' mod '+SP+' = '+Av;
+  $('bobMixMath').innerHTML='B = '+SG+sup(b)+' mod '+SP+' = '+Bv;
+
+  const fin=[S.pub,S.alice,S.bob];
+  const finC=mixIds(fin);
+  if(st>=4){
+    setVessel('aliceFinalPot',finC,null,stir);setVessel('bobFinalPot',finC,null,stir);
+    $('aliceFinalRecipe').innerHTML=recipeHTML(fin);$('bobFinalRecipe').innerHTML=recipeHTML(fin);
+    $('studioResult').className='result good';
+    $('studioResult').innerHTML='<b>Same pot on both sides.</b> Alice and Bob each ended up with one part '+P.name+', one part '+A.name+' and one part '+B.name+', in a different order, without either secret ever crossing the channel. Eve has the public paint and both mixes, but no way to separate them.';
+    $('shortcutBox').hidden=false;
+  } else {
+    setVessel('aliceFinalPot',null);setVessel('bobFinalPot',null);$('aliceFinalRecipe').innerHTML='';$('bobFinalRecipe').innerHTML='';
+    $('studioResult').className='result';$('studioResult').innerHTML='';
+    $('shortcutBox').hidden=true;S.shortcut=false;
+  }
+  $('aliceFinalMath').innerHTML='s = B'+sup('a')+' mod p = '+Bv+sup(a)+' mod '+SP+' = '+s;
+  $('bobFinalMath').innerHTML='s = A'+sup('b')+' mod p = '+Av+sup(b)+' mod '+SP+' = '+modPowN(Av,b,SP);
+
+  // Eve notebook
+  const notes=[];
+  notes.push({c:P.hex,t:'Public paint: '+P.name,m:'g = '+SG+', p = '+SP});
+  if(st>=3){notes.push({c:aMix,t:'Alice\'s mix',m:'A = '+Av});notes.push({c:bMix,t:'Bob\'s mix',m:'B = '+Bv});}
+  $('eveNotes').innerHTML=notes.map(n=>'<li><span class="dot" style="background:'+n.c+'"></span><span>'+n.t+'<span class="math" style="margin:2px 0 0;text-align:left">'+n.m+'</span></span></li>').join('')+
+    (st<3?'<li class="empty-note">Nothing secret yet. She\'s waiting for the mixes.</li>':'')+
+    (st>=4?'<li class="empty-note">Missing: both secret paints, and the final pot.</li>':'');
+
+  // shortcut
+  $('shortcutResult').hidden=!S.shortcut;
+  if(S.shortcut){
+    const ev=[S.pub,S.alice,S.pub,S.bob];
+    setVessel('evePot',mixIds(ev),null,true);
+    $('shortcutText').innerHTML='Eve\'s pot: '+recipeHTML(ev)+' <br>Not the secret. Her pot has the public paint in it <b>twice</b>, and there\'s no way to pour one part back out. Compare it with the final pots.';
+    $('shortcutMath').innerHTML='Math version: A × B = g'+sup('a+b')+', not g'+sup('ab')+'. Here A × B mod p = '+(Av*Bv%SP)+', but s = '+s+'.';
+  }
+}
+$('studioNext').addEventListener('click',()=>{
+  if(S.step===4){S.step=1;S.shortcut=false;renderStudio();return;}
+  S.step++;renderStudio(true);
+  if(S.step===3){['parcelA','parcelB'].forEach(id=>{const e=$(id);e.classList.remove('fly');void e.offsetWidth;e.classList.add('fly');});}
+});
+$('studioBack').addEventListener('click',()=>{if(S.step>1){S.step--;renderStudio();}});
+$('mathToggle').addEventListener('change',e=>document.body.classList.toggle('show-math',e.target.checked));
+$('eveView').addEventListener('change',e=>document.body.classList.toggle('eve-view',e.target.checked));
+$('shortcutBtn').addEventListener('click',()=>{S.shortcut=true;renderStudio();});
+renderStudio();
+
+/* ---------- 2 PLAY AS EVE ---------- */
+const E={n:6,cands:[],secret:0,tried:new Set(),found:false,auto:false,pub:'#F2C81F'};
+function newEveRound(){
+  E.auto=false;$('eveAuto').disabled=false;
+  const off=Math.random()*360;
+  E.cands=[];
+  for(let i=0;i<E.n;i++){
+    const h=(off+i*360/E.n)%360,s=0.55+0.25*((i*7)%3)/2,l=0.42+0.14*((i*5)%4)/3;
+    E.cands.push(hslHex(h,s,l));
+  }
+  // shuffle display order
+  for(let i=E.cands.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[E.cands[i],E.cands[j]]=[E.cands[j],E.cands[i]];}
+  E.secret=Math.floor(Math.random()*E.n);E.tried=new Set();E.found=false;
+  setVessel('egPublic',E.pub,'☀');
+  setVessel('egTarget',mixHex([E.pub,E.cands[E.secret]]),null,true);
+  setVessel('egTest',null);
+  const g=$('eveGrid');g.innerHTML='';
+  E.cands.forEach((c,i)=>{
+    const b=document.createElement('button');b.type='button';
+    b.className='cand '+(isLight(c)?'on-light':'on-dark');b.style.background=c;
+    b.setAttribute('aria-label','Candidate paint '+(i+1));b.textContent=i+1;
+    b.addEventListener('click',()=>testCand(i));
+    g.appendChild(b);
+  });
+  $('eveVerdict').textContent='Pick a candidate paint below to test it.';
+  updEveStats();
+  const bits=Math.log2(E.n);
+  $('eveInsight').innerHTML='With '+E.n+' possible paints, Eve needs at most '+E.n+' tries, which is only '+bits.toFixed(1)+' bits of secret. Real Diffie-Hellman with a 2048-bit prime has a number of possible secrets that runs to 617 digits. Even testing a billion per second since the Big Bang would barely scratch it.'+
+    (E.n>=48?' Notice too that with this many paints the test pots start to look alike. In the real math there\'s no "close": a guess is either exactly right or no help at all.':'');
+}
+function updEveStats(){
+  $('eveTries').textContent=E.tried.size;$('eveLeft').textContent=E.n-E.tried.size;
+  $('eveBits').textContent=Math.log2(E.n).toFixed(1)+' bits';
+}
+function testCand(i){
+  if(E.found)return;
+  const c=E.cands[i];E.tried.add(i);
+  setVessel('egTest',mixHex([E.pub,c]),null,true);
+  const btn=$('eveGrid').children[i];
+  if(i===E.secret){
+    E.found=true;btn.classList.add('found');btn.textContent='✓';
+    $('eveVerdict').innerHTML='<b>Match.</b> Candidate '+(i+1)+' was Alice\'s secret. You found it in '+E.tried.size+(E.tried.size===1?' try':' tries')+'. Now raise the number of paints and try again.';
+  } else {
+    btn.classList.add('tested');btn.textContent='✕';btn.setAttribute('aria-label','Candidate paint '+(i+1)+', not a match');
+    $('eveVerdict').textContent='Candidate '+(i+1)+' is not a match. Compare the test pot with the intercepted pot.';
+  }
+  updEveStats();
+}
+$('eveSize').addEventListener('change',e=>{E.n=+e.target.value;newEveRound();});
+$('eveNew').addEventListener('click',newEveRound);
+$('eveAuto').addEventListener('click',async()=>{
+  if(E.found)return;E.auto=true;$('eveAuto').disabled=true;
+  for(let i=0;i<E.n&&!E.found&&E.auto;i++){if(!E.tried.has(i)){testCand(i);await sleep(E.n>24?40:140);}}
+  if(E.found)$('eveVerdict').innerHTML+=' A computer works through small palettes instantly, which is why real keys need astronomically many possibilities.';
+});
+newEveRound();
+
+/* ---------- 3 MALLORY ---------- */
+const M={P:'sun',A:'crimson',B:'cobalt',X:'violet',running:false};
+const mIds=['mAliceSent','mAliceGot','mAliceKey','mMalMix','mMalKeyA','mMalKeyB','mBobSent','mBobGot','mBobKey'];
+function sealHTML(ok,who){return ok===null?'':'<span class="seal '+(ok?'okay':'fail')+'">'+(ok?'✓ '+who+'\'s seal':'✕ Seal check failed')+'</span>';}
+function resetMitm(){
+  mIds.forEach(id=>setVessel(id,null));
+  ['mAliceSentSeal','mAliceGotSeal','mBobSentSeal','mBobGotSeal'].forEach(id=>$(id).innerHTML='');
+  $('mitmLog').innerHTML='';$('mitmResult').className='result';$('mitmResult').innerHTML='';
+  const on=$('malloryOn').checked;
+  $('mitmBoard').classList.toggle('has-mallory',on);
+  $('mMidTitle').textContent=on?'Mallory (controls the channel)':'Public channel (Eve only listens)';
+  document.querySelectorAll('.col-mid .mini-slot').forEach(s=>s.style.visibility=on?'visible':'hidden');
+}
+function log(t,warn){const li=document.createElement('li');li.textContent=t;if(warn)li.className='warn';$('mitmLog').appendChild(li);}
+$('malloryOn').addEventListener('change',resetMitm);
+$('sealsOn').addEventListener('change',resetMitm);
+$('runMitm').addEventListener('click',async()=>{
+  if(M.running)return;M.running=true;$('runMitm').disabled=true;resetMitm();
+  const mal=$('malloryOn').checked,seals=$('sealsOn').checked;
+  const aMix=mixIds([M.P,M.A]),bMix=mixIds([M.P,M.B]),xMix=mixIds([M.P,M.X]);
+  const res=$('mitmResult');
+  log('Alice and Bob agree on Sun yellow as the public paint.');await sleep(700);
+  setVessel('mAliceSent',aMix,null,true);if(seals)$('mAliceSentSeal').innerHTML=sealHTML(true,'Alice');
+  log('Alice mixes in her secret Crimson and sends the pot'+(seals?', sealed with her signature.':'.'));await sleep(900);
+  if(mal){
+    setVessel('mMalMix',xMix,null,true);
+    log('Mallory grabs Alice\'s pot and keeps it. She mixes her own Violet secret and sends that to Bob instead.',true);await sleep(900);
+    setVessel('mBobGot',xMix,null,true);
+    if(seals){
+      $('mBobGotSeal').innerHTML=sealHTML(false);
+      log('Bob checks the seal. It wasn\'t made with Alice\'s signing key, so he refuses the pot.',true);
+      res.className='result good';
+      res.innerHTML='<b>Attack detected, exchange stopped.</b> Mallory can still block or tamper with the channel, but she can\'t forge Alice\'s seal, so she never gets a key that Bob will accept. In TLS this is the moment your browser shows a certificate error instead of connecting.';
+      M.running=false;$('runMitm').disabled=false;return;
+    }
+  } else {
+    setVessel('mBobGot',aMix,null,true);if(seals)$('mBobGotSeal').innerHTML=sealHTML(true,'Alice');
+    log('Bob receives Alice\'s pot'+(seals?' and the seal checks out.':'.'));await sleep(700);
+  }
+  setVessel('mBobSent',bMix,null,true);if(seals)$('mBobSentSeal').innerHTML=sealHTML(true,'Bob');
+  log('Bob mixes in his secret Cobalt and sends his pot back.');await sleep(900);
+  if(mal){
+    log('Mallory grabs Bob\'s pot too and sends Alice her own Violet mix.',true);await sleep(700);
+    setVessel('mAliceGot',xMix,null,true);
+  } else {
+    setVessel('mAliceGot',bMix,null,true);if(seals)$('mAliceGotSeal').innerHTML=sealHTML(true,'Bob');
+  }
+  await sleep(500);
+  if(mal){
+    const kA=mixIds([M.P,M.X,M.A]),kB=mixIds([M.P,M.X,M.B]);
+    setVessel('mAliceKey',kA,null,true);setVessel('mMalKeyA',kA,null,true);
+    setVessel('mBobKey',kB,null,true);setVessel('mMalKeyB',kB,null,true);
+    log('Everyone adds their own secret to the pot they received.',true);
+    res.className='result bad';
+    res.innerHTML='<b>Mallory wins.</b> Alice and Bob each think they share a secret with the other. They don\'t: Alice shares one with Mallory and Bob shares a different one with Mallory. She can decrypt every message, read or change it, and re-encrypt it for the other side. Nothing in plain Diffie-Hellman notices. Switch on seals and run it again.';
+  } else {
+    const k=mixIds([M.P,M.A,M.B]);
+    setVessel('mAliceKey',k,null,true);setVessel('mBobKey',k,null,true);
+    log('Each adds their own secret. The keys match.');
+    res.className='result good';
+    res.innerHTML='<b>Shared secret established.</b> With nobody tampering, the exchange works. Now switch Mallory back on.';
+  }
+  M.running=false;$('runMitm').disabled=false;
+});
+resetMitm();
+
+/* ---------- 4 MATH: clock ---------- */
+const CLOCK_PRIMES=[7,11,13,17,19,23,29,31,37,41];
+const C={p:23,g:5,k:0,timer:null,seq:[]};
+function fillClockSelects(){
+  $('clockP').innerHTML=CLOCK_PRIMES.map(p=>'<option'+(p===C.p?' selected':'')+'>'+p+'</option>').join('');
+  let opts='';for(let g=2;g<C.p-1;g++)opts+='<option'+(g===C.g?' selected':'')+' value="'+g+'">'+g+(isPrimRootN(g,C.p)?'  (primitive root)':'')+'</option>';
+  $('clockG').innerHTML=opts;
+}
+function computeSeq(){C.seq=[];let v=1;for(let k=1;k<C.p;k++){v=v*C.g%C.p;C.seq.push(v);if(v===1)break;}}
+function drawClock(){
+  const svg=$('clockSvg');const n=C.p-1,cx=170,cy=170,R=140;
+  const r=Math.max(9,Math.min(15,250/n));
+  let h='<title id="clockTitle">Positions visited by powers of g mod p</title><circle class="clock-ring" cx="170" cy="170" r="'+R+'"/><path class="clock-path" id="clockPath" d=""/>';
+  for(let v=1;v<=n;v++){
+    const ang=-Math.PI/2+(v-1)/n*2*Math.PI,x=cx+R*Math.cos(ang),y=cy+R*Math.sin(ang);
+    h+='<circle class="clock-node" id="cn'+v+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+r+'"/><text class="clock-label" id="cl'+v+'" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'">'+v+'</text>';
+  }
+  h+='<text class="clock-center" x="170" y="166" id="clockCenter">g = '+C.g+'</text><text class="clock-sub" x="170" y="188" id="clockSub">p = '+C.p+'</text>';
+  svg.innerHTML=h;
+  C.k=0;computeSeq();
+  $('clockSeq').textContent='';$('clockVerdict').textContent='';
+  const roots=[];for(let g=2;g<C.p-1;g++)if(isPrimRootN(g,C.p))roots.push(g);
+  $('clockGood').textContent='Primitive roots of '+C.p+': '+roots.join(', ');
+}
+function nodePos(v){const n=C.p-1,ang=-Math.PI/2+(v-1)/n*2*Math.PI;return [170+140*Math.cos(ang),170+140*Math.sin(ang)];}
+function clockStep(){
+  if(C.k>=C.seq.length){stopClock();return false;}
+  const v=C.seq[C.k];C.k++;
+  document.querySelectorAll('#clockSvg .current').forEach(e=>e.classList.remove('current'));
+  $('cn'+v).classList.add('visited','current');$('cl'+v).classList.add('visited');
+  const pts=C.seq.slice(0,C.k).map(nodePos);
+  $('clockPath').setAttribute('d',pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' '));
+  $('clockCenter').textContent=C.g+'^'+C.k+' → '+v;
+  $('clockSeq').textContent=C.seq.slice(0,C.k).map((x,i)=>C.g+'^'+(i+1)+'='+x).join('  ');
+  if(C.k===C.seq.length){
+    const ord=C.seq.length,n=C.p-1;
+    $('clockVerdict').innerHTML=ord===n?
+      '<b>g = '+C.g+' is a primitive root of '+C.p+'.</b> Its powers reach all '+n+' positions before returning to 1, so every secret from 1 to '+n+' gives a different public value.':
+      '<b>g = '+C.g+' reaches only '+ord+' of '+n+' positions</b> before cycling back to 1. Secrets a and a + '+ord+' give the same public value, so Eve only has '+ord+' possibilities to search instead of '+n+'. That\'s the idea behind small-subgroup weaknesses, and why real systems use vetted, standard groups.';
+    stopClock();return false;
+  }
+  return true;
+}
+function stopClock(){if(C.timer){clearInterval(C.timer);C.timer=null;}$('clockPlay').textContent='Play';}
+$('clockPlay').addEventListener('click',()=>{
+  if(C.timer){stopClock();return;}
+  if(C.k>=C.seq.length)drawClock();
+  if(reduced){while(clockStep());return;}
+  $('clockPlay').textContent='Pause';
+  C.timer=setInterval(()=>{if(!clockStep())stopClock();},Math.max(160,4000/C.p));
+});
+$('clockStep').addEventListener('click',()=>{stopClock();if(C.k>=C.seq.length)drawClock();clockStep();});
+$('clockReset').addEventListener('click',()=>{stopClock();drawClock();});
+$('clockP').addEventListener('change',e=>{stopClock();C.p=+e.target.value;C.g=[...Array(C.p).keys()].find(g=>g>1&&isPrimRootN(g,C.p));fillClockSelects();drawClock();});
+$('clockG').addEventListener('change',e=>{stopClock();C.g=+e.target.value;drawClock();});
+fillClockSelects();drawClock();
+
+/* ---------- 4 MATH: BigInt calculator ---------- */
+const G14=BigInt('0x'+'FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF');
+function parseBig(s){s=s.replace(/[\s_,]/g,'');if(!/^(0x[0-9a-fA-F]+|\d+)$/.test(s))return null;return BigInt(s);}
+function bigHTML(n){
+  const s=n.toString();
+  if(s.length<=40)return '<span class="big">'+s+'</span>';
+  return '<div class="big">'+s.slice(0,16)+'…'+s.slice(-16)+' <span class="seq">('+s.length+' digits)</span><details><summary>Show all digits</summary>'+s+'</details></div>';
+}
+function runCalc(){
+  const msg=$('calcMsg');msg.className='msg';msg.textContent='';
+  const p=parseBig($('cP').value),g=parseBig($('cG').value),a=parseBig($('cA').value),b=parseBig($('cB').value);
+  const err=t=>{msg.className='msg err';msg.textContent=t;$('calcOut').innerHTML='';};
+  if(p===null||g===null||a===null||b===null)return err('Each box needs a whole number (decimal, or hex starting with 0x).');
+  if(p<5n)return err('p needs to be a prime of at least 5.');
+  if(!isProbPrime(p))return err(p+' is not prime. Try 23, 29, 31, 999983, or load the 2048-bit group.');
+  if(g<2n||g>p-2n)return err('g should be between 2 and p − 2.');
+  if(a<2n||a>p-2n)return err('Alice\'s secret a should be between 2 and p − 2. (a = p − 1 always gives A = 1, which leaks the secret.)');
+  if(b<2n||b>p-2n)return err('Bob\'s secret b should be between 2 and p − 2.');
+  const t0=performance.now();
+  const A=modPowB(g,a,p),B=modPowB(g,b,p),sA=modPowB(B,a,p),sB=modPowB(A,b,p);
+  const ms=performance.now()-t0;
+  let note='';
+  if(p<1000000000000n){
+    const pn=Number(p),gn=Number(g);
+    note=isPrimRootN(gn,pn)?'g = '+gn+' is a primitive root of '+pn+', so it generates every value from 1 to '+(pn-1)+'.':
+      'Heads up: g = '+gn+' is not a primitive root of '+pn+', so its powers only cover part of the clock. The exchange still works, but there are fewer possible public values for Eve to search. Check the modular clock.';
+  } else if(p===G14&&g===2n){
+    note='This is the standard 2048-bit MODP group 14 from RFC 3526. p is a safe prime, and g = 2 generates a subgroup of huge prime order, which is what you want.';
+  } else note='p is too large to check the generator here. Real systems use standardized groups (RFC 3526, RFC 7919) instead of making up their own.';
+  msg.className='msg info';msg.textContent=note;
+  const bits=p.toString(2).length;
+  $('calcOut').innerHTML='<table class="out-table"><tbody>'+
+   '<tr><th>Prime p <span class="who pub">public</span></th><td>'+bigHTML(p)+' <span class="seq">('+bits+' bits)</span></td></tr>'+
+   '<tr><th>Generator g <span class="who pub">public</span></th><td>'+bigHTML(g)+'</td></tr>'+
+   '<tr><th>Alice\'s secret a <span class="who sec">secret</span></th><td>'+bigHTML(a)+'</td></tr>'+
+   '<tr><th>Bob\'s secret b <span class="who sec">secret</span></th><td>'+bigHTML(b)+'</td></tr>'+
+   '<tr><th>A = g<sup>a</sup> mod p <span class="who pub">sent</span></th><td>'+bigHTML(A)+'</td></tr>'+
+   '<tr><th>B = g<sup>b</sup> mod p <span class="who pub">sent</span></th><td>'+bigHTML(B)+'</td></tr>'+
+   '<tr><th>Alice: B<sup>a</sup> mod p</th><td>'+bigHTML(sA)+'</td></tr>'+
+   '<tr><th>Bob: A<sup>b</sup> mod p</th><td>'+bigHTML(sB)+'</td></tr>'+
+   '<tr><th>Result</th><td>'+(sA===sB?'<b>Match.</b> Both computed the same secret in '+ms.toFixed(1)+' ms. Eve saw p, g, A and B, and would need to recover a or b from them.':'<b>Mismatch</b>, which should be impossible. Check the inputs.')+'</td></tr>'+
+   '</tbody></table>';
+}
+$('calcRun').addEventListener('click',runCalc);
+$('calcBig').addEventListener('click',()=>{
+  $('cP').value=G14.toString();$('cG').value='2';
+  $('cA').value=(randBig(256)|(1n<<255n)).toString();$('cB').value=(randBig(256)|(1n<<255n)).toString();
+  runCalc();
+});
+$('calcReset').addEventListener('click',()=>{$('cP').value='23';$('cG').value='5';$('cA').value='6';$('cB').value='15';runCalc();});
+runCalc();
+
+/* ---------- 5 RACE ---------- */
+const CLASS_P=999983,CLASS_G=5;
+const R={p:0,g:0,A:0,secret:null,running:false,rate:null,stopFlag:false};
+function randomPrimeBits(bits){
+  for(;;){
+    let n=randBig(bits)|(1n<<BigInt(bits-1))|1n;
+    if(isProbPrime(n))return Number(n);
+  }
+}
+function newPuzzle(){
+  const bits=+$('raceBits').value;
+  R.p=randomPrimeBits(bits);
+  R.g=2;while(!isPrimRootN(R.g,R.p))R.g++;
+  const a=randRange(2,R.p-2);R.secret=a;
+  R.A=Number(modPowB(BigInt(R.g),BigInt(a),BigInt(R.p)));
+  showPuzzle();
+}
+function showPuzzle(){
+  $('racePuzzle').innerHTML='<span>p = '+fmt(R.p)+'</span><span>g = '+R.g+'</span><span>A = '+fmt(R.A)+'</span><span>find a</span>';
+  $('raceResult').className='result';$('raceResult').innerHTML='';
+  $('raceTries').textContent='0';$('raceTime').textContent='0.0 s';$('raceBarFill').style.width='0';$('raceBar').setAttribute('aria-valuenow','0');
+}
+function setRaceSrc(v){
+  $('raceRandomBox').hidden=v!=='random';$('raceClassBox').hidden=v!=='class';
+  if(v==='random')newPuzzle(); else {$('racePuzzle').textContent='Enter a code you overheard, then choose "Use this code."';}
+}
+$('raceSource').addEventListener('change',e=>setRaceSrc(e.target.value));
+$('raceBits').addEventListener('input',e=>{$('raceBitsOut').textContent=e.target.value;});
+$('raceBits').addEventListener('change',newPuzzle);
+$('raceNew').addEventListener('click',newPuzzle);
+$('raceUseCode').addEventListener('click',()=>{
+  const v=parseInt($('raceCode').value.replace(/\D/g,''),10);
+  if(!(v>=1&&v<CLASS_P)){$('racePuzzle').textContent='That code should be a number between 1 and 999,982.';return;}
+  R.p=CLASS_P;R.g=CLASS_G;R.A=v;R.secret=null;showPuzzle();
+});
+function fmtDuration(log10s){
+  if(log10s<Math.log10(60))return Math.pow(10,log10s).toFixed(log10s<0?3:1)+' seconds';
+  if(log10s<Math.log10(3600))return (Math.pow(10,log10s)/60).toFixed(1)+' minutes';
+  if(log10s<Math.log10(86400))return (Math.pow(10,log10s)/3600).toFixed(1)+' hours';
+  const ly=log10s-Math.log10(31557600);
+  if(ly<0)return (Math.pow(10,log10s)/86400).toFixed(1)+' days';
+  if(ly<6)return fmt(Math.round(Math.pow(10,ly)))+' years';
+  const uni=ly-Math.log10(1.38e10);
+  return 'about 10'+sup(Math.floor(ly))+' years'+(uni>0?' (10'+sup(Math.floor(uni))+' times the age of the universe)':'');
+}
+function fillScale(){
+  if(!R.rate)return;
+  const lr=Math.log10(R.rate);
+  const rows=[[36,'36 bits'],[64,'64 bits'],[128,'128 bits'],[2048,'2048 bits, counting one by one'],[112,'2048 bits, best known attack (about 2'+sup(112)+' work)']];
+  $('raceScaleBody').innerHTML=rows.map(r=>'<tr><td>'+r[1]+'</td><td>'+fmtDuration(r[0]*Math.log10(2)-lr)+'</td></tr>').join('');
+}
+$('raceStart').addEventListener('click',()=>{
+  if(R.running||!R.p)return;
+  R.running=true;R.stopFlag=false;$('raceStart').disabled=true;$('raceStop').disabled=false;
+  const p=R.p,g=R.g,A=R.A,N=p-1;let x=1,cur=g%p,found=false;const t0=performance.now();
+  $('raceResult').className='result';$('raceResult').innerHTML='';
+  function finish(){
+    R.running=false;$('raceStart').disabled=false;$('raceStop').disabled=true;
+    const el=(performance.now()-t0)/1000;R.rate=x/Math.max(el,0.001);
+    $('raceRate').textContent=fmt(Math.round(R.rate))+' tries per second';
+    fillScale();
+    const res=$('raceResult');
+    if(found){res.className='result good';res.innerHTML='<b>Cracked: a = '+fmt(x)+'.</b> Checked '+fmt(x)+' possibilities in '+el.toFixed(2)+' s. With the secret, Eve can compute the shared key herself. Try a bigger prime.';}
+    else{res.className='result neutral';res.innerHTML='Stopped after '+fmt(x)+' tries. The table below uses your measured speed to show how this scales.';}
+  }
+  function chunk(){
+    const end=performance.now()+35;
+    while(performance.now()<end){
+      for(let i=0;i<200000;i++){
+        if(cur===A){found=true;break;}
+        cur=cur*g%p;x++;
+        if(x>N)break;
+      }
+      if(found||x>N)break;
+    }
+    const el=(performance.now()-t0)/1000;
+    $('raceTries').textContent=fmt(x);$('raceTime').textContent=el.toFixed(1)+' s';
+    $('raceRate').textContent=fmt(Math.round(x/Math.max(el,0.001)))+' tries per second';
+    const pct=Math.min(100,x/N*100);$('raceBarFill').style.width=pct+'%';$('raceBar').setAttribute('aria-valuenow',Math.round(pct));
+    if(found||x>N||R.stopFlag)finish(); else setTimeout(chunk,0);
+  }
+  chunk();
+});
+$('raceStop').addEventListener('click',()=>{R.stopFlag=true;});
+newPuzzle();
+
+/* ---------- 6 CLASSROOM ---------- */
+const K={role:'Alice',secrets:[],sel:0,A:null,s:null};
+function colorFromNum(n){const h=(n*137.508)%360,s=55+(n%30),l=40+(n%22);return 'hsl('+h.toFixed(1)+', '+s+'%, '+l+'%)';}
+function fmtCode(n){const s=String(n).padStart(6,'0');return s.slice(0,3)+' '+s.slice(3);}
+function shuffleClass(){
+  K.secrets=[];for(let i=0;i<8;i++)K.secrets.push(randRange(2,CLASS_P-2));
+  K.sel=0;K.s=null;
+  const pal=$('classPalette');pal.innerHTML='';
+  K.secrets.forEach((sec,i)=>{
+    const b=document.createElement('button');b.type='button';
+    const c=colorFromNum(sec);b.className='swatch '+(isLight(c)?'on-light':'on-dark');b.style.background=c;
+    b.textContent=PAINTS[i].sym;b.setAttribute('aria-label','Secret paint '+(i+1));
+    b.addEventListener('click',()=>{K.sel=i;K.s=null;renderClass();});
+    pal.appendChild(b);
+  });
+  renderClass();
+}
+function renderClass(){
+  [...$('classPalette').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===K.sel));
+  K.A=modPowN(CLASS_G,K.secrets[K.sel],CLASS_P);
+  setVessel('classMyPot',colorFromNum(K.A),null,true);
+  $('classMyCode').textContent=fmtCode(K.A);
+  if(K.s===null){setVessel('classSharedPot',null);$('classSharedText').textContent='Your shared paint appears here.';$('classSharedNum').textContent='';}
+}
+function setRole(r){K.role=r;$('roleAlice').setAttribute('aria-pressed',r==='Alice');$('roleBob').setAttribute('aria-pressed',r==='Bob');}
+$('roleAlice').addEventListener('click',()=>setRole('Alice'));
+$('roleBob').addEventListener('click',()=>setRole('Bob'));
+$('classShuffle').addEventListener('click',shuffleClass);
+$('hideSecret').addEventListener('change',e=>document.body.classList.toggle('hide-secret',e.target.checked));
+$('classMix').addEventListener('click',()=>{
+  const msg=$('classMsg');msg.className='msg';msg.textContent='';
+  const v=parseInt($('classPartner').value.replace(/\D/g,''),10);
+  if(!(v>=2&&v<CLASS_P)){msg.className='msg err';msg.textContent='Codes are six digits, between 000 002 and 999 982. Check the number your partner read out.';return;}
+  if(v===K.A){msg.className='msg err';msg.textContent='That\'s your own code. Type the code your partner read out.';return;}
+  K.s=modPowN(v,K.secrets[K.sel],CLASS_P);
+  setVessel('classSharedPot',colorFromNum(K.s),null,true);
+  const other=K.role==='Alice'?'Bob':'Alice';
+  $('classSharedText').textContent='Hold this up next to '+other+'\'s screen. If you both typed the right codes, your pots are the same color, and nobody else in the room can make it.';
+  $('classSharedNum').textContent=fmtCode(K.s);
+});
+$('showSharedNum').addEventListener('change',e=>{$('classSharedNum').hidden=!e.target.checked;});
+shuffleClass();
+
+/* ---------- 7 QUIZ ---------- */
+const QUIZ=[
+  {q:'Eve records p, g, A and B. What can she compute directly from those?',a:'Nothing secret. She would first have to solve a discrete logarithm to get a or b.',d:['The shared secret, by multiplying A and B','Alice\'s secret a, by dividing A by g','The shared secret, by raising A to the power B']},
+  {q:'In the paint studio, why does Eve\'s shortcut of pouring both mixes together fail?',a:'Her pot contains the public paint twice, and she can\'t remove one part.',d:['She doesn\'t know which pot came from Alice','Paint colors change as they cross the channel','The final pot is encrypted']},
+  {q:'What stops Mallory from swapping in her own public values?',a:'Authenticating the exchange, for example signatures checked against certificates',d:['Using a bigger prime p','Changing the generator g every session','Sending A and B twice']},
+  {q:'On the modular clock, g reaches only half of the positions. Why is that a problem?',a:'There are fewer possible public values, so Eve\'s search shrinks.',d:['Alice and Bob would compute different secrets','The exchange becomes slower','It reveals p to Eve']},
+  {q:'Where does forward secrecy come from?',a:'Using fresh (ephemeral) secrets for every session',d:['Using the same secret for years','Using a prime with more than 2048 bits','Hiding p and g from Eve']},
+  {q:'Roughly what happens to brute-force work when p gets one bit longer?',a:'It doubles.',d:['It goes up by one try','It stays the same','It goes up tenfold']}
+];
+let quizState=[];
+function shuffle(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function buildQuiz(){
+  const box=$('quiz');box.innerHTML='';quizState=QUIZ.map(()=>null);
+  shuffle(QUIZ.map((x,i)=>i)).forEach((qi,n)=>{
+    const Q=QUIZ[qi];const d=document.createElement('div');d.className='quiz-q';
+    d.innerHTML='<h4>'+(n+1)+'. '+Q.q+'</h4><div class="opts" role="group" aria-label="Answer choices for question '+(n+1)+'"></div><p class="fb" aria-live="polite"></p>';
+    const opts=d.querySelector('.opts');
+    shuffle([Q.a,...Q.d]).forEach(t=>{
+      const b=document.createElement('button');b.type='button';b.textContent=t;
+      b.addEventListener('click',()=>{
+        if(quizState[qi]!==null)return;
+        const ok=t===Q.a;quizState[qi]=ok;
+        b.classList.add(ok?'right':'wrong');
+        if(!ok)[...opts.children].forEach(o=>{if(o.textContent===Q.a)o.classList.add('right');});
+        d.querySelector('.fb').textContent=ok?'Correct.':'Not quite. The highlighted answer is correct.';
+        [...opts.children].forEach(o=>o.setAttribute('aria-disabled','true'));
+        const done=quizState.filter(v=>v!==null).length;
+        $('quizScore').textContent='Score: '+quizState.filter(v=>v).length+' of '+done+' answered'+(done===QUIZ.length?' (all done)':'');
+      });
+      opts.appendChild(b);
+    });
+    box.appendChild(d);
+  });
+  $('quizScore').textContent='';
+}
+$('quizReset').addEventListener('click',buildQuiz);
+buildQuiz();
+
+/* deep link */
+const hash=location.hash.replace('#','');
+const start=tabs.find(t=>t.id==='tab-'+hash);
+if(start)selectTab(start);
+})();
+</script>
 </body>
 </html>
