@@ -1,933 +1,1399 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Designing AI-Resistant Assignments: A Teacher Activity</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RSA Lab: locks anyone can close, seals only one person can make</title>
+<meta name="description" content="An interactive RSA public-key cryptography lab: padlock and wax-seal analogies, a step-by-step toy RSA workshop, real 2048-bit encryption and signatures with the Web Crypto API, hybrid RSA plus AES encryption, a two-device classroom exchange, and a factoring race.">
 <style>
 :root{
-  --bg:#F3F6FB; --surface:#FFFFFF; --surface-2:#E9EFF8; --ink:#13233F; --muted:#4F5E78; --line:#D3DCE9;
-  --navy:#0047AB; --navy-ink:#0047AB; --green:#00A86B; --green-ink:#00784C;
-  --navy-soft:#E1EAFA; --green-soft:#DCF4EA; --warn:#A8480F; --warn-soft:#FBEADB; --bad:#B42318; --bad-soft:#FDE7E5;
-  --on-accent:#FFFFFF; --shadow:0 1px 2px rgba(19,35,63,.06), 0 8px 24px -12px rgba(19,35,63,.18);
-  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --body:"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
-  color-scheme:light;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#DCE5EF;
+  --surface:#FFFFFF;
+  --surface-2:#EEF2F7;
+  --ink:#13213F;
+  --muted:#4A5874;
+  --line:#BFCBDA;
+  --navy:#233F8C;
+  --red:#C62E34;
+  --brass:#A97A12;
+  --brass-light:#E1B54A;
+  --steel:#8D97A8;
+  --steel-dark:#5C6779;
+  --wax:#8C1C2C;
+  --wax-light:#B8394A;
+  --ok:#1E7A4F;
+  --ok-tint:#E1F2E9;
+  --bad:#B3261E;
+  --bad-tint:#FBE7E5;
+  --eve:#6B3FA8;
+  --eve-tint:#EEE7F8;
+  --focus:#E9A800;
+  --kraft:#C9A56B;
+  --kraft-dark:#8E6E3A;
+  --paper:#FBFBF8;
+  --on-dark:#FFFFFF;
+  --shade:#000000;
+  --font-body:Charter,"Bitstream Charter","Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  --font-head:"Avenir Next Condensed","DIN Condensed","Roboto Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --font-ui:"Avenir Next","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --r:6px;
+  --r-lg:14px;
+  --gap:clamp(12px,2vw,22px);
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0D1524; --surface:#142036; --surface-2:#1B2945; --ink:#E6ECF6; --muted:#A3B2CB; --line:#2A3B5C;
-    --navy:#5B93F0; --navy-ink:#8DB4F7; --green:#2ED39A; --green-ink:#5FE0B3;
-    --navy-soft:#1A2D52; --green-soft:#103B31; --warn:#F2A35E; --warn-soft:#3A2A19; --bad:#FF8F85; --bad-soft:#3D1D1D;
-    --on-accent:#0D1524; --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
-    color-scheme:dark;
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0D1630;
+    --surface:#16213F;
+    --surface-2:#1F2C50;
+    --ink:#E7ECF8;
+    --muted:#A9B5CF;
+    --line:#33436B;
+    --navy:#94B1FF;
+    --red:#FF8087;
+    --brass:#E2B449;
+    --brass-light:#F2D17E;
+    --steel:#9AA5B8;
+    --steel-dark:#C7CFDC;
+    --wax:#C2414F;
+    --wax-light:#E06A77;
+    --ok:#5FCB95;
+    --ok-tint:#173A2B;
+    --bad:#FF8A80;
+    --bad-tint:#3D1D1D;
+    --eve:#C29BF5;
+    --eve-tint:#2A2149;
+    --focus:#FFCB3D;
+    --kraft:#B48C52;
+    --kraft-dark:#E0C08A;
+    --paper:#EEF0F4;
   }
 }
-:root[data-theme="dark"]{
-  --bg:#0D1524; --surface:#142036; --surface-2:#1B2945; --ink:#E6ECF6; --muted:#A3B2CB; --line:#2A3B5C;
-  --navy:#5B93F0; --navy-ink:#8DB4F7; --green:#2ED39A; --green-ink:#5FE0B3;
-  --navy-soft:#1A2D52; --green-soft:#103B31; --warn:#F2A35E; --warn-soft:#3A2A19; --bad:#FF8F85; --bad-soft:#3D1D1D;
-  --on-accent:#0D1524; --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.6);
-  color-scheme:dark;
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:1.075rem;line-height:1.6}
+h1,h2,h3,h4{font-family:var(--font-head);font-weight:700;line-height:1.1;margin:0;letter-spacing:.005em}
+h2{font-size:clamp(1.8rem,3.6vw,2.6rem)}
+h3{font-size:1.35rem}
+h4{font-size:1.05rem}
+p{margin:.35em 0 .85em}
+a{color:var(--navy)}
+code,.mono{font-family:var(--font-mono);font-size:.88em}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.skip-link{position:absolute;left:-999px;top:8px;background:var(--surface);color:var(--ink);padding:10px 14px;border-radius:var(--r);z-index:10}
+.skip-link:focus{left:8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* airmail stripe: the signature device */
+.airmail{height:10px;background:repeating-linear-gradient(-45deg,var(--red) 0 14px,var(--paper) 14px 22px,var(--navy) 22px 36px,var(--paper) 36px 44px)}
+
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:clamp(16px,3vw,36px);max-width:1320px;margin:0 auto;padding:clamp(14px,3vw,32px)}
+.sidebar{position:sticky;top:16px;align-self:start}
+.brand h1{font-size:clamp(2rem,3.4vw,2.7rem);line-height:.98}
+.brand p{font-size:.98rem;color:var(--muted)}
+.route{list-style:none;margin:18px 0 0;padding:0;position:relative}
+.route::before{content:"";position:absolute;left:19px;top:22px;bottom:22px;border-left:2px dashed var(--line)}
+.route button{position:relative;display:grid;grid-template-columns:40px 1fr;align-items:center;gap:10px;width:100%;min-height:48px;padding:4px 8px 4px 0;border:0;background:none;color:var(--ink);font:inherit;font-family:var(--font-ui);font-size:.97rem;text-align:left;cursor:pointer;border-radius:var(--r)}
+.route .stop{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--surface);border:2px solid var(--line);font-weight:700;font-size:.9rem}
+.route button[aria-selected="true"]{font-weight:700}
+.route button[aria-selected="true"] .stop{background:var(--red);border-color:var(--red);color:var(--on-dark)}
+.route button:hover .stop{border-color:var(--navy)}
+@media (max-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .sidebar{position:static;min-width:0}
+  .route button{white-space:nowrap}
+  .route{display:flex;overflow-x:auto;gap:6px;padding-bottom:6px}
+  .route::before{display:none}
+  .route li{flex:0 0 auto}
+  .route button{grid-template-columns:32px auto;padding-right:14px;background:var(--surface);border:1px solid var(--line);border-radius:999px}
+  .route .stop{width:32px;height:32px}
 }
-*,*::before,*::after{box-sizing:inherit}
-html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 80px)}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
-h1,h2,h3,h4{font-family:var(--display);line-height:1.15;margin:0 0 .5em;letter-spacing:-.01em}
-h1{font-size:clamp(2rem,4.6vw,3.4rem);font-weight:800;letter-spacing:-.025em}
-h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:800}
-h3{font-size:1.3rem;font-weight:700}
-h4{font-size:1.05rem;font-weight:700}
-p{margin:0 0 1em}
-a{color:var(--navy-ink)}
-button,input,textarea,select{font:inherit;color:inherit}
-:focus-visible{outline:3px solid var(--green);outline-offset:2px;border-radius:6px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-/* Header */
-.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
-.topbar-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:12px 20px}
-.brand{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
-.mark{width:38px;height:38px;border-radius:10px;background:var(--navy);display:grid;place-items:center;flex:none}
-.mark svg{width:22px;height:22px}
-.brand-text{min-width:0}
-.brand-text strong{display:block;font-family:var(--display);font-size:1.05rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brand-text span{display:block;font-size:.82rem;color:var(--muted)}
-.meter{display:flex;align-items:center;gap:10px;font-size:.88rem;color:var(--muted)}
-.meter-track{width:140px;height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden}
-.meter-fill{height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--green));transition:width .5s ease}
-.meter b{color:var(--ink);font-variant-numeric:tabular-nums}
-.theme-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface-2);border-radius:99px;padding:7px 14px;cursor:pointer;font-size:.9rem;font-weight:500}
-.theme-btn svg{width:18px;height:18px}
+.panel{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 1px 0 var(--line)}
+.panel-body{padding:clamp(16px,3vw,34px)}
+.panel-head{max-width:68ch;margin-bottom:16px}
+.panel-head p{color:var(--muted)}
+.subhead{margin:26px 0 8px;padding-top:20px;border-top:1px solid var(--line)}
 
-/* Shell */
-.shell{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:250px minmax(0,1fr);gap:32px;padding:28px 20px 80px}
-.sidenav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 86px);align-self:start}
-.sidenav ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;counter-reset:step}
-.sidenav button{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:0;background:transparent;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--muted);font-weight:500}
-.sidenav button:hover{background:var(--surface-2);color:var(--ink)}
-.sidenav button[aria-current="page"]{background:var(--navy-soft);color:var(--navy-ink);font-weight:600}
-.sidenav .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.78rem;font-weight:700;flex:none;color:var(--muted);background:var(--surface)}
-.sidenav button[aria-current="page"] .dot{border-color:var(--navy);color:var(--navy-ink)}
-.sidenav .dot.done{background:var(--green);border-color:var(--green);color:var(--on-accent)}
-.sidenav .hint{margin-top:18px;font-size:.85rem;color:var(--muted);padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+/* controls */
+button,.btn{font:inherit;font-family:var(--font-ui);font-size:.97rem;min-height:44px;min-width:44px;padding:8px 16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--navy);border-color:var(--navy);color:var(--on-dark);font-weight:650}
+@media (prefers-color-scheme:dark){button.primary{color:var(--bg)}}
+button.danger{border-color:var(--red);color:var(--red);background:var(--surface)}
+button:disabled{opacity:.42;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+label.field{display:block;font-family:var(--font-ui);font-weight:600;font-size:.93rem;margin-bottom:12px}
+label.field .hint{display:block;font-weight:400;color:var(--muted);font-size:.85rem}
+input[type=text],input[type=number],textarea,select{font:inherit;font-family:var(--font-ui);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:9px 11px;min-height:44px;width:100%;margin-top:4px}
+@media (prefers-color-scheme:dark){input[type=text],input[type=number],textarea,select{background:var(--surface-2)}}
+textarea{resize:vertical;line-height:1.45}
+input[type=text],input[type=number],textarea,select{font-weight:400}
+textarea.code{font-family:var(--font-mono);font-size:.82rem;word-break:break-all}
+fieldset{border:0;padding:0;margin:0 0 12px}
+legend{font-family:var(--font-ui);font-weight:650;margin-bottom:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg label{position:relative}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg span{display:inline-grid;place-items:center;min-height:44px;padding:6px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);cursor:pointer;font-family:var(--font-ui)}
+.seg input:checked + span{background:var(--navy);color:var(--on-dark);border-color:var(--navy)}
+@media (prefers-color-scheme:dark){.seg input:checked + span{color:var(--bg)}}
+.seg input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
+.switch{display:inline-flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;font-family:var(--font-ui);font-size:.95rem}
+.switch input{appearance:none;width:46px;height:26px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);position:relative;margin:0;cursor:pointer;flex:0 0 auto}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform .2s}
+.switch input:checked{background:var(--navy);border-color:var(--navy)}
+.switch input:checked::after{transform:translateX(20px);background:var(--surface)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+@media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--surface-2);border-radius:var(--r-lg);padding:clamp(14px,2.2vw,20px);min-width:0}
+.card h3{margin-bottom:6px}
+.msg{border-radius:var(--r);padding:10px 14px;margin:10px 0;font-family:var(--font-ui);font-size:.95rem}
+.msg:empty{display:none}
+.msg.good{background:var(--ok-tint);border:1px solid var(--ok)}
+.msg.bad{background:var(--bad-tint);border:1px solid var(--bad)}
+.msg.info{background:var(--surface-2);border:1px solid var(--line)}
+.narration{font-family:var(--font-ui);background:var(--surface-2);border-left:4px solid var(--navy);padding:12px 16px;border-radius:0 var(--r) var(--r) 0;min-height:3.2em}
+.key-chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:.82rem;font-weight:650;padding:2px 10px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.key-chip.pub{color:var(--navy)}
+.key-chip.priv{color:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 26px;font-family:var(--font-ui);font-size:.92rem;background:var(--surface-2);border-radius:var(--r-lg);padding:12px 16px;margin-bottom:18px}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend svg{width:30px;height:30px}
 
-main{min-width:0}
-.view{display:none}
-.view.active{display:block;animation:in .35s ease}
-@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
-.lead{font-size:1.15rem;color:var(--muted);max-width:68ch}
-.section{margin-top:44px}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:var(--shadow)}
-.muted{color:var(--muted)}
-.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:10px;padding:11px 18px;font-weight:600;cursor:pointer;background:var(--navy);color:var(--on-accent)}
-.btn:hover{filter:brightness(1.08)}
-.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
-.btn.green{background:var(--green)}
-.btn.ghost{background:transparent;color:var(--navy-ink);border:1.5px solid var(--navy)}
-.btn.quiet{background:var(--surface-2);color:var(--ink)}
-.btn.danger{background:transparent;color:var(--bad);border:1.5px solid var(--bad)}
-.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+/* SVG parts */
+.lock-body{fill:var(--brass);stroke:var(--kraft-dark);stroke-width:2}
+.lock-shackle{fill:none;stroke:var(--steel-dark);stroke-width:7;stroke-linecap:round;transition:transform .45s cubic-bezier(.3,1.6,.6,1)}
+.lock-hole{fill:var(--ink)}
+.open .lock-shackle{transform:translate(0,-12px)}
+.key-metal{fill:var(--steel);stroke:var(--steel-dark);stroke-width:2}
+.box-wood{fill:var(--kraft);stroke:var(--kraft-dark);stroke-width:2}
+.box-lid{fill:var(--kraft);stroke:var(--kraft-dark);stroke-width:2;transition:transform .5s}
+.box-band{fill:var(--kraft-dark);opacity:.35}
+.box-note{fill:var(--paper);stroke:var(--line)}
+.box.opened .box-lid{transform:translate(0,-18px) rotate(-14deg);transform-origin:8px 30px}
+.wax-disc{fill:var(--wax);stroke:var(--wax-light);stroke-width:2}
+.wax-ray{stroke:var(--paper);stroke-width:3;stroke-linecap:round;opacity:.85}
+.wax-dot{fill:var(--paper);opacity:.9}
+.fp{font-family:var(--font-mono);font-size:.8rem;color:var(--muted)}
 
-/* Hero: hardening demo */
-.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:36px;align-items:center}
-.harden{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:var(--shadow)}
-.harden .prompt{font-size:1rem;padding:16px 18px;border-radius:12px;background:var(--surface-2);transition:all .4s ease}
-.harden .prompt.before.struck{opacity:.5;text-decoration:line-through;text-decoration-color:var(--bad)}
-.harden .arrow{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:.85rem;color:var(--muted)}
-.harden .arrow::before,.harden .arrow::after{content:"";flex:1;height:1px;background:var(--line)}
-.harden .after{background:var(--green-soft);border-left:4px solid var(--green)}
-.harden .after ul{margin:.4em 0 0;padding-left:1.1em}
-.harden .after li{opacity:0;transform:translateX(-6px);transition:all .4s ease}
-.harden .after li.on{opacity:1;transform:none}
-.harden .tagline{font-size:.82rem;color:var(--green-ink);font-weight:600;margin-bottom:4px}
-
-.steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;counter-reset:s}
-.steps li{counter-increment:s;padding:18px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
-.steps li::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--navy);color:var(--on-accent);font-weight:700;font-family:var(--display);margin-bottom:10px}
-.steps strong{display:block;font-family:var(--display)}
-.steps span{font-size:.92rem;color:var(--muted)}
-
-.callout{border-radius:14px;padding:16px 18px;background:var(--warn-soft);border-left:4px solid var(--warn);margin:20px 0}
-.callout strong{color:var(--warn)}
-
-/* Accordion */
-.acc{border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:12px;overflow:hidden}
-.acc > button{width:100%;display:flex;align-items:center;gap:14px;padding:18px 20px;background:transparent;border:0;cursor:pointer;text-align:left}
-.acc > button .ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--navy-soft);color:var(--navy-ink);font-family:var(--display);font-weight:800;flex:none}
-.acc > button .t{flex:1}
-.acc > button .t strong{display:block;font-family:var(--display);font-size:1.12rem}
-.acc > button .t span{font-size:.9rem;color:var(--muted)}
-.acc > button .chev{transition:transform .25s ease;color:var(--muted)}
-.acc[open-state="true"] > button .chev{transform:rotate(180deg)}
-.acc .body{display:none;padding:0 20px 20px 74px}
-.acc[open-state="true"] .body{display:block}
-.comp{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
-.comp p{margin:0;font-size:.95rem}
-.comp p strong{display:block}
-.rate{display:flex;gap:4px}
-.rate button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 10px;font-size:.8rem;cursor:pointer;color:var(--muted)}
-.rate button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--on-accent)}
-
-/* Tactic grid */
-.filters{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
-.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 14px;cursor:pointer;font-size:.9rem;font-weight:500;color:var(--muted)}
-.chip[aria-pressed="true"]{border-color:var(--navy);background:var(--navy-soft);color:var(--navy-ink)}
-.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
-.tile{position:relative;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-height:150px;transition:border-color .2s, transform .2s}
-.tile:hover{border-color:var(--navy);transform:translateY(-2px)}
-.tile[aria-pressed="true"]{border-color:var(--navy);background:var(--navy-soft)}
-.tile .num{font-family:var(--display);font-weight:800;font-size:1.6rem;color:var(--navy-ink);line-height:1}
-.tile .nm{font-family:var(--display);font-weight:700;font-size:1.08rem}
-.tile .tg{font-size:.84rem;color:var(--muted);line-height:1.4}
-.tile .done-badge{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;background:var(--green);color:var(--on-accent);display:none;place-items:center;font-size:.8rem;font-weight:700}
-.tile.done .done-badge{display:grid}
-.tile.seen:not(.done) .num::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-left:8px;vertical-align:middle}
-.pips{display:flex;gap:3px;margin-top:auto;align-items:center;font-size:.72rem;color:var(--muted)}
-.pips i{width:14px;height:6px;border-radius:3px;background:var(--surface-2);display:inline-block}
-.pips i.on{background:var(--green)}
-.legend{font-size:.85rem;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap}
-.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
-.legend .l1::before{background:var(--warn)}
-.legend .l2::before{background:var(--green)}
-
-.detail{margin-top:24px;scroll-margin-top:100px}
-.detail-head{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
-.bignum{font-family:var(--display);font-weight:800;font-size:4.2rem;line-height:.85;color:var(--navy-ink)}
-.detail-head .meta{flex:1;min-width:220px}
-.ratings{display:flex;gap:22px;flex-wrap:wrap;font-size:.88rem;color:var(--muted);margin-top:4px}
-.ratings .bar{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle}
-.ratings .bar i{width:16px;height:8px;border-radius:3px;background:var(--surface-2)}
-.ratings .bar.r i.on{background:var(--green)}
-.ratings .bar.e i.on{background:var(--warn)}
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:22px 0 18px;overflow-x:auto}
-.tabs button{border:0;background:transparent;padding:10px 14px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
-.tabs button[aria-selected="true"]{color:var(--navy-ink);border-bottom-color:var(--navy)}
-.tabpanel{max-width:72ch}
-.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;max-width:none}
-.app{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg)}
-.app .fld{font-size:.8rem;font-weight:600;color:var(--green-ink)}
-.app p{margin:.3em 0 0;font-size:.95rem}
-.why{background:var(--navy-soft);border-radius:12px;padding:14px 16px;margin-top:6px}
-.opts{display:flex;flex-direction:column;gap:8px;margin:14px 0}
-.opt{text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;cursor:pointer;display:flex;gap:12px;align-items:flex-start}
-.opt:hover:not(:disabled){border-color:var(--navy)}
-.opt .k{width:26px;height:26px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:700;font-size:.82rem;flex:none}
-.opt.right{border-color:var(--green);background:var(--green-soft)}
-.opt.right .k{background:var(--green);color:var(--on-accent)}
-.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
-.opt.wrong .k{background:var(--bad);color:var(--on-accent)}
-.opt:disabled{cursor:default}
-.fb{border-radius:12px;padding:12px 16px;font-size:.95rem}
-.fb.good{background:var(--green-soft);border-left:4px solid var(--green)}
-.fb.bad{background:var(--bad-soft);border-left:4px solid var(--bad)}
-.pager{display:flex;justify-content:space-between;gap:12px;margin-top:24px;flex-wrap:wrap}
-
-/* Lab */
-.lab{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:24px;align-items:start}
-.bases{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-.base{text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;cursor:pointer;font-size:.93rem}
-.base[aria-pressed="true"]{border-color:var(--navy);background:var(--navy-soft)}
-.base small{display:block;color:var(--muted);font-size:.78rem;font-weight:600;margin-bottom:2px}
-.tchips{display:flex;flex-wrap:wrap;gap:8px}
-.tchip{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 14px 7px 8px;cursor:pointer;font-size:.9rem;display:inline-flex;gap:8px;align-items:center}
-.tchip .n{font-family:var(--display);font-weight:800;font-size:.8rem;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2)}
-.tchip[aria-pressed="true"]{border-color:var(--green);background:var(--green-soft)}
-.tchip[aria-pressed="true"] .n{background:var(--green);color:var(--on-accent)}
-.gauge{position:sticky;top:calc(env(safe-area-inset-top,0px) + 96px);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--shadow)}
-.gauge h4{font-size:.95rem;margin-bottom:12px}
-.tube{position:relative;width:64px;height:220px;margin:0 auto;border-radius:32px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
-.tube .fill{position:absolute;inset:auto 0 0 0;height:10%;background:linear-gradient(0deg,var(--navy),var(--green));transition:height .6s cubic-bezier(.2,.8,.2,1)}
-.tube .cap{position:absolute;left:0;right:0;top:5%;border-top:2px dashed var(--bad);opacity:.7}
-.gauge .pct{font-family:var(--display);font-weight:800;font-size:2.4rem;line-height:1;margin-top:12px;font-variant-numeric:tabular-nums}
-.gauge .lbl{font-size:.85rem;color:var(--muted)}
-.load{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:.88rem}
-.load b{display:block;font-family:var(--display);font-size:1.1rem}
-.out{margin-top:22px;border-radius:14px;border:1px solid var(--line);background:var(--surface);overflow:hidden}
-.out .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;background:var(--surface-2);font-weight:600;font-size:.92rem;flex-wrap:wrap}
-.out .txt{padding:16px 18px}
-.out .orig{color:var(--muted);font-size:.95rem}
-.out ol{margin:.5em 0 0;padding-left:1.3em}
-.out li{margin-bottom:.5em}
-.out li b{color:var(--green-ink)}
-.empty{color:var(--muted);font-style:italic}
-
-/* Quiz */
-.qwrap{max-width:760px}
-.qtop{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;font-size:.9rem;color:var(--muted)}
-.qdots{display:flex;gap:5px}
-.qdots i{width:22px;height:6px;border-radius:3px;background:var(--surface-2)}
-.qdots i.cur{background:var(--navy)}
-.qdots i.ok{background:var(--green)}
-.qdots i.no{background:var(--bad)}
-.qtext{font-family:var(--display);font-size:1.3rem;font-weight:700;line-height:1.3}
-.score{text-align:center;padding:30px}
-.score .big{font-family:var(--display);font-weight:800;font-size:4rem;line-height:1}
-
-/* Glossary flip cards */
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-.flip{perspective:900px;height:190px;border:0;padding:0;background:transparent;cursor:pointer;text-align:left}
-.flip .in{position:relative;width:100%;height:100%;transition:transform .55s;transform-style:preserve-3d}
-.flip.flipped .in{transform:rotateY(180deg)}
-.flip .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;padding:18px;display:flex;flex-direction:column;border:1px solid var(--line)}
-.flip .front{background:var(--surface);justify-content:space-between}
-.flip .front strong{font-family:var(--display);font-size:1.25rem;line-height:1.2}
-.flip .front span{font-size:.8rem;color:var(--muted)}
-.flip .back{background:var(--navy);color:var(--on-accent);transform:rotateY(180deg);font-size:.92rem;line-height:1.45;overflow:auto}
-@media (prefers-reduced-motion: reduce){.flip .in{transition:none}}
-
-/* Log */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.stat{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface)}
-.stat b{display:block;font-family:var(--display);font-size:1.9rem;line-height:1.1;font-variant-numeric:tabular-nums}
-.stat span{font-size:.86rem;color:var(--muted)}
-.stat.ok{border-color:var(--green);background:var(--green-soft)}
-label.f{display:block;font-weight:600;font-size:.92rem;margin-bottom:6px}
-input[type=text],textarea{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px}
-textarea{min-height:120px;resize:vertical}
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;max-height:420px;overflow-y:auto}
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
-th{position:sticky;top:0;background:var(--surface-2);font-weight:600}
-td.when{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
-.tag{display:inline-block;font-size:.75rem;font-weight:600;border-radius:6px;padding:2px 8px;background:var(--navy-soft);color:var(--navy-ink);white-space:nowrap}
-.tag.g{background:var(--green-soft);color:var(--green-ink)}
-.tag.w{background:var(--warn-soft);color:var(--warn)}
-.complete-banner{display:none;border-radius:16px;padding:22px;background:linear-gradient(120deg,var(--navy),var(--green));color:#fff;margin-bottom:22px}
-.complete-banner.show{display:block}
-.complete-banner h3{color:#fff}
-.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-size:.92rem;opacity:0;pointer-events:none;transition:all .3s ease;z-index:50}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-@media (max-width: 960px){
-  .shell{grid-template-columns:1fr;gap:20px;padding-top:16px}
-  .sidenav{position:static}
-  .sidenav ol{flex-direction:row;overflow-x:auto;padding-bottom:6px}
-  .sidenav li{flex:none}
-  .sidenav button{white-space:nowrap}
-  .sidenav .hint{display:none}
-  .hero{grid-template-columns:1fr}
-  .lab{grid-template-columns:1fr}
-  .gauge{position:static;display:grid;grid-template-columns:auto 1fr;gap:18px;text-align:left;align-items:center}
-  .tube{width:46px;height:150px}
-  .acc .body{padding-left:20px}
+/* track (padlock scene) */
+.track-wrap{position:relative;margin:14px 0 6px}
+.track{position:relative;height:220px;border-radius:var(--r-lg);background:var(--surface-2);overflow:hidden}
+.zone{position:absolute;top:0;bottom:0;width:33.33%;padding:10px 12px;font-family:var(--font-ui);font-size:.9rem;font-weight:700}
+.zone.alice{left:0;color:var(--navy)}
+.zone.eve{left:33.33%;background:var(--eve-tint);color:var(--eve);border-left:2px dashed var(--eve);border-right:2px dashed var(--eve);text-align:center}
+.zone.bob{left:66.66%;color:var(--red);text-align:right}
+.mover{--mw:110px;position:absolute;bottom:10px;width:var(--mw);left:calc(16.66% - var(--mw) / 2);transition:left 1.1s cubic-bezier(.5,0,.3,1)}
+.mover.at-eve{left:calc(50% - var(--mw) / 2)}
+.mover.at-bob{left:calc(83.33% - var(--mw) / 2)}
+@media (max-width:760px){
+  .mover{--mw:84px}
+  .pile{top:auto;bottom:118px;right:8px}
+  .pile svg{width:20px}
+  .pile svg:nth-child(n+3){display:none}
+  .track{height:200px}
+  .zone{font-size:.8rem}
+  #lockActions button:disabled{display:none}
 }
-@media (max-width: 620px){
-  .meter-track{width:70px}
-  .meter .ml{display:none}
-  .theme-btn .tl{display:none}
-  .brand-text span{display:none}
-  body{font-size:16px}
+.mover.shake{animation:shake .5s}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.pile{position:absolute;right:14px;top:34px;display:flex;gap:2px}
+.pile svg{width:30px}
+.note-reveal{font-family:var(--font-body);font-style:italic}
+.storyboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:10px}
+
+/* seal scene */
+.letter{background:var(--paper);color:#1d1d1d;border:1px solid var(--line);border-radius:var(--r);padding:16px;position:relative;min-height:220px;box-shadow:0 2px 0 var(--line)}
+.letter textarea{background:transparent;border:1px dashed var(--line);font-family:var(--font-body);color:#1d1d1d;min-height:120px}
+.letter .seal-spot{position:absolute;right:12px;bottom:10px;width:84px}
+.seal-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;text-align:center;font-family:var(--font-ui);font-size:.86rem}
+.seal-compare svg{width:96px;height:96px}
+.verdict{font-family:var(--font-ui);font-weight:700;font-size:1.05rem;border-radius:var(--r);padding:10px 14px;margin-top:10px}
+.verdict.good{background:var(--ok-tint);color:var(--ok);border:1px solid var(--ok)}
+.verdict.bad{background:var(--bad-tint);color:var(--bad);border:1px solid var(--bad)}
+.verdict.wait{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+
+/* toy workshop */
+.forge{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+@media (max-width:760px){.forge{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.forge .tile{background:var(--surface-2);border-radius:var(--r);padding:10px 12px;border-top:4px solid var(--line)}
+.forge .tile.pub{border-top-color:var(--navy)}
+.forge .tile.priv{border-top-color:var(--red)}
+.forge .tile b{display:block;font-family:var(--font-mono);font-size:1.25rem}
+.forge .tile small{font-family:var(--font-ui);color:var(--muted);font-size:.8rem}
+table.t{width:100%;border-collapse:collapse;font-family:var(--font-ui);font-size:.9rem}
+table.t th,table.t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+table.t td{font-family:var(--font-mono);font-size:.86rem}
+table.t tr.hl td{background:var(--eve-tint)}
+.scroll{overflow-x:auto}
+.cstream{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.cstream span{font-family:var(--font-mono);font-size:.85rem;padding:3px 7px;border-radius:var(--r);background:var(--surface-2);border:1px solid var(--line)}
+.cstream span.rep{border-width:2px}
+
+/* real lab */
+.keybox{font-family:var(--font-mono);font-size:.74rem;line-height:1.35;background:var(--paper);color:#1d1d1d;border:1px solid var(--line);border-radius:var(--r);padding:10px;max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin:6px 0}
+.keybox.priv{border-color:var(--red)}
+.keybox.masked{filter:blur(5px);user-select:none}
+.meter{height:12px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin:6px 0 2px;border:1px solid var(--line)}
+.meter div{height:100%;width:0;background:var(--navy);transition:width .15s}
+.meter.over div{background:var(--red)}
+.meter-label{font-family:var(--font-ui);font-size:.88rem;color:var(--muted)}
+.cipher-pair{display:grid;gap:8px}
+.hex{font-family:var(--font-mono);font-size:.8rem;word-break:break-all}
+.hex .d{background:var(--bad-tint);color:var(--bad);font-weight:700}
+
+/* hybrid pipeline */
+.pipe{list-style:none;padding:0;margin:14px 0;display:grid;gap:10px;counter-reset:pp}
+.pipe li{counter-increment:pp;display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;background:var(--surface-2);border-radius:var(--r-lg);padding:12px 14px;opacity:.45;transition:opacity .4s}
+.pipe li.on{opacity:1}
+.pipe li::before{content:counter(pp);display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--navy);color:var(--on-dark);font-family:var(--font-head);font-size:1.2rem}
+@media (prefers-color-scheme:dark){.pipe li::before{color:var(--bg)}}
+.pipe h4{margin-bottom:4px}
+.env{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.env div{border-radius:var(--r);padding:8px;font-family:var(--font-ui);font-size:.85rem;background:var(--surface);border:1px solid var(--line)}
+.env b{display:block;font-family:var(--font-mono);font-size:1rem}
+.sizebar{display:flex;height:26px;border-radius:var(--r);overflow:hidden;margin-top:8px;font-family:var(--font-ui);font-size:.75rem}
+.sizebar span{display:grid;place-items:center;color:var(--on-dark);white-space:nowrap;overflow:hidden;min-width:2px}
+.sizebar .k{background:var(--red)}.sizebar .i{background:var(--brass)}.sizebar .c{background:var(--navy)}
+
+/* classroom + race */
+.role-pick{display:flex;gap:8px;flex-wrap:wrap}
+.role-pick button[aria-pressed="true"]{background:var(--navy);color:var(--on-dark);border-color:var(--navy)}
+@media (prefers-color-scheme:dark){.role-pick button[aria-pressed="true"]{color:var(--bg)}}
+.bigcode{font-family:var(--font-mono);font-size:clamp(1.7rem,5vw,2.8rem);font-weight:700;letter-spacing:.04em;word-break:break-all;line-height:1.15}
+.bigcode.small{font-size:1.3rem}
+.puzzle{display:flex;flex-wrap:wrap;gap:6px 26px;background:var(--surface-2);border-radius:var(--r);padding:12px 16px;font-family:var(--font-mono);margin:10px 0}
+.stats{display:flex;flex-wrap:wrap;gap:6px 24px;font-family:var(--font-ui);font-size:.95rem;color:var(--muted)}
+.stats b{color:var(--ink);font-variant-numeric:tabular-nums}
+.bar{height:14px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin:10px 0;border:1px solid var(--line)}
+.bar div{height:100%;width:0;background:var(--eve);transition:width .2s}
+input[type=range]{width:100%;min-height:44px;accent-color:var(--eve)}
+.teacher{border-left:4px solid var(--brass);background:var(--surface-2);border-radius:0 var(--r-lg) var(--r-lg) 0;padding:12px 16px;margin-top:18px}
+
+/* which key */
+.wk{background:var(--surface-2);border-radius:var(--r-lg);padding:16px;margin:10px 0}
+.wk p.q{font-size:1.1rem;margin-top:0}
+.wk .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.wk .opts{grid-template-columns:1fr}}
+.wk .opts button{text-align:left;background:var(--surface)}
+.wk .opts button.right{background:var(--ok-tint);border-color:var(--ok)}
+.wk .opts button.wrong{background:var(--bad-tint);border-color:var(--bad)}
+.wk .fb{font-family:var(--font-ui);margin:10px 0 0}
+.uses{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:4px 26px}
+.uses li{padding:10px 0;border-bottom:1px solid var(--line)}
+.uses b{display:block;font-family:var(--font-head);font-size:1.12rem}
+details.aside{background:var(--surface-2);border-radius:var(--r-lg);padding:12px 16px;margin-top:14px}
+details.aside summary{cursor:pointer;font-family:var(--font-ui);font-weight:650;min-height:32px}
+/* progress, glossary, next stop */
+.route .stop{position:relative}
+.route button.done .stop{border-color:var(--ok)}
+.route button.done .stop::after{content:"✓";position:absolute;right:-6px;top:-6px;width:18px;height:18px;border-radius:50%;background:var(--ok);color:var(--on-dark);font-size:.7rem;display:grid;place-items:center}
+@media (prefers-color-scheme:dark){.route button.done .stop::after{color:var(--bg)}}
+.progress{font-family:var(--font-ui);font-size:.9rem;color:var(--muted);margin:14px 0 4px}
+.progress-bar{height:8px;border-radius:999px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.progress-bar div{height:100%;width:0;background:var(--ok);transition:width .4s}
+button.linkish{background:none;border:0;padding:4px 0;color:var(--navy);text-decoration:underline;min-height:36px;font-size:.88rem}
+.glossary{margin-top:14px;background:var(--surface);border-radius:var(--r-lg);padding:10px 14px;font-family:var(--font-ui);font-size:.9rem}
+.glossary summary{cursor:pointer;font-weight:650;min-height:32px}
+.glossary dt{font-weight:700;margin-top:8px}
+.glossary dd{margin:0;color:var(--muted)}
+.next-stop{display:flex;justify-content:flex-end;margin-top:26px;padding-top:16px;border-top:1px solid var(--line)}
+.work{background:var(--surface-2);border-radius:var(--r-lg);padding:12px 16px;margin-top:10px}
+.work:empty{display:none}
+.cheat{border:2px solid var(--navy);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:18px;background:var(--surface)}
+.cheat h3{margin-bottom:8px}
+.cheat .rules{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.cheat .rules{grid-template-columns:1fr}}
+.cheat .rule{background:var(--surface-2);border-radius:var(--r);padding:10px 12px;font-family:var(--font-ui)}
+.cheat .rule b{display:block;font-family:var(--font-head);font-size:1.15rem}
+.cheat ul{margin:10px 0 0;padding-left:1.2em}
+.legend svg{overflow:visible}
+@media print{
+  .sidebar,footer,.airmail,.next-stop,.actions{display:none!important}
+  .layout{display:block;padding:0}
+  .panel{box-shadow:none}
+  body.print-cheat main > section:not(#panel-which){display:none!important}
+  body.print-cheat #panel-which .panel-body > *:not(#cheat){display:none!important}
+}
+footer{color:var(--muted);font-size:.9rem;max-width:1320px;margin:0 auto;padding:0 clamp(14px,3vw,32px) 36px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
 </head>
 <body>
-<header class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">
-      <div class="mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
-      </div>
-      <div class="brand-text">
-        <strong>Designing AI-Resistant Assignments</strong>
-        <span>Faculty development activity · 13 core methods</span>
-      </div>
-    </div>
-    <div class="meter" aria-live="polite">
-      <span class="ml">Progress</span>
-      <div class="meter-track" role="progressbar" aria-label="Activity progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pbar"><div class="meter-fill" id="pfill"></div></div>
-      <b id="ptext">0%</b>
-    </div>
-    <button class="theme-btn" id="themeBtn" type="button" aria-pressed="false">
-      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-      <span class="tl" id="themeLabel">Dark mode</span>
-    </button>
+<a href="#main" class="skip-link">Skip to main content</a>
+<div class="airmail" aria-hidden="true"></div>
+<div class="layout">
+  <aside class="sidebar">
+    <header class="brand">
+      <h1>Locks anyone can close</h1>
+      <p>An RSA lab. One key locks, a different key opens, and the locking key can be handed to the whole world.</p>
+    </header>
+    <nav aria-label="Lab sections">
+      <ol class="route" role="tablist" aria-orientation="vertical" id="route">
+        <li><button role="tab" id="tab-locks" aria-controls="panel-locks" aria-selected="true" tabindex="0"><span class="stop">1</span>Padlocks and seals</button></li>
+        <li><button role="tab" id="tab-toy" aria-controls="panel-toy" aria-selected="false" tabindex="-1"><span class="stop">2</span>Toy RSA workshop</button></li>
+        <li><button role="tab" id="tab-real" aria-controls="panel-real" aria-selected="false" tabindex="-1"><span class="stop">3</span>Real RSA encryption</button></li>
+        <li><button role="tab" id="tab-sign" aria-controls="panel-sign" aria-selected="false" tabindex="-1"><span class="stop">4</span>Signatures and tampering</button></li>
+        <li><button role="tab" id="tab-hybrid" aria-controls="panel-hybrid" aria-selected="false" tabindex="-1"><span class="stop">5</span>Hybrid RSA + AES</button></li>
+        <li><button role="tab" id="tab-class" aria-controls="panel-class" aria-selected="false" tabindex="-1"><span class="stop">6</span>Classroom mode</button></li>
+        <li><button role="tab" id="tab-race" aria-controls="panel-race" aria-selected="false" tabindex="-1"><span class="stop">7</span>Factoring race</button></li>
+        <li><button role="tab" id="tab-which" aria-controls="panel-which" aria-selected="false" tabindex="-1"><span class="stop">8</span>Which key? and the real world</button></li>
+      </ol>
+    </nav>
+    <p class="progress" id="progText" aria-live="polite">0 of 8 stops done</p>
+    <div class="progress-bar" aria-hidden="true"><div id="progFill"></div></div>
+    <button class="linkish" id="progReset">Reset my progress</button>
+    <details class="glossary">
+      <summary>Key terms</summary>
+      <dl>
+        <dt>Public key (e, n)</dt><dd>Shared with everyone. Encrypts messages to its owner, and verifies the owner's signatures.</dd>
+        <dt>Private key (d)</dt><dd>Never shared. Decrypts, and makes signatures.</dd>
+        <dt>Modulus n</dt><dd>p × q, two secret primes multiplied. Its size (2048 bits) is the key size.</dd>
+        <dt>OAEP</dt><dd>Random padding added before RSA encryption, so the same message never encrypts the same way twice.</dd>
+        <dt>PSS</dt><dd>The modern padding scheme for RSA signatures.</dd>
+        <dt>Hash (SHA-256)</dt><dd>A fixed-size fingerprint of any data. Change one character and the fingerprint changes completely.</dd>
+        <dt>Hybrid encryption</dt><dd>RSA locks a random AES key, and AES encrypts the message itself.</dd>
+      </dl>
+    </details>
+  </aside>
+
+<main id="main">
+
+<!-- 1 LOCKS -->
+<section class="panel" id="panel-locks" role="tabpanel" aria-labelledby="tab-locks">
+ <div class="airmail" aria-hidden="true"></div>
+ <div class="panel-body">
+  <div class="panel-head">
+    <h2>Padlocks and seals</h2>
+    <p>Every RSA key pair does two jobs. As a padlock, it lets anyone lock a message that only the owner can open. As a seal, it lets only the owner sign something that anyone can check.</p>
   </div>
-</header>
+  <div class="legend">
+    <span><span id="legendLock"></span><span><span class="key-chip pub">Public key</span> an open padlock Bob hands to anyone</span></span>
+    <span><svg viewBox="0 0 40 40" aria-hidden="true"><circle class="key-metal" cx="12" cy="20" r="7"/><rect class="key-metal" x="18" y="17" width="18" height="6"/><rect class="key-metal" x="30" y="23" width="4" height="6"/></svg><span><span class="key-chip priv">Private key</span> the only key that opens it (or the signet ring that makes the seal)</span></span>
+  </div>
 
-<div class="shell">
-  <nav class="sidenav" aria-label="Activity sections">
-    <ol id="navList"></ol>
-    <div class="hint">Your progress saves automatically in this browser. Open the Progress log to export a record for your portfolio or PD hours.</div>
-  </nav>
+  <h3>Scene 1: lock a box for Bob</h3>
+  <div class="track-wrap">
+    <div class="track" id="track">
+      <div class="zone alice">Alice</div>
+      <div class="zone eve">Eve, on the mail route</div>
+      <div class="zone bob">Bob</div>
+      <div class="pile" aria-hidden="true" id="pile"></div>
+      <div class="mover" id="mover" aria-hidden="true"></div>
+    </div>
+  </div>
+  <label class="field">Alice's note<input type="text" id="noteText" maxlength="60" value="Meet at the library at 4."></label>
+  <div class="actions" id="lockActions">
+    <button class="primary" id="actGet">Take one of Bob's open padlocks</button>
+    <button id="actLock" disabled>Put the note in and snap it shut</button>
+    <button id="actSend" disabled>Send it</button>
+    <button class="danger" id="actEveLock" disabled>Eve: try her copy of the padlock</button>
+    <button class="danger" id="actEvePry" disabled>Eve: try to pry it open</button>
+    <button id="actPass" disabled>Let it through to Bob</button>
+    <button id="actOpen" disabled>Bob: open it with his key</button>
+    <button id="actTwist" disabled>Twist: Eve mails Bob a box too</button>
+    <button id="actReset">Start over</button>
+  </div>
+  <p class="narration" id="lockNarr" aria-live="polite">Bob has a pile of open padlocks and gives them to anyone who asks. Eve has one too. Start by taking one.</p>
 
-  <main id="main">
-    <!-- START -->
-    <section class="view" id="v-start" aria-labelledby="h-start">
-      <div class="hero">
-        <div>
-          <h1 id="h-start">Design work students can’t hand to a chatbot.</h1>
-          <p class="lead">Generative AI can draft a passable essay, lab report, or summary in seconds. This activity helps you redesign assignments so the learning, and the evidence of it, has to come from your students.</p>
-          <div class="row" style="margin-top:22px">
-            <button class="btn" type="button" data-go="tactics">Explore the 13 tactics</button>
-            <button class="btn ghost" type="button" data-go="lab">Try the redesign lab</button>
-          </div>
+  <h3 class="subhead">Scene 2: seal a letter</h3>
+  <p>A wax seal from Alice's signet ring depends on two things: the ring, which only Alice has, and the exact words of the letter. Anyone can check a seal against Alice's published seal pattern. Edit the letter in transit and see what happens.</p>
+  <div class="grid2">
+    <div>
+      <h4>Alice writes and seals</h4>
+      <div class="letter">
+        <label class="sr-only" for="letterText">Alice's letter</label>
+        <textarea id="letterText">Bob, please transfer $50 to the club account. Alice</textarea>
+        <div class="seal-spot" id="sealOnLetter" aria-hidden="true"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="sealPress">Press Alice's ring into the wax</button>
+      </div>
+    </div>
+    <div>
+      <h4>Bob receives it (Mallory can edit it on the way)</h4>
+      <div class="letter">
+        <label class="sr-only" for="letterRecv">The letter as Bob receives it</label>
+        <textarea id="letterRecv" disabled placeholder="Waiting for a sealed letter"></textarea>
+        <div class="seal-spot" id="sealOnRecv" aria-hidden="true"></div>
+      </div>
+      <div class="actions">
+        <button class="danger" id="sealForge" disabled>Mallory: rewrite it and add her own seal</button>
+      </div>
+    </div>
+  </div>
+  <div class="seal-compare" id="sealCompare" hidden>
+    <div><div id="sealSeen"></div><p>Seal on the letter<br><span class="fp" id="fpSeen"></span></p></div>
+    <div><div id="sealExpect"></div><p>Alice's seal for exactly these words<br><span class="fp" id="fpExpect"></span></p></div>
+  </div>
+  <div class="verdict wait" id="sealVerdict" aria-live="polite">No sealed letter yet.</div>
+ </div>
+</section>
+
+<!-- 2 TOY -->
+<section class="panel" id="panel-toy" role="tabpanel" aria-labelledby="tab-toy" hidden>
+ <div class="airmail" aria-hidden="true"></div>
+ <div class="panel-body">
+  <div class="panel-head">
+    <h2>Toy RSA workshop</h2>
+    <p>Build a key pair by hand from two small primes. Real RSA does exactly this, with primes that are hundreds of digits long.</p>
+  </div>
+  <div class="grid3">
+    <label class="field">First prime p<select id="toyP"></select></label>
+    <label class="field">Second prime q<select id="toyQ"></select></label>
+    <label class="field">Public exponent e<span class="hint">must share no factor with φ(n)</span><select id="toyE"></select></label>
+  </div>
+  <div class="msg bad" id="toyErr" role="alert"></div>
+  <div class="forge" id="toyForge"></div>
+  <details class="aside" open>
+    <summary>How d is found: the extended Euclidean algorithm</summary>
+    <p>We need a number d with e × d leaving remainder 1 when divided by φ(n). Run Euclid's algorithm on φ(n) and e, tracking one extra column (t). When the remainder reaches 1, that row's t, made positive, is d.</p>
+    <div class="actions"><button id="euStep">Next row</button><button id="euAll">Show all rows</button></div>
+    <div class="scroll"><table class="t" id="euTable"><thead><tr><th scope="col">Remainder r</th><th scope="col">Quotient</th><th scope="col">t</th></tr></thead><tbody></tbody></table></div>
+    <p id="euResult" aria-live="polite"></p>
+  </details>
+  <h3 class="subhead">Encrypt a message, one character at a time</h3>
+  <label class="field">Message<span class="hint">Each character becomes its ASCII number m, then c = m<sup>e</sup> mod n</span><input type="text" id="toyMsg" maxlength="40" value="ATTACK AT DAWN"></label>
+  <p>Ciphertext Eve sees:</p>
+  <div class="cstream" id="toyStream" aria-live="polite"></div>
+  <div class="scroll"><table class="t" id="toyTable"><thead><tr><th scope="col">Char</th><th scope="col">m</th><th scope="col">c = m<sup>e</sup> mod n</th><th scope="col">c<sup>d</sup> mod n</th><th scope="col">Back to</th><th scope="col">Work</th></tr></thead><tbody></tbody></table></div>
+  <div class="work" id="toyWork" aria-live="polite"></div>
+  <div class="msg info" id="toyLeak"></div>
+  <div class="actions"><button class="danger" id="toyDict">Eve's shortcut: encrypt every character herself</button></div>
+  <div class="msg" id="toyDictOut" aria-live="polite"></div>
+  <details class="aside">
+    <summary>Why real RSA never works like this</summary>
+    <p>"Textbook" RSA is deterministic: the same input always gives the same output, so repeated letters show up as repeated numbers and Eve can run frequency analysis, or simply encrypt guesses with the public key and compare. Real systems add random padding (OAEP) before encrypting, so the same message encrypts differently every time. You'll see that in the next tab.</p>
+  </details>
+ </div>
+</section>
+
+<!-- 3 REAL -->
+<section class="panel" id="panel-real" role="tabpanel" aria-labelledby="tab-real" hidden>
+ <div class="airmail" aria-hidden="true"></div>
+ <div class="panel-body">
+  <div class="panel-head">
+    <h2>Real RSA encryption</h2>
+    <p>Your browser has RSA built in (the Web Crypto API). These are genuine keys made on your device, with RSA-OAEP padding and SHA-256. Nothing leaves this page.</p>
+  </div>
+  <div class="msg bad" id="noCrypto" role="alert" hidden>This browser isn't exposing Web Crypto here. Open the page over https (for example from GitHub Pages) in a current browser.</div>
+  <fieldset>
+    <legend>Key size for Bob's key pair</legend>
+    <div class="seg" id="realSize">
+      <label><input type="radio" name="realBits" value="2048" checked><span>2048 bits</span></label>
+      <label><input type="radio" name="realBits" value="3072"><span>3072 bits</span></label>
+      <label><input type="radio" name="realBits" value="4096"><span>4096 bits</span></label>
+    </div>
+  </fieldset>
+  <div class="actions"><button class="primary" id="realGen">Generate Bob's key pair</button><span class="meter-label" id="realGenTime" aria-live="polite"></span></div>
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="key-chip pub">Public key</span></h3>
+      <p class="meter-label" id="realPubInfo">Not generated yet.</p>
+      <div class="keybox" id="realPubPem">Generate a key pair to see it.</div>
+      <button data-copy="realPubPem">Copy public key</button>
+    </div>
+    <div class="card">
+      <h3><span class="key-chip priv">Private key</span></h3>
+      <p class="meter-label">Never shared. Shown here only so you can see what one looks like.</p>
+      <label class="switch"><input type="checkbox" id="realShowPriv"> Reveal the private key</label>
+      <div class="keybox priv masked" id="realPrivPem">Generate a key pair to see it.</div>
+    </div>
+  </div>
+  <h3 class="subhead">Alice encrypts with Bob's public key</h3>
+  <label class="field">Message<textarea id="realMsg" rows="3">The server room door code changes to 7314 on Monday.</textarea></label>
+  <div class="meter" id="realMeter" role="progressbar" aria-label="Message size compared with the RSA limit" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div></div></div>
+  <p class="meter-label" id="realMeterLabel">Generate a key to see the size limit.</p>
+  <div class="actions">
+    <button class="primary" id="realEnc" disabled>Encrypt</button>
+    <button id="realEnc2" disabled>Encrypt the same message again</button>
+  </div>
+  <div class="msg" id="realEncMsg" aria-live="polite"></div>
+  <div class="cipher-pair">
+    <label class="field">Ciphertext (base64)<textarea class="code" id="realCt" rows="4" readonly></textarea></label>
+    <div><button data-copy="realCt">Copy ciphertext</button></div>
+    <label class="field" id="realCt2Wrap" hidden>Second ciphertext of the same message<textarea class="code" id="realCt2" rows="4" readonly></textarea></label>
+  </div>
+  <h3 class="subhead">Bob decrypts with his private key</h3>
+  <div class="actions">
+    <button class="primary" id="realDec" disabled>Decrypt</button>
+    <button class="danger" id="realTamper" disabled>Flip one character of the ciphertext</button>
+    <button class="danger" id="realWrongKey" disabled>Try Eve's private key instead</button>
+  </div>
+  <div class="msg" id="realDecMsg" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 4 SIGN -->
+<section class="panel" id="panel-sign" role="tabpanel" aria-labelledby="tab-sign" hidden>
+ <div class="airmail" aria-hidden="true"></div>
+ <div class="panel-body">
+  <div class="panel-head">
+    <h2>Signatures and tampering</h2>
+    <p>Encryption keeps a message private. A signature proves who sent it and that nobody changed it. Alice hashes her message with SHA-256, then signs the hash with her private key (RSA-PSS). Anyone with her public key can check it.</p>
+  </div>
+  <div class="actions"><button class="primary" id="sigGen">Generate Alice's signing key pair</button><span class="meter-label" id="sigGenInfo" aria-live="polite"></span></div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Alice signs</h3>
+      <label class="field">Message<textarea id="sigMsg" rows="4">Release v2.4.1 of the lab VM image. Checksum approved. Alice</textarea></label>
+      <div class="actions"><button class="primary" id="sigSign" disabled>Sign with Alice's <span class="key-chip priv">private key</span></button></div>
+      <p class="meter-label">SHA-256 of her message</p>
+      <div class="hex" id="sigHashA">–</div>
+      <label class="field" style="margin-top:10px">Signature (base64)<textarea class="code" id="sigOut" rows="4" readonly></textarea></label>
+    </div>
+    <div class="card">
+      <h3>Bob verifies</h3>
+      <label class="field">Message as received<span class="hint">Edit it to play Mallory. Verification re-runs as you type.</span><textarea id="sigRecv" rows="4" disabled></textarea></label>
+      <fieldset>
+        <legend>Check with whose public key?</legend>
+        <div class="seg" id="sigWho">
+          <label><input type="radio" name="sigWho" value="alice" checked><span>Alice's</span></label>
+          <label><input type="radio" name="sigWho" value="mallory"><span>Mallory's</span></label>
         </div>
-        <div class="harden" aria-label="Example of hardening an assignment prompt">
-          <div class="prompt before" id="demoBefore">“Write a 1,000-word essay explaining the causes of major data breaches.”</div>
-          <div class="arrow">redesigned with four tactics</div>
-          <div class="prompt after">
-            <div class="tagline">AI-resistant version</div>
-            Investigate the causes of data breaches by:
-            <ul id="demoList">
-              <li>Picking one breach notice from an organization in our county (local case study)</li>
-              <li>Submitting a sources memo and outline before drafting (process scaffolding)</li>
-              <li>Mapping the causes to a system you use at work or school (personalization)</li>
-              <li>Defending your top recommendation in a 4-minute conference (synchronous)</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      </fieldset>
+      <p class="meter-label">SHA-256 of what Bob received (changed characters highlighted)</p>
+      <div class="hex" id="sigHashB">–</div>
+      <div class="verdict wait" id="sigVerdict" aria-live="polite">Sign a message first.</div>
+    </div>
+  </div>
+  <details class="aside">
+    <summary>Why one changed letter breaks everything</summary>
+    <p>A hash function scrambles its input so thoroughly that changing a single character changes about half the bits of the output (the avalanche effect). The signature was made over the original hash, so it can't match the new one. And because only Alice's private key can produce a signature that her public key accepts, Mallory can't make a fresh one either, which is what the Mallory's-key option shows from the other side.</p>
+  </details>
+ </div>
+</section>
 
-      <div class="section">
-        <h2>How this activity works</h2>
-        <ol class="steps">
-          <li><strong>Rate yourself</strong><span>Check your starting confidence on eight teacher competencies below.</span></li>
-          <li><strong>Study the tactics</strong><span>Open each of the 13 methods, read the examples, and pass its quick check.</span></li>
-          <li><strong>Redesign an assignment</strong><span>Combine tactics in the lab and watch resistance and workload change.</span></li>
-          <li><strong>Check and reflect</strong><span>Take the 10-question knowledge check, then commit to a plan for your own course.</span></li>
-        </ol>
-      </div>
+<!-- 5 HYBRID -->
+<section class="panel" id="panel-hybrid" role="tabpanel" aria-labelledby="tab-hybrid" hidden>
+ <div class="airmail" aria-hidden="true"></div>
+ <div class="panel-body">
+  <div class="panel-head">
+    <h2>Hybrid RSA + AES</h2>
+    <p>RSA can only lock a couple of hundred bytes, and it's slow. So real systems use it to lock something small: a random AES key. AES, which is fast and has no size limit, encrypts the actual message. This is how PGP and S/MIME email, and cloud "envelope encryption", work.</p>
+  </div>
+  <label class="field">A message far too long for RSA alone<textarea id="hyMsg" rows="6">Incident summary, week 42. At 02:14 the SOC detected repeated failed SSH logins against the bastion host from a rotating set of addresses. Rate limiting engaged after 30 attempts. No successful authentication occurred. Recommended actions: confirm key-only authentication on all jump hosts, review fail2ban thresholds, and rotate the service account keys that were last changed more than a year ago. Next review scheduled for Monday's stand-up.</textarea></label>
+  <p class="meter-label" id="hyLen"></p>
+  <div class="actions">
+    <button class="primary" id="hyRun">Run the hybrid encryption</button>
+    <button id="hyOpen" disabled>Bob opens the envelope</button>
+    <button class="danger" id="hyTamper" disabled>Mallory: flip one bit of the encrypted message</button>
+    <button class="danger" id="hyRsaOnly">Try RSA alone instead</button>
+  </div>
+  <div class="msg" id="hyMsgBox" aria-live="polite"></div>
+  <ol class="pipe" id="hyPipe">
+    <li><div><h4>Make a one-time AES-256 key</h4><p>32 random bytes, used for this message only.</p><div class="hex" id="hy1">–</div></div></li>
+    <li><div><h4>AES-GCM encrypts the whole message</h4><p>Fast, any length, and it detects tampering.</p><div class="hex" id="hy2">–</div></div></li>
+    <li><div><h4>RSA-OAEP locks the AES key with Bob's <span class="key-chip pub">public key</span></h4><p>Only the 32-byte key goes through RSA.</p><div class="hex" id="hy3">–</div></div></li>
+    <li><div><h4>The envelope that gets sent</h4><div class="env" id="hyEnv"></div><div class="sizebar" id="hySize" aria-hidden="true"></div></div></li>
+    <li><div><h4>Bob unlocks the AES key with his <span class="key-chip priv">private key</span>, then decrypts</h4><p id="hy5">Waiting for the envelope.</p></div></li>
+  </ol>
+ </div>
+</section>
 
-      <div class="callout"><strong>An honest starting point.</strong> No assignment is AI-proof, and AI detectors are not reliable enough to carry an integrity decision on their own. The goal here is to make AI shortcuts less useful than doing the work, and to collect evidence of learning you can trust.</div>
+<!-- 6 CLASS -->
+<section class="panel" id="panel-class" role="tabpanel" aria-labelledby="tab-class" hidden>
+ <div class="airmail" aria-hidden="true"></div>
+ <div class="panel-body">
+  <div class="panel-head">
+    <h2>Classroom mode: pass the numbers</h2>
+    <p>Pair up on two phones or laptops. Bob makes a small RSA key and reads his public key out loud. Alice uses it to lock a secret four-digit PIN and reads back the ciphertext. Everyone else is Eve, writes the numbers down, and heads to the factoring race. Add a third device for Mallory to show a man-in-the-middle attack.</p>
+  </div>
+  <div class="role-pick">
+    <button id="roleBob" aria-pressed="true">I'm Bob (I own the key)</button>
+    <button id="roleAlice" aria-pressed="false">I'm Alice (I'm sending)</button>
+    <button id="roleMallory" aria-pressed="false">I'm Mallory (in the middle)</button>
+  </div>
 
-      <div class="section">
-        <h2>Concepts and competencies teachers need</h2>
-        <p class="lead">These eight competencies, grouped into four domains, are what an instructor needs to limit inappropriate AI use without policing students. Rate your confidence on each; your ratings are saved to the progress log.</p>
-        <div id="compList" style="margin-top:18px"></div>
+  <div id="bobSide">
+    <div class="grid2" style="margin-top:14px">
+      <div class="card">
+        <h3>1. Make your key pair</h3>
+        <div class="actions"><button class="primary" id="clGen">Make a new key pair</button></div>
+        <p>Read this out loud. It's your <span class="key-chip pub">public key</span> (e is always 65537 here):</p>
+        <p class="meter-label">n =</p>
+        <p class="bigcode" id="clN" aria-live="polite">–</p>
+        <label class="switch"><input type="checkbox" id="clShowPriv"> Show my private numbers (keep this away from Eve)</label>
+        <div id="clPriv" hidden class="puzzle"></div>
       </div>
-    </section>
+      <div class="card">
+        <h3>2. Decrypt Alice's reply</h3>
+        <label class="field">Ciphertext Alice read out<input type="text" id="clC" inputmode="numeric" autocomplete="off"></label>
+        <div class="actions"><button class="primary" id="clDec">Decrypt with my private key</button></div>
+        <div class="msg" id="clDecMsg" aria-live="polite"></div>
+        <p class="bigcode" id="clPin"></p>
+      </div>
+    </div>
+  </div>
 
-    <!-- TACTICS -->
-    <section class="view" id="v-tactics" aria-labelledby="h-tactics">
-      <h2 id="h-tactics">The 13 core methods</h2>
-      <p class="lead">Select a tactic to read its summary, sample applications across disciplines, cautions, and a one-question check. A tactic is marked complete when you answer its check correctly.</p>
-      <div class="filters" role="group" aria-label="Filter tactics">
-        <button class="chip" type="button" data-filter="all" aria-pressed="true">All 13</button>
-        <button class="chip" type="button" data-filter="high">Highest resistance</button>
-        <button class="chip" type="button" data-filter="low">Lowest teacher effort</button>
-        <button class="chip" type="button" data-filter="todo">Not yet complete</button>
+  <div id="aliceSide" hidden>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card">
+        <h3>1. Enter Bob's public key</h3>
+        <label class="field">n (the number Bob read out)<input type="text" id="alN" inputmode="numeric" autocomplete="off"></label>
+        <label class="field">Your secret PIN<span class="hint">Four digits</span><input type="text" id="alPin" inputmode="numeric" maxlength="4" autocomplete="off" value="2580"></label>
+        <div class="actions"><button class="primary" id="alEnc">Lock it with Bob's public key</button></div>
+        <div class="msg" id="alMsg" aria-live="polite"></div>
       </div>
-      <div class="legend" style="margin-bottom:12px"><span class="l2">Green pips show AI resistance</span><span class="l1">Orange dot means opened, check not yet passed</span></div>
-      <div class="tgrid" id="tgrid"></div>
-      <div class="detail panel" id="detail" hidden></div>
-    </section>
+      <div class="card">
+        <h3>2. Read this ciphertext out loud</h3>
+        <p class="bigcode" id="alC">–</p>
+        <p>Eve hears it too. Only Bob's private key turns it back into your PIN, unless Eve can factor n.</p>
+      </div>
+    </div>
+  </div>
+  <div id="mallorySide" hidden>
+    <div class="grid3" style="margin-top:14px">
+      <div class="card">
+        <h3>1. Intercept Bob's key</h3>
+        <label class="field">Bob's real n<span class="hint">Bob reads it to you, thinking you're Alice</span><input type="text" id="mlBobN" inputmode="numeric" autocomplete="off"></label>
+      </div>
+      <div class="card">
+        <h3>2. Hand Alice a fake key</h3>
+        <div class="actions"><button class="primary" id="mlGen">Make my own key pair</button></div>
+        <p>Read this to Alice as if it were Bob's n:</p>
+        <p class="bigcode small" id="mlN">–</p>
+      </div>
+      <div class="card">
+        <h3>3. Read, then relay</h3>
+        <label class="field">Alice's ciphertext<input type="text" id="mlC" inputmode="numeric" autocomplete="off"></label>
+        <div class="actions"><button class="primary" id="mlRelay">Decrypt it, then re-lock for Bob</button></div>
+        <div class="msg" id="mlMsg" aria-live="polite"></div>
+        <p class="meter-label">Read this to Bob:</p>
+        <p class="bigcode small" id="mlOut">–</p>
+      </div>
+    </div>
+  </div>
+  <div class="teacher">
+    <h3>Running it with a class</h3>
+    <p><b>Eve's attack.</b> Students playing Eve write down n and the ciphertext, open <em>Factoring race</em>, choose "A classmate's key," and enter both. Classroom keys are around 21 bits, so a laptop factors n almost instantly, rebuilds the private key, and reads the PIN. That's the moment to ask why real keys are 2048 bits.</p>
+    <p><b>Mallory variation.</b> Seat a third student, using the "I'm Mallory" role, between the pair so every number passes through her. She keeps Bob's n and reads Alice her own n instead. Alice locks the PIN for Mallory, who reads it and re-locks it with Bob's real key. Bob decrypts the right PIN and nobody notices. Connect it to certificates: they exist to prove whose public key you're holding.</p>
+  </div>
+ </div>
+</section>
 
-    <!-- LAB -->
-    <section class="view" id="v-lab" aria-labelledby="h-lab">
-      <h2 id="h-lab">Redesign lab</h2>
-      <p class="lead">Pick a typical, AI-vulnerable assignment. Then layer tactics onto it. The gauge estimates how much harder it becomes to outsource the work, and the workload meter shows what it costs you. Save a redesign with at least three tactics to complete this step.</p>
-      <div class="lab" style="margin-top:22px">
-        <div>
-          <h3>1. Choose a starting assignment</h3>
-          <div class="bases" id="bases"></div>
-          <h3 style="margin-top:26px">2. Layer tactics</h3>
-          <div class="tchips" id="tchips"></div>
-          <div class="out" id="out">
-            <div class="bar"><span>3. Your redesigned assignment</span>
-              <span class="row"><button class="btn quiet" type="button" id="copyBtn">Copy text</button><button class="btn green" type="button" id="saveLab" disabled>Save redesign to log</button></span>
-            </div>
-            <div class="txt" id="outTxt"></div>
-          </div>
-        </div>
-        <aside class="gauge" aria-live="polite">
-          <div>
-            <h4>AI resistance</h4>
-            <div class="tube" aria-hidden="true"><div class="cap" title="Ceiling: no assignment is AI-proof"></div><div class="fill" id="gFill"></div></div>
-          </div>
-          <div>
-            <div class="pct" id="gPct">10%</div>
-            <div class="lbl" id="gLbl">Highly vulnerable</div>
-            <div class="load"><span class="muted">Teacher workload</span><b id="gLoad">Minimal</b></div>
-            <p class="muted" style="font-size:.78rem;margin:10px 0 0">The dashed line marks the ceiling. Stacking tactics has diminishing returns.</p>
-          </div>
-        </aside>
-      </div>
-    </section>
+<!-- 7 RACE -->
+<section class="panel" id="panel-race" role="tabpanel" aria-labelledby="tab-race" hidden>
+ <div class="airmail" aria-hidden="true"></div>
+ <div class="panel-body">
+  <div class="panel-head">
+    <h2>Factoring race</h2>
+    <p>RSA's public key includes n = p × q. If Eve can split n back into p and q, she can rebuild the private key. Your device will try the simplest way: dividing n by every odd number until one fits.</p>
+  </div>
+  <fieldset>
+    <legend>What should Eve attack?</legend>
+    <div class="seg" id="raceSrc">
+      <label><input type="radio" name="raceSrc" value="random" checked><span>A random key</span></label>
+      <label><input type="radio" name="raceSrc" value="class"><span>A classmate's key</span></label>
+    </div>
+  </fieldset>
+  <div id="raceRandomBox">
+    <label class="field" for="raceBits">Size of n: <output id="raceBitsOut">40</output> bits</label>
+    <input type="range" id="raceBits" min="20" max="52" step="2" value="40">
+    <div class="actions"><button id="raceNew">New key</button></div>
+  </div>
+  <div id="raceClassBox" hidden>
+    <div class="grid2">
+      <label class="field">n you overheard<input type="text" id="raceN" inputmode="numeric" autocomplete="off"></label>
+      <label class="field">Ciphertext you overheard (optional)<input type="text" id="raceC" inputmode="numeric" autocomplete="off"></label>
+    </div>
+    <div class="actions"><button id="raceUse">Use these numbers</button></div>
+  </div>
+  <div class="puzzle" id="racePuzzle" aria-live="polite"></div>
+  <div class="actions">
+    <button class="primary" id="raceGo">Start factoring</button>
+    <button id="raceStop" disabled>Stop</button>
+  </div>
+  <div class="stats">
+    <span>Divisions tried: <b id="raceTries">0</b></span>
+    <span>Time: <b id="raceTime">0.0 s</b></span>
+    <span>Speed: <b id="raceRate">–</b></span>
+  </div>
+  <div class="bar" role="progressbar" aria-label="Progress toward the square root of n" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="raceBar"><div id="raceFill"></div></div>
+  <div class="msg" id="raceResult" aria-live="polite"></div>
+  <div class="scroll">
+  <table class="t" style="margin-top:12px">
+    <caption style="text-align:left;font-weight:650;margin-bottom:6px">At the speed your device just measured, trial division would take:</caption>
+    <thead><tr><th scope="col">Size of n</th><th scope="col">Worst-case time</th></tr></thead>
+    <tbody id="raceScale"><tr><td colspan="2" style="font-family:var(--font-ui)">Run the race once to measure your speed.</td></tr></tbody>
+  </table>
+  </div>
+  <details class="aside">
+    <summary>What real attackers do, and the quantum question</summary>
+    <p>Trial division is the slowest possible method. The best classical algorithm, the general number field sieve, is enormously faster, and in 2020 researchers used it to factor the 829-bit challenge number RSA-250 with roughly 2,700 CPU core-years of computing. That's why 2048-bit RSA is rated at about 112 bits of security, the last row in the table, rather than 1,024. It remains far out of reach.</p>
+    <p>A large quantum computer running Shor's algorithm would factor n efficiently. None exists yet, but because recorded traffic could be decrypted later, NIST has standardized post-quantum replacements (ML-KEM for key establishment, ML-DSA for signatures) and published a draft plan to phase out RSA over the next decade.</p>
+  </details>
+ </div>
+</section>
 
-    <!-- QUIZ -->
-    <section class="view" id="v-quiz" aria-labelledby="h-quiz">
-      <h2 id="h-quiz">Knowledge check</h2>
-      <p class="lead">Ten applied questions. Score 70% or higher to complete this step. Every answer shows an explanation, so a retake is a chance to learn.</p>
-      <div class="qwrap panel" id="quiz" style="margin-top:20px"></div>
-    </section>
+<!-- 8 WHICH -->
+<section class="panel" id="panel-which" role="tabpanel" aria-labelledby="tab-which" hidden>
+ <div class="airmail" aria-hidden="true"></div>
+ <div class="panel-body">
+  <div class="panel-head">
+    <h2>Which key?</h2>
+    <p>The question certification exams ask most. Encrypting uses the <em>receiver's</em> public key. Signing uses the <em>sender's</em> private key. Try each scenario.</p>
+  </div>
+  <div class="cheat" id="cheat">
+    <h3>The RSA cheat sheet</h3>
+    <div class="rules">
+      <div class="rule"><b>To keep it secret</b>Encrypt with the receiver's <span class="key-chip pub">public key</span>. They decrypt with their <span class="key-chip priv">private key</span>.</div>
+      <div class="rule"><b>To prove who sent it</b>Sign with the sender's <span class="key-chip priv">private key</span>. Anyone verifies with the sender's <span class="key-chip pub">public key</span>.</div>
+    </div>
+    <ul>
+      <li>RSA only locks a couple of hundred bytes. Real messages use hybrid encryption: RSA locks an AES key.</li>
+      <li>Use OAEP padding for encryption and PSS for signatures. Textbook RSA without padding leaks patterns.</li>
+      <li>Security rests on how hard it is to factor n. Use at least 2048-bit keys; a large quantum computer would break RSA.</li>
+      <li>Public keys need proof of ownership (certificates), or Mallory can swap in her own.</li>
+    </ul>
+    <div class="actions"><button id="printCheat">Print the cheat sheet</button></div>
+  </div>
+  <div id="wkBox"></div>
+  <p class="score" id="wkScore" aria-live="polite" style="font-family:var(--font-ui);font-weight:650"></p>
+  <div class="actions"><button id="wkReset">Start over</button></div>
 
-    <!-- GLOSSARY -->
-    <section class="view" id="v-glossary" aria-labelledby="h-glossary">
-      <h2 id="h-glossary">Key terms</h2>
-      <p class="lead">Select a card to flip it. These terms come up in faculty conversations and policy discussions about AI and assessment.</p>
-      <div class="cards" id="cards" style="margin-top:20px"></div>
-    </section>
-
-    <!-- LOG -->
-    <section class="view" id="v-log" aria-labelledby="h-log">
-      <h2 id="h-log">Progress log</h2>
-      <div class="complete-banner" id="doneBanner">
-        <h3>Activity complete</h3>
-        <p style="margin:0">You’ve worked through all 13 tactics, saved a redesign, passed the knowledge check, and written an action plan. Export your log as evidence of completion.</p>
-      </div>
-      <div class="panel">
-        <label class="f" for="learner">Your name (appears on the exported log)</label>
-        <input type="text" id="learner" autocomplete="name" placeholder="e.g., Dr. Jane Rivera">
-      </div>
-      <div class="stats" id="stats" style="margin-top:18px"></div>
-      <div class="section" style="margin-top:28px">
-        <h3>Action plan</h3>
-        <p class="muted">Name one assignment you teach, the two or three tactics you’ll apply, and how you’ll tell students about your AI policy for it.</p>
-        <textarea id="reflect" placeholder="Assignment: …&#10;Tactics: …&#10;How I’ll communicate the AI policy: …"></textarea>
-        <div class="row" style="margin-top:10px"><button class="btn" type="button" id="saveReflect">Save action plan</button><span class="muted" id="reflectNote" style="font-size:.88rem"></span></div>
-      </div>
-      <div class="section" style="margin-top:28px">
-        <div class="row" style="justify-content:space-between;margin-bottom:12px">
-          <h3 style="margin:0">Activity history</h3>
-          <div class="row"><button class="btn ghost" type="button" id="exportBtn">Export log (CSV)</button><button class="btn danger" type="button" id="resetBtn">Reset progress</button></div>
-        </div>
-        <div class="tablewrap"><table><thead><tr><th>When</th><th>Activity</th><th>Details</th></tr></thead><tbody id="logBody"></tbody></table></div>
-      </div>
-    </section>
-  </main>
+  <h3 class="subhead">Where RSA shows up today</h3>
+  <ul class="uses">
+    <li><b>HTTPS certificates</b>Most websites still prove their identity with an RSA signature in their certificate chain. In TLS 1.3 the keys themselves come from an ephemeral Diffie-Hellman exchange; RSA's job is the signature.</li>
+    <li><b>SSH keys</b><code>ssh-keygen -t rsa -b 4096</code> is still common, though Ed25519 keys are now the usual default.</li>
+    <li><b>Code and document signing</b>Software updates, drivers, and signed PDFs use signatures so you can tell the file wasn't altered.</li>
+    <li><b>Encrypted email and files</b>PGP and S/MIME use the hybrid pattern from tab 5: RSA locks a one-time key that encrypts the message.</li>
+  </ul>
+  <details class="aside" open>
+    <summary>Inspect a real RSA key in your browser</summary>
+    <p>Visit any HTTPS site and click the icon at the left of the address bar, then open the connection or certificate details. Look for "Subject Public Key Info." If it says RSA, you'll see a 2048 or 4096-bit modulus (that's n) and an exponent of 65537 (that's e). Some sites show an elliptic-curve key (ECDSA) instead, which does the same signing job with a much smaller key.</p>
+  </details>
+ </div>
+</section>
+</main>
 </div>
-<div class="toast" id="toast" role="status"></div>
+<footer>
+  <p>Built for cybersecurity and networking courses at Brookdale Community College, 2026. Inspired by an RSA demo from John Sands, Moraine Valley Community College. Open educational resource. All cryptography runs locally in your browser.</p>
+</footer>
 
 <script>
-/* ---------- Data ---------- */
-const TACTICS = [
- {n:"01",name:"Personalization",tag:"Anchor the work in what only the student knows.",resist:3,effort:2,
-  summary:"Tie the task to the student’s own experiences, choices, workplace, community, or data. A chatbot has no access to what happened in a student’s clinical shift, home network, or summer job, so generic AI output stands out against the specifics you ask for.",
-  why:"It raises the cost of outsourcing: a student has to feed AI so much personal context that doing the thinking becomes the easier path. It also improves relevance and motivation.",
-  apps:[["Cybersecurity","Inventory the devices on your own home network (no IPs or passwords), rank three by risk, and justify the ranking."],["English","Connect a theme from the novel to a decision you made this year and explain how the text changed your view of it."],["Business","Build a budget around your real commute and expenses, or a persona whose variables you choose and defend."],["Nursing","Reflect on one patient interaction from your last clinical shift using the course’s communication model."]],
-  watch:"Students can still paste personal details into AI. Protect privacy: never require sensitive disclosures, and offer a provided persona as an equivalent option. Pair with process evidence or a brief conversation.",
-  mod:"Apply {topic} to a specific system, workplace, or situation from your own life; name it and describe two details only you would know.",
-  check:{q:"Which prompt is the strongest use of personalization?",o:["Describe the importance of password policies.","Compare your current workplace’s password practices to NIST guidance and propose two changes you could realistically pitch to your supervisor.","Write about password policies in your own words."],a:1,fb:"Option B requires context only the student has (their workplace) and a decision tied to their own role. “In your own words” is still generic and easy for AI to fake."}},
- {n:"02",name:"Process Scaffolding",tag:"Grade the journey, not just the destination.",resist:4,effort:4,
-  summary:"Break a major assignment into staged, graded checkpoints: topic proposal, annotated sources, outline, draft, revision, and final. Each stage gets brief feedback, and the final product must show how it grew from the earlier ones.",
-  why:"A single AI-generated product can’t easily fake a coherent trail of thinking spread over weeks. Checkpoints also catch struggling students early and reduce last-minute panic, a major driver of misconduct.",
-  apps:[["Research writing","Proposal, then annotated bibliography, then outline, then draft, then final, with 10% of the grade at each checkpoint."],["Cybersecurity lab","Submit timestamped screenshots and command history at each stage of a hardening lab rather than only the final report."],["Programming","Grade the Git commit history: small, frequent, well-described commits earn credit."],["Math","Submit a worked plan for a modeling problem before the full solution."]],
-  watch:"Grading load grows fast. Use quick completion checks or one-sentence feedback on early stages, and save detailed grading for the final. Keep checkpoints meaningful, not busywork.",
-  mod:"Submit {topic} in stages: a one-paragraph proposal, an annotated source list, and an outline before the final, each with instructor feedback.",
-  check:{q:"What makes process scaffolding resistant to AI?",o:["Students have more deadlines, so they have less time to use AI.","The trail of connected, evolving checkpoints is hard to fabricate after the fact, and feedback at each stage shapes the next.","Checkpoints let the instructor run each draft through an AI detector."],a:1,fb:"The value is the coherent, feedback-driven trail. Detectors are unreliable, and extra deadlines alone don’t prevent AI use."}},
- {n:"03",name:"Metacognition",tag:"Make students explain how they thought.",resist:3,effort:2,
-  summary:"Require students to describe their reasoning, decisions, dead ends, and confidence: decision logs, annotated drafts, exam wrappers, and think-aloud recordings. The thinking itself becomes part of what you assess.",
-  why:"Reflection tied to specific moments in a student’s own work is hard to generate convincingly, and it builds the self-regulation skills that make students less dependent on shortcuts.",
-  apps:[["Cybersecurity","Keep a troubleshooting decision log: each hypothesis, the test you ran, and what the result told you."],["Writing","Annotate three choices in your essay and explain what you considered and rejected."],["Math","Record a 3-minute think-aloud solving a problem, including where you got stuck."],["Any course","Complete an exam wrapper: which questions you missed, why, and how you’ll study differently."]],
-  watch:"AI writes generic reflections easily. Require references to specific timestamps, lines, or errors from the student’s own work, and follow up orally on a sample.",
-  mod:"Attach a decision log for {topic}: three choices you made, alternatives you rejected, and where you were least confident.",
-  check:{q:"Which metacognitive prompt is hardest to outsource?",o:["Reflect on what you learned in this unit.","Point to the line in your draft you rewrote most, paste both versions, and explain what feedback or test made you change it.","Describe your strengths and weaknesses as a learner."],a:1,fb:"Tying reflection to a specific artifact and a specific change forces genuine recall. The other prompts invite generic AI-style reflection."}},
- {n:"04",name:"Authentic Tasks",tag:"Real audiences, real constraints, real deliverables.",resist:3,effort:4,
-  summary:"Design tasks that mirror real professional work, with messy constraints, actual stakeholders, and deliverables someone will use: a playbook for a nonprofit, a proposal to a real department, a client project.",
-  why:"Real stakeholders bring context, feedback, and follow-up questions that AI can’t anticipate. Authenticity also raises motivation, which lowers the temptation to outsource.",
-  apps:[["Cybersecurity","Draft an incident response checklist for a local small business after interviewing its owner."],["Business","Pitch a marketing plan to a campus club and incorporate their feedback."],["Education","Design a lesson for an actual classroom partner and teach a segment."],["Engineering tech","Write a maintenance procedure for equipment in the college lab."]],
-  watch:"AI can still draft much of a professional document. Authenticity works best combined with stakeholder interaction, presentation, or reflection on feedback received.",
-  mod:"Produce {topic} as a deliverable for a real audience we identify together, and include their feedback and your response.",
-  check:{q:"An instructor has students write a security policy for a fictional company described in two sentences. How could this become more authentic?",o:["Make the policy longer and require APA formatting.","Partner with a real local organization, have students interview a contact, and present the policy to them for feedback.","Ban the use of AI and remind students of the honor code."],a:1,fb:"A real stakeholder, interview data, and live feedback add context and accountability. Length and bans don’t change the task itself."}},
- {n:"05",name:"Multimodal",tag:"Ask for more than a text box.",resist:3,effort:3,
-  summary:"Require evidence in several forms: hand-drawn diagrams, short videos with the student on camera, audio explanations, physical builds, posters, or live demos, often combined with a written component.",
-  why:"Switching modes forces students to re-express ideas, which reveals understanding. Personal, embodied products such as a hand sketch or an on-camera walkthrough are harder to outsource than text.",
-  apps:[["Networking","Hand-draw your lab’s topology, photograph it, then record a 2-minute video walking through how a packet travels."],["Biology","Build a physical model of a cell process and explain it in a poster session."],["History","Produce a 3-minute podcast interviewing a family member about a historical event."],["Electronics","Record a breadboard demo showing your circuit responding to input changes."]],
-  watch:"AI now generates images, voices, and video. Keep the student present (on camera, in person, or showing their hands and workspace). Provide accessible alternatives for students who need them.",
-  mod:"Present {topic} in two modes: a hand-drawn diagram you photograph, and a 2-minute video in which you explain it on camera.",
-  check:{q:"Which multimodal requirement adds the most AI resistance?",o:["Include an AI-generated image in your slide deck.","Record yourself on camera explaining your hand-drawn diagram while pointing to its parts.","Format your report with charts and headings."],a:1,fb:"The student’s presence and a hand-made artifact are hard to outsource. Generated images and formatting add nothing."}},
- {n:"06",name:"Synchronous",tag:"Some evidence should happen live.",resist:5,effort:3,
-  summary:"Move key evidence of learning into real time: brief oral defenses, in-class writing, live demonstrations, whiteboard problem-solving, or conferences about submitted work.",
-  why:"When the student explains, answers follow-ups, or performs a task in front of you, outsourcing is nearly impossible. Even a five-minute conversation validates take-home work.",
-  apps:[["Cybersecurity","A 5-minute oral defense: “Why did you put this firewall rule above that one?”"],["Composition","Draft the thesis and outline in class by hand, then finish the essay at home."],["Accounting","Solve a journal entry problem live at the board with a partner."],["Any course","Random-sample conferences: 20% of students explain their submission each week."]],
-  watch:"Live formats can raise anxiety and need accommodations: extra prep time, small-group or recorded options. Plan for scale with short, focused conversations and a simple rubric.",
-  mod:"Defend your {topic} work in a 4-minute conference where you answer two follow-up questions about your choices.",
-  check:{q:"An instructor has 120 students. What’s the most practical synchronous strategy?",o:["Give every student a 30-minute oral exam each week.","Hold brief conferences with a rotating random sample of students each week, using a short rubric.","Skip synchronous work entirely because it can’t scale."],a:1,fb:"Random sampling with short conversations keeps the deterrent effect without an impossible workload."}},
- {n:"07",name:"Collaborative",tag:"Learning that lives between people.",resist:3,effort:3,
-  summary:"Use structured group work with defined roles, peer review, discussion, and individual accountability. Students build on each other’s contributions in ways a single AI session can’t reproduce.",
-  why:"Group dynamics, shared artifacts, and peer dialogue create context that evolves in real time. Roles and contribution logs make each person’s thinking visible.",
-  apps:[["Cybersecurity","Run a tabletop incident exercise with roles: incident commander, communications lead, forensics analyst."],["Literature","Jigsaw: each member becomes an expert on one chapter and teaches the group."],["Writing","Peer review that must quote and respond to specific lines in a partner’s draft."],["Engineering","Team design project with a weekly individual contribution log and peer evaluation."]],
-  watch:"Watch for social loafing and one member outsourcing their share. Use individual contribution logs, peer evaluations, and an individual component in the grade.",
-  mod:"Complete {topic} in a team of three with assigned roles, an individual contribution log, and a peer review that quotes a teammate’s draft.",
-  check:{q:"How do you keep collaborative work AI-resistant at the individual level?",o:["Grade only the final group product.","Add individual contribution logs, peer evaluations, and an individual reflection or quiz on the group’s work.","Let the group choose whether to use AI."],a:1,fb:"Individual accountability within the group is what makes collaborative evidence trustworthy."}},
- {n:"08",name:"Higher-Order",tag:"Aim at analysis, evaluation, and creation.",resist:2,effort:3,
-  summary:"Target the upper levels of Bloom’s taxonomy: critique, compare, judge, design under constraints. Ask students to evaluate competing options using your course’s frameworks, or to critique and correct an AI-generated answer.",
-  why:"Recall and summary are where AI is strongest. Higher-order tasks demand judgment tied to criteria you taught, especially when combined with course-specific context.",
-  apps:[["Cybersecurity","Give students an AI-generated risk assessment and have them find and fix its errors using the course’s risk matrix."],["Business","Compare two real annual reports and recommend an investment using the framework from Week 4."],["Nursing","Evaluate two care plans for the same case and justify which better meets the standards."],["Electronics","Design a logic circuit that meets three constraints from our lab parts kit."]],
-  watch:"Be honest with yourself: current AI handles generic analysis and evaluation quite well. Higher-order design only resists AI when it’s combined with local context, course-specific frameworks, or live defense.",
-  mod:"Evaluate two competing approaches to {topic} using the framework from our course and recommend one, explaining which criteria decided it.",
-  check:{q:"Why isn’t a higher-order task enough on its own?",o:["Higher-order tasks are too hard for most students.","Modern AI can analyze and evaluate generic material well, so the task also needs course-specific context or live evidence.","Bloom’s taxonomy is outdated."],a:1,fb:"Higher-order thinking matters, but resistance comes from pairing it with context AI doesn’t have or with evidence produced live."}},
- {n:"09",name:"AI Transparency",tag:"Shift from banning to accountable use.",resist:2,effort:2,
-  summary:"Where AI use is allowed, require disclosure: an AI use statement, prompt logs, the original outputs, and the student’s edits and evaluation. Use a clear per-assignment policy, such as red (no AI), yellow (limited, disclosed), or green (encouraged, disclosed).",
-  why:"Transparency turns hidden use into visible, assessable work. Students practice critically evaluating AI output, a workforce skill, and expectations stop being ambiguous.",
-  apps:[["Any course","Label every assignment red, yellow, or green and explain why in the instructions."],["Writing","Append the prompt log and a paragraph on what you accepted, changed, or rejected from AI and why."],["Cybersecurity","Use AI to draft a phishing-awareness email, then document three inaccuracies or risks you corrected."],["Programming","Mark AI-assisted code blocks in comments and explain what each does."]],
-  watch:"Disclosure depends on trust. Make honest disclosure non-punitive, grade the quality of the evaluation, and be consistent across assignments.",
-  mod:"AI use is yellow for {topic}: you may use AI for brainstorming only, and must attach your prompts, the outputs, and a paragraph evaluating their accuracy.",
-  check:{q:"A student discloses AI use exactly as your yellow policy allows. What should happen?",o:["Lower the grade because AI was used.","Grade the work normally, including the quality of the student’s evaluation of the AI output.","Report the student for academic dishonesty."],a:1,fb:"Penalizing compliant disclosure teaches students to hide AI use. Reward honest, critical use."}},
- {n:"10",name:"Local Case Studies",tag:"Use cases that aren’t in the training data.",resist:4,effort:3,
-  summary:"Build assignments around local, recent, or class-generated material: your campus, your town, last week’s news, a guest speaker, data your class collected, or your own lab logs.",
-  why:"AI models know little about events after their training cutoff or about hyper-local situations. Class-generated sources, such as a speaker’s talk or a lab capture, exist nowhere else.",
-  apps:[["Cybersecurity","Analyze the packet capture our class generated in Tuesday’s lab."],["OT security","Assess the cyber posture of the local water utility using its public board meeting minutes."],["Business","Evaluate a new small business on our main street after visiting it."],["Any course","Respond to the specific arguments a guest speaker made in class."]],
-  watch:"AI with web search can find local news, so the strongest sources are class-generated (lab data, speaker notes, field observations). Refresh cases each term.",
-  mod:"Ground {topic} in a local or class-generated source: our lab data, a guest speaker’s talk, or an organization in our county.",
-  check:{q:"Which source is most resistant to AI?",o:["A famous breach covered widely in the news.","The network logs your class captured during last Thursday’s lab.","A textbook chapter case study."],a:1,fb:"Class-generated data exists nowhere else, so AI can’t draw on prior knowledge of it."}},
- {n:"11",name:"Iterative Revision",tag:"Grade the change between drafts.",resist:3,effort:4,
-  summary:"Require multiple drafts with feedback, and assess how well students respond to it: tracked changes, a revision memo that answers each comment, and evidence of improvement.",
-  why:"Responding thoughtfully to specific feedback on one’s own draft requires understanding. The growth between versions becomes assessable evidence.",
-  apps:[["Writing","Revision memo: for each instructor comment, explain what you changed and why, citing line numbers."],["Cybersecurity","Resubmit a vulnerability report after peer critique, highlighting what changed."],["Design","Version history showing three iterations of a prototype with test results."],["Lab science","Revise a lab report conclusion after comparing results with another group."]],
-  watch:"AI can revise text too. Tie the memo to specific feedback, do part of the revision in class, and weight the memo, not just the polished final.",
-  mod:"Revise {topic} after feedback and submit tracked changes plus a memo responding to each comment by line number.",
-  check:{q:"What gives a revision assignment its AI resistance?",o:["Requiring a higher word count in the second draft.","A memo connecting each specific piece of feedback to a specific change, with some revision done in class.","Running both drafts through a plagiarism checker."],a:1,fb:"The link between specific feedback and specific changes, plus some live work, is what reveals understanding."}},
- {n:"12",name:"Time-Bound",tag:"Constrain when and where the work happens.",resist:3,effort:2,
-  summary:"Use timed, in-session work: short in-class problems, timed lab challenges in an isolated environment, or quick writes. Constraining time and setting limits the opportunity to consult AI.",
-  why:"In a supervised, time-limited setting, students must rely on what they know. Short, frequent timed tasks also give you low-stakes evidence to compare with take-home work.",
-  apps:[["Cybersecurity","A 30-minute capture-the-flag challenge on an isolated lab network."],["Math","A 15-minute in-class problem at the start of each week."],["Composition","A 20-minute handwritten response to an unseen prompt."],["Networking","Timed subnetting drill on paper."]],
-  watch:"Time limits favor speed and can disadvantage students with accommodations; provide extended time as required. Unproctored online timers alone don’t stop AI use.",
-  mod:"Complete the core analysis of {topic} in a 25-minute supervised session; you may bring one page of handwritten notes.",
-  check:{q:"Which time-bound setup is most effective?",o:["A 60-minute online quiz taken at home, unsupervised.","A short supervised in-class task, with accommodations, compared against students’ take-home work.","A one-week deadline instead of two weeks."],a:1,fb:"Time limits matter when paired with supervision or setting control. Unsupervised timers don’t prevent AI use."}},
- {n:"13",name:"Experiential",tag:"Learning by doing in the physical world.",resist:5,effort:4,
-  summary:"Ground assessment in hands-on experience: physical labs, simulations, field observations, site visits, service learning, and internships, followed by reflection on what happened.",
-  why:"Physical performance and first-hand observation can’t be generated. The instructor or supervisor directly sees the skill, and the reflection draws on unique lived experience.",
-  apps:[["Cybersecurity","Configure a firewall on physical lab equipment; the instructor verifies the rule set at the bench."],["OT/ICS","Visit a substation or water plant and document three observed security controls."],["Electronics","Build and troubleshoot a circuit with an instructor sign-off."],["Health sciences","Skills check-off on a simulation mannequin."]],
-  watch:"Logistics, cost, and access vary; offer simulations or virtual labs as equivalents. Any written reflection still needs the safeguards from other tactics.",
-  mod:"Carry out {topic} hands-on in the lab or field, with an instructor sign-off and observation notes you record on site.",
-  check:{q:"Which is the strongest experiential assessment?",o:["Write a report describing how a firewall should be configured.","Configure the firewall on lab equipment and demonstrate it to the instructor, who tests two rules.","Watch a video of a firewall configuration and summarize it."],a:1,fb:"Direct, observed performance is the core of experiential assessment. Descriptions and summaries are easy for AI."}}
-];
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep=ms=>new Promise(r=>setTimeout(r,reduced?0:ms));
+const subtle=(window.crypto&&window.crypto.subtle)||null;
+const enc=new TextEncoder(),dec=new TextDecoder();
+const fmt=n=>(typeof n==='bigint'?n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,','):n.toLocaleString('en-US'));
+const sup=n=>'<sup>'+n+'</sup>';
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+function unb64(s){const bin=atob(s);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+function hex(buf){return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+function pem(buf,label){const s=b64(buf).match(/.{1,64}/g).join('\n');return '-----BEGIN '+label+'-----\n'+s+'\n-----END '+label+'-----';}
+function shortHex(h,n){n=n||24;return h.length<=n*2?h:h.slice(0,n)+'…'+h.slice(-n);}
 
-const COMPS = [
- {d:"A",title:"AI literacy",sub:"Know the tool you’re designing around",items:[
-  ["Map AI’s strengths and blind spots","Know what current tools do well (fluent text, code, summaries, images, voice) and poorly (hyper-local context, lived experience, physical tasks, verified citations)."],
-  ["Stress-test your own assignments","Run your prompts through two or three AI tools each term to see what a student would get, and revise accordingly."]]},
- {d:"B",title:"Assessment design",sub:"Build validity into the task",items:[
-  ["Align tasks to outcomes and Bloom’s levels","Decide what evidence truly shows mastery, then design tasks and rubrics that reward reasoning and process, not just polish."],
-  ["Collect process evidence","Use checkpoints, version history, logs, and conversations so you can see learning develop over time."]]},
- {d:"C",title:"Integrity and policy",sub:"Set clear, fair expectations",items:[
-  ["Write per-assignment AI policies","Label each task (for example red, yellow, green), explain the reason, and show students how to disclose use."],
-  ["Respond to concerns with conversation, not detectors","Understand detector error rates and bias, and use a learning conversation about the work as your primary check."]]},
- {d:"D",title:"Equity and sustainability",sub:"Design for every student, and for you",items:[
-  ["Apply UDL and accommodations","Offer equivalent options for oral, timed, and personal tasks, and protect student privacy."],
-  ["Manage workload","Choose tactics that scale: sampling, quick checks, reusable rubrics, and rotating local cases."]]}
-];
-
-const BASES = [
- {id:"essay",field:"General education",text:"Write a 1,000-word essay explaining the causes of major data breaches.",topic:"the causes of data breaches"},
- {id:"osi",field:"Networking",text:"Write a report explaining the seven layers of the OSI model.",topic:"the OSI model"},
- {id:"case",field:"Cybersecurity",text:"Summarize a well-known ransomware case and list the lessons learned.",topic:"ransomware response"},
- {id:"lit",field:"English",text:"Write a five-paragraph essay on the main themes of the novel.",topic:"the novel’s themes"}
-];
-
-const QUIZ = [
- {q:"Students submit a proposal, annotated bibliography, and draft before the final paper, each receiving feedback. Which tactic is this?",o:["Time-Bound","Process Scaffolding","Multimodal","Authentic Tasks"],a:1,fb:"Staged, graded checkpoints with feedback are the heart of process scaffolding."},
- {q:"Students analyze network logs captured by the class during last week’s lab. Which tactic does this best represent?",o:["Local Case Studies","Personalization","Higher-Order","AI Transparency"],a:0,fb:"Class-generated data is a local case that exists nowhere in AI training data."},
- {q:"Students may use AI to brainstorm, but must attach prompts, outputs, and an evaluation of their accuracy. Which tactic is this?",o:["Metacognition","Iterative Revision","AI Transparency","Collaborative"],a:2,fb:"Permitted, disclosed, and evaluated use is AI transparency."},
- {q:"Why shouldn’t AI detectors be your primary integrity strategy?",o:["They are too expensive for most colleges.","They produce false positives and negatives, and have been shown to flag non-native English writers more often.","Students can’t see the detector score."],a:1,fb:"Detector errors and bias make them unsafe as the sole basis for an integrity decision. Use them, if at all, only as one signal prompting a conversation."},
- {q:"Which statement best describes an AI-resistant assignment?",o:["It makes AI use impossible.","It reduces the usefulness of outsourcing to AI and makes students’ learning visible.","It requires software that blocks AI websites."],a:1,fb:"No assignment is AI-proof. Good design lowers the payoff of shortcuts and produces trustworthy evidence of learning."},
- {q:"A take-home research paper is your main assessment. Which combination gives the strongest resistance at reasonable cost?",o:["Higher word count plus an AI detector","Process checkpoints, a local case, and a brief oral check-in","A stricter honor code statement"],a:1,fb:"Layering complementary tactics (process, context, live evidence) works far better than length, detectors, or warnings."},
- {q:"A student with an anxiety accommodation is worried about a live oral defense. What’s the best response?",o:["Waive the requirement and grade only the written work.","Offer an equivalent option, such as extra prep time, a one-on-one setting, or a recorded explanation with a short follow-up.","Require the oral defense anyway to keep things fair."],a:1,fb:"Equivalent alternatives keep the evidence of understanding while honoring the accommodation."},
- {q:"Students write a memo responding to each instructor comment by line number and submit tracked changes. Which tactic is this?",o:["Iterative Revision","Synchronous","Experiential","Personalization"],a:0,fb:"Assessing how students respond to feedback across drafts is iterative revision."},
- {q:"Why is a higher-order task alone not enough?",o:["Students dislike analysis tasks.","Current AI can analyze and evaluate generic material well, so the task also needs context AI lacks or live evidence.","Higher-order tasks can’t be graded with rubrics."],a:1,fb:"Higher-order thinking is necessary but not sufficient. Pair it with local context or synchronous evidence."},
- {q:"An instructor with 120 students wants to validate take-home lab reports. What’s the most scalable approach?",o:["Oral exams for every student every week","Short conferences with a random sample of students each week, using a simple rubric","Ignore validation because the class is too large"],a:1,fb:"Random sampling keeps the deterrent effect of synchronous checks at a manageable workload."}
-];
-
-const GLOSS = [
- ["AI-resistant assignment","A task designed so outsourcing it to AI is less useful than doing it, and that produces trustworthy evidence of learning. Not the same as AI-proof."],
- ["Assessment validity","How well an assessment measures what it claims to measure. AI shortcuts threaten validity when the product no longer reflects the student’s ability."],
- ["Process evidence","Artifacts showing how work developed: drafts, logs, version history, checkpoints, conversations."],
- ["AI detector","Software that estimates whether text was machine-generated. Error-prone and potentially biased; never sufficient alone for an integrity finding."],
- ["False positive","A detector flagging human-written work as AI-generated. Research has found higher rates for non-native English writers."],
- ["Traffic-light policy","A per-assignment AI policy: red (no AI), yellow (limited and disclosed), green (encouraged and disclosed)."],
- ["Authentic assessment","A task that mirrors real-world work, with real audiences, constraints, and consequences."],
- ["Metacognition","Thinking about one’s own thinking: planning, monitoring, and evaluating how one learns and decides."],
- ["Oral defense","A short live conversation in which a student explains and answers questions about their work."],
- ["Bloom’s taxonomy","A hierarchy of cognitive skills: remember, understand, apply, analyze, evaluate, create."],
- ["Prompt log","A record of the prompts a student gave an AI tool and the outputs received, submitted for transparency."],
- ["Hallucination","Confident but false AI output, such as invented citations or facts. A useful target for critique tasks."]
-];
-
-const NAV = [
- {id:"start",label:"Start here"},
- {id:"tactics",label:"13 tactics"},
- {id:"lab",label:"Redesign lab"},
- {id:"quiz",label:"Knowledge check"},
- {id:"glossary",label:"Key terms"},
- {id:"log",label:"Progress log"}
-];
-
-/* ---------- Storage ---------- */
-const KEY = "ai-resistant-activity-v1";
-const THEME_KEY = "ai-resistant-theme";
-const blank = () => ({name:"",seen:[],done:[],comps:{},lab:null,quizBest:null,reflect:"",flipped:[],log:[]});
-let S = blank();
-try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch(e) {}
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
-function log(type, detail){ S.log.unshift({t:new Date().toISOString(), type, detail}); if (S.log.length > 400) S.log.length = 400; save(); renderProgress(); if (cur === "log") renderLog(); }
-
-/* ---------- Theme ---------- */
-const root = document.documentElement;
-function setTheme(t){
-  root.setAttribute("data-theme", t);
-  const dark = t === "dark";
-  document.getElementById("themeBtn").setAttribute("aria-pressed", String(dark));
-  document.getElementById("themeLabel").textContent = dark ? "Light mode" : "Dark mode";
-  document.getElementById("themeIcon").innerHTML = dark
-    ? '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'
-    : '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+/* ---------- math helpers ---------- */
+function modPow(b,e,m){let r=1n;b%=m;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n;}return r;}
+function gcd(a,b){while(b){[a,b]=[b,a%b];}return a;}
+function isPrime(n){
+  n=BigInt(n);if(n<2n)return false;
+  for(const q of [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){if(n===q)return true;if(n%q===0n)return false;}
+  let d=n-1n,s=0;while((d&1n)===0n){d>>=1n;s++;}
+  outer:for(const a of [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){
+    let x=modPow(a,d,n);if(x===1n||x===n-1n)continue;
+    for(let r=1;r<s;r++){x=x*x%n;if(x===n-1n)continue outer;}
+    return false;
+  }
+  return true;
 }
-let savedTheme = "light";
-try { savedTheme = localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light"; } catch(e) {}
-setTheme(savedTheme);
-document.getElementById("themeBtn").addEventListener("click", () => {
-  const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-  setTheme(next);
-  try { localStorage.setItem(THEME_KEY, next); } catch(e) {}
+function modInv(e,m){let [r0,r1]=[m,e],[t0,t1]=[0n,1n];while(r1!==0n){const q=r0/r1;[r0,r1]=[r1,r0-q*r1];[t0,t1]=[t1,t0-q*t1];}if(r0!==1n)return null;return ((t0%m)+m)%m;}
+function randInt(lo,hi){const a=new Uint32Array(2);crypto.getRandomValues(a);const f=(a[0]*4294967296+a[1])/18446744073709551616;return lo+Math.floor(f*(hi-lo+1));}
+function randPrime(lo,hi){for(;;){let x=randInt(lo,hi)|1;if(x>hi)x-=2;if(isPrime(x))return x;}}
+
+/* ---------- tabs ---------- */
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function selectTab(t,focus){
+  tabs.forEach(x=>{const on=x===t;x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1;$(x.getAttribute('aria-controls')).hidden=!on;});
+  if(focus)t.focus();
+  try{history.replaceState(null,'','#'+t.id.replace('tab-',''));}catch(e){}
+  if(window.innerWidth<960)$('main').scrollIntoView({block:'start'});
+}
+tabs.forEach((t,i)=>{
+  t.addEventListener('click',()=>selectTab(t));
+  t.addEventListener('keydown',e=>{
+    let j=null;
+    if(e.key==='ArrowDown'||e.key==='ArrowRight')j=(i+1)%tabs.length;
+    else if(e.key==='ArrowUp'||e.key==='ArrowLeft')j=(i-1+tabs.length)%tabs.length;
+    else if(e.key==='Home')j=0;else if(e.key==='End')j=tabs.length-1;
+    if(j!==null){e.preventDefault();selectTab(tabs[j],true);}
+  });
 });
 
-/* ---------- Helpers ---------- */
-const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200); }
-const pips = (n, cls) => Array.from({length:5}, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("");
+/* ---------- progress ---------- */
+const PROG_KEY='rsa-locks-seals-progress-v1';
+let progress=new Set();
+try{const raw=localStorage.getItem(PROG_KEY);if(raw)progress=new Set(JSON.parse(raw));}catch(e){}
+function renderProgress(){
+  tabs.forEach(t=>t.classList.toggle('done',progress.has(t.id.replace('tab-',''))));
+  tabs.forEach(t=>{const base=t.textContent.replace(/^\d+/,'').trim();t.setAttribute('aria-label',base+(progress.has(t.id.replace('tab-',''))?', completed':''));});
+  $('progText').textContent=progress.size+' of '+tabs.length+' stops done'+(progress.size===tabs.length?'. Route complete!':'');
+  $('progFill').style.width=(progress.size/tabs.length*100)+'%';
+}
+function markDone(id){if(progress.has(id))return;progress.add(id);try{localStorage.setItem(PROG_KEY,JSON.stringify([...progress]));}catch(e){}renderProgress();}
+$('progReset').addEventListener('click',()=>{progress=new Set();try{localStorage.removeItem(PROG_KEY);}catch(e){}renderProgress();});
+renderProgress();
+/* next-stop buttons */
+document.querySelectorAll('[role=tabpanel]').forEach((p,i)=>{
+  const body=p.querySelector('.panel-body');const nxt=tabs[i+1];
+  const wrap=document.createElement('div');wrap.className='next-stop';
+  const b=document.createElement('button');b.type='button';b.className='primary';
+  if(nxt){b.textContent='Next stop: '+nxt.textContent.replace(/^\d+/,'').trim();b.addEventListener('click',()=>{selectTab(nxt,true);window.scrollTo({top:0,behavior:reduced?'auto':'smooth'});});}
+  else{b.textContent='Back to the first stop';b.addEventListener('click',()=>{selectTab(tabs[0],true);window.scrollTo({top:0});});}
+  wrap.appendChild(b);body.appendChild(wrap);
+});
+/* copy buttons */
+document.querySelectorAll('[data-copy]').forEach(b=>{
+  const label=b.textContent;
+  b.addEventListener('click',async()=>{
+    const el=$(b.dataset.copy);const text=('value' in el&&el.tagName!=='DIV')?el.value:el.textContent;
+    if(!text||/^Generate/.test(text)){b.textContent='Nothing to copy yet';setTimeout(()=>b.textContent=label,1400);return;}
+    try{await navigator.clipboard.writeText(text);b.textContent='Copied';}catch(e){b.textContent='Copy blocked: select and copy manually';}
+    setTimeout(()=>b.textContent=label,1600);
+  });
+});
 
-/* ---------- Progress ---------- */
-const TOTAL = 16; // 13 tactics + lab + quiz + reflection
-function units(){ return S.done.length + (S.lab ? 1 : 0) + (S.quizBest !== null && S.quizBest >= 70 ? 1 : 0) + (S.reflect.trim() ? 1 : 0); }
-function sectionDone(id){
-  if (id === "start") return Object.keys(S.comps).length === 8;
-  if (id === "tactics") return S.done.length === 13;
-  if (id === "lab") return !!S.lab;
-  if (id === "quiz") return S.quizBest !== null && S.quizBest >= 70;
-  if (id === "glossary") return S.flipped.length === GLOSS.length;
-  if (id === "log") return !!S.reflect.trim();
+/* ---------- SVG builders ---------- */
+function padlockSVG(open,w){
+  return '<svg viewBox="0 0 40 44" width="'+(w||40)+'" class="'+(open?'open':'')+'" aria-hidden="true"><path class="lock-shackle" d="M13 22 V14 a7 7 0 0 1 14 0 V22"/><rect class="lock-body" x="7" y="20" width="26" height="20" rx="3"/><circle class="lock-hole" cx="20" cy="29" r="2.6"/><rect class="lock-hole" x="19" y="30" width="2" height="5"/></svg>';
+}
+function boxSVG(){
+  return '<svg viewBox="0 0 120 110" class="box" aria-hidden="true">'+
+   '<rect class="box-note" id="boxNote" x="34" y="30" width="52" height="24" rx="2" style="visibility:hidden"/>'+
+   '<rect class="box-wood" x="8" y="44" width="104" height="58" rx="4"/><rect class="box-band" x="8" y="62" width="104" height="8"/>'+
+   '<g class="box-lid"><rect class="box-wood" x="4" y="30" width="112" height="18" rx="4"/></g>'+
+   '<g id="boxLock" transform="translate(46,40)" style="visibility:hidden"><g class="open" id="boxLockInner"><path class="lock-shackle" d="M13 22 V14 a7 7 0 0 1 14 0 V22"/><rect class="lock-body" x="7" y="20" width="26" height="20" rx="3"/><circle class="lock-hole" cx="20" cy="29" r="2.6"/></g></g></svg>';
+}
+function initLegend(){ $('legendLock').innerHTML=padlockSVG(true,30); }
+function sealSVG(bytes,size){
+  size=size||96;
+  let rays='';const N=20;
+  for(let i=0;i<N;i++){
+    const a=i/N*Math.PI*2,len=4+(bytes[i]%28),r0=12;
+    const x1=50+r0*Math.cos(a),y1=50+r0*Math.sin(a),x2=50+(r0+len)*Math.cos(a),y2=50+(r0+len)*Math.sin(a);
+    rays+='<line class="wax-ray" x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'"/>';
+  }
+  let dots='';for(let i=0;i<6;i++){const a=(bytes[20+i]/255)*Math.PI*2,r=4+(bytes[26+i]%8);dots+='<circle class="wax-dot" cx="'+(50+r*Math.cos(a)).toFixed(1)+'" cy="'+(50+r*Math.sin(a)).toFixed(1)+'" r="2.4"/>';}
+  return '<svg viewBox="0 0 100 100" width="'+size+'" height="'+size+'" aria-hidden="true"><path class="wax-disc" d="M50 3 C70 2 92 14 96 34 C100 54 94 80 74 92 C56 101 30 99 15 86 C2 74 0 48 6 32 C12 14 30 4 50 3Z"/>'+rays+dots+'</svg>';
+}
+
+initLegend();
+/* ---------- 1a PADLOCK SCENE ---------- */
+const L={stage:'start',fromEve:false,opened:false};
+function locksCheck(){if(L.opened&&SEAL.checked)markDone('locks');}
+const mover=$('mover');
+function pileRender(n){$('pile').innerHTML=Array.from({length:n},()=>padlockSVG(true,26)).join('');}
+function setStageButtons(){
+  const st=L.stage;
+  const en={actGet:st==='start',actLock:st==='have',actSend:st==='locked',actEveLock:st==='eve',actEvePry:st==='eve',actPass:st==='eve',actOpen:st==='bob',actTwist:st==='opened'};
+  Object.keys(en).forEach(k=>{$(k).disabled=!en[k];});
+}
+function narr(t){$('lockNarr').innerHTML=t;}
+function resetLocks(){
+  L.stage='start';mover.className='mover';mover.innerHTML=boxSVG();pileRender(4);
+  $('noteText').disabled=false;
+  narr('Bob has a pile of open padlocks and gives them to anyone who asks. Eve has one too. Start by taking one.');
+  setStageButtons();
+}
+function boxLock(show,open){const g=mover.querySelector('#boxLock');g.style.visibility=show?'visible':'hidden';mover.querySelector('#boxLockInner').setAttribute('class',open?'open':'');}
+$('actGet').addEventListener('click',()=>{L.stage='have';pileRender(3);boxLock(true,true);
+  narr('Alice now holds one of Bob\'s open padlocks: his <span class="key-chip pub">public key</span>. Anyone could have taken one, and that\'s fine.');setStageButtons();});
+$('actLock').addEventListener('click',()=>{L.stage='locked';boxLock(true,false);$('noteText').disabled=true;
+  narr('Snap. The box is locked. Notice that Alice can\'t open it again herself: she has a padlock, not a key.');setStageButtons();});
+$('actSend').addEventListener('click',async()=>{L.stage='moving';setStageButtons();mover.classList.add('at-eve');narr('The box heads along the mail route…');await sleep(1150);
+  L.stage='eve';narr('Eve has the box in her hands. What can she do with it?');setStageButtons();});
+$('actEveLock').addEventListener('click',async()=>{mover.classList.remove('shake');void mover.offsetWidth;mover.classList.add('shake');
+  narr('Eve\'s copy of Bob\'s padlock is useless here. A padlock can only <b>lock</b>. The public key encrypts, but it can\'t decrypt.');});
+$('actEvePry').addEventListener('click',()=>{mover.classList.remove('shake');void mover.offsetWidth;mover.classList.add('shake');
+  narr('Prying it open is the math attack: factoring Bob\'s n. With real 2048-bit keys that\'s out of reach (see the <em>Factoring race</em> tab).');});
+$('actPass').addEventListener('click',async()=>{L.stage='moving';setStageButtons();mover.classList.add('at-bob');await sleep(1150);
+  L.stage='bob';narr('The box reaches Bob, still locked.');setStageButtons();});
+$('actOpen').addEventListener('click',()=>{L.stage='opened';L.opened=true;locksCheck();boxLock(true,true);mover.querySelector('.box').classList.add('opened');mover.querySelector('#boxNote').style.visibility='visible';
+  narr('Bob\'s <span class="key-chip priv">private key</span> opens it. The note: <span class="note-reveal">"'+esc($('noteText').value||'(empty note)')+'"</span>');setStageButtons();});
+$('actTwist').addEventListener('click',async()=>{
+  L.stage='twist';setStageButtons();mover.className='mover at-eve';mover.innerHTML=boxSVG();boxLock(true,false);await sleep(200);mover.classList.add('at-bob');await sleep(1150);
+  boxLock(true,true);mover.querySelector('.box').classList.add('opened');mover.querySelector('#boxNote').style.visibility='visible';
+  narr('Eve locked a box with her copy of Bob\'s padlock and mailed it, with a note signed "Alice." It opens perfectly. Bob has no way to tell who sent it, because anyone can use a padlock. Proving who sent something takes a <b>seal</b>, which is Scene 2.');
+});
+$('actReset').addEventListener('click',resetLocks);
+resetLocks();
+
+/* ---------- 1b SEAL SCENE ---------- */
+var SEAL={sealed:false,origText:'',forged:false,checked:false};
+async function sealBytes(text,ring){const h=await subtle.digest('SHA-256',enc.encode(ring+'|'+text));return new Uint8Array(h);}
+async function fallbackBytes(text,ring){/* simple non-crypto hash for insecure contexts */const s=ring+'|'+text;const out=new Uint8Array(32);let h=2166136261;for(let k=0;k<32;k++){for(let i=0;i<s.length;i++){h^=s.charCodeAt(i)+k;h=Math.imul(h,16777619);}out[k]=h&255;}return out;}
+const sealOf=(t,r)=>subtle?sealBytes(t,r):fallbackBytes(t,r);
+async function checkSeal(){
+  if(!SEAL.sealed)return;
+  const recv=$('letterRecv').value;
+  const seen=await sealOf(SEAL.forged?recv:SEAL.origText,SEAL.forged?'mallory-ring':'alice-ring');
+  const expect=await sealOf(recv,'alice-ring');
+  $('sealSeen').innerHTML=sealSVG(seen);$('sealExpect').innerHTML=sealSVG(expect);
+  $('fpSeen').textContent='pattern '+hex(seen).slice(0,12);$('fpExpect').textContent='pattern '+hex(expect).slice(0,12);
+  $('sealOnRecv').innerHTML=sealSVG(seen,84);
+  const ok=hex(seen)===hex(expect);
+  if(!ok){SEAL.checked=true;locksCheck();}
+  const v=$('sealVerdict');
+  if(ok){v.className='verdict good';v.textContent='✓ Seal matches. This came from Alice and hasn\'t been changed.';}
+  else if(SEAL.forged){v.className='verdict bad';v.textContent='✕ Seal doesn\'t match. It was pressed by a different ring, so it isn\'t Alice\'s, even though the letter is signed "Alice."';}
+  else {v.className='verdict bad';v.textContent='✕ Seal doesn\'t match these words. Someone changed the letter after Alice sealed it.';}
+}
+$('sealPress').addEventListener('click',async()=>{
+  SEAL.sealed=true;SEAL.forged=false;SEAL.origText=$('letterText').value;
+  $('sealOnLetter').innerHTML=sealSVG(await sealOf(SEAL.origText,'alice-ring'),84);
+  $('letterRecv').value=SEAL.origText;$('letterRecv').disabled=false;$('sealForge').disabled=false;
+  $('sealCompare').hidden=false;checkSeal();
+});
+$('letterText').addEventListener('input',()=>{if(SEAL.sealed){$('sealOnLetter').innerHTML='';$('sealVerdict').className='verdict wait';$('sealVerdict').textContent='Alice changed her letter, so she needs to seal it again.';SEAL.sealed=false;$('sealCompare').hidden=true;$('letterRecv').value='';$('letterRecv').disabled=true;$('sealOnRecv').innerHTML='';$('sealForge').disabled=true;}});
+$('letterRecv').addEventListener('input',checkSeal);
+$('sealForge').addEventListener('click',()=>{
+  SEAL.forged=true;$('letterRecv').value=SEAL.origText.replace(/\$\s?\d+/,'$5,000').replace('club account','account ending 9911');
+  if($('letterRecv').value===SEAL.origText)$('letterRecv').value=SEAL.origText+' P.S. Send it today.';
+  checkSeal();
+});
+
+/* ---------- 2 TOY RSA ---------- */
+const SMALLP=[];for(let i=11;i<=251;i++)if(isPrime(i))SMALLP.push(i);
+const T={p:61,q:53,e:17,eu:[],euShown:0};
+function fillPQ(){
+  $('toyP').innerHTML=SMALLP.map(p=>'<option'+(p===T.p?' selected':'')+'>'+p+'</option>').join('');
+  $('toyQ').innerHTML=SMALLP.map(p=>'<option'+(p===T.q?' selected':'')+'>'+p+'</option>').join('');
+}
+function fillE(){
+  const phi=(T.p-1)*(T.q-1);const opts=[];
+  for(let e=3;e<phi&&opts.length<14;e+=2)if(gcd(e,phi)===1)opts.push(e);
+  if(65537<phi&&gcd(65537,phi)===1)opts.push(65537);
+  if(!opts.includes(T.e))T.e=opts[0];
+  $('toyE').innerHTML=opts.map(e=>'<option'+(e===T.e?' selected':'')+'>'+e+'</option>').join('');
+}
+function euclidRows(e,m){const rows=[];let [r0,r1]=[m,e],[t0,t1]=[0n,1n];rows.push({r:r0,q:'',t:t0});rows.push({r:r1,q:'',t:t1});
+  while(r1!==0n){const q=r0/r1;[r0,r1]=[r1,r0-q*r1];[t0,t1]=[t1,t0-q*t1];rows.push({r:r1,q:q,t:t1});if(r1===0n)break;}
+  return rows;}
+function renderEu(){
+  const tb=$('euTable').querySelector('tbody');
+  tb.innerHTML=T.eu.slice(0,T.euShown).map((r,i)=>'<tr'+(r.r===1n?' class="hl"':'')+'><td>'+r.r+'</td><td>'+(r.q===''?'–':r.q)+'</td><td>'+r.t+'</td></tr>').join('');
+  const done=T.euShown>=T.eu.length||T.eu.slice(0,T.euShown).some(r=>r.r===1n);
+  const phi=BigInt((T.p-1)*(T.q-1));const d=modInv(BigInt(T.e),phi);
+  $('euResult').innerHTML=done?'Remainder 1 reached. Its t is '+T.eu.find(r=>r.r===1n).t+', and adding φ(n) if needed gives <b>d = '+d+'</b>. Check: '+T.e+' × '+d+' = '+(BigInt(T.e)*d)+', which leaves remainder '+(BigInt(T.e)*d%phi)+' when divided by '+phi+'.':'Keep going until the remainder is 1.';
+  $('euStep').disabled=done;$('euAll').disabled=done;
+}
+function renderToy(){
+  const err=$('toyErr');err.textContent='';
+  if($('toyWork')){$('toyWork').innerHTML='';$('toyDictOut').className='msg';$('toyDictOut').innerHTML='';}
+  if(T.p===T.q){err.textContent='p and q must be different primes. If they were equal, n would be a perfect square and Eve could take its square root.';$('toyForge').innerHTML='';return;}
+  const n=T.p*T.q,phi=(T.p-1)*(T.q-1);
+  fillE();
+  const d=Number(modInv(BigInt(T.e),BigInt(phi)));
+  $('toyForge').innerHTML=
+    '<div class="tile priv"><small>Secret primes</small><b>'+T.p+', '+T.q+'</b><small>throw away after</small></div>'+
+    '<div class="tile pub"><small>n = p × q</small><b>'+fmt(n)+'</b><small>public</small></div>'+
+    '<div class="tile priv"><small>φ(n) = (p−1)(q−1)</small><b>'+fmt(phi)+'</b><small>secret</small></div>'+
+    '<div class="tile pub"><small>Public key (e, n)</small><b>'+T.e+', '+fmt(n)+'</b><small>hand to anyone</small></div>'+
+    '<div class="tile priv" style="grid-column:span 2"><small>Private key d (e × d leaves remainder 1 mod φ)</small><b>'+fmt(d)+'</b><small>only Bob</small></div>';
+  T.eu=euclidRows(BigInt(T.e),BigInt(phi));T.euShown=2;renderEu();
+  renderToyMsg();
+}
+const PAL=['var(--red)','var(--navy)','var(--brass)','var(--eve)','var(--ok)','var(--wax-light)'];
+function renderToyMsg(){
+  if(T.p===T.q)return;
+  const n=BigInt(T.p*T.q),phi=BigInt((T.p-1)*(T.q-1)),e=BigInt(T.e),d=modInv(e,phi);
+  const raw=$('toyMsg').value;const chars=[...raw].map(c=>{const k=c.charCodeAt(0);return (k>=32&&k<=126)?c:'?';});
+  const counts={};chars.forEach(c=>counts[c]=(counts[c]||0)+1);
+  const colorOf={};let ci=0;Object.keys(counts).forEach(c=>{if(counts[c]>1&&c!==' ')colorOf[c]=PAL[ci++%PAL.length];});
+  let rows='',stream='';
+  chars.forEach(c=>{
+    const m=BigInt(c.charCodeAt(0)),cc=modPow(m,e,n),back=modPow(cc,d,n);
+    const col=colorOf[c];
+    stream+='<span'+(col?' class="rep" style="border-color:'+col+'"':'')+'>'+cc+'</span>';
+    rows+='<tr><td>'+(c===' '?'space':esc(c))+'</td><td>'+m+'</td><td'+(col?' style="box-shadow:inset 4px 0 0 '+col+'"':'')+'>'+cc+'</td><td>'+back+'</td><td>'+esc(String.fromCharCode(Number(back)))+'</td><td><button type="button" data-work="'+m+'" aria-label="Show the work for '+(c===' '?'space':esc(c))+'">How?</button></td></tr>';
+  });
+  $('toyStream').innerHTML=stream||'<span>type a message</span>';
+  $('toyTable').querySelector('tbody').innerHTML=rows;
+  const reps=Object.keys(colorOf);
+  $('toyLeak').innerHTML=reps.length?'<b>Eve notices a pattern.</b> Repeated characters ('+reps.map(c=>'"'+esc(c)+'"').join(', ')+') always become the same ciphertext number, outlined in matching colors. She doesn\'t need the private key to start guessing the message.':'No repeated characters in this message, but if there were, they\'d encrypt to identical numbers. Try a word with repeated letters.';
+}
+$('toyP').addEventListener('change',e=>{T.p=+e.target.value;renderToy();});
+$('toyQ').addEventListener('change',e=>{T.q=+e.target.value;renderToy();});
+$('toyE').addEventListener('change',e=>{T.e=+e.target.value;renderToy();});
+$('toyMsg').addEventListener('input',()=>{renderToyMsg();$('toyDictOut').className='msg';$('toyDictOut').innerHTML='';$('toyWork').innerHTML='';});
+$('euStep').addEventListener('click',()=>{T.euShown++;renderEu();if($('euStep').disabled)markDone('toy');});
+$('euAll').addEventListener('click',()=>{const idx=T.eu.findIndex(r=>r.r===1n);T.euShown=idx+1;renderEu();markDone('toy');});
+$('toyTable').querySelector('tbody').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-work]');if(!b)return;
+  const m=BigInt(b.dataset.work),n=BigInt(T.p*T.q),e2=BigInt(T.e);
+  const bits=e2.toString(2);let r=1n,rows='';
+  [...bits].forEach((bit,i)=>{
+    const sq=r*r%n;let line='square: '+r+sup(2)+' mod '+n+' = '+sq;r=sq;
+    if(bit==='1'){const mu=r*m%n;line+=', then multiply by m: '+r+' × '+m+' mod '+n+' = '+mu;r=mu;}
+    rows+='<tr><td>'+bit+'</td><td style="font-family:var(--font-ui)">'+line+'</td></tr>';
+  });
+  $('toyWork').innerHTML='<h4>How '+m+sup(T.e)+' mod '+n+' is computed without huge numbers</h4><p>Write e = '+T.e+' in binary: <code>'+bits+'</code>. Walk through the bits: always square, and multiply by m when the bit is 1. Reducing mod n at every step keeps the numbers small, which is how computers handle 2048-bit exponents.</p><div class="scroll"><table class="t"><thead><tr><th scope="col">Bit</th><th scope="col">Step</th></tr></thead><tbody>'+rows+'</tbody></table></div><p><b>Result: '+r+'</b>, only '+bits.length+' squarings instead of '+(T.e-1)+' multiplications.</p>';
+  $('toyWork').scrollIntoView({block:'nearest',behavior:reduced?'auto':'smooth'});
+});
+$('toyDict').addEventListener('click',()=>{
+  if(T.p===T.q)return;
+  const n=BigInt(T.p*T.q),e=BigInt(T.e);const book=new Map();
+  for(let k=32;k<=126;k++)book.set(modPow(BigInt(k),e,n).toString(),String.fromCharCode(k));
+  const cs=[...$('toyStream').querySelectorAll('span')].map(x=>x.textContent);
+  const out=cs.map(c=>book.get(c)||'?').join('');
+  $('toyDictOut').className='msg bad';
+  $('toyDictOut').innerHTML='<b>Eve never needed d.</b> She used Bob\'s public key to encrypt all 95 printable characters, built a lookup table, and read the message straight off the ciphertext: <b>'+esc(out)+'</b>. Random padding (OAEP) stops this, because the same character never encrypts the same way twice.';
+  markDone('toy');
+});
+fillPQ();renderToy();
+
+/* ---------- 3 REAL RSA ---------- */
+const K={bob:null,eve:null,bits:2048,want:2048,alice:null,mallory:null,encMs:null};
+if(!subtle){$('noCrypto').hidden=false;['realGen','sigGen','hyRun','hyRsaOnly'].forEach(id=>$(id).disabled=true);}
+const oaepParams=bits=>({name:'RSA-OAEP',modulusLength:bits,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'});
+function realLimit(){return K.bits/8-66;}
+function updMeter(){
+  const len=enc.encode($('realMsg').value).length;
+  if(!K.bob){$('realMeterLabel').textContent=len+' bytes. Generate a key to see the size limit.';return;}
+  const lim=realLimit(),pct=Math.min(100,len/lim*100);
+  $('realMeter').querySelector('div').style.width=pct+'%';$('realMeter').setAttribute('aria-valuenow',Math.round(pct));
+  $('realMeter').classList.toggle('over',len>lim);
+  $('realMeterLabel').textContent=len+' of '+lim+' bytes. A '+K.bits+'-bit key with OAEP and SHA-256 can encrypt at most '+lim+' bytes at once'+(len>lim?'. This message is too long: see the Hybrid tab.':'.');
+}
+$('realMsg').addEventListener('input',updMeter);
+$('realSize').addEventListener('change',e=>{K.want=+e.target.value;});
+$('realGen').addEventListener('click',async()=>{
+  $('realGen').disabled=true;$('realGenTime').textContent='Searching for two large random primes…';
+  const t0=performance.now();
+  try{
+    K.bits=K.want;
+    K.bob=await subtle.generateKey(oaepParams(K.bits),true,['encrypt','decrypt']);
+    const ms=performance.now()-t0;
+    const spki=await subtle.exportKey('spki',K.bob.publicKey),pk8=await subtle.exportKey('pkcs8',K.bob.privateKey);
+    const jwk=await subtle.exportKey('jwk',K.bob.publicKey);
+    const nHex=hex(unb64(jwk.n.replace(/-/g,'+').replace(/_/g,'/')+'=='.slice(0,(4-jwk.n.length%4)%4)));
+    const nDigits=BigInt('0x'+nHex).toString().length;
+    $('realPubPem').textContent=pem(spki,'PUBLIC KEY');$('realPrivPem').textContent=pem(pk8,'PRIVATE KEY');
+    $('realPubInfo').innerHTML='n is '+K.bits+' bits ('+nDigits+' decimal digits), starting '+nHex.slice(0,16)+'…, and e = 65537.';
+    $('realGenTime').textContent='Done in '+(ms/1000).toFixed(2)+' s. '+(K.bits>2048?'Bigger keys take noticeably longer to find.':'Try 4096 bits and compare the time.');
+    K.eve=null;['realEnc','realEnc2'].forEach(id=>$(id).disabled=false);
+    $('realCt').value='';$('realCt2').value='';$('realCt2Wrap').hidden=true;$('realEncMsg').className='msg';$('realEncMsg').textContent='';$('realDecMsg').className='msg';$('realDecMsg').textContent='';
+    ['realDec','realTamper','realWrongKey'].forEach(id=>$(id).disabled=true);
+    $('hyOpen').disabled=true;
+    updMeter();
+  }catch(err){$('realGenTime').textContent='Key generation failed: '+err.message;}
+  $('realGen').disabled=false;
+});
+$('realShowPriv').addEventListener('change',e=>$('realPrivPem').classList.toggle('masked',!e.target.checked));
+async function realEncrypt(target){
+  const m=$('realEncMsg');m.className='msg';m.textContent='';
+  const data=enc.encode($('realMsg').value);
+  if(!data.length){m.className='msg bad';m.textContent='Type a message first.';return false;}
+  if(data.length>realLimit()){m.className='msg bad';m.innerHTML='<b>Too long for RSA.</b> This message is '+data.length+' bytes, but a '+K.bits+'-bit key can only encrypt '+realLimit()+' bytes at a time. Real systems solve this with the hybrid approach in tab 5.';return false;}
+  const t0=performance.now();
+  const ct=await subtle.encrypt({name:'RSA-OAEP'},K.bob.publicKey,data);
+  K.encMs=performance.now()-t0;
+  target.value=b64(ct);return ct.byteLength;
+}
+$('realEnc').addEventListener('click',async()=>{
+  const n=await realEncrypt($('realCt'));if(n===false)return;
+  $('realCt2Wrap').hidden=true;
+  $('realEncMsg').className='msg good';$('realEncMsg').textContent='Encrypted. The ciphertext is always '+n+' bytes, the size of n, however short the message is.';
+  ['realDec','realTamper','realWrongKey'].forEach(id=>$(id).disabled=false);
+});
+$('realEnc2').addEventListener('click',async()=>{
+  if(!$('realCt').value){const n=await realEncrypt($('realCt'));if(n===false)return;}
+  const n=await realEncrypt($('realCt2'));if(n===false)return;
+  $('realCt2Wrap').hidden=false;
+  const same=$('realCt').value===$('realCt2').value;
+  $('realEncMsg').className='msg good';$('realEncMsg').textContent=same?'Identical, which should not happen with OAEP.':'Same message, same key, completely different ciphertext. OAEP mixes in fresh random bytes every time, which fixes the repeated-pattern leak from the toy workshop. Both still decrypt to the same message.';
+  ['realDec','realTamper','realWrongKey'].forEach(id=>$(id).disabled=false);
+});
+async function realDecrypt(key){
+  const m=$('realDecMsg');
+  try{const t0=performance.now();const pt=await subtle.decrypt({name:'RSA-OAEP'},key,unb64($('realCt').value.trim()));const ms=performance.now()-t0;
+    m.className='msg good';m.innerHTML='<b>Decrypted:</b> '+esc(dec.decode(pt))+'<br><small>Decrypting took '+ms.toFixed(2)+' ms'+(K.encMs!==null?' versus '+K.encMs.toFixed(2)+' ms to encrypt':'')+'. Private-key operations are slower because d is a huge number, while the public exponent e = 65537 is tiny.</small>';
+    markDone('real');}
+  catch(e){m.className='msg bad';m.innerHTML='<b>Decryption failed.</b> '+(key===K.bob.privateKey?'The ciphertext was altered, so OAEP\'s built-in check rejects it instead of returning garbage.':'Eve\'s private key belongs to a different key pair, so it can\'t open a box locked with Bob\'s padlock.');}
+}
+$('realDec').addEventListener('click',()=>realDecrypt(K.bob.privateKey));
+$('realTamper').addEventListener('click',()=>{
+  const v=$('realCt').value;if(!v)return;const i=Math.floor(v.length/3);const ch=v[i]==='A'?'B':'A';
+  $('realCt').value=v.slice(0,i)+ch+v.slice(i+1);
+  $('realDecMsg').className='msg info';$('realDecMsg').textContent='Changed character '+(i+1)+' of the ciphertext. Now press Decrypt.';
+});
+$('realWrongKey').addEventListener('click',async()=>{
+  $('realDecMsg').className='msg info';$('realDecMsg').textContent='Generating Eve\'s own key pair…';
+  if(!K.eve)K.eve=await subtle.generateKey(oaepParams(K.bits),true,['encrypt','decrypt']);
+  realDecrypt(K.eve.privateKey);
+});
+updMeter();
+
+/* ---------- 4 SIGNATURES ---------- */
+const pssParams={name:'RSA-PSS',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'};
+let sigHashOrig='';
+$('sigGen').addEventListener('click',async()=>{
+  $('sigGen').disabled=true;$('sigGenInfo').textContent='Generating…';
+  K.alice=await subtle.generateKey(pssParams,true,['sign','verify']);
+  K.mallory=await subtle.generateKey(pssParams,true,['sign','verify']);
+  $('sigGenInfo').textContent='Alice has a 2048-bit RSA-PSS key pair. (Mallory made one too, for comparison.)';
+  $('sigSign').disabled=false;$('sigGen').disabled=false;
+  $('sigOut').value='';$('sigRecv').value='';$('sigRecv').disabled=true;$('sigHashA').textContent='–';$('sigHashB').textContent='–';$('sigVerdict').className='verdict wait';$('sigVerdict').textContent='New keys. Sign a message.';
+});
+async function sha(text){return hex(await subtle.digest('SHA-256',enc.encode(text)));}
+function diffHex(a,b){let out='';for(let i=0;i<b.length;i++)out+=(a[i]!==b[i])?'<span class="d">'+b[i]+'</span>':b[i];return out;}
+$('sigSign').addEventListener('click',async()=>{
+  const text=$('sigMsg').value;
+  const sig=await subtle.sign({name:'RSA-PSS',saltLength:32},K.alice.privateKey,enc.encode(text));
+  sigHashOrig=await sha(text);
+  $('sigHashA').textContent=sigHashOrig;$('sigOut').value=b64(sig);
+  $('sigRecv').value=text;$('sigRecv').disabled=false;
+  verifySig();
+});
+async function verifySig(){
+  if(!$('sigOut').value)return;
+  const text=$('sigRecv').value,h=await sha(text);
+  const changed=[...h].filter((c,i)=>c!==sigHashOrig[i]).length;
+  $('sigHashB').innerHTML=diffHex(sigHashOrig,h);
+  const who=document.querySelector('input[name=sigWho]:checked').value;
+  const key=who==='alice'?K.alice.publicKey:K.mallory.publicKey;
+  const ok=await subtle.verify({name:'RSA-PSS',saltLength:32},key,unb64($('sigOut').value),enc.encode(text));
+  const v=$('sigVerdict');
+  if(ok){v.className='verdict good';v.textContent='✓ Valid. Signed by Alice, and not one character has changed.';}
+  else if(who==='mallory'){v.className='verdict bad';v.textContent='✕ Invalid with Mallory\'s public key. The signature was made with Alice\'s private key, so only Alice\'s public key accepts it.';}
+  else{markDone('sign');v.className='verdict bad';v.textContent='✕ Invalid. The message changed, so its hash changed in '+changed+' of 64 hex digits, and Alice\'s signature no longer matches it.';}
+}
+let sigT=null;$('sigRecv').addEventListener('input',()=>{clearTimeout(sigT);sigT=setTimeout(verifySig,150);});
+$('sigWho').addEventListener('change',verifySig);
+$('sigMsg').addEventListener('input',()=>{if($('sigOut').value){$('sigOut').value='';$('sigVerdict').className='verdict wait';$('sigVerdict').textContent='Alice changed her message. Sign it again.';$('sigRecv').disabled=true;}});
+
+/* ---------- 5 HYBRID ---------- */
+const HY={tampered:false};
+function hyLen(){const n=enc.encode($('hyMsg').value).length;$('hyLen').textContent='This message is '+fmt(n)+' bytes. RSA-2048 can lock at most 190 bytes at once.';}
+$('hyMsg').addEventListener('input',hyLen);hyLen();
+async function ensureBob(){
+  if(!K.bob){K.bits=2048;K.bob=await subtle.generateKey(oaepParams(2048),true,['encrypt','decrypt']);return true;}
   return false;
 }
-function renderProgress(){
-  const pct = Math.round(units() / TOTAL * 100);
-  $("#pfill").style.width = pct + "%";
-  $("#ptext").textContent = pct + "%";
-  $("#pbar").setAttribute("aria-valuenow", pct);
-  renderNav();
-}
-
-/* ---------- Navigation ---------- */
-let cur = "start";
-function renderNav(){
-  $("#navList").innerHTML = NAV.map((n, i) => `<li><button type="button" data-nav="${n.id}" ${n.id === cur ? 'aria-current="page"' : ""}><span class="dot ${sectionDone(n.id) ? "done" : ""}">${sectionDone(n.id) ? "✓" : i + 1}</span>${n.label}</button></li>`).join("");
-}
-function go(id, push = true){
-  if (!NAV.some(n => n.id === id)) id = "start";
-  cur = id;
-  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "v-" + id));
-  renderNav();
-  if (id === "log") renderLog();
-  if (push) { try { history.replaceState(null, "", "#" + id); } catch(e) { location.hash = id; } }
-  window.scrollTo(0, 0);
-  if (!S.log.some(l => l.type === "Opened section" && l.detail === labelOf(id))) log("Opened section", labelOf(id));
-}
-const labelOf = id => (NAV.find(n => n.id === id) || {}).label || id;
-document.addEventListener("click", e => {
-  const n = e.target.closest("[data-nav]"); if (n) go(n.dataset.nav);
-  const g = e.target.closest("[data-go]"); if (g) go(g.dataset.go);
+$('hyRun').addEventListener('click',async()=>{
+  const box=$('hyMsgBox');box.className='msg';box.textContent='';
+  const lis=[...$('hyPipe').children];lis.forEach(l=>l.classList.remove('on'));
+  const made=await ensureBob();
+  if(made){box.className='msg info';box.textContent='Bob didn\'t have a key pair yet, so a 2048-bit one was generated for him.';}
+  const data=enc.encode($('hyMsg').value);
+  const aes=await subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+  const raw=await subtle.exportKey('raw',aes);
+  lis[0].classList.add('on');$('hy1').textContent=hex(raw);await sleep(500);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const t0=performance.now();const ct=await subtle.encrypt({name:'AES-GCM',iv},aes,data);const tA=performance.now()-t0;
+  lis[1].classList.add('on');$('hy2').textContent=shortHex(hex(ct),40)+'  ('+fmt(ct.byteLength)+' bytes, '+tA.toFixed(2)+' ms)';await sleep(500);
+  const wrapped=await subtle.encrypt({name:'RSA-OAEP'},K.bob.publicKey,raw);
+  lis[2].classList.add('on');$('hy3').textContent=shortHex(hex(wrapped),40)+'  ('+wrapped.byteLength+' bytes)';await sleep(500);
+  HY.wrapped=wrapped;HY.iv=iv;HY.ct=ct;HY.tampered=false;$('hyTamper').disabled=false;
+  const tot=wrapped.byteLength+12+ct.byteLength;
+  $('hyEnv').innerHTML='<div><b>'+wrapped.byteLength+' B</b>AES key, locked with RSA</div><div><b>12 B</b>random IV (nonce)</div><div><b>'+fmt(ct.byteLength)+' B</b>message, encrypted with AES</div>';
+  $('hySize').innerHTML='<span class="k" style="flex:'+wrapped.byteLength+'">RSA</span><span class="i" style="flex:12"></span><span class="c" style="flex:'+ct.byteLength+'">AES</span>';
+  lis[3].classList.add('on');
+  $('hy5').textContent='Ready. Press "Bob opens the envelope."';
+  $('hyOpen').disabled=false;
 });
-window.addEventListener("hashchange", () => go(location.hash.slice(1), false));
+$('hyOpen').addEventListener('click',async()=>{
+  const li=$('hyPipe').children[4];
+  try{
+    const raw=await subtle.decrypt({name:'RSA-OAEP'},K.bob.privateKey,HY.wrapped);
+    const aes=await subtle.importKey('raw',raw,{name:'AES-GCM'},false,['decrypt']);
+    const pt=await subtle.decrypt({name:'AES-GCM',iv:HY.iv},aes,HY.ct);
+    li.classList.add('on');markDone('hybrid');
+    $('hy5').innerHTML='RSA gave back the AES key '+hex(raw).slice(0,16)+'…, and AES decrypted the message: <i>'+esc(dec.decode(pt).slice(0,140))+(pt.byteLength>140?'…':'')+'</i>';
+  }catch(e){li.classList.add('on');$('hy5').innerHTML=HY.tampered?'<b>Rejected.</b> RSA still returned the right AES key, but AES-GCM\'s authentication tag no longer matches the altered ciphertext, so Bob gets an error instead of a quietly corrupted message. Run the encryption again for a clean envelope.':'Opening failed: '+esc(e.message);}
+});
+$('hyTamper').addEventListener('click',()=>{
+  if(!HY.ct)return;const b=new Uint8Array(HY.ct.slice(0));const i=Math.floor(b.length/2);b[i]^=1;HY.ct=b.buffer;HY.tampered=true;$('hyTamper').disabled=true;
+  const box=$('hyMsgBox');box.className='msg info';box.textContent='Mallory flipped a single bit in byte '+(i+1)+' of the encrypted message while it was in transit. Now let Bob open the envelope.';
+});
+$('hyRsaOnly').addEventListener('click',async()=>{
+  const box=$('hyMsgBox');await ensureBob();
+  try{await subtle.encrypt({name:'RSA-OAEP'},K.bob.publicKey,enc.encode($('hyMsg').value));box.className='msg good';box.textContent='That one was short enough for RSA. Make the message longer and try again.';}
+  catch(e){const n=enc.encode($('hyMsg').value).length;box.className='msg bad';box.innerHTML='<b>The browser refused.</b> RSA-OAEP can\'t encrypt '+fmt(n)+' bytes with a '+K.bits+'-bit key. Splitting it would take '+Math.ceil(n/(K.bits/8-66))+' separate RSA operations, each much slower than AES. That\'s why RSA only ever locks the small AES key.';}
+});
 
-/* ---------- Hero demo ---------- */
-function heroDemo(){
-  const items = [...document.querySelectorAll("#demoList li")];
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduce) { items.forEach(li => li.classList.add("on")); $("#demoBefore").classList.add("struck"); return; }
-  setTimeout(() => $("#demoBefore").classList.add("struck"), 500);
-  items.forEach((li, i) => setTimeout(() => li.classList.add("on"), 900 + i * 450));
+/* ---------- 6 CLASSROOM ---------- */
+const CE=65537n;const CL={p:0,q:0,n:0n,d:0n};
+function fmtSpaced(x){return String(x).replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
+function makeToyKey(){
+  for(;;){const p=randPrime(1100,1999),q=randPrime(1100,1999);if(p===q)continue;const phi=BigInt((p-1)*(q-1));if(gcd(phi,CE)!==1n)continue;
+    return {p,q,n:BigInt(p)*BigInt(q),d:modInv(CE,phi)};}
 }
+function clGen(){
+  Object.assign(CL,makeToyKey());
+  $('clN').textContent=fmtSpaced(CL.n);
+  $('clPriv').innerHTML='<span>p = '+CL.p+'</span><span>q = '+CL.q+'</span><span>d = '+fmt(CL.d)+'</span>';
+  $('clPin').textContent='';$('clDecMsg').className='msg';$('clDecMsg').textContent='';
+}
+$('clGen').addEventListener('click',clGen);
+$('clShowPriv').addEventListener('change',e=>{$('clPriv').hidden=!e.target.checked;});
+$('clDec').addEventListener('click',()=>{
+  const m=$('clDecMsg');const c=BigInt($('clC').value.replace(/\D/g,'')||'0');
+  if(!CL.n){m.className='msg bad';m.textContent='Make a key pair first.';return;}
+  if(c<=0n||c>=CL.n){m.className='msg bad';m.textContent='The ciphertext should be a number smaller than your n. Ask Alice to read it again.';return;}
+  const pin=modPow(c,CL.d,CL.n);
+  m.className='msg good';m.textContent='c'+'^d mod n gives:';
+  $('clPin').textContent=pin.toString().padStart(4,'0');markDone('class');
+});
+$('alEnc').addEventListener('click',()=>{
+  const m=$('alMsg');m.className='msg';m.textContent='';
+  const nStr=$('alN').value.replace(/\D/g,''),pin=$('alPin').value.replace(/\D/g,'');
+  if(nStr.length<5){m.className='msg bad';m.textContent='Type the n that Bob read out (about seven digits).';return;}
+  if(!/^\d{4}$/.test(pin)){m.className='msg bad';m.textContent='Your PIN should be exactly four digits.';return;}
+  const n=BigInt(nStr),pm=BigInt(pin);
+  if(pm<2n){m.className='msg bad';m.textContent='Pick a PIN of 0002 or higher (0 and 1 encrypt to themselves).';return;}
+  const c=modPow(pm,CE,n);
+  $('alC').textContent=fmtSpaced(c);
+  m.className='msg good';m.innerHTML='Computed '+pin+sup('65537')+' mod '+fmtSpaced(n)+'.';markDone('class');
+});
+function setRole(r){['bob','alice','mallory'].forEach(x=>{const B=x[0].toUpperCase()+x.slice(1);$('role'+B).setAttribute('aria-pressed',r===x);$(x+'Side').hidden=r!==x;});}
+$('roleMallory').addEventListener('click',()=>setRole('mallory'));
+const ML={key:null};
+$('mlGen').addEventListener('click',()=>{ML.key=makeToyKey();$('mlN').textContent=fmtSpaced(ML.key.n);});
+$('mlRelay').addEventListener('click',()=>{
+  const m=$('mlMsg');m.className='msg';m.textContent='';
+  const bobN=BigInt($('mlBobN').value.replace(/\D/g,'')||'0'),c=BigInt($('mlC').value.replace(/\D/g,'')||'0');
+  if(!ML.key){m.className='msg bad';m.textContent='Make your own key pair first, and give Alice your n.';return;}
+  if(bobN<100000n){m.className='msg bad';m.textContent='Enter the n that Bob read out.';return;}
+  if(c<=0n||c>=ML.key.n){m.className='msg bad';m.textContent='That ciphertext doesn\'t fit your key. Did Alice use your n?';return;}
+  const pin=modPow(c,ML.key.d,ML.key.n);
+  if(pin>=bobN){m.className='msg bad';m.textContent='That decrypts to a number too big to be a PIN. Check the ciphertext.';return;}
+  const out=modPow(pin,CE,bobN);
+  m.className='msg good';m.innerHTML='Alice\'s PIN is <b>'+pin.toString().padStart(4,'0')+'</b>. Re-locked with Bob\'s real key, so he\'ll never know.';
+  $('mlOut').textContent=fmtSpaced(out);markDone('class');
+});
+$('roleBob').addEventListener('click',()=>setRole('bob'));
+$('roleAlice').addEventListener('click',()=>setRole('alice'));
+clGen();
 
-/* ---------- Competencies ---------- */
-function renderComps(){
-  let idx = 0;
-  $("#compList").innerHTML = COMPS.map((c, ci) => `
-   <div class="acc" open-state="${ci === 0}">
-     <button type="button" aria-expanded="${ci === 0}" data-acc>
-       <span class="ic">${c.d}</span>
-       <span class="t"><strong>${c.title}</strong><span>${c.sub}</span></span>
-       <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-     </button>
-     <div class="body">${c.items.map(it => { const k = "c" + (idx++); const v = S.comps[k];
-       return `<div class="comp"><p><strong>${it[0]}</strong>${it[1]}</p>
-       <div class="rate" role="group" aria-label="Confidence: ${esc(it[0])}">${["New","Developing","Confident"].map((l, li) => `<button type="button" data-rate="${k}" data-v="${li}" data-name="${esc(it[0])}" aria-pressed="${v === li}">${l}</button>`).join("")}</div></div>`; }).join("")}
-     </div>
-   </div>`).join("");
+/* ---------- 7 FACTORING RACE ---------- */
+const R={n:0,c:null,p:0,running:false,stop:false,rate:null};
+function newRaceKey(){
+  const bits=+$('raceBits').value,half=bits/2;
+  const lo=Math.pow(2,half-1),hi=Math.pow(2,half)-1;
+  let p,q;do{p=randPrime(lo,hi);q=randPrime(lo,hi);}while(p===q);
+  R.n=p*q;R.c=null;showRace();
 }
-document.addEventListener("click", e => {
-  const a = e.target.closest("[data-acc]");
-  if (a) { const box = a.parentElement; const open = box.getAttribute("open-state") !== "true"; box.setAttribute("open-state", open); a.setAttribute("aria-expanded", open); }
-  const r = e.target.closest("[data-rate]");
-  if (r) {
-    const k = r.dataset.rate, v = +r.dataset.v; S.comps[k] = v;
-    r.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.v === v)));
-    log("Self-rated competency", `${r.dataset.name}: ${["New","Developing","Confident"][v]}`);
+function showRace(){
+  $('racePuzzle').innerHTML='<span>n = '+fmt(R.n)+'</span><span>e = 65537</span>'+(R.c!==null?'<span>c = '+fmt(R.c)+'</span>':'')+'<span>find p and q</span>';
+  $('raceResult').className='msg';$('raceResult').innerHTML='';
+  $('raceTries').textContent='0';$('raceTime').textContent='0.0 s';$('raceFill').style.width='0';$('raceBar').setAttribute('aria-valuenow','0');
+}
+$('raceSrc').addEventListener('change',e=>{const v=e.target.value;$('raceRandomBox').hidden=v!=='random';$('raceClassBox').hidden=v!=='class';if(v==='random')newRaceKey();else $('racePuzzle').textContent='Enter the n you overheard, and the ciphertext if you have it.';});
+$('raceBits').addEventListener('input',e=>{$('raceBitsOut').textContent=e.target.value;});
+$('raceBits').addEventListener('change',newRaceKey);
+$('raceNew').addEventListener('click',newRaceKey);
+$('raceUse').addEventListener('click',()=>{
+  const n=Number($('raceN').value.replace(/\D/g,'')),c=$('raceC').value.replace(/\D/g,'');
+  if(!(n>=15&&n<9e15)){$('racePuzzle').textContent='n should be a whole number with fewer than 16 digits.';return;}
+  R.n=n;R.c=c?Number(c):null;showRace();
+});
+function fmtDur(log10s){
+  if(log10s<Math.log10(60))return Math.pow(10,log10s).toFixed(log10s<-1?4:2)+' seconds';
+  if(log10s<Math.log10(3600))return (Math.pow(10,log10s)/60).toFixed(1)+' minutes';
+  if(log10s<Math.log10(86400))return (Math.pow(10,log10s)/3600).toFixed(1)+' hours';
+  const ly=log10s-Math.log10(31557600);
+  if(ly<0)return (Math.pow(10,log10s)/86400).toFixed(1)+' days';
+  if(ly<6)return fmt(Math.round(Math.pow(10,ly)))+' years';
+  const uni=ly-Math.log10(1.38e10);
+  return 'about 10'+sup(Math.floor(ly))+' years'+(uni>0?' (10'+sup(Math.floor(uni))+' times the age of the universe)':'');
+}
+function fillRaceScale(){
+  if(!R.rate)return;const lr=Math.log10(R.rate);
+  const rows=[[64,'64 bits',32],[128,'128 bits',64],[512,'512 bits',256],[829,'829 bits (RSA-250, factored in 2020 with a smarter method)',414.5],[2048,'2048 bits, by trial division',1024],[2048,'2048 bits, best known attack (about 2'+sup(112)+' work)',112]];
+  $('raceScale').innerHTML=rows.map(r=>'<tr><td style="font-family:var(--font-ui)">'+r[1]+'</td><td>'+fmtDur(r[2]*Math.log10(2)-lr)+'</td></tr>').join('');
+}
+$('raceGo').addEventListener('click',()=>{
+  if(R.running||!R.n)return;
+  R.running=true;R.stop=false;$('raceGo').disabled=true;$('raceStop').disabled=false;
+  const n=R.n,lim=Math.floor(Math.sqrt(n));let d=n%2===0?2:3,tries=1,found=n%2===0?2:0;const t0=performance.now();
+  function finish(){
+    R.running=false;$('raceGo').disabled=false;$('raceStop').disabled=true;
+    const el=(performance.now()-t0)/1000;R.rate=tries/Math.max(el,0.0005);
+    $('raceRate').textContent=fmt(Math.round(R.rate))+' divisions per second';fillRaceScale();
+    const box=$('raceResult');
+    if(found){
+      const p=found,q=n/found;let extra='';
+      const phi=BigInt(p-1)*BigInt(q-1);
+      if(gcd(phi,65537n)===1n){
+        const dd=modInv(65537n,phi);extra=' Eve rebuilds the private key: φ(n) = '+fmt(phi)+', so d = '+fmt(dd)+'.';
+        if(R.c!==null){const m=modPow(BigInt(R.c),dd,BigInt(n));extra+=' Decrypting the overheard ciphertext gives <b>'+m.toString().padStart(4,'0')+'</b>.';}
+      }
+      markDone('race');box.className='msg good';box.innerHTML='<b>Factored in '+el.toFixed(3)+' s:</b> n = '+fmt(p)+' × '+fmt(q)+'.'+extra;
+    } else if(R.stop){box.className='msg info';box.textContent='Stopped after '+fmt(tries)+' divisions. The table uses your measured speed.';}
+    else {box.className='msg info';box.textContent='No factor found up to √n, so n is prime and isn\'t a valid RSA modulus.';}
   }
-});
-
-/* ---------- Tactics ---------- */
-let filter = "all", openT = null, tab = "summary", tAnswered = null;
-function renderGrid(){
-  let list = TACTICS.map((t, i) => ({...t, i}));
-  if (filter === "high") list = list.filter(t => t.resist >= 4);
-  if (filter === "low") list = list.filter(t => t.effort <= 2);
-  if (filter === "todo") list = list.filter(t => !S.done.includes(t.n));
-  $("#tgrid").innerHTML = list.length ? list.map(t => `
-    <button class="tile ${S.done.includes(t.n) ? "done" : ""} ${S.seen.includes(t.n) ? "seen" : ""}" type="button" data-t="${t.i}" aria-pressed="${openT === t.i}">
-      <span class="done-badge" aria-hidden="true">✓</span>
-      <span class="num">${t.n}</span>
-      <span class="nm">${t.name}</span>
-      <span class="tg">${t.tag}</span>
-      <span class="pips" aria-label="AI resistance ${t.resist} of 5">${pips(t.resist)}</span>
-    </button>`).join("") : `<p class="empty">All 13 tactics are complete. Nicely done.</p>`;
-}
-function renderDetail(){
-  const d = $("#detail");
-  if (openT === null) { d.hidden = true; return; }
-  const t = TACTICS[openT]; d.hidden = false;
-  const tabs = [["summary","Summary"],["apps","Sample applications"],["watch","Cautions"],["check","Quick check"]];
-  let body = "";
-  if (tab === "summary") body = `<div class="tabpanel"><p>${t.summary}</p><div class="why"><strong>Why it works.</strong> ${t.why}</div></div>`;
-  if (tab === "apps") body = `<div class="apps">${t.apps.map(a => `<div class="app"><div class="fld">${a[0]}</div><p>${a[1]}</p></div>`).join("")}</div>`;
-  if (tab === "watch") body = `<div class="tabpanel"><div class="callout" style="margin-top:0"><strong>Watch out.</strong> ${t.watch}</div><p class="muted">Pairs well with: ${pairs(t.n)}</p></div>`;
-  if (tab === "check") {
-    const c = t.check, ans = tAnswered;
-    body = `<div class="tabpanel"><p class="qtext" style="font-size:1.15rem">${c.q}</p><div class="opts">${c.o.map((o, i) => {
-      let cls = ""; if (ans !== null) { if (i === c.a) cls = "right"; else if (i === ans) cls = "wrong"; }
-      return `<button class="opt ${cls}" type="button" data-tc="${i}" ${ans !== null ? "disabled" : ""}><span class="k">${"ABC"[i]}</span><span>${o}</span></button>`; }).join("")}</div>
-      ${ans !== null ? `<div class="fb ${ans === c.a ? "good" : "bad"}"><strong>${ans === c.a ? "Correct. Tactic complete." : "Not quite."}</strong> ${c.fb}</div>
-      ${ans !== c.a ? `<button class="btn quiet" type="button" id="tRetry" style="margin-top:12px">Try again</button>` : ""}` : ""}</div>`;
-  }
-  const prev = openT > 0 ? TACTICS[openT - 1] : null, next = openT < 12 ? TACTICS[openT + 1] : null;
-  d.innerHTML = `
-    <div class="detail-head"><div class="bignum">${t.n}</div>
-      <div class="meta"><h3 style="font-size:1.7rem;margin-bottom:.2em">${t.name}</h3><p class="muted" style="margin:0">${t.tag}</p>
-      <div class="ratings"><span>AI resistance<span class="bar r">${pips(t.resist)}</span></span><span>Teacher effort<span class="bar e">${pips(t.effort)}</span></span></div></div></div>
-    <div class="tabs" role="tablist">${tabs.map(x => `<button type="button" role="tab" aria-selected="${tab === x[0]}" data-tab="${x[0]}">${x[1]}${x[0] === "check" && S.done.includes(t.n) ? " ✓" : ""}</button>`).join("")}</div>
-    ${body}
-    <div class="pager">${prev ? `<button class="btn quiet" type="button" data-t="${openT - 1}">← ${prev.n} ${prev.name}</button>` : "<span></span>"}${next ? `<button class="btn" type="button" data-t="${openT + 1}">${next.n} ${next.name} →</button>` : `<button class="btn green" type="button" data-go="lab">Go to the redesign lab</button>`}</div>`;
-}
-const PAIRS = {"01":["02","06"],"02":["11","03"],"03":["06","02"],"04":["07","10"],"05":["06","13"],"06":["02","08"],"07":["03","06"],"08":["10","06"],"09":["03","11"],"10":["08","01"],"11":["02","03"],"12":["06","13"],"13":["03","05"]};
-const pairs = n => PAIRS[n].map(p => { const t = TACTICS.find(x => x.n === p); return `${t.n} ${t.name}`; }).join(", ");
-function openTactic(i){
-  openT = i; tab = "summary"; tAnswered = null;
-  const t = TACTICS[i];
-  if (!S.seen.includes(t.n)) { S.seen.push(t.n); log("Opened tactic", `${t.n} ${t.name}`); }
-  renderGrid(); renderDetail();
-  $("#detail").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
-}
-document.addEventListener("click", e => {
-  const tl = e.target.closest("[data-t]"); if (tl) openTactic(+tl.dataset.t);
-  const f = e.target.closest("[data-filter]");
-  if (f) { filter = f.dataset.filter; document.querySelectorAll("[data-filter]").forEach(b => b.setAttribute("aria-pressed", String(b === f))); renderGrid(); }
-  const tb = e.target.closest("[data-tab]"); if (tb) { tab = tb.dataset.tab; if (tab === "check") tAnswered = null; renderDetail(); }
-  const tc = e.target.closest("[data-tc]");
-  if (tc && openT !== null) {
-    const t = TACTICS[openT]; tAnswered = +tc.dataset.tc; const ok = tAnswered === t.check.a;
-    if (ok && !S.done.includes(t.n)) { S.done.push(t.n); log("Completed tactic check", `${t.n} ${t.name}`); toast(`${t.name} complete`); }
-    else if (!ok) log("Tactic check attempt", `${t.n} ${t.name}: incorrect`);
-    renderGrid(); renderDetail();
-  }
-  if (e.target.closest("#tRetry")) { tAnswered = null; renderDetail(); }
-});
-
-/* ---------- Lab ---------- */
-let base = "essay", picked = [];
-function renderLab(){
-  $("#bases").innerHTML = BASES.map(b => `<button class="base" type="button" data-base="${b.id}" aria-pressed="${base === b.id}"><small>${b.field}</small>${b.text}</button>`).join("");
-  $("#tchips").innerHTML = TACTICS.map((t, i) => `<button class="tchip" type="button" data-pick="${i}" aria-pressed="${picked.includes(i)}"><span class="n">${t.n}</span>${t.name}</button>`).join("");
-  const b = BASES.find(x => x.id === base);
-  const chosen = picked.slice().sort((x, y) => x - y);
-  $("#outTxt").innerHTML = `<p class="orig"><strong>Original:</strong> ${b.text}</p>` + (chosen.length
-    ? `<p style="margin:0"><strong>Redesigned:</strong> Investigate ${b.topic} by completing the following.</p><ol>${chosen.map(i => `<li><b>${TACTICS[i].name}.</b> ${TACTICS[i].mod.replace("{topic}", b.topic)}</li>`).join("")}</ol>`
-    : `<p class="empty">Select tactics to see the assignment rebuild itself.</p>`);
-  // gauge
-  let keep = 1; chosen.forEach(i => keep *= 1 - TACTICS[i].resist * 0.075);
-  let score = Math.min(95, Math.round(10 + 90 * (1 - keep)));
-  $("#gFill").style.height = score + "%";
-  $("#gPct").textContent = score + "%";
-  $("#gLbl").textContent = score < 30 ? "Highly vulnerable" : score < 55 ? "Somewhat resistant" : score < 78 ? "Resistant" : "Strongly resistant";
-  const eff = chosen.reduce((s, i) => s + TACTICS[i].effort, 0);
-  $("#gLoad").textContent = eff === 0 ? "Minimal" : eff <= 6 ? "Manageable" : eff <= 12 ? "Substantial" : "Heavy: consider trimming";
-  $("#gLoad").style.color = eff > 12 ? "var(--warn)" : "";
-  $("#saveLab").disabled = chosen.length < 3;
-  renderLab.score = score; renderLab.eff = $("#gLoad").textContent;
-}
-document.addEventListener("click", e => {
-  const bb = e.target.closest("[data-base]"); if (bb) { base = bb.dataset.base; renderLab(); }
-  const p = e.target.closest("[data-pick]");
-  if (p) { const i = +p.dataset.pick; picked = picked.includes(i) ? picked.filter(x => x !== i) : [...picked, i]; renderLab(); }
-});
-$("#saveLab").addEventListener("click", () => {
-  const b = BASES.find(x => x.id === base);
-  const names = picked.slice().sort((x, y) => x - y).map(i => TACTICS[i].name);
-  S.lab = {base:b.text, tactics:names, score:renderLab.score};
-  log("Saved redesign", `${b.field}: ${names.join(", ")} (resistance ${renderLab.score}%, workload ${renderLab.eff})`);
-  toast("Redesign saved to your log");
-});
-$("#copyBtn").addEventListener("click", async () => {
-  const txt = $("#outTxt").innerText;
-  try { await navigator.clipboard.writeText(txt); toast("Copied"); } catch(e) { toast("Copy isn’t available here. Select the text instead."); }
-});
-
-/* ---------- Quiz ---------- */
-let qi = 0, qAns = [], qPicked = null;
-function renderQuiz(){
-  const box = $("#quiz");
-  if (qi >= QUIZ.length) {
-    const right = qAns.filter(Boolean).length, pct = Math.round(right / QUIZ.length * 100);
-    box.innerHTML = `<div class="score"><div class="big" style="color:${pct >= 70 ? "var(--green-ink)" : "var(--warn)"}">${pct}%</div>
-      <p class="lead" style="margin:12px auto">${right} of ${QUIZ.length} correct. ${pct >= 70 ? "You’ve passed the knowledge check." : "Review the tactics you missed and try again; you need 70% to complete this step."}</p>
-      <div class="row" style="justify-content:center"><button class="btn quiet" type="button" id="qRetake">Retake</button>${pct >= 70 ? `<button class="btn green" type="button" data-go="log">Write your action plan</button>` : `<button class="btn" type="button" data-go="tactics">Review tactics</button>`}</div></div>`;
-    return;
-  }
-  const q = QUIZ[qi];
-  box.innerHTML = `<div class="qtop"><span>Question ${qi + 1} of ${QUIZ.length}</span><span class="qdots">${QUIZ.map((_, i) => `<i class="${i < qAns.length ? (qAns[i] ? "ok" : "no") : i === qi ? "cur" : ""}"></i>`).join("")}</span></div>
-    <p class="qtext">${q.q}</p>
-    <div class="opts">${q.o.map((o, i) => { let cls = ""; if (qPicked !== null) { if (i === q.a) cls = "right"; else if (i === qPicked) cls = "wrong"; }
-      return `<button class="opt ${cls}" type="button" data-qo="${i}" ${qPicked !== null ? "disabled" : ""}><span class="k">${"ABCD"[i]}</span><span>${o}</span></button>`; }).join("")}</div>
-    ${qPicked !== null ? `<div class="fb ${qPicked === q.a ? "good" : "bad"}"><strong>${qPicked === q.a ? "Correct." : "Not quite."}</strong> ${q.fb}</div>
-    <div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn" type="button" id="qNext">${qi === QUIZ.length - 1 ? "See my score" : "Next question"}</button></div>` : ""}`;
-}
-document.addEventListener("click", e => {
-  const o = e.target.closest("[data-qo]");
-  if (o && qPicked === null) { qPicked = +o.dataset.qo; qAns.push(qPicked === QUIZ[qi].a); renderQuiz(); }
-  if (e.target.closest("#qNext")) {
-    qi++; qPicked = null;
-    if (qi >= QUIZ.length) {
-      const pct = Math.round(qAns.filter(Boolean).length / QUIZ.length * 100);
-      S.quizBest = Math.max(S.quizBest ?? 0, pct);
-      log("Completed knowledge check", `Score ${pct}% (best ${S.quizBest}%)`);
+  function chunk(){
+    if(!found){
+      const end=performance.now()+35;
+      outer: while(performance.now()<end){
+        for(let i=0;i<300000;i++){if(d>lim)break outer;if(n%d===0){found=d;break outer;}d+=2;tries++;}
+      }
     }
-    renderQuiz();
+    const el=(performance.now()-t0)/1000;
+    $('raceTries').textContent=fmt(tries);$('raceTime').textContent=el.toFixed(1)+' s';
+    if(el>0.05)$('raceRate').textContent=fmt(Math.round(tries/el))+' divisions per second';
+    const pct=Math.min(100,d/lim*100);$('raceFill').style.width=pct+'%';$('raceBar').setAttribute('aria-valuenow',Math.round(pct));
+    if(found||d>lim||R.stop)finish();else setTimeout(chunk,0);
   }
-  if (e.target.closest("#qRetake")) { qi = 0; qAns = []; qPicked = null; renderQuiz(); }
+  chunk();
 });
+$('raceStop').addEventListener('click',()=>{R.stop=true;});
+newRaceKey();
 
-/* ---------- Glossary ---------- */
-function renderCards(){
-  $("#cards").innerHTML = GLOSS.map((g, i) => `<button class="flip" type="button" data-flip="${i}" aria-label="${esc(g[0])}: select to flip"><span class="in"><span class="face front"><strong>${g[0]}</strong><span>${S.flipped.includes(i) ? "Reviewed · select to flip" : "Select to flip"}</span></span><span class="face back">${g[1]}</span></span></button>`).join("");
+/* ---------- 8 WHICH KEY ---------- */
+const KEYS=['Alice\'s public key','Alice\'s private key','Bob\'s public key','Bob\'s private key'];
+const WK=[
+  {q:'Alice wants to send Bob a message that only Bob can read. Which key does she encrypt with?',a:2,why:'Encrypt with the receiver\'s public key. Anyone can lock Bob\'s padlock; only Bob can open it.'},
+  {q:'Bob receives Alice\'s encrypted message. Which key decrypts it?',a:3,why:'Only the matching private key opens what the public key locked.'},
+  {q:'Alice publishes a software update and wants everyone to be able to confirm it came from her. Which key signs it?',a:1,why:'Sign with the sender\'s private key. Only Alice can make the seal.'},
+  {q:'Bob downloads the update. Which key does he use to check Alice\'s signature?',a:0,why:'Verify with the sender\'s public key, which everyone can have.'},
+  {q:'Bob wants to reply to Alice privately. Which key does he encrypt with?',a:0,why:'Roles flip: now Alice is the receiver, so it\'s her public key.'},
+  {q:'Alice wants Bob to know a message is from her and keep it private. First she signs it. With which key?',a:1,why:'Signing always uses the signer\'s own private key.'},
+  {q:'Then she encrypts the signed message for Bob. With which key?',a:2,why:'Encryption for Bob always uses Bob\'s public key.'},
+  {q:'Bob\'s laptop, with his key files on it, is stolen. Which key is compromised and has to be revoked?',a:3,why:'His private key. Public keys are meant to be shared, so losing one is no problem; a leaked private key means anyone can decrypt his mail and sign as him.'}
+];
+let wkDone=[];
+function buildWK(){
+  wkDone=WK.map(()=>null);const box=$('wkBox');box.innerHTML='';
+  WK.forEach((w,i)=>{
+    const d=document.createElement('div');d.className='wk';
+    d.innerHTML='<p class="q"><b>'+(i+1)+'.</b> '+esc(w.q)+'</p><div class="opts" role="group" aria-label="Key choices for scenario '+(i+1)+'"></div><p class="fb" aria-live="polite"></p>';
+    const opts=d.querySelector('.opts');
+    KEYS.forEach((k,j)=>{
+      const b=document.createElement('button');b.type='button';
+      b.innerHTML='<span class="key-chip '+(j%2?'priv':'pub')+'">'+(j%2?'private':'public')+'</span> '+esc(k);
+      b.addEventListener('click',()=>{
+        if(wkDone[i]!==null)return;wkDone[i]=j===w.a;
+        b.classList.add(j===w.a?'right':'wrong');if(j!==w.a)opts.children[w.a].classList.add('right');
+        d.querySelector('.fb').innerHTML=(j===w.a?'<b>Right.</b> ':'<b>Not quite.</b> ')+esc(w.why);
+        [...opts.children].forEach(o=>o.setAttribute('aria-disabled','true'));
+        const n=wkDone.filter(v=>v!==null).length;
+        $('wkScore').textContent='Score: '+wkDone.filter(v=>v).length+' of '+n+(n===WK.length?'. All scenarios done.':'');
+        if(n===WK.length)markDone('which');
+      });
+      opts.appendChild(b);
+    });
+    box.appendChild(d);
+  });
+  $('wkScore').textContent='';
 }
-document.addEventListener("click", e => {
-  const f = e.target.closest("[data-flip]");
-  if (f) { f.classList.toggle("flipped"); const i = +f.dataset.flip;
-    if (!S.flipped.includes(i)) { S.flipped.push(i); save(); if (S.flipped.length === GLOSS.length) log("Reviewed all key terms", `${GLOSS.length} terms`); renderNav(); } }
-});
+$('wkReset').addEventListener('click',buildWK);
+$('printCheat').addEventListener('click',()=>{document.body.classList.add('print-cheat');window.print();setTimeout(()=>document.body.classList.remove('print-cheat'),500);});
+window.addEventListener('afterprint',()=>document.body.classList.remove('print-cheat'));
+buildWK();
 
-/* ---------- Log ---------- */
-function renderLog(){
-  const quizOk = S.quizBest !== null && S.quizBest >= 70;
-  const stats = [
-    [S.done.length + " / 13","Tactic checks passed",S.done.length === 13],
-    [S.seen.length + " / 13","Tactics opened",S.seen.length === 13],
-    [S.lab ? S.lab.score + "%" : "Not yet","Saved redesign resistance",!!S.lab],
-    [S.quizBest === null ? "Not yet" : S.quizBest + "%","Best knowledge check score",quizOk],
-    [Object.keys(S.comps).length + " / 8","Competencies self-rated",Object.keys(S.comps).length === 8],
-    [S.reflect.trim() ? "Saved" : "Not yet","Action plan",!!S.reflect.trim()]
-  ];
-  $("#stats").innerHTML = stats.map(s => `<div class="stat ${s[2] ? "ok" : ""}"><b>${s[0]}</b><span>${s[1]}</span></div>`).join("");
-  $("#doneBanner").classList.toggle("show", units() === TOTAL);
-  const cls = t => /Completed|Saved|Reviewed/.test(t) ? "g" : /attempt/.test(t) ? "w" : "";
-  $("#logBody").innerHTML = S.log.length ? S.log.map(l => `<tr><td class="when">${new Date(l.t).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</td><td><span class="tag ${cls(l.type)}">${esc(l.type)}</span></td><td>${esc(l.detail)}</td></tr>`).join("") : `<tr><td colspan="3" class="empty">No activity yet. Open a tactic to start your log.</td></tr>`;
-}
-$("#learner").value = S.name;
-$("#learner").addEventListener("change", e => { S.name = e.target.value.trim(); save(); if (S.name) log("Set learner name", S.name); });
-$("#reflect").value = S.reflect;
-$("#saveReflect").addEventListener("click", () => {
-  const v = $("#reflect").value.trim();
-  if (!v) { $("#reflectNote").textContent = "Write a few lines first, then save."; return; }
-  S.reflect = v; log("Saved action plan", v.length > 140 ? v.slice(0, 140) + "…" : v);
-  $("#reflectNote").textContent = "Saved."; renderLog();
-});
-let downloads = null;
-if (window.claude && typeof window.claude.use === "function") { window.claude.use("downloads").then(d => { downloads = d; }).catch(() => {}); }
-$("#exportBtn").addEventListener("click", async () => {
-  const q = v => `"${String(v).replace(/"/g, '""')}"`;
-  const head = [["Learner", S.name || "(not set)"],["Exported", new Date().toLocaleString()],["Overall progress", Math.round(units() / TOTAL * 100) + "%"],["Tactic checks passed", S.done.length + "/13"],["Best quiz score", S.quizBest === null ? "n/a" : S.quizBest + "%"],["Action plan", S.reflect || "(none)"],[]];
-  const rows = [["Timestamp","Activity","Details"], ...S.log.slice().reverse().map(l => [l.t, l.type, l.detail])];
-  const csv = [...head, ...rows].map(r => r.map(q).join(",")).join("\r\n");
-  const filename = `ai-resistant-progress-${(S.name || "learner").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.csv`;
-  if (downloads) {
-    try { await downloads.save({filename, data:csv}); toast("Log exported"); log("Exported log", filename); return; }
-    catch(err) { if (err && err.code === "declined") return; }
-  }
-  try {
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"})); a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove(); log("Exported log", filename); toast("Log exported");
-  } catch(err) { toast("Export isn’t available in this view."); }
-});
-$("#resetBtn").addEventListener("click", () => {
-  if (!confirm("Reset all progress and clear the activity log? This can’t be undone.")) return;
-  S = blank(); save(); openT = null; picked = []; qi = 0; qAns = []; qPicked = null;
-  $("#learner").value = ""; $("#reflect").value = ""; $("#reflectNote").textContent = "";
-  renderAll(); renderLog(); toast("Progress reset");
-});
-
-/* ---------- Init ---------- */
-function renderAll(){ renderComps(); renderGrid(); renderDetail(); renderLab(); renderQuiz(); renderCards(); renderProgress(); }
-renderAll();
-go(location.hash.slice(1) || "start", false);
-heroDemo();
+/* deep link */
+const h=location.hash.replace('#','');const st=tabs.find(t=>t.id==='tab-'+h);if(st)selectTab(st);
+})();
 </script>
 </body>
 </html>
