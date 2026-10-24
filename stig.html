@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STIGs: Hardening by the Book</title>
+<meta name="description" content="Interactive lesson on DISA Security Technical Implementation Guides (STIGs) for Windows 11, Cisco IOS XE, and RHEL 10 — workforce skills, assessment, remediation, and documentation.">
+<style>
+:root{
+  --navy:#0047AB; --navy-d:#003380; --green:#00a86b; --green-d:#008556;
+  --bg:#f4f7fc; --surface:#ffffff; --surface2:#eef3fb; --surface3:#e3eaf6;
+  --text:#15213a; --muted:#56627a; --border:#d6deeb;
+  --cat1:#c81e3a; --cat1-bg:#fde8ec; --cat2:#c46a00; --cat2-bg:#fff2df; --cat3:#1f6fd1; --cat3-bg:#e4efff;
+  --ok:#00875a; --ok-bg:#e1f6ee; --bad:#c81e3a; --bad-bg:#fde8ec; --warn:#a86300; --warn-bg:#fff4e0;
+  --term-bg:#0d1526; --term-text:#d8e2f2; --term-ok:#4ade80; --term-bad:#ff7b8a; --term-warn:#fbbf24; --term-cmd:#7cc4ff;
+  --shadow:0 2px 10px rgba(16,36,80,.07), 0 1px 2px rgba(16,36,80,.06);
+  --shadow-lg:0 10px 30px rgba(16,36,80,.12);
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg:#0b1220; --surface:#121b2e; --surface2:#18233a; --surface3:#1f2c47;
+  --text:#e6ecf7; --muted:#9aa8c2; --border:#2a3856;
+  --navy:#4d8ef0; --navy-d:#3b7be0; --green:#22c38a; --green-d:#16a874;
+  --cat1:#ff6b80; --cat1-bg:#3a1520; --cat2:#ffad42; --cat2-bg:#3a2810; --cat3:#6aa8ff; --cat3-bg:#13284a;
+  --ok:#3ddc97; --ok-bg:#0f3326; --bad:#ff6b80; --bad-bg:#3a1520; --warn:#ffc061; --warn-bg:#3a2a10;
+  --term-bg:#060b16;
+  --shadow:0 2px 10px rgba(0,0,0,.35); --shadow-lg:0 10px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:120px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.6;font-size:16px;transition:background .25s,color .25s}
+code,pre,.mono{font-family:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace}
+code{background:var(--surface3);padding:1px 6px;border-radius:5px;font-size:.88em}
+a{color:var(--navy)}
+h1,h2,h3,h4{line-height:1.25;margin:0 0 .5em}
+h2{font-size:1.75rem}
+h3{font-size:1.2rem}
+p{margin:0 0 1em}
+button{font:inherit;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* Top bar */
+.topbar{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.topbar-inner{display:flex;align-items:center;gap:14px;padding:10px 20px;max-width:1180px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--navy);white-space:nowrap}
+.brand-badge{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--green));display:grid;place-items:center;color:#fff;font-size:15px}
+.progress-wrap{flex:1;min-width:80px}
+.progress-label{font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between}
+.progress{height:8px;background:var(--surface3);border-radius:99px;overflow:hidden}
+.progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--green));transition:width .5s}
+.theme-btn{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:99px;padding:7px 14px;font-weight:600;font-size:.85rem;display:flex;gap:6px;align-items:center;white-space:nowrap}
+.theme-btn:hover{border-color:var(--navy)}
+.subnav{border-top:1px solid var(--border);overflow-x:auto;scrollbar-width:thin}
+.subnav ul{list-style:none;margin:0 auto;padding:0 20px;display:flex;gap:4px;max-width:1180px}
+.subnav a{display:block;padding:8px 12px;font-size:.84rem;font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap;border-bottom:3px solid transparent}
+.subnav a:hover,.subnav a.active{color:var(--navy);border-bottom-color:var(--green)}
+.subnav a .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--surface3);margin-right:6px;vertical-align:middle}
+.subnav a.done .dot{background:var(--green)}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,#0047AB 0%,#003a8c 45%,#00a86b 130%);color:#fff;padding:56px 0 48px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.09) 1px,transparent 1px);background-size:22px 22px;pointer-events:none}
+.hero .wrap{position:relative;z-index:1}
+.eyebrow{display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:4px 12px;border-radius:99px;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.hero h1{font-size:clamp(2rem,5vw,3.1rem);margin:16px 0 10px;font-weight:850;letter-spacing:-.02em}
+.hero p.lead{font-size:1.15rem;max-width:760px;opacity:.95}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:5px 12px;font-size:.85rem}
+.platforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:28px}
+.platform{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px 16px;text-decoration:none;color:#fff;transition:transform .2s,background .2s}
+.platform:hover{transform:translateY(-3px);background:rgba(255,255,255,.2)}
+.platform b{display:block;font-size:1.05rem}
+.platform span{font-size:.85rem;opacity:.9}
+
+/* Sections */
+section.lesson{padding:56px 0;border-bottom:1px solid var(--border)}
+section.lesson:nth-of-type(even){background:var(--surface2)}
+.sec-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:22px}
+.sec-num{flex:none;width:44px;height:44px;border-radius:12px;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.1rem}
+.sec-head p{color:var(--muted);margin:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.callout{border-left:4px solid var(--navy);background:var(--surface);padding:14px 18px;border-radius:0 10px 10px 0;margin:16px 0;box-shadow:var(--shadow)}
+.callout.green{border-color:var(--green)}
+.callout.warn{border-color:var(--cat2);background:var(--warn-bg)}
+.callout b.k{color:var(--navy)}
+.objectives{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.objectives li{display:flex;gap:10px;align-items:flex-start}
+.objectives li::before{content:"✓";flex:none;width:22px;height:22px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-weight:800;font-size:.8rem;margin-top:2px}
+.btn{border:none;border-radius:10px;padding:9px 16px;font-weight:700;background:var(--navy);color:#fff;transition:background .2s,transform .1s}
+.btn:hover{background:var(--navy-d)}
+.btn:active{transform:scale(.97)}
+.btn.green{background:var(--green)} .btn.green:hover{background:var(--green-d)}
+.btn.ghost{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
+.btn.ghost:hover{background:var(--surface3)}
+.btn.sm{padding:6px 11px;font-size:.84rem;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+.badge{display:inline-block;font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:99px;letter-spacing:.03em;white-space:nowrap}
+.b-cat1{background:var(--cat1-bg);color:var(--cat1)}
+.b-cat2{background:var(--cat2-bg);color:var(--cat2)}
+.b-cat3{background:var(--cat3-bg);color:var(--cat3)}
+.b-open{background:var(--bad-bg);color:var(--bad)}
+.b-naf{background:var(--ok-bg);color:var(--ok)}
+.b-nr{background:var(--surface3);color:var(--muted)}
+.b-na{background:var(--cat3-bg);color:var(--cat3)}
+.b-poam{background:var(--warn-bg);color:var(--warn)}
+.done-flag{display:none;margin-left:auto;font-size:.8rem;font-weight:800;color:var(--ok);background:var(--ok-bg);padding:4px 10px;border-radius:99px;align-self:center;white-space:nowrap}
+.done-flag.show{display:inline-block}
+
+/* Analogy band */
+.analogy{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px}
+.analogy div{background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:14px;text-align:center}
+.analogy .big{font-size:1.8rem}
+
+/* Anatomy */
+.anatomy{display:grid;grid-template-columns:1.35fr 1fr;gap:18px}
+@media(max-width:860px){.anatomy{grid-template-columns:1fr}}
+.anatomy>*,.grid>*,.lab>*,.step-panel>*{min-width:0}
+.rule .fld,.q .opt,.q .exp,.fb,.trk-title,.callout,.kv div{overflow-wrap:anywhere}
+.rule{font-size:.92rem}
+.rule .fld{display:block;width:100%;text-align:left;border:1.5px dashed transparent;background:transparent;color:var(--text);border-radius:9px;padding:8px 10px;margin:2px 0;transition:all .15s;position:relative}
+.rule .fld:hover{border-color:var(--navy);background:var(--surface2)}
+.rule .fld.seen{border-color:var(--green);border-style:solid}
+.rule .fld.active{background:var(--surface3);border-color:var(--navy);border-style:solid}
+.rule .lbl{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block}
+.rule .fld.seen .lbl::after{content:" ✓";color:var(--green)}
+.rule .ids{display:flex;flex-wrap:wrap;gap:4px}
+.rule .ids .fld{width:auto;flex:1;min-width:130px}
+.explain{position:sticky;top:130px}
+.explain h4{color:var(--navy);margin-bottom:6px}
+.explain .tip{background:var(--surface2);border-radius:10px;padding:10px 12px;font-size:.88rem;margin-top:10px}
+
+/* Severity sorter */
+.sort-item{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px}
+.sort-item .txt{flex:1;min-width:240px}
+.sort-item .plat{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sort-btns{display:flex;gap:6px}
+.sort-btns button{border:1.5px solid var(--border);background:var(--surface2);color:var(--text);border-radius:8px;padding:6px 10px;font-weight:700;font-size:.82rem}
+.sort-btns button:hover{border-color:var(--navy)}
+.sort-item.right{border-color:var(--ok);background:var(--ok-bg)}
+.sort-item.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.sort-fb{flex-basis:100%;font-size:.86rem;display:none}
+.sort-item.right .sort-fb,.sort-item.wrong .sort-fb{display:block}
+.cat-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+.cat-legend .card{border-top:5px solid}
+.cat-legend .c1{border-top-color:var(--cat1)} .cat-legend .c2{border-top-color:var(--cat2)} .cat-legend .c3{border-top-color:var(--cat3)}
+
+/* Workflow stepper */
+.stepper{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px}
+.step-dot{flex:1;min-width:100px;border:none;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;color:var(--muted);font-weight:700;font-size:.8rem}
+.step-dot .n{display:block;width:26px;height:26px;border-radius:50%;margin:0 auto 4px;background:var(--surface3);display:grid;place-items:center;color:var(--muted)}
+.step-dot.active{border-color:var(--navy);color:var(--navy)}
+.step-dot.active .n{background:var(--navy);color:#fff}
+.step-dot.visited .n{background:var(--green);color:#fff}
+.step-panel{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+@media(max-width:820px){.step-panel{grid-template-columns:1fr}}
+.kv{display:grid;gap:8px}
+.kv div{background:var(--surface2);border-radius:10px;padding:10px 12px;font-size:.9rem}
+.kv b{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+/* Flip cards */
+.flip{perspective:1000px;height:210px;cursor:pointer}
+.flip-inner{position:relative;width:100%;height:100%;transition:transform .6s;transform-style:preserve-3d}
+.flip.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;justify-content:center;border:1px solid var(--border);box-shadow:var(--shadow)}
+.flip-front{background:var(--surface);text-align:center;align-items:center}
+.flip-front .ico{font-size:2.1rem;margin-bottom:6px}
+.flip-front b{font-size:1.05rem}
+.flip-front small{color:var(--muted);margin-top:6px}
+.flip-back{background:linear-gradient(135deg,var(--navy),#0b5fcf);color:#fff;transform:rotateY(180deg);font-size:.88rem;overflow:auto;justify-content:flex-start}
+.flip-back b{display:block;margin-bottom:4px;font-size:.95rem}
+.flip.glossary{height:170px}
+.flip.glossary .flip-back{background:linear-gradient(135deg,var(--green-d),#0b7d6b)}
+
+/* Skills */
+.skill-card{position:relative;overflow:hidden}
+.skill-card .icon{font-size:1.7rem}
+.skill-card ul{padding-left:18px;margin:8px 0 0;font-size:.9rem}
+.skill-card .lvl{position:absolute;top:14px;right:14px}
+.role{display:flex;gap:12px;align-items:flex-start}
+.role .av{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1.3rem;background:var(--surface3)}
+.role h4{margin:0 0 2px;font-size:1rem}
+.role p{margin:0;font-size:.88rem;color:var(--muted)}
+.selfcheck label{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:.92rem}
+.selfcheck label:hover{background:var(--surface2)}
+.selfcheck input{margin-top:5px;accent-color:var(--green);width:17px;height:17px}
+.meter{height:12px;background:var(--surface3);border-radius:99px;overflow:hidden;margin:8px 0}
+.meter span{display:block;height:100%;background:linear-gradient(90deg,var(--navy),var(--green));width:0;transition:width .4s}
+
+/* Platform tabs */
+.ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.ptab{border:1.5px solid var(--border);background:var(--surface);color:var(--muted);border-radius:99px;padding:7px 15px;font-weight:700;font-size:.88rem}
+.ptab.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.ppanel{display:none}
+.ppanel.active{display:block}
+.key-table{width:100%;border-collapse:collapse;font-size:.9rem}
+.key-table th,.key-table td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.key-table th{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--surface2)}
+.table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+
+/* Terminal lab */
+.lab{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:900px){.lab{grid-template-columns:1fr}}
+.term{background:var(--term-bg);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;min-height:460px}
+.term-bar{background:#1b2740;padding:8px 12px;display:flex;align-items:center;gap:7px;color:#9fb0cf;font-size:.8rem}
+.term-bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+.term-bar i:nth-child(1){background:#ff5f57}.term-bar i:nth-child(2){background:#febc2e}.term-bar i:nth-child(3){background:#28c840}
+.term-bar span{margin-left:8px}
+.term-out{flex:1;padding:12px 14px;color:var(--term-text);font-family:ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;font-size:.82rem;overflow-y:auto;max-height:420px;white-space:pre-wrap;word-break:break-word}
+.term-out .cmd{color:var(--term-cmd)}
+.term-out .ok{color:var(--term-ok)}
+.term-out .bad{color:var(--term-bad)}
+.term-out .warn{color:var(--term-warn)}
+.term-out .dim{color:#7d8aa5}
+.term-in{display:flex;border-top:1px solid #23314f;background:#0a1120}
+.term-in label{color:var(--term-ok);padding:10px 0 10px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem;white-space:nowrap}
+.term-in input{flex:1;background:transparent;border:none;color:#fff;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem;outline:none;min-width:0}
+.cmd-chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;background:#111b30;border-top:1px solid #23314f}
+.cmd-chips button{background:#1d2b4a;color:#cfe0ff;border:1px solid #2e4170;border-radius:7px;padding:4px 9px;font-size:.74rem;font-family:ui-monospace,Menlo,Consolas,monospace;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmd-chips button:hover{background:#27406f}
+.cmd-chips button.fixchip{background:#0f3a2a;border-color:#1f6a4c;color:#bff5dc}
+.cmd-chips button.scanchip{background:#3a2a0f;border-color:#6a4c1f;color:#ffe2b0}
+.tracker h4{display:flex;justify-content:space-between;align-items:center}
+.trk{border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px;background:var(--surface)}
+.trk-top{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.trk-title{font-size:.84rem;font-weight:600;flex:1}
+.trk details{font-size:.82rem;color:var(--muted);margin-top:4px}
+.trk details summary{cursor:pointer;color:var(--navy);font-weight:600}
+.trk .poambtn{margin-top:6px}
+.scorebox{display:flex;gap:8px;margin-bottom:10px}
+.scorebox div{flex:1;text-align:center;background:var(--surface2);border-radius:10px;padding:8px 4px}
+.scorebox b{display:block;font-size:1.3rem}
+.scorebox span{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+
+/* Cisco auditor */
+.cfg{background:var(--term-bg);color:var(--term-text);border-radius:var(--radius);padding:12px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.84rem;box-shadow:var(--shadow-lg);max-height:560px;overflow:auto}
+.cfg .ln{display:flex;padding:1px 14px;cursor:pointer;border-left:3px solid transparent;white-space:pre}
+.cfg .ln:hover{background:#1a2742}
+.cfg .ln .no{width:30px;color:#5e6b86;flex:none;user-select:none}
+.cfg .ln.bang{color:#5e6b86;cursor:default}
+.cfg .ln.bang:hover{background:transparent}
+.cfg .ln.hit{background:rgba(255,107,128,.16);border-left-color:#ff6b80}
+.cfg .ln.hit .tx{text-decoration:line-through;text-decoration-color:#ff6b80}
+.cfg .ln.miss{background:rgba(251,191,36,.12);border-left-color:#fbbf24}
+.cfg .ln.reveal{background:rgba(124,196,255,.12);border-left-color:#7cc4ff}
+.cfg.fixed .ln .tx{text-decoration:none}
+.fixline{color:var(--term-ok)}
+.feedback-list{max-height:520px;overflow:auto}
+.fb{border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:.86rem;border:1px solid var(--border);background:var(--surface)}
+.fb.good{border-color:var(--ok);background:var(--ok-bg)}
+.fb.meh{border-color:var(--warn);background:var(--warn-bg)}
+.fb code{background:rgba(0,0,0,.08)}
+[data-theme="dark"] .fb code{background:rgba(255,255,255,.08)}
+
+/* Checklist */
+.ckl{width:100%;border-collapse:collapse;font-size:.88rem;min-width:860px}
+.ckl th,.ckl td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
+.ckl th{background:var(--surface2);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ckl pre{margin:4px 0 0;background:var(--term-bg);color:var(--term-text);padding:7px 9px;border-radius:7px;font-size:.76rem;white-space:pre-wrap;max-width:330px}
+.ckl select,.ckl textarea{width:100%;font:inherit;font-size:.84rem;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:6px}
+.ckl textarea{min-height:64px;resize:vertical}
+.ckl tr.right td{background:var(--ok-bg)}
+.ckl tr.wrong td{background:var(--bad-bg)}
+.ckl .rfb{font-size:.8rem;margin-top:6px;display:none}
+.ckl tr.right .rfb,.ckl tr.wrong .rfb{display:block}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:14px}
+.summary-grid div{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.summary-grid b{display:block;font-size:1.6rem}
+
+/* Quiz */
+.q{margin-bottom:16px}
+.q h4{font-size:1rem;margin-bottom:10px}
+.q .opts{display:grid;gap:8px}
+.q .opt{text-align:left;border:1.5px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:10px 12px;font-size:.92rem;transition:border-color .15s}
+.q .opt:hover:not(:disabled){border-color:var(--navy)}
+.q .opt.correct{border-color:var(--ok);background:var(--ok-bg)}
+.q .opt.incorrect{border-color:var(--bad);background:var(--bad-bg)}
+.q .opt:disabled{cursor:default}
+.q .exp{display:none;margin-top:10px;font-size:.88rem;padding:10px 12px;border-radius:10px;background:var(--surface2)}
+.q.answered .exp{display:block}
+.quiz-score{position:sticky;top:110px;z-index:5;display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow);margin-bottom:16px}
+
+/* Footer */
+footer{padding:32px 0;text-align:center;color:var(--muted);font-size:.85rem}
+.res-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.res-list li{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px}
+.res-list li b{display:block}
+details.instructor{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow)}
+details.instructor summary{font-weight:800;cursor:pointer;color:var(--navy)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--navy);color:#fff;padding:12px 20px;border-radius:12px;font-weight:700;box-shadow:var(--shadow-lg);transition:transform .35s;z-index:100}
+.toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:640px){
+  .brand .txt{display:none}
+  section.lesson{padding:40px 0}
+  h2{font-size:1.45rem}
+  .wrap{padding:0 16px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><div class="brand-badge">🛡️</div><span class="txt">STIG Lab</span></div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Lesson progress</span><span id="progTxt">0 / 9 activities</span></div>
+      <div class="progress"><span id="progBar"></span></div>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode"><span id="themeIco">🌙</span><span id="themeTxt">Dark</span></button>
+  </div>
+  <nav class="subnav" aria-label="Lesson sections">
+    <ul id="subnav">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#anatomy" data-act="anatomy"><span class="dot"></span>Anatomy</a></li>
+      <li><a href="#severity" data-act="severity"><span class="dot"></span>Severity</a></li>
+      <li><a href="#workflow" data-act="workflow"><span class="dot"></span>Workflow</a></li>
+      <li><a href="#skills" data-act="skills"><span class="dot"></span>Workforce Skills</a></li>
+      <li><a href="#win11" data-act="win11"><span class="dot"></span>Windows 11</a></li>
+      <li><a href="#cisco" data-act="cisco"><span class="dot"></span>Cisco</a></li>
+      <li><a href="#rhel10" data-act="rhel10"><span class="dot"></span>RHEL 10</a></li>
+      <li><a href="#checklist" data-act="checklist"><span class="dot"></span>Checklist</a></li>
+      <li><a href="#glossary">Glossary</a></li>
+      <li><a href="#quiz" data-act="quiz"><span class="dot"></span>Quiz</a></li>
+      <li><a href="#resources">Resources</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- HERO -->
+<div class="hero" id="overview">
+  <div class="wrap">
+    <span class="eyebrow">Cybersecurity Workforce Module · System Hardening</span>
+    <h1>Hardening by the Book: Security Technical Implementation Guides (STIGs)</h1>
+    <p class="lead">Learn what STIGs are, how professionals use them to lock down real systems, and practice the job-ready skills of assessing, fixing, and documenting findings on <b>Windows 11</b>, <b>Cisco IOS XE</b>, and <b>Red Hat Enterprise Linux 10</b>.</p>
+    <div class="chips">
+      <span class="chip">⏱ ~3 hours (self-paced)</span>
+      <span class="chip">🎓 Community College &amp; Workforce</span>
+      <span class="chip">🧪 3 hands-on simulators</span>
+      <span class="chip">📋 Checklist + Quiz</span>
+    </div>
+    <div class="platforms">
+      <a class="platform" href="#win11"><b>🪟 Windows 11 STIG</b><span>PowerShell checks, GPO remediation</span></a>
+      <a class="platform" href="#cisco"><b>🔀 Cisco IOS XE STIGs</b><span>NDM · Router · Layer 2 Switch audit</span></a>
+      <a class="platform" href="#rhel10"><b>🐧 RHEL 10 STIG</b><span>OpenSCAP scanning &amp; Bash fixes</span></a>
+    </div>
+  </div>
+</div>
+
+<!-- OVERVIEW -->
+<section class="lesson">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">0</div><div><h2>What Is a STIG?</h2><p>The big picture before we get hands-on.</p></div></div>
+    <div class="grid g2">
+      <div class="card">
+        <p>A <b>Security Technical Implementation Guide (STIG)</b> is a configuration standard published by the <b>Defense Information Systems Agency (DISA)</b> that tells you exactly how to securely configure a specific product — an operating system, network device, database, browser, or application.</p>
+        <p>Each STIG is a collection of <b>rules</b>. Every rule says <i>what</i> must be configured, <i>why</i> it matters, <i>how to check</i> it, and <i>how to fix</i> it. STIGs are required on U.S. Department of Defense (DoD) systems and are widely adopted by federal agencies, defense contractors, state governments, utilities, and any organization that wants a hardened, auditable baseline.</p>
+        <div class="callout green"><b class="k">Key idea:</b> Out of the box, most products ship configured for <i>convenience</i>. A STIG reconfigures them for <i>security</i> — and gives you a way to <i>prove</i> it.</div>
+      </div>
+      <div class="card">
+        <h3>🎯 Learning Objectives</h3>
+        <p class="small muted">By the end of this lesson you will be able to:</p>
+        <ul class="objectives">
+          <li>Explain the purpose of STIGs, SRGs, and SCAP and how they fit into the Risk Management Framework (RMF).</li>
+          <li>Interpret every field of a STIG rule and classify findings as CAT I, II, or III.</li>
+          <li>Describe the STIG compliance lifecycle and the tools used at each step.</li>
+          <li>Perform check-and-fix procedures on Windows 11, Cisco IOS XE, and RHEL 10.</li>
+          <li>Complete a STIG checklist with correct statuses and defensible comments.</li>
+          <li>Map STIG skills to cybersecurity job roles and certifications.</li>
+        </ul>
+      </div>
+    </div>
+    <h3 style="margin-top:28px">The STIG family tree</h3>
+    <div class="analogy">
+      <div><div class="big">📜</div><b>NIST SP 800-53</b><div class="small muted">The "what": security controls (e.g., CM-6 Configuration Settings)</div></div>
+      <div><div class="big">📘</div><b>SRG</b><div class="small muted">Security Requirements Guide — requirements for a <i>class</i> of technology (e.g., all operating systems)</div></div>
+      <div><div class="big">🔧</div><b>STIG</b><div class="small muted">The "how": product-specific settings (e.g., Windows 11, RHEL 10)</div></div>
+      <div><div class="big">🤖</div><b>SCAP Benchmark</b><div class="small muted">Machine-readable version of a STIG so tools can check it automatically</div></div>
+    </div>
+    <div class="callout warn"><b>Version note:</b> DISA updates STIGs on a regular release cycle. Rule IDs, severities, and values in this lesson are representative examples for learning. Always download the current STIG from the DISA STIG Library before assessing a production system.</div>
+  </div>
+</section>
+
+<!-- ANATOMY -->
+<section class="lesson" id="anatomy">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">1</div><div><h2>Anatomy of a STIG Rule</h2><p>Click every highlighted field to learn what it means. Find all 9 to complete the activity.</p></div><span class="done-flag" data-flag="anatomy">✓ Complete</span></div>
+    <div class="anatomy">
+      <div class="card rule" id="ruleCard">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="small muted">Example rule — modeled on the Windows 11 STIG</span><span class="small"><b id="anatCount">0</b>/9 explored</span></div>
+        <button class="fld" data-f="title"><span class="lbl">Rule Title</span><b>The Windows Installer feature "Always install with elevated privileges" must be disabled.</b></button>
+        <div class="ids">
+          <button class="fld" data-f="sev"><span class="lbl">Severity</span><span class="badge b-cat1">CAT I · High</span></button>
+          <button class="fld" data-f="vid"><span class="lbl">Vuln ID</span><span class="mono">V-2#####</span></button>
+          <button class="fld" data-f="rid"><span class="lbl">Rule ID</span><span class="mono">SV-2#####r#_rule</span></button>
+          <button class="fld" data-f="sid"><span class="lbl">STIG ID</span><span class="mono">WN11-CC-000###</span></button>
+        </div>
+        <button class="fld" data-f="disc"><span class="lbl">Discussion</span>Standard user accounts must not be granted elevated privileges. Enabling Windows Installer to elevate privileges when installing applications can allow malicious persons and applications to gain full control of a system.</button>
+        <button class="fld" data-f="check"><span class="lbl">Check Text</span>If the following registry value does not exist or is not configured as specified, this is a finding:<br><span class="mono small">HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer\ — AlwaysInstallElevated = 0 (REG_DWORD)</span></button>
+        <button class="fld" data-f="fix"><span class="lbl">Fix Text</span>Configure the policy value for Computer Configuration &gt;&gt; Administrative Templates &gt;&gt; Windows Components &gt;&gt; Windows Installer &gt;&gt; "Always install with elevated privileges" to "Disabled".</button>
+        <button class="fld" data-f="cci"><span class="lbl">CCI / References</span><span class="mono">CCI-001812</span> → NIST SP 800-53 CM-11 (User-Installed Software)</button>
+      </div>
+      <div class="card explain" id="explainBox">
+        <h4>👈 Pick a field</h4>
+        <p class="muted">Each part of a rule has a job. Assessors read the <b>Check Text</b>, administrators apply the <b>Fix Text</b>, and auditors trace everything back to policy with the <b>CCI</b>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SEVERITY -->
+<section class="lesson" id="severity">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">2</div><div><h2>Severity Categories: CAT I, II, III</h2><p>Severity drives priority. CAT I findings are fixed first — and can block a system from going live.</p></div><span class="done-flag" data-flag="severity">✓ Complete</span></div>
+    <div class="cat-legend">
+      <div class="card c1"><span class="badge b-cat1">CAT I · HIGH</span><p class="small" style="margin-top:8px">Any vulnerability whose exploitation will <b>directly and immediately</b> result in loss of Confidentiality, Integrity, or Availability.</p></div>
+      <div class="card c2"><span class="badge b-cat2">CAT II · MEDIUM</span><p class="small" style="margin-top:8px">Any vulnerability whose exploitation <b>has a potential</b> to result in loss of Confidentiality, Integrity, or Availability.</p></div>
+      <div class="card c3"><span class="badge b-cat3">CAT III · LOW</span><p class="small" style="margin-top:8px">Any vulnerability whose existence <b>degrades measures</b> that protect against loss of Confidentiality, Integrity, or Availability.</p></div>
+    </div>
+    <div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 style="margin:0">🎮 Severity Sorter</h3><span class="small">Score: <b id="sortScore">0</b>/<span id="sortTotal">0</span> · <button class="btn sm ghost" id="sortReset">Reset</button></span></div>
+    <p class="small muted">Classify each finding. Think: if an attacker found this, how fast and how badly could they hurt the system?</p>
+    <div id="sorter"></div>
+  </div>
+</section>
+
+<!-- WORKFLOW -->
+<section class="lesson" id="workflow">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">3</div><div><h2>The STIG Compliance Lifecycle</h2><p>How STIG work actually happens on the job. Step through all 8 stages.</p></div><span class="done-flag" data-flag="workflow">✓ Complete</span></div>
+    <div class="stepper" id="stepper"></div>
+    <div class="card step-panel" id="stepPanel"></div>
+    <div class="row" style="margin-top:12px;justify-content:space-between"><button class="btn ghost" id="stepPrev">← Previous</button><button class="btn" id="stepNext">Next →</button></div>
+
+    <h3 style="margin-top:36px">🧰 The STIG Professional's Toolkit</h3>
+    <p class="muted small">Click a card to flip it.</p>
+    <div class="grid g4" id="toolkit"></div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section class="lesson" id="skills">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">4</div><div><h2>STIG Workforce Skills</h2><p>What employers expect you to <i>do</i> with STIGs — and which jobs use these skills every day.</p></div><span class="done-flag" data-flag="skills">✓ Complete</span></div>
+    <div class="grid g3" id="skillCards"></div>
+
+    <h3 style="margin-top:34px">💼 Job Roles That Use STIGs</h3>
+    <div class="grid g3" id="roles"></div>
+
+    <div class="grid g2" style="margin-top:30px">
+      <div class="card">
+        <h3>🏛️ Why Employers Care</h3>
+        <ul class="small" style="padding-left:18px;margin:0">
+          <li><b>DoD &amp; federal systems</b> must be STIG-compliant to receive and keep an Authorization to Operate (ATO).</li>
+          <li><b>Defense contractors</b> use STIGs as a proven hardening baseline when meeting NIST SP 800-171 configuration requirements and preparing for CMMC assessments.</li>
+          <li><b>DoD Directive 8140</b> workforce qualification aligns cyber jobs to work roles — STIG work appears in systems administration, network operations, and security assessment roles.</li>
+          <li><b>Private sector</b> organizations (utilities, healthcare, finance) use STIGs or the similar CIS Benchmarks to meet auditors and insurers.</li>
+        </ul>
+        <h4 style="margin-top:14px">Related certifications</h4>
+        <div class="row small"><span class="badge b-na">CompTIA Security+</span><span class="badge b-na">CompTIA Linux+</span><span class="badge b-na">CompTIA CySA+</span><span class="badge b-na">Cisco CCNA</span><span class="badge b-na">Red Hat RHCSA</span><span class="badge b-na">Microsoft MD-102</span><span class="badge b-na">(ISC)² CISSP</span></div>
+      </div>
+      <div class="card selfcheck">
+        <h3>🪞 Skill Self-Check</h3>
+        <p class="small muted">Check what you can do <i>today</i>. Come back after the labs and re-check.</p>
+        <div id="selfcheck"></div>
+        <div class="meter"><span id="selfMeter"></span></div>
+        <div class="small" id="selfMsg"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WINDOWS 11 -->
+<section class="lesson" id="win11">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">5</div><div><h2>🪟 Windows 11 STIG</h2><p>Endpoint hardening for the most common workstation in government and industry.</p></div><span class="done-flag" data-flag="win11">✓ Complete</span></div>
+    <div class="ptabs" data-group="w"><button class="ptab active" data-p="w-learn">Learn</button><button class="ptab" data-p="w-lab">Hands-On Lab</button></div>
+    <div class="ppanel active" id="w-learn">
+      <div class="grid g2">
+        <div class="card">
+          <h3>What it covers</h3>
+          <p>The Microsoft Windows 11 STIG contains <b>hundreds</b> of rules spanning account policies, audit policy, user rights, security options, Windows Defender, BitLocker, PowerShell logging, and administrative templates. Rule IDs begin with <code>WN11-</code> followed by a category code:</p>
+          <div class="table-scroll"><table class="key-table">
+            <tr><th>Prefix</th><th>Area</th></tr>
+            <tr><td><code>WN11-00-</code></td><td>General / system requirements (e.g., BitLocker, Secure Boot)</td></tr>
+            <tr><td><code>WN11-AC-</code></td><td>Account policies (password, lockout)</td></tr>
+            <tr><td><code>WN11-AU-</code></td><td>Audit policy</td></tr>
+            <tr><td><code>WN11-CC-</code></td><td>Computer configuration (administrative templates)</td></tr>
+            <tr><td><code>WN11-SO-</code></td><td>Security options</td></tr>
+            <tr><td><code>WN11-UR-</code></td><td>User rights assignments</td></tr>
+          </table></div>
+        </div>
+        <div class="card">
+          <h3>How pros apply it</h3>
+          <ol class="small" style="padding-left:18px">
+            <li><b>Never hand-edit one machine at a time in production.</b> Import the <b>DISA STIG GPO package</b> into Group Policy (or build an Intune baseline for cloud-managed devices).</li>
+            <li>Link the GPO to a <b>test OU</b> first, validate line-of-business apps, then roll to production OUs.</li>
+            <li>Scan with <b>SCAP Compliance Checker (SCC)</b> or <b>Evaluate-STIG</b> to auto-check most rules.</li>
+            <li>Manually review rules SCAP can't check (e.g., "only authorized software is installed").</li>
+            <li>Export results to a <b>checklist (.cklb)</b> in STIG Viewer and document exceptions.</li>
+          </ol>
+          <div class="callout"><b class="k">Pro tip:</b> <code>gpresult /h report.html</code> and <code>rsop.msc</code> show which GPO actually set a value — essential when a STIG setting "won't stick."</div>
+        </div>
+      </div>
+      <h3 style="margin-top:26px">High-impact Windows 11 settings</h3>
+      <div class="table-scroll"><table class="key-table">
+        <tr><th>Setting</th><th>Required value</th><th>Why it matters</th><th>Sev.</th></tr>
+        <tr><td>Always install with elevated privileges</td><td>Disabled</td><td>Prevents standard users from installing MSI packages as SYSTEM.</td><td><span class="badge b-cat1">CAT I</span></td></tr>
+        <tr><td>LAN Manager authentication level</td><td>Send NTLMv2 only; refuse LM &amp; NTLM (5)</td><td>LM/NTLMv1 hashes are trivially cracked or relayed.</td><td><span class="badge b-cat1">CAT I</span></td></tr>
+        <tr><td>AutoPlay</td><td>Turned off for all drives</td><td>Stops malware on USB/optical media from auto-running.</td><td><span class="badge b-cat1">CAT I</span></td></tr>
+        <tr><td>BitLocker</td><td>All drives encrypted (with pre-boot PIN)</td><td>Protects data at rest if a laptop is lost or stolen.</td><td><span class="badge b-cat1">CAT I</span></td></tr>
+        <tr><td>SMBv1</td><td>Disabled / removed</td><td>Legacy protocol abused by WannaCry and NotPetya.</td><td><span class="badge b-cat2">CAT II</span></td></tr>
+        <tr><td>WDigest authentication</td><td>Disabled (UseLogonCredential = 0)</td><td>Prevents clear-text passwords from being cached in LSASS memory.</td><td><span class="badge b-cat2">CAT II</span></td></tr>
+        <tr><td>Account lockout threshold</td><td>3 or fewer invalid attempts (not 0)</td><td>Slows password guessing.</td><td><span class="badge b-cat2">CAT II</span></td></tr>
+        <tr><td>Minimum password length</td><td>14 characters</td><td>Length is the biggest factor in brute-force resistance.</td><td><span class="badge b-cat2">CAT II</span></td></tr>
+        <tr><td>PowerShell Script Block Logging</td><td>Enabled</td><td>Records the code attackers run — critical for incident response.</td><td><span class="badge b-cat2">CAT II</span></td></tr>
+      </table></div>
+    </div>
+    <div class="ppanel" id="w-lab">
+      <div class="callout green"><b class="k">Scenario:</b> You're a new Systems Administrator at a defense contractor. Workstation <code>WS-ENG-042</code> was built from an old image. Run the checks, apply fixes, then <b>re-run each check to verify</b>. Close every finding to complete the lab. <span class="small muted">(Click command chips or type commands. In production you'd fix these through GPO — here we use PowerShell so you can see exactly what changes.)</span></div>
+      <div class="lab" id="winLab"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CISCO -->
+<section class="lesson" id="cisco">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">6</div><div><h2>🔀 Cisco IOS XE STIGs</h2><p>Network devices get <i>multiple</i> STIGs — one for management, one for each role the device plays.</p></div><span class="done-flag" data-flag="cisco">✓ Complete</span></div>
+    <div class="ptabs" data-group="c"><button class="ptab active" data-p="c-learn">Learn</button><button class="ptab" data-p="c-rtr">Lab: Router Audit</button><button class="ptab" data-p="c-sw">Lab: Switch Audit</button></div>
+    <div class="ppanel active" id="c-learn">
+      <div class="grid g3">
+        <div class="card"><span class="badge b-na">NDM</span><h3 style="margin-top:8px">Network Device Management</h3><p class="small">How the device itself is <b>managed</b>: AAA, SSH, login banners, session timeouts, logging, NTP, SNMPv3, password storage. Applies to <i>every</i> router and switch. IDs look like <code>CISC-ND-…</code></p></div>
+        <div class="card"><span class="badge b-na">RTR</span><h3 style="margin-top:8px">Router</h3><p class="small">How the device <b>forwards traffic</b> as a router: disable proxy ARP, directed broadcast, and IP source routing; protect routing protocols with authentication; filter at the perimeter. IDs look like <code>CISC-RT-…</code></p></div>
+        <div class="card"><span class="badge b-na">L2S</span><h3 style="margin-top:8px">Layer 2 Switch</h3><p class="small">How the device <b>switches</b>: no user traffic on VLAN 1, disable DTP, change the native VLAN, shut unused ports, enable BPDU Guard, DHCP snooping, and Dynamic ARP Inspection. IDs look like <code>CISC-L2-…</code></p></div>
+      </div>
+      <div class="callout"><b class="k">Key concept:</b> A Catalyst switch doing inter-VLAN routing is assessed against <b>NDM + L2S + RTR</b>. Picking the right set of STIGs for each device is itself a graded skill on the job.</div>
+      <h3 style="margin-top:22px">Common fixes cheat-sheet</h3>
+      <div class="grid g2">
+        <pre class="cfg" style="padding:14px 16px;white-space:pre">! --- NDM: management plane ---
+aaa new-model
+aaa authentication login default group tacacs+ local
+username breakglass privilege 15 algorithm-type scrypt secret ****
+enable algorithm-type scrypt secret ****
+ip ssh version 2
+line vty 0 4
+ transport input ssh
+ exec-timeout 10 0
+ access-class MGMT-ONLY in
+line con 0
+ exec-timeout 10 0
+banner login ^C &lt;DoD Notice and Consent Banner text&gt; ^C
+logging host 10.10.10.50
+service timestamps log datetime localtime
+ntp authenticate
+ntp server 10.10.10.11 key 1
+ntp server 10.10.10.12 key 1
+snmp-server group V3GROUP v3 priv
+no ip http server
+no ip http secure-server   ! unless required</pre>
+        <pre class="cfg" style="padding:14px 16px;white-space:pre">! --- RTR: data plane ---
+no ip source-route
+interface GigabitEthernet0/0/0
+ no ip proxy-arp
+ no ip directed-broadcast
+ no ip redirects
+ no ip unreachables
+
+! --- L2S: switch ports ---
+vlan 999
+ name UNUSED-PARKING
+interface range Gi1/0/10 - 20
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+interface Gi1/0/5
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree bpduguard enable
+interface Gi1/0/24
+ switchport mode trunk
+ switchport nonegotiate
+ switchport trunk native vlan 900
+ip dhcp snooping
+ip dhcp snooping vlan 20
+ip arp inspection vlan 20</pre>
+      </div>
+      <p class="small muted" style="margin-top:10px">Assessment tip: most network STIG checks are performed by reviewing <code>show running-config</code>. Many teams automate this with Ansible, Evaluate-STIG's network-device support, or config-compliance features in their network management platform.</p>
+    </div>
+    <div class="ppanel" id="c-rtr">
+      <div class="callout green"><b class="k">Scenario:</b> You've been handed the running-config for edge router <code>EDGE-RTR-01</code>. <b>Click every line that violates the NDM or RTR STIG.</b> There are <b id="rtrTotal">0</b> violations. Clicking a compliant line counts as a false positive — just like on a real audit, accuracy matters.</div>
+      <div class="lab" id="rtrLab"></div>
+    </div>
+    <div class="ppanel" id="c-sw">
+      <div class="callout green"><b class="k">Scenario:</b> Access switch <code>ACC-SW-03</code> serves an engineering floor. <b>Click every line that violates the L2S or NDM STIG.</b> There are <b id="swTotal">0</b> violations.</div>
+      <div class="lab" id="swLab"></div>
+    </div>
+  </div>
+</section>
+
+<!-- RHEL -->
+<section class="lesson" id="rhel10">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">7</div><div><h2>🐧 Red Hat Enterprise Linux 10 STIG</h2><p>Linux server hardening with open-source automation built right into the OS.</p></div><span class="done-flag" data-flag="rhel10">✓ Complete</span></div>
+    <div class="ptabs" data-group="r"><button class="ptab active" data-p="r-learn">Learn</button><button class="ptab" data-p="r-lab">Hands-On Lab</button></div>
+    <div class="ppanel active" id="r-learn">
+      <div class="grid g2">
+        <div class="card">
+          <h3>What it covers</h3>
+          <p>The RHEL STIG covers authentication (PAM, faillock, pwquality), SSH, SELinux, auditd, firewalld, cryptographic policy and FIPS mode, file permissions, partitioning, package management, and removal of insecure services. Rule IDs follow the pattern <code>RHEL-10-######</code>.</p>
+          <h4>Red Hat's built-in advantage</h4>
+          <p class="small">Red Hat ships the <b>SCAP Security Guide (SSG)</b> with a <code>stig</code> profile. Using <b>OpenSCAP</b> you can scan, generate an HTML report, and even generate Bash or Ansible remediation — all from the command line.</p>
+          <pre class="cfg" style="padding:12px 14px;white-space:pre-wrap"># install the tools
+dnf install -y openscap-scanner scap-security-guide
+
+# scan against the STIG profile
+oscap xccdf eval --profile stig \
+  --results results.xml --report report.html \
+  /usr/share/xml/scap/ssg/content/ssg-rhel10-ds.xml
+
+# generate an Ansible playbook to fix findings
+oscap xccdf generate fix --fix-type ansible \
+  --profile stig --output stig-fix.yml \
+  /usr/share/xml/scap/ssg/content/ssg-rhel10-ds.xml</pre>
+        </div>
+        <div class="card">
+          <h3>Key RHEL 10 controls</h3>
+          <div class="table-scroll"><table class="key-table">
+            <tr><th>Control</th><th>Verify with</th></tr>
+            <tr><td>FIPS mode enabled</td><td><code>cat /proc/sys/crypto/fips_enabled</code> → 1</td></tr>
+            <tr><td>SELinux enforcing</td><td><code>getenforce</code></td></tr>
+            <tr><td>No telnet-server</td><td><code>rpm -q telnet-server</code></td></tr>
+            <tr><td>No empty passwords</td><td><code>grep nullok /etc/pam.d/*-auth</code></td></tr>
+            <tr><td>Ctrl-Alt-Del reboot disabled</td><td><code>systemctl status ctrl-alt-del.target</code></td></tr>
+            <tr><td>Root SSH login denied</td><td><code>sshd -T | grep permitrootlogin</code></td></tr>
+            <tr><td>Audit daemon running</td><td><code>systemctl is-active auditd</code></td></tr>
+            <tr><td>Lockout after 3 failures</td><td><code>grep deny /etc/security/faillock.conf</code></td></tr>
+            <tr><td>Firewall active</td><td><code>systemctl is-active firewalld</code></td></tr>
+            <tr><td>File integrity (AIDE)</td><td><code>rpm -q aide</code></td></tr>
+          </table></div>
+          <div class="callout warn small"><b>RHEL 10 change:</b> FIPS mode is now enabled <b>at installation</b> (for example, the <code>fips=1</code> boot option). The old <code>fips-mode-setup</code> tool is gone — so a server built without FIPS must be rebuilt. Plan hardening <i>before</i> you install!</div>
+        </div>
+      </div>
+    </div>
+    <div class="ppanel" id="r-lab">
+      <div class="callout green"><b class="k">Scenario:</b> Web server <code>rhel10-web01</code> is headed to production next week. Run an OpenSCAP scan, investigate each failure manually, fix what you can, and document what you can't. <span class="small muted">(Type commands or click chips. Fix chips appear after a check shows a finding.)</span></div>
+      <div class="lab" id="rhelLab"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CHECKLIST -->
+<section class="lesson" id="checklist">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">8</div><div><h2>📋 Complete a STIG Checklist</h2><p>Simulates STIG Viewer. Read the evidence, choose the correct status, and write a comment an auditor would accept.</p></div><span class="done-flag" data-flag="checklist">✓ Complete</span></div>
+    <div class="grid g4" style="margin-bottom:16px">
+      <div class="card"><span class="badge b-open">Open</span><p class="small" style="margin:6px 0 0">The system does <b>not</b> meet the requirement. Needs a fix or a POA&amp;M.</p></div>
+      <div class="card"><span class="badge b-naf">Not a Finding</span><p class="small" style="margin:6px 0 0">The system <b>meets</b> the requirement. Evidence supports compliance.</p></div>
+      <div class="card"><span class="badge b-na">Not Applicable</span><p class="small" style="margin:6px 0 0">The rule's own check text says it doesn't apply to this configuration.</p></div>
+      <div class="card"><span class="badge b-nr">Not Reviewed</span><p class="small" style="margin:6px 0 0">Not yet assessed. A finished checklist should have <b>none</b>.</p></div>
+    </div>
+    <div class="table-scroll"><table class="ckl" id="ckl"></table></div>
+    <div class="row" style="margin-top:14px"><button class="btn green" id="cklGrade">Check My Checklist</button><button class="btn ghost" id="cklExport">⬇ Export CSV</button><button class="btn ghost" id="cklReset">Reset</button></div>
+    <div id="cklSummary"></div>
+  </div>
+</section>
+
+<!-- GLOSSARY -->
+<section class="lesson" id="glossary">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">9</div><div><h2>Glossary Flip Cards</h2><p>Click to flip. Use these to study before the quiz.</p></div></div>
+    <div class="grid g4" id="glossGrid"></div>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section class="lesson" id="quiz">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">10</div><div><h2>Knowledge Check</h2><p>Score 80% or higher to complete the lesson. Every answer includes an explanation.</p></div><span class="done-flag" data-flag="quiz">✓ Complete</span></div>
+    <div class="quiz-score"><span>Score: <b id="qScore">0</b> / <span id="qTotal">0</span> · Answered <span id="qAns">0</span></span><button class="btn sm ghost" id="qReset">Retake</button></div>
+    <div id="quizBox"></div>
+    <div id="qResult"></div>
+  </div>
+</section>
+
+<!-- RESOURCES -->
+<section class="lesson" id="resources">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-num">11</div><div><h2>Resources &amp; Next Steps</h2><p>Where professionals get the real thing.</p></div></div>
+    <div class="grid g2">
+      <ul class="res-list">
+        <li><b>DISA STIG Library</b><a href="https://public.cyber.mil/stigs/" target="_blank" rel="noopener">public.cyber.mil/stigs</a> — official STIGs, SRGs, SCAP benchmarks, GPO packages, and STIG Viewer.</li>
+        <li><b>NIST National Checklist Program</b><a href="https://ncp.nist.gov/" target="_blank" rel="noopener">ncp.nist.gov</a> — searchable repository of security configuration checklists.</li>
+        <li><b>OpenSCAP</b><a href="https://www.open-scap.org/" target="_blank" rel="noopener">open-scap.org</a> — open-source SCAP scanner used in the RHEL lab.</li>
+        <li><b>ComplianceAsCode</b><a href="https://github.com/ComplianceAsCode/content" target="_blank" rel="noopener">github.com/ComplianceAsCode/content</a> — source of the SCAP Security Guide and Ansible remediation.</li>
+        <li><b>NICE Workforce Framework</b><a href="https://niccs.cisa.gov/workforce-development/nice-framework" target="_blank" rel="noopener">niccs.cisa.gov</a> — official work roles and skill statements.</li>
+      </ul>
+      <details class="instructor" open>
+        <summary>👩‍🏫 Instructor Notes &amp; Lab Extensions</summary>
+        <ul class="small" style="padding-left:18px">
+          <li><b>Windows extension:</b> In a Windows 11 VM, run SCC or Evaluate-STIG, import the DISA GPO package with LGPO or the Group Policy Management Console, then re-scan and compare scores.</li>
+          <li><b>Linux extension:</b> On RHEL 10 (or a compatible rebuild such as Rocky/Alma 10), run the <code>oscap</code> scan, open <code>report.html</code>, then apply the generated Ansible playbook in a snapshot-protected VM.</li>
+          <li><b>Cisco extension:</b> In Cisco Modeling Labs or Packet Tracer, give students a misconfigured topology and grade them on a before/after <code>show run</code> diff.</li>
+          <li><b>Break-it lesson:</b> Apply a full STIG baseline to a test VM and have students troubleshoot what stopped working — this teaches why testing before production matters.</li>
+          <li><b>Writing assignment:</b> Students write one POA&amp;M entry and one risk-acceptance justification for an Open CAT II finding.</li>
+          <li><b>Assessment alignment:</b> Objectives map to Security+ (hardening, secure baselines), Linux+ (security), CCNA (device security), and NICE work roles for systems administration and security control assessment.</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">STIG Lab · Interactive lesson for community college &amp; workforce cybersecurity programs · Simulated environments — no real systems are modified.<br>STIG content is representative for instruction; verify against the current DISA release.</div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- Storage helpers ---------- */
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* ---------- Theme (default light) ---------- */
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);$('#themeIco').textContent=t==='dark'?'☀️':'🌙';$('#themeTxt').textContent=t==='dark'?'Light':'Dark'}
+applyTheme(store.get('stig-theme','light'));
+$('#themeBtn').addEventListener('click',()=>{const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';applyTheme(t);store.set('stig-theme',t)});
+
+/* ---------- Progress ---------- */
+const ACTS=['anatomy','severity','workflow','skills','win11','cisco','rhel10','checklist','quiz'];
+let done=store.get('stig-progress',{});
+function renderProgress(){
+  const n=ACTS.filter(a=>done[a]).length;
+  $('#progTxt').textContent=n+' / '+ACTS.length+' activities';
+  $('#progBar').style.width=(n/ACTS.length*100)+'%';
+  ACTS.forEach(a=>{const l=$('#subnav a[data-act="'+a+'"]');if(l)l.classList.toggle('done',!!done[a]);const f=$('[data-flag="'+a+'"]');if(f)f.classList.toggle('show',!!done[a])});
+}
+function complete(a,msg){if(done[a])return;done[a]=true;store.set('stig-progress',done);renderProgress();toast(msg||'✅ Activity complete!');if(ACTS.every(x=>done[x]))setTimeout(()=>toast('🏆 Lesson complete — great work!'),2800)}
+renderProgress();
+
+/* Active nav highlight */
+const secs=$$('section.lesson[id], #overview');
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){$$('#subnav a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id))}})},{rootMargin:'-40% 0px -55% 0px'});
+secs.forEach(s=>io.observe(s));
+
+/* Tabs */
+$$('.ptabs').forEach(g=>{g.addEventListener('click',e=>{const b=e.target.closest('.ptab');if(!b)return;$$('.ptab',g).forEach(x=>x.classList.toggle('active',x===b));const host=g.parentElement;$$('.ppanel',host).forEach(p=>p.classList.toggle('active',p.id===b.dataset.p))})});
+
+/* ---------- 1. Anatomy ---------- */
+const ANAT={
+ title:['Rule Title','A one-sentence requirement written as "must" or "must not." It tells you the expected secure state — not how to get there.','Read the title first to understand the intent before diving into technical details.'],
+ sev:['Severity (Category)','CAT I (High), CAT II (Medium), or CAT III (Low). Severity sets remediation priority and affects whether a system can receive an Authorization to Operate.','Open CAT I findings are generally treated as show-stoppers and must be fixed or formally mitigated before go-live.'],
+ vid:['Vulnerability ID (V-ID)','A unique, stable number (V-######) that identifies the requirement across STIG versions. Checklists and POA&Ms reference it.','When a STIG is updated, the V-ID usually stays the same, so you can carry findings forward between releases.'],
+ rid:['Rule ID (SV-…_rule)','Identifies the specific <i>revision</i> of the rule. The "r#" increments when DISA changes the check or fix text.','If the Rule ID changes between releases, re-read the check — the requirement may have changed.'],
+ sid:['STIG ID','A human-friendly ID that encodes the product and area — WN11 (Windows 11), CC (Computer Configuration). Cisco uses CISC-ND/RT/L2; RHEL uses RHEL-10.','Admins often use STIG IDs in change tickets and GPO comments because they are easy to read.'],
+ disc:['Discussion (Vulnerability Discussion)','Explains the <b>risk</b> — why this setting matters and what an attacker could do without it.','Use the discussion when explaining a finding to management or justifying a change request.'],
+ check:['Check Text','The exact procedure an assessor follows to determine compliance, and the condition that makes it "a finding."','Follow the check text literally. Your status must be based on evidence, not assumptions.'],
+ fix:['Fix Text','The procedure to bring the system into compliance — often a GPO path, a command, or a configuration line.','Always test fixes in a lab or test OU before production; some settings can break applications.'],
+ cci:['CCI — Control Correlation Identifier','Links the technical rule back to a NIST SP 800-53 security control. This is how STIG results roll up into the Risk Management Framework (RMF).','CCIs let auditors answer: "Which policy requirement does this setting satisfy?"']
+};
+const seenA=new Set();
+$$('#ruleCard .fld').forEach(b=>b.addEventListener('click',()=>{
+  const f=b.dataset.f,d=ANAT[f];seenA.add(f);
+  $$('#ruleCard .fld').forEach(x=>x.classList.remove('active'));b.classList.add('active','seen');
+  $('#explainBox').innerHTML='<h4>'+d[0]+'</h4><p>'+d[1]+'</p><div class="tip">💡 <b>On the job:</b> '+d[2]+'</div>';
+  $('#anatCount').textContent=seenA.size;
+  if(seenA.size===9)complete('anatomy','✅ Anatomy explored!');
+}));
+
+/* ---------- 2. Severity sorter ---------- */
+const SORT=[
+ {p:'Windows 11',t:'"Always install with elevated privileges" is enabled.',a:1,e:'Any user could install an MSI that runs as SYSTEM — an immediate path to full control.'},
+ {p:'RHEL 10',t:'The telnet-server package is installed.',a:1,e:'Telnet sends credentials in clear text — direct, immediate loss of confidentiality.'},
+ {p:'RHEL 10',t:'PAM allows accounts with blank passwords (nullok).',a:1,e:'An account with no password can be logged into by anyone — immediate compromise.'},
+ {p:'Windows 11',t:'AutoPlay is not turned off for all drives.',a:1,e:'Malicious removable media could execute code automatically.'},
+ {p:'Windows 11',t:'Account lockout threshold is set to 0 (never lock out).',a:2,e:'Enables unlimited password guessing — a potential path to compromise, but the attacker still needs to succeed.'},
+ {p:'Windows 11',t:'Minimum password length is 8 characters instead of 14.',a:2,e:'Weaker passwords increase the potential for compromise.'},
+ {p:'Windows 11',t:'The DoD legal notice / logon banner is not displayed.',a:2,e:'Missing banners weaken legal standing for monitoring and prosecution.'},
+ {p:'RHEL 10',t:'The system does not display the date and time of the last successful logon.',a:3,e:'Not an attack path by itself — it degrades a user\'s ability to notice suspicious account use.'},
+ {p:'Windows 11',t:'"Turn off Microsoft consumer experiences" is not enabled.',a:3,e:'Unwanted app suggestions/installs degrade the controlled baseline but don\'t directly expose data.'}
+];
+let sortAns=store.get('stig-sort',{});
+function renderSorter(){
+  $('#sortTotal').textContent=SORT.length;
+  $('#sorter').innerHTML=SORT.map((s,i)=>{
+    const a=sortAns[i],cls=a===undefined?'':(a===s.a?'right':'wrong');
+    return '<div class="sort-item '+cls+'" data-i="'+i+'"><div class="txt"><div class="plat">'+s.p+'</div>'+esc(s.t)+'</div><div class="sort-btns">'+[1,2,3].map(c=>'<button data-c="'+c+'"'+(a!==undefined?' disabled':'')+'>CAT '+'I'.repeat(c)+'</button>').join('')+'</div><div class="sort-fb">'+(a===s.a?'✅ Correct — ':'❌ It\'s <b>CAT '+'I'.repeat(s.a)+'</b>. ')+esc(s.e)+'</div></div>';
+  }).join('');
+  const sc=SORT.filter((s,i)=>sortAns[i]===s.a).length;$('#sortScore').textContent=sc;
+  if(Object.keys(sortAns).length===SORT.length)complete('severity','✅ Sorter finished: '+sc+'/'+SORT.length);
+}
+$('#sorter').addEventListener('click',e=>{const b=e.target.closest('button[data-c]');if(!b)return;const i=+b.closest('.sort-item').dataset.i;sortAns[i]=+b.dataset.c;store.set('stig-sort',sortAns);renderSorter()});
+$('#sortReset').addEventListener('click',()=>{sortAns={};store.set('stig-sort',sortAns);renderSorter()});
+renderSorter();
+
+/* ---------- 3. Workflow ---------- */
+const STEPS=[
+ {n:'Identify',ico:'🔍',d:'Inventory every system and determine which STIGs apply. A Windows 11 laptop running Edge and Office may need the Windows 11, Microsoft Edge, Office, and Defender Antivirus STIGs. A Cisco Catalyst switch may need NDM + L2S (+ RTR if routing).',tools:'Asset inventory, CMDB, STIG Library',out:'List of applicable STIGs per asset',skill:'Systems thinking; knowing your environment'},
+ {n:'Acquire',ico:'⬇️',d:'Download the current STIG, SCAP benchmark, and (for Windows) the GPO package from the DISA STIG Library. Note the version and release so results are traceable.',tools:'DISA STIG Library, STIG Viewer',out:'Current STIG/benchmark files',skill:'Version control and attention to detail'},
+ {n:'Assess (Auto)',ico:'🤖',d:'Run automated SCAP scans. Automated tools typically cover a large share of OS rules but rarely all of them.',tools:'SCC, Evaluate-STIG, OpenSCAP, ACAS/Nessus',out:'XCCDF results, scan reports',skill:'Running and interpreting scanning tools'},
+ {n:'Assess (Manual)',ico:'🕵️',d:'Manually evaluate rules that can\'t be automated — e.g., "only authorized accounts exist" or "audit logs are reviewed weekly." Network device STIGs are often largely manual config reviews.',tools:'STIG Viewer, CLI, interviews, documentation review',out:'Completed manual checks with evidence',skill:'Reading check text precisely; gathering evidence'},
+ {n:'Remediate',ico:'🛠️',d:'Apply fixes — ideally through automation (GPO, Ansible, configuration templates) and change management. Test in a lab or pilot group first!',tools:'Group Policy, Intune, Ansible, PowerSTIG, config templates',out:'Hardened systems, change tickets',skill:'Hardening, scripting, change management'},
+ {n:'Document',ico:'📋',d:'Record every rule\'s status (Open, Not a Finding, Not Applicable) with comments and evidence in a checklist file.',tools:'STIG Viewer (.cklb / .ckl), Evaluate-STIG output',out:'Completed checklists',skill:'Technical writing and accuracy'},
+ {n:'Mitigate & POA&M',ico:'🗂️',d:'For findings that can\'t be fixed now (vendor limits, mission needs), document mitigations and a Plan of Action & Milestones (POA&M) — or a formal risk acceptance from the Authorizing Official.',tools:'eMASS or GRC platform, POA&M template',out:'POA&M entries, risk acceptance',skill:'Risk communication; compensating controls'},
+ {n:'Monitor',ico:'📈',d:'Configurations drift. Re-scan on a schedule, apply new STIG releases, and keep checklists current to maintain your Authorization to Operate (ATO).',tools:'Scheduled scans, config management, SIEM',out:'Continuous monitoring reports',skill:'Automation and continuous compliance'}
+];
+let stepI=0;const visited=new Set([0]);
+function renderStep(){
+  $('#stepper').innerHTML=STEPS.map((s,i)=>'<button class="step-dot '+(i===stepI?'active ':'')+(visited.has(i)&&i!==stepI?'visited':'')+'" data-i="'+i+'"><span class="n">'+(i+1)+'</span>'+s.n+'</button>').join('');
+  const s=STEPS[stepI];
+  $('#stepPanel').innerHTML='<div><h3>'+s.ico+' Step '+(stepI+1)+': '+s.n+'</h3><p>'+s.d+'</p></div><div class="kv"><div><b>Tools</b>'+s.tools+'</div><div><b>Output</b>'+s.out+'</div><div><b>Workforce skill</b>'+s.skill+'</div></div>';
+  $('#stepPrev').disabled=stepI===0;$('#stepNext').textContent=stepI===STEPS.length-1?'Finish ✓':'Next →';
+  if(visited.size===STEPS.length)complete('workflow','✅ Lifecycle complete!');
+}
+$('#stepper').addEventListener('click',e=>{const b=e.target.closest('.step-dot');if(!b)return;stepI=+b.dataset.i;visited.add(stepI);renderStep()});
+$('#stepPrev').addEventListener('click',()=>{if(stepI>0){stepI--;renderStep()}});
+$('#stepNext').addEventListener('click',()=>{if(stepI<STEPS.length-1){stepI++;visited.add(stepI);renderStep()}else{visited.add(stepI);renderStep()}});
+renderStep();
+
+/* Toolkit */
+const TOOLS=[
+ ['🧾','STIG Viewer','DISA','DISA\'s desktop app for reading STIGs and creating checklists. Version 3 uses the JSON-based .cklb format; older versions used XML .ckl files. You can import SCAP results to pre-fill statuses.'],
+ ['🧪','SCAP Compliance Checker (SCC)','DoD / NIWC','Government scanner that runs DISA SCAP benchmarks against Windows, Linux, and other platforms and produces XCCDF results and reports.'],
+ ['⚡','Evaluate-STIG','DoD (PowerShell)','A DoD-developed PowerShell tool that automates many STIG checks — including some manual ones — and writes completed checklists directly.'],
+ ['🐧','OpenSCAP + SSG','Open source','The oscap scanner plus the SCAP Security Guide content. Ships with RHEL. Scans against the stig profile and generates Bash/Ansible fixes.'],
+ ['🗃️','DISA GPO Package','DISA','Pre-built Group Policy Objects that implement the Windows STIGs. Import into GPMC or apply locally with Microsoft\'s LGPO tool.'],
+ ['🅰️','Ansible','Red Hat','Automation engine. DISA and the ComplianceAsCode project publish STIG roles/playbooks for Linux and network devices — "compliance as code."'],
+ ['💠','PowerSTIG','Microsoft (open source)','PowerShell Desired State Configuration (DSC) module that applies and enforces STIG settings and corrects drift.'],
+ ['🛰️','ACAS / Nessus','Tenable','DoD\'s Assured Compliance Assessment Solution is built on Tenable. Uses audit files to check STIG compliance alongside vulnerability scanning.']
+];
+$('#toolkit').innerHTML=TOOLS.map(t=>'<div class="flip" tabindex="0" role="button" aria-label="Flip card: '+t[1]+'"><div class="flip-inner"><div class="flip-face flip-front"><div class="ico">'+t[0]+'</div><b>'+t[1]+'</b><small>'+t[2]+'</small></div><div class="flip-face flip-back"><b>'+t[1]+'</b>'+t[3]+'</div></div></div>').join('');
+
+/* ---------- 4. Skills ---------- */
+const SKILLS=[
+ ['📖','Interpret STIGs','Foundational',['Choose the right STIGs for each asset','Read check text precisely','Understand severity and CCI mapping']],
+ ['🔎','Assess Compliance','Foundational',['Run SCC, Evaluate-STIG, or OpenSCAP','Perform manual checks via GUI/CLI','Separate true findings from false positives']],
+ ['🛠️','Remediate & Harden','Intermediate',['Apply GPOs and Intune baselines','Harden Linux with Bash/Ansible','Configure Cisco IOS XE securely']],
+ ['📝','Document & Report','Intermediate',['Complete checklists with evidence','Write POA&Ms and mitigations','Summarize risk for leadership']],
+ ['⚙️','Automate Compliance','Advanced',['Compliance-as-code with Ansible/DSC','Schedule scans and detect drift','Build hardened golden images']],
+ ['🤝','Communicate & Manage Change','All levels',['Test before production','Coordinate with app owners','Explain trade-offs between security and operations']]
+];
+$('#skillCards').innerHTML=SKILLS.map(s=>'<div class="card skill-card"><span class="badge '+(s[2]==='Advanced'?'b-cat1':s[2]==='Intermediate'?'b-cat2':'b-naf')+' lvl">'+s[2]+'</span><div class="icon">'+s[0]+'</div><h3>'+s[1]+'</h3><ul>'+s[3].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
+const ROLES=[
+ ['🖥️','Systems Administrator','Applies Windows and Linux STIGs, maintains hardened images, fixes findings.'],
+ ['🌐','Network Administrator / Engineer','Hardens routers, switches, and firewalls against NDM, RTR, and L2S STIGs.'],
+ ['🧮','Security Control Assessor','Independently validates STIG compliance and evidence for authorization.'],
+ ['🛡️','ISSO / ISSM','Owns system security posture, checklists, POA&Ms, and continuous monitoring.'],
+ ['🔬','Vulnerability Assessment Analyst','Runs ACAS/Nessus and SCAP scans; prioritizes findings by severity.'],
+ ['♾️','DevSecOps / Cloud Engineer','Bakes STIG settings into infrastructure-as-code pipelines and container images.']
+];
+$('#roles').innerHTML=ROLES.map(r=>'<div class="card role"><div class="av">'+r[0]+'</div><div><h4>'+r[1]+'</h4><p>'+r[2]+'</p></div></div>').join('');
+const SELF=['Explain the difference between an SRG and a STIG','Classify a finding as CAT I, II, or III','Run an automated SCAP/OpenSCAP scan','Perform a manual check using check text','Fix a Windows setting with Group Policy','Harden a Linux server from the command line','Secure SSH and AAA on a Cisco device','Complete a checklist with correct statuses','Write a POA&M entry for an open finding','Describe which job roles use STIGs'];
+let selfS=store.get('stig-self',[]);
+function renderSelf(){
+  $('#selfcheck').innerHTML=SELF.map((s,i)=>'<label><input type="checkbox" data-i="'+i+'"'+(selfS.includes(i)?' checked':'')+'>'+s+'</label>').join('');
+  const p=selfS.length/SELF.length*100;$('#selfMeter').style.width=p+'%';
+  $('#selfMsg').innerHTML='<b>'+selfS.length+'/'+SELF.length+'</b> — '+(p<40?'Just getting started. The labs below will build these skills.':p<80?'Good progress! Keep practicing in the labs.':'Job-ready foundation! Keep sharpening with real VMs.');
+  if(selfS.length>=3)complete('skills','✅ Skills self-check recorded');
+}
+$('#selfcheck').addEventListener('change',e=>{const i=+e.target.dataset.i;selfS=e.target.checked?[...new Set([...selfS,i])]:selfS.filter(x=>x!==i);store.set('stig-self',selfS);renderSelf()});
+renderSelf();
+
+/* ---------- Terminal lab engine ---------- */
+const norm=s=>s.trim().replace(/\s+/g,' ').toLowerCase();
+function makeLab(o){
+  const host=$(o.host);
+  host.innerHTML='<div class="term"><div class="term-bar"><i></i><i></i><i></i><span>'+o.title+'</span></div><div class="term-out"></div><div class="cmd-chips"></div><form class="term-in" autocomplete="off"><label>'+esc(o.prompt)+'</label><input aria-label="Command input" spellcheck="false" placeholder="type a command or click a chip…"></form></div><div class="tracker card"><h4>Findings Tracker <button class="btn sm ghost" type="button">Reset lab</button></h4><div class="scorebox"><div><b class="s-open">0</b><span>Open</span></div><div><b class="s-naf">0</b><span>Not a Finding</span></div><div><b class="s-nr">0</b><span>Not Reviewed</span></div></div><div class="trk-list"></div></div>';
+  const out=$('.term-out',host),chips=$('.cmd-chips',host),inp=$('input',host),list=$('.trk-list',host);
+  let st,checks,hist=[],hi=0;
+  function init(){st=JSON.parse(JSON.stringify(o.state));checks=o.checks.map(c=>Object.assign({status:'nr',fixed:false,showFix:false},c));out.innerHTML='';print(o.banner,'dim');render()}
+  function print(t,cls){String(t).split('\n').forEach(l=>{const d=document.createElement('div');d.textContent=l===''?'\u00a0':l;if(cls)d.className=cls;out.appendChild(d)});out.scrollTop=out.scrollHeight}
+  function run(raw){
+    print(o.prompt+' '+raw,'cmd');const n=norm(raw);if(!n)return;hist.push(raw);hi=hist.length;
+    if(n==='clear'||n==='cls'){out.innerHTML='';return}
+    if(n==='help'){print('Supported commands are shown as chips below the terminal.\nBlue = check · Green = fix · Gold = scan. Fix chips appear after a check finds a problem.\nTip: re-run a check after fixing it to verify and close the finding.','dim');return}
+    if(o.scan&&n===norm(o.scan.cmd)){const r=o.scan.run(st,checks);print(r,'');return}
+    const m=checks.filter(c=>norm(c.check)===n);
+    if(m.length){const r=m[0].out(st);print(r.t,r.c);m.forEach(c=>{c.status=c.pass(st)?'naf':(c.status==='poam'?'poam':'open');if(c.status==='open')c.showFix=true});render();return}
+    const f=checks.find(c=>c.fix&&norm(c.fix)===n);
+    if(f){const r=f.apply(st);print(r.t,r.c);f.fixed=true;if(r.c!=='bad')print('→ Now re-run the check to verify the fix.','warn');render();return}
+    print(o.notFound||'Command not recognized in this simulation. Type "help" or click a chip.','warn');
+  }
+  function render(){
+    const seen=new Set();let html='';
+    checks.forEach(c=>{if(!seen.has(c.check)){seen.add(c.check);html+='<button type="button" data-cmd="'+esc(c.check)+'" title="'+esc(c.check)+'">'+esc(c.check)+'</button>'}});
+    checks.forEach(c=>{if(c.showFix&&c.fix&&c.status!=='naf')html+='<button type="button" class="fixchip" data-cmd="'+esc(c.fix)+'" title="'+esc(c.fix)+'">'+esc(c.fix)+'</button>'});
+    if(o.scan)html='<button type="button" class="scanchip" data-cmd="'+esc(o.scan.cmd)+'" title="'+esc(o.scan.cmd)+'">'+esc(o.scan.label||o.scan.cmd)+'</button>'+html;
+    chips.innerHTML=html;
+    const lab={nr:'Not Reviewed',open:'Open',naf:'Not a Finding',poam:'Open · POA&M'};
+    list.innerHTML=checks.map((c,i)=>'<div class="trk"><div class="trk-top"><span class="badge b-cat'+c.cat+'">CAT '+'I'.repeat(c.cat)+'</span><span class="trk-title">'+esc(c.title)+'</span><span class="badge b-'+c.status+'">'+lab[c.status]+'</span></div><details><summary>Why it matters</summary>'+c.why+'</details>'+(c.poamable&&c.status==='open'&&c.fixed?'<button type="button" class="btn sm poambtn" data-poam="'+i+'">Document as Open + POA&amp;M</button>':'')+'</div>').join('');
+    $('.s-open',host).textContent=checks.filter(c=>c.status==='open'||c.status==='poam').length;
+    $('.s-naf',host).textContent=checks.filter(c=>c.status==='naf').length;
+    $('.s-nr',host).textContent=checks.filter(c=>c.status==='nr').length;
+    if(checks.every(c=>c.status==='naf'||c.status==='poam')){complete(o.act,o.doneMsg);if(!render._said){render._said=true;print('\n★ All findings closed or documented. Lab complete!','ok')}}
+  }
+  chips.addEventListener('click',e=>{const b=e.target.closest('button[data-cmd]');if(b){run(b.dataset.cmd);inp.focus()}});
+  $('form',host).addEventListener('submit',e=>{e.preventDefault();run(inp.value);inp.value=''});
+  inp.addEventListener('keydown',e=>{if(e.key==='ArrowUp'&&hi>0){hi--;inp.value=hist[hi];e.preventDefault()}else if(e.key==='ArrowDown'){hi=Math.min(hist.length,hi+1);inp.value=hist[hi]||'';e.preventDefault()}});
+  list.addEventListener('click',e=>{const b=e.target.closest('[data-poam]');if(!b)return;const c=checks[+b.dataset.poam];c.status='poam';print('\n[Checklist] '+c.title+'\nStatus: OPEN — POA&M created. Milestone: rebuild server with FIPS enabled at install.\nMitigation: host restricted to internal VLAN; TLS terminated on FIPS-validated load balancer.','warn');render()});
+  $('.tracker .btn',host).addEventListener('click',()=>{render._said=false;init()});
+  init();
+}
+
+/* ---------- 5. Windows 11 lab ---------- */
+const R=String.raw;
+const WIN_CHECKS=[
+ {title:'"Always install with elevated privileges" must be disabled',cat:1,
+  check:R`Get-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer -Name AlwaysInstallElevated`,
+  fix:R`Set-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer -Name AlwaysInstallElevated -Value 0`,
+  pass:s=>s.aie===0,out:s=>({t:'\nAlwaysInstallElevated : '+s.aie+'\nPSPath                : Microsoft.PowerShell.Core\\Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows\\Installer\n'+(s.aie===0?'✔ Value is 0 — Not a Finding':'✖ Value is 1 — FINDING (CAT I)'),c:s.aie===0?'ok':'bad'}),
+  apply:s=>{s.aie=0;return{t:'(no output — value set to 0)',c:'ok'}},why:'If enabled, any user can run an MSI installer with SYSTEM privileges — a well-known privilege-escalation technique.'},
+ {title:'LAN Manager authentication level must be NTLMv2 only; refuse LM & NTLM',cat:1,
+  check:R`Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\Lsa -Name LmCompatibilityLevel`,
+  fix:R`Set-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\Lsa -Name LmCompatibilityLevel -Value 5`,
+  pass:s=>s.lm===5,out:s=>({t:'\nLmCompatibilityLevel : '+s.lm+'\n'+(s.lm===5?'✔ Level 5 — Not a Finding':'✖ Level '+s.lm+' (STIG requires 5) — FINDING'),c:s.lm===5?'ok':'bad'}),
+  apply:s=>{s.lm=5;return{t:'(no output — value set to 5)',c:'ok'}},why:'LM and NTLMv1 responses can be cracked quickly or relayed. Level 5 refuses them entirely.'},
+ {title:'AutoPlay must be turned off for all drives',cat:1,
+  check:R`Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer -Name NoDriveTypeAutoRun`,
+  fix:R`Set-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer -Name NoDriveTypeAutoRun -Value 255`,
+  pass:s=>s.ap===255,out:s=>({t:'\nNoDriveTypeAutoRun : '+s.ap+'\n'+(s.ap===255?'✔ 255 (0xFF, all drives) — Not a Finding':'✖ '+s.ap+' (0x'+s.ap.toString(16).toUpperCase()+') does not cover all drive types — FINDING'),c:s.ap===255?'ok':'bad'}),
+  apply:s=>{s.ap=255;return{t:'(no output — value set to 255)',c:'ok'}},why:'AutoPlay can launch malicious code from USB drives or discs the moment they are inserted.'},
+ {title:'BitLocker must encrypt the operating system drive',cat:1,
+  check:R`Get-BitLockerVolume -MountPoint C:`,
+  fix:R`Enable-BitLocker -MountPoint C: -EncryptionMethod XtsAes256 -TpmProtector`,
+  pass:s=>s.bl,out:s=>({t:'\nVolumeType      Mount CapacityGB VolumeStatus   Encryption KeyProtector  Protection\n                Point                           Percentage               Status\n----------      ----- ---------- ------------   ---------- ------------  ----------\n'+(s.bl?'OperatingSystem C:       237.85 FullyEncrypted 100        {Tpm}         On\n✔ Encrypted and protected — Not a Finding\n(Note: the STIG also has a separate rule requiring a pre-boot PIN — TPM+PIN.)':'OperatingSystem C:       237.85 FullyDecrypted 0          {}            Off\n✖ Drive is not encrypted — FINDING'),c:s.bl?'ok':'bad'}),
+  apply:s=>{s.bl=true;return{t:'\nVolumeStatus : EncryptionInProgress\nKeyProtector : {Tpm}\n(simulation: fast-forwarding until encryption completes…)',c:'ok'}},why:'Without encryption, anyone who steals the laptop or pulls the drive can read all data at rest.'},
+ {title:'SMBv1 protocol must be disabled',cat:2,
+  check:R`Get-WindowsOptionalFeature -Online -FeatureName SMB1Protocol`,
+  fix:R`Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart`,
+  pass:s=>!s.smb1,out:s=>({t:'\nFeatureName : SMB1Protocol\nDisplayName : SMB 1.0/CIFS File Sharing Support\nState       : '+(s.smb1?'Enabled\n✖ SMBv1 is enabled — FINDING':'Disabled\n✔ Not a Finding'),c:s.smb1?'bad':'ok'}),
+  apply:s=>{s.smb1=false;return{t:'\nPath          :\nOnline        : True\nRestartNeeded : True',c:'ok'}},why:'SMBv1 lacks modern protections and was the entry point for WannaCry and NotPetya ransomware.'},
+ {title:'WDigest authentication must be disabled',cat:2,
+  check:R`Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -Name UseLogonCredential`,
+  fix:R`Set-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -Name UseLogonCredential -Value 0`,
+  pass:s=>s.wd===0,out:s=>({t:'\nUseLogonCredential : '+s.wd+'\n'+(s.wd===0?'✔ Not a Finding':'✖ WDigest caches clear-text passwords — FINDING'),c:s.wd===0?'ok':'bad'}),
+  apply:s=>{s.wd=0;return{t:'(no output — value set to 0)',c:'ok'}},why:'When enabled, tools like Mimikatz can pull plain-text passwords straight out of LSASS memory.'},
+ {title:'Account lockout threshold must be 3 or fewer invalid attempts',cat:2,
+  check:'net accounts',fix:'net accounts /lockoutthreshold:3',
+  pass:s=>s.lock>0&&s.lock<=3,out:winNet,apply:s=>{s.lock=3;return{t:'The command completed successfully.',c:'ok'}},why:'Without lockout, attackers can guess passwords forever. A threshold of 0 means "never lock out."'},
+ {title:'Minimum password length must be 14 characters',cat:2,
+  check:'net accounts',fix:'net accounts /minpwlen:14',
+  pass:s=>s.minlen>=14,out:winNet,apply:s=>{s.minlen=14;return{t:'The command completed successfully.',c:'ok'}},why:'Each added character multiplies the work needed to brute-force a password.'},
+ {title:'PowerShell Script Block Logging must be enabled',cat:2,
+  check:R`Get-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging -Name EnableScriptBlockLogging`,
+  fix:R`New-Item -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging -Force | New-ItemProperty -Name EnableScriptBlockLogging -Value 1 -PropertyType DWord`,
+  pass:s=>s.sbl===1,out:s=>s.sbl===1?{t:'\nEnableScriptBlockLogging : 1\n✔ Not a Finding',c:'ok'}:{t:'Get-ItemProperty : Cannot find path \'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\PowerShell\\ScriptBlockLogging\' because it does not exist.\n✖ Policy not configured — FINDING',c:'bad'},
+  apply:s=>{s.sbl=1;return{t:'\nEnableScriptBlockLogging : 1\nPSPath                   : Microsoft.PowerShell.Core\\Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\...\\ScriptBlockLogging',c:'ok'}},why:'Attackers love PowerShell. Script block logging records the actual code executed (Event ID 4104) for investigators.'}
+];
+function winNet(s){
+  const lk=s.lock===0?'Never':String(s.lock);const ok1=s.lock>0&&s.lock<=3,ok2=s.minlen>=14;
+  return{t:'\nForce user logoff how long after time expires?:       Never\nMinimum password age (days):                          1\nMaximum password age (days):                          60\nMinimum password length:                              '+s.minlen+'\nLength of password history maintained:                24\nLockout threshold:                                    '+lk+'\nLockout duration (minutes):                           15\nLockout observation window (minutes):                 15\nComputer role:                                        WORKSTATION\nThe command completed successfully.\n\n'+(ok2?'✔':'✖')+' Minimum password length '+s.minlen+(ok2?' — OK':' (requires 14) — FINDING')+'\n'+(ok1?'✔':'✖')+' Lockout threshold '+lk+(ok1?' — OK':' (requires 1–3) — FINDING'),c:ok1&&ok2?'ok':'warn'};
+}
+makeLab({host:'#winLab',act:'win11',doneMsg:'✅ Windows 11 lab complete!',title:'Administrator: Windows PowerShell — WS-ENG-042',prompt:'PS C:\\>',
+  banner:'Windows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n\nLab: Windows 11 STIG — WS-ENG-042 (simulated)\nStart with the gold scan chip, or check rules one at a time. Type "help" for tips.\n',
+  state:{aie:1,lm:3,ap:145,bl:false,smb1:true,wd:1,lock:0,minlen:8,sbl:0},checks:WIN_CHECKS,
+  scan:{cmd:'Invoke-StigScan -Benchmark Windows11',label:'Invoke-StigScan -Benchmark Windows11 (simulated SCC)',run:(s,cs)=>{
+    let t='\nSCAP scan (simulated) — Benchmark: Microsoft Windows 11 STIG\nTarget: WS-ENG-042\n'+'-'.repeat(60)+'\n';let p=0;
+    cs.forEach(c=>{const ok=c.pass(s);if(ok)p++;t+=(ok?'[PASS] ':'[FAIL] ')+'CAT '+'I'.repeat(c.cat)+'  '+c.title+'\n'});
+    t+='-'.repeat(60)+'\nScore: '+Math.round(p/cs.length*100)+'%  ('+p+'/'+cs.length+' sampled rules)\nNext: verify each FAIL manually with its check command before remediating.';return t}}
+});
+
+/* ---------- 6. Cisco auditors ---------- */
+const RTR=[
+ ['hostname EDGE-RTR-01'],['!'],
+ ['enable password cisco123',{f:'NDM',w:'"enable password" uses weak/no encryption. Use a strong hash.',x:'enable algorithm-type scrypt secret <strong-secret>'}],
+ ['!'],
+ ['username admin privilege 15 password 0 Admin!2024',{f:'NDM',w:'Password stored in clear text (type 0). Local accounts must use a hashed secret — and should be the account of last resort only.',x:'username breakglass privilege 15 algorithm-type scrypt secret <secret>'}],
+ ['!'],
+ ['no aaa new-model',{f:'NDM',w:'AAA is disabled. The device must use centralized authentication (TACACS+/RADIUS) with a local fallback.',x:'aaa new-model\naaa authentication login default group tacacs+ local'}],
+ ['!'],
+ ['ip domain name corp.example'],
+ ['ip ssh version 2'],
+ ['service password-encryption'],
+ ['service timestamps log datetime localtime'],
+ ['ip http server',{f:'NDM',w:'Unencrypted HTTP management is an unnecessary/insecure service. Disable it.',x:'no ip http server'}],
+ ['!'],
+ ['snmp-server community public RO',{f:'NDM',w:'SNMPv1/v2c community strings are sent in clear text (and "public" is a default). Use SNMPv3 with authentication and encryption (authPriv).',x:'no snmp-server community public\nsnmp-server group V3GROUP v3 priv\nsnmp-server user nms V3GROUP v3 auth sha <key> priv aes 256 <key>'}],
+ ['!'],
+ ['ntp server 10.10.10.11',{f:'NDM',w:'NTP is unauthenticated and there is only one time source. Use authenticated NTP with at least two sources.',x:'ntp authenticate\nntp authentication-key 1 hmac-sha2-256 <key>\nntp trusted-key 1\nntp server 10.10.10.11 key 1\nntp server 10.10.10.12 key 1'}],
+ ['logging host 10.10.10.50'],
+ ['logging buffered 64000 informational'],
+ ['!'],
+ ['interface GigabitEthernet0/0/0'],
+ [' description ISP-UPLINK'],
+ [' ip address 203.0.113.2 255.255.255.252'],
+ [' ip proxy-arp',{f:'RTR',w:'Proxy ARP lets the router answer ARP for other hosts, extending L2 trust across boundaries. Disable on all interfaces.',x:' no ip proxy-arp'}],
+ [' ip directed-broadcast',{f:'RTR',w:'Directed broadcasts enable Smurf-style amplification attacks. Disable.',x:' no ip directed-broadcast'}],
+ [' no shutdown'],['!'],
+ ['interface GigabitEthernet0/0/1'],
+ [' description INSIDE-LAN'],
+ [' ip address 10.10.10.1 255.255.255.0'],
+ [' no ip proxy-arp'],
+ [' no shutdown'],['!'],
+ ['ip source-route',{f:'RTR',w:'Source routing lets a sender dictate the packet\'s path, bypassing security controls. Disable globally.',x:'no ip source-route'}],
+ ['!'],
+ ['banner motd ^C Welcome to the EDGE router! ^C',{f:'NDM',w:'"Welcome" invites access and lacks the required DoD Notice and Consent Banner. Display the approved banner before login.',x:'banner login ^C <Standard DoD Notice and Consent Banner> ^C'}],
+ ['!'],
+ ['line con 0'],
+ [' exec-timeout 0 0',{f:'NDM',w:'0 0 means sessions never time out. Management sessions must end after 10 minutes of inactivity or less.',x:' exec-timeout 10 0'}],
+ ['line vty 0 4'],
+ [' exec-timeout 10 0'],
+ [' transport input telnet ssh',{f:'NDM',w:'Telnet sends credentials in clear text. Only SSH is allowed for remote management.',x:' transport input ssh'}],
+ [' access-class MGMT-ONLY in'],
+ ['!'],['end']
+];
+const SW=[
+ ['hostname ACC-SW-03'],['!'],
+ ['enable algorithm-type scrypt secret 9 $9$Xk...'],
+ ['aaa new-model'],
+ ['aaa authentication login default group tacacs+ local'],
+ ['ip ssh version 2'],
+ ['!'],
+ ['no ip dhcp snooping',{f:'L2S',w:'DHCP snooping must be enabled on user VLANs to block rogue DHCP servers (and it underpins Dynamic ARP Inspection).',x:'ip dhcp snooping\nip dhcp snooping vlan 20'}],
+ ['!'],
+ ['vlan 20'],[' name ENGINEERING'],['!'],
+ ['interface Vlan1'],
+ [' ip address 10.1.1.5 255.255.255.0',{f:'L2S',w:'VLAN 1 must not be used for management or user traffic. Move management to a dedicated VLAN and shut down VLAN 1.',x:'interface Vlan1\n shutdown\ninterface Vlan100\n description MGMT\n ip address 10.1.100.5 255.255.255.0'}],
+ [' no shutdown'],['!'],
+ ['interface GigabitEthernet1/0/5'],
+ [' description ENG-WORKSTATION'],
+ [' switchport mode access'],
+ [' switchport access vlan 20'],
+ [' spanning-tree portfast'],
+ [' no spanning-tree bpduguard enable',{f:'L2S',w:'User-facing access ports must have BPDU Guard enabled so a rogue switch can\'t join or manipulate spanning tree.',x:' spanning-tree bpduguard enable'}],
+ ['!'],
+ ['interface GigabitEthernet1/0/6'],
+ [' description PRINTER'],
+ [' switchport mode access'],
+ [' switchport access vlan 1',{f:'L2S',w:'User devices must not be placed in VLAN 1 (the default VLAN).',x:' switchport access vlan 20'}],
+ [' spanning-tree bpduguard enable'],
+ ['!'],
+ ['interface range GigabitEthernet1/0/10 - 20'],
+ [' description UNUSED'],
+ [' switchport mode access'],
+ [' no shutdown',{f:'L2S',w:'Unused ports must be administratively shut down and assigned to an unused, isolated VLAN.',x:' switchport access vlan 999\n shutdown'}],
+ ['!'],
+ ['interface GigabitEthernet1/0/24'],
+ [' description UPLINK-DIST'],
+ [' switchport mode dynamic desirable',{f:'L2S',w:'DTP auto-negotiation lets an attacker form a trunk (VLAN hopping). Hard-code trunks and disable negotiation.',x:' switchport mode trunk\n switchport nonegotiate'}],
+ [' switchport trunk native vlan 1',{f:'L2S',w:'The native VLAN must not be VLAN 1 (or any user VLAN) — prevents double-tagging VLAN-hopping attacks.',x:' switchport trunk native vlan 900'}],
+ ['!'],
+ ['line vty 0 15'],
+ [' transport input ssh'],
+ [' exec-timeout 30 0',{f:'NDM',w:'Idle management sessions must close after 10 minutes or less. 30 is too long.',x:' exec-timeout 10 0'}],
+ ['!'],['end']
+];
+const auditState={rtr:false,sw:false};
+function makeAudit(hostSel,totalSel,data,name,key){
+  const host=$(hostSel);const total=data.filter(d=>d[1]).length;$(totalSel).textContent=total;
+  host.innerHTML='<div><div class="cfg"></div><div class="row" style="margin-top:10px"><button class="btn sm ghost" data-a="hint">💡 Hint</button><button class="btn sm ghost" data-a="reveal">Reveal remaining</button><button class="btn sm green" data-a="fixed">Show remediated config</button><button class="btn sm ghost" data-a="reset">Reset</button></div></div><div class="card"><div class="scorebox"><div><b class="a-found">0</b><span>Found / '+total+'</span></div><div><b class="a-fp">0</b><span>False positives</span></div><div><b class="a-acc">–</b><span>Accuracy</span></div></div><div class="feedback-list"><p class="small muted">Click a line in <code>'+name+'</code>\'s running-config. Feedback appears here.</p></div></div>';
+  const cfg=$('.cfg',host),fbl=$('.feedback-list',host);let found,fp,showFixed,revealed;
+  function init(){found=new Set();fp=new Set();revealed=new Set();showFixed=false;draw();fbl.innerHTML='<p class="small muted">Click a line in <code>'+name+'</code>\'s running-config. Feedback appears here.</p>';score()}
+  function draw(){
+    cfg.classList.toggle('fixed',showFixed);
+    cfg.innerHTML=data.map((d,i)=>{
+      if(showFixed&&d[1])return d[1].x.split('\n').map(l=>'<div class="ln"><span class="no">'+(i+1)+'</span><span class="tx fixline">'+esc(l)+'</span></div>').join('');
+      const bang=d[0]==='!'||d[0]==='end';const cls=bang?'bang':found.has(i)?'hit':fp.has(i)?'miss':revealed.has(i)?'reveal':'';
+      return '<div class="ln '+cls+'" data-i="'+i+'"><span class="no">'+(i+1)+'</span><span class="tx">'+esc(d[0])+'</span></div>'}).join('');
+  }
+  function score(){
+    $('.a-found',host).textContent=found.size;$('.a-fp',host).textContent=fp.size;
+    const tries=found.size+fp.size;$('.a-acc',host).textContent=tries?Math.round(found.size/tries*100)+'%':'–';
+    if(found.size===total&&!auditState[key]){auditState[key]=true;fbl.insertAdjacentHTML('afterbegin','<div class="fb good"><b>🎉 All '+total+' violations found!</b> Click "Show remediated config" to see the compliant version.</div>');if(auditState.rtr&&auditState.sw)complete('cisco','✅ Cisco audits complete!');else toast('✅ '+name+' audit complete — try the other device!')}
+  }
+  cfg.addEventListener('click',e=>{
+    if(showFixed)return;const ln=e.target.closest('.ln[data-i]');if(!ln||ln.classList.contains('bang'))return;const i=+ln.dataset.i,d=data[i];
+    if(d[1]){if(found.has(i))return;found.add(i);fbl.insertAdjacentHTML('afterbegin','<div class="fb good"><span class="badge b-na">'+d[1].f+'</span> <b>Line '+(i+1)+':</b> <code>'+esc(d[0].trim())+'</code><br>'+esc(d[1].w)+'<br><b>Fix:</b><br><code style="white-space:pre-wrap">'+esc(d[1].x)+'</code></div>')}
+    else{if(fp.has(i))return;fp.add(i);fbl.insertAdjacentHTML('afterbegin','<div class="fb meh">⚠️ <b>Line '+(i+1)+':</b> <code>'+esc(d[0].trim())+'</code> is compliant (or not covered by these STIGs). False positives waste remediation time — check the requirement before flagging.</div>')}
+    draw();score();
+  });
+  host.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a)return;const act=a.dataset.a;
+    if(act==='reset')init();
+    if(act==='fixed'){showFixed=!showFixed;a.textContent=showFixed?'Show original config':'Show remediated config';draw()}
+    if(act==='hint'){const rem=data.map((d,i)=>i).filter(i=>data[i][1]&&!found.has(i));if(!rem.length){toast('Nothing left to find!');return}const i=rem[0];toast('💡 Look near line '+(i+1)+' ('+data[i][1].f+' STIG)')}
+    if(act==='reveal'){data.forEach((d,i)=>{if(d[1]&&!found.has(i))revealed.add(i)});draw()}
+  });
+  init();
+}
+makeAudit('#rtrLab','#rtrTotal',RTR,'EDGE-RTR-01','rtr');
+makeAudit('#swLab','#swTotal',SW,'ACC-SW-03','sw');
+
+/* ---------- 7. RHEL 10 lab ---------- */
+const RHEL_CHECKS=[
+ {title:'The telnet-server package must not be installed',cat:1,rule:'package_telnet-server_removed',
+  check:'rpm -q telnet-server',fix:'dnf remove -y telnet-server',
+  pass:s=>!s.telnet,out:s=>s.telnet?{t:'telnet-server-0.17-94.el10.x86_64\n✖ Package installed — FINDING',c:'bad'}:{t:'package telnet-server is not installed\n✔ Not a Finding',c:'ok'},
+  apply:s=>{s.telnet=false;return{t:'Removing:\n telnet-server   x86_64   1:0.17-94.el10   @appstream\nRemoved:\n  telnet-server-1:0.17-94.el10.x86_64\nComplete!',c:'ok'}},why:'Telnet transmits usernames and passwords in clear text. Any sniffer on the network can capture them.'},
+ {title:'Ctrl-Alt-Delete reboot must be disabled',cat:1,rule:'disable_ctrlaltdel_reboot',
+  check:'systemctl status ctrl-alt-del.target',fix:'systemctl mask --now ctrl-alt-del.target',
+  pass:s=>s.cad,out:s=>s.cad?{t:'○ ctrl-alt-del.target\n     Loaded: masked (Reason: Unit ctrl-alt-del.target is masked.)\n     Active: inactive (dead)\n✔ Masked — Not a Finding',c:'ok'}:{t:'○ reboot.target - System Reboot\n     Loaded: loaded (/usr/lib/systemd/system/reboot.target; disabled; preset: disabled)\n     Active: inactive (dead)\n       Docs: man:systemd.special(7)\n✖ Not masked — FINDING',c:'bad'},
+  apply:s=>{s.cad=true;return{t:'Created symlink /etc/systemd/system/ctrl-alt-del.target → /dev/null.',c:'ok'}},why:'Anyone at the console (or a KVM/remote console) could reboot a production server instantly — a denial of service.'},
+ {title:'The system must not allow accounts with blank passwords (nullok)',cat:1,rule:'no_empty_passwords',
+  check:'grep nullok /etc/pam.d/system-auth /etc/pam.d/password-auth',fix:'authselect enable-feature without-nullok',
+  pass:s=>!s.nullok,out:s=>s.nullok?{t:'/etc/pam.d/system-auth:auth        sufficient     pam_unix.so nullok\n/etc/pam.d/password-auth:auth        sufficient     pam_unix.so nullok\n✖ nullok present — FINDING',c:'bad'}:{t:'(no output)\n✔ nullok not present — Not a Finding',c:'ok'},
+  apply:s=>{s.nullok=false;return{t:'Make sure that SSSD service is configured and enabled. See SSSD documentation for more information.\n(feature without-nullok enabled; PAM files regenerated by authselect)',c:'ok'}},why:'nullok lets accounts with an empty password log in. RHEL manages PAM with authselect — edit through it, not by hand.'},
+ {title:'FIPS mode must be enabled',cat:1,rule:'enable_fips_mode',poamable:true,
+  check:'cat /proc/sys/crypto/fips_enabled',fix:'fips-mode-setup --enable',
+  pass:s=>s.fips,out:s=>({t:(s.fips?'1':'0')+'\n'+(s.fips?'✔ Not a Finding':'✖ FIPS mode disabled — FINDING'),c:s.fips?'ok':'bad'}),
+  apply:s=>({t:'bash: fips-mode-setup: command not found\n\n⚠ RHEL 10 removed fips-mode-setup. FIPS mode can only be enabled at INSTALLATION\n  (e.g., boot the installer with fips=1). This server must be rebuilt.\n  → Document this finding as Open with a POA&M in the Findings Tracker.',c:'bad'}),why:'FIPS 140-validated cryptography is required for protecting sensitive government data. In RHEL 10, it must be planned before install.'},
+ {title:'SELinux must be in enforcing mode',cat:2,rule:'selinux_state',
+  check:'getenforce',fix:"setenforce 1 && sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config",
+  pass:s=>s.selinux,out:s=>({t:s.selinux?'Enforcing\n✔ Not a Finding':'Permissive\n✖ SELinux not enforcing — FINDING',c:s.selinux?'ok':'bad'}),
+  apply:s=>{s.selinux=true;return{t:'(no output — runtime mode set to Enforcing and persisted in /etc/selinux/config)',c:'ok'}},why:'SELinux confines services so a compromised web server can\'t freely read or modify the rest of the system. Permissive mode only logs — it doesn\'t block.'},
+ {title:'SSH must not permit direct root login',cat:2,rule:'sshd_disable_root_login',
+  check:'sshd -T | grep -i permitrootlogin',fix:'echo "PermitRootLogin no" > /etc/ssh/sshd_config.d/40-stig.conf && systemctl restart sshd',
+  pass:s=>!s.root,out:s=>({t:'permitrootlogin '+(s.root?'yes\n✖ Root login allowed — FINDING':'no\n✔ Not a Finding'),c:s.root?'bad':'ok'}),
+  apply:s=>{s.root=false;return{t:'(no output — drop-in written; sshd restarted)',c:'ok'}},why:'Admins should log in as themselves and elevate with sudo — that creates accountability in the audit trail. Root is also the #1 brute-force target.'},
+ {title:'The audit service (auditd) must be active',cat:2,rule:'service_auditd_enabled',
+  check:'systemctl is-active auditd',fix:'systemctl enable --now auditd',
+  pass:s=>s.audit,out:s=>({t:s.audit?'active\n✔ Not a Finding':'inactive\n✖ auditd not running — FINDING',c:s.audit?'ok':'bad'}),
+  apply:s=>{s.audit=true;return{t:'Created symlink /etc/systemd/system/multi-user.target.wants/auditd.service → /usr/lib/systemd/system/auditd.service.',c:'ok'}},why:'Without auditd there is no record of logins, privilege use, or file changes — investigations go blind.'},
+ {title:'Accounts must lock after 3 failed logon attempts (faillock)',cat:2,rule:'accounts_passwords_pam_faillock_deny',
+  check:R`grep -E '^\s*deny' /etc/security/faillock.conf`,fix:"sed -i 's/^# deny = 3/deny = 3/' /etc/security/faillock.conf",
+  pass:s=>s.deny,out:s=>s.deny?{t:'deny = 3\n✔ Not a Finding',c:'ok'}:{t:'(no output — the deny line is commented out)\n✖ Not explicitly configured — FINDING',c:'bad'},
+  apply:s=>{s.deny=true;return{t:'(no output — deny = 3 uncommented)',c:'ok'}},why:'STIGs require the lockout to be explicitly configured, not left to defaults that could change.'}
+];
+makeLab({host:'#rhelLab',act:'rhel10',doneMsg:'✅ RHEL 10 lab complete!',title:'root@rhel10-web01: ~ (ssh)',prompt:'[root@rhel10-web01 ~]#',
+  banner:'Red Hat Enterprise Linux 10 (simulated)\nLast login: Thu Oct 22 08:14:02 2026 from 10.10.10.25\n\nLab: RHEL 10 STIG — rhel10-web01\nStart with the gold OpenSCAP scan chip. Type "help" for tips.\n',
+  state:{telnet:true,cad:false,nullok:true,fips:false,selinux:false,root:true,audit:false,deny:false},checks:RHEL_CHECKS,
+  scan:{cmd:'oscap xccdf eval --profile stig --report report.html /usr/share/xml/scap/ssg/content/ssg-rhel10-ds.xml',label:'oscap xccdf eval --profile stig … (OpenSCAP scan)',run:(s,cs)=>{
+    let t='',p=0;cs.forEach(c=>{const ok=c.pass(s);if(ok)p++;t+='Title\t'+c.title+'\nRule\txccdf_org.ssgproject.content_rule_'+c.rule+'\nResult\t'+(ok?'pass':'fail')+'\n\n'});
+    t+='--- '+p+' pass / '+(cs.length-p)+' fail (sampled rules) · report written to report.html ---';return t}}
+});
+
+/* ---------- 8. Checklist ---------- */
+const CKL=[
+ {p:'RHEL 10',sev:1,t:'The telnet-server package must not be installed.',ev:'$ rpm -q telnet-server\npackage telnet-server is not installed',a:'naf',fb:'Evidence shows the package is absent. Comment example: "Verified with rpm -q; package not installed."'},
+ {p:'Windows 11',sev:2,t:'The account lockout threshold must be 3 or less invalid logon attempts.',ev:'> net accounts\nLockout threshold:  10',a:'open',fb:'10 attempts exceeds the maximum of 3. Fix via GPO: Account Lockout Policy → threshold = 3.'},
+ {p:'Cisco IOS XE',sev:2,t:'The router must terminate management sessions after 10 minutes of inactivity.',ev:'line vty 0 4\n exec-timeout 30 0',a:'open',fb:'30 minutes is longer than the 10-minute maximum. Fix: exec-timeout 10 0 on all lines.'},
+ {p:'Windows 11',sev:2,t:'Secure Boot must be enabled on Windows 11 systems.',ev:'> Confirm-SecureBootUEFI\nTrue',a:'naf',fb:'True confirms Secure Boot is on.'},
+ {p:'RHEL 10',sev:2,t:'The graphical user interface automount function must be disabled. (Check text: if GNOME is not installed, this requirement is Not Applicable.)',ev:'$ rpm -q gnome-shell\npackage gnome-shell is not installed',a:'na',fb:'The check text itself says N/A when there is no GUI. Always cite the condition in your comment.'},
+ {p:'RHEL 10',sev:1,t:'RHEL 10 must implement NIST FIPS-validated cryptography (FIPS mode).',ev:'$ cat /proc/sys/crypto/fips_enabled\n0',a:'open',fb:'0 = disabled. In RHEL 10 this requires a rebuild — document a POA&M with mitigations and a milestone date.'}
+];
+let cklS=store.get('stig-ckl',CKL.map(()=>({s:'nr',c:''})));
+function renderCkl(graded){
+  const sv=c=>'<span class="badge b-cat'+c+'">CAT '+'I'.repeat(c)+'</span>';
+  $('#ckl').innerHTML='<tr><th>#</th><th>Rule</th><th>Evidence</th><th style="width:150px">Status</th><th style="width:240px">Finding details / comments</th></tr>'+CKL.map((r,i)=>{
+    const s=cklS[i];let cls='';
+    if(graded){const ok=s.s===r.a&&(r.a!=='open'&&r.a!=='na'||s.c.trim().length>=10);cls=ok?'right':'wrong'}
+    return '<tr class="'+cls+'"><td>'+(i+1)+'</td><td><div class="small muted"><b>'+r.p+'</b> '+sv(r.sev)+'</div>'+esc(r.t)+'<div class="rfb">'+(cls==='right'?'✅ ':'❌ Expected: <b>'+({naf:'Not a Finding',open:'Open',na:'Not Applicable'}[r.a])+'</b>'+((r.a==='open'||r.a==='na')?' with a comment (10+ chars)':'')+'. ')+esc(r.fb)+'</div></td><td><pre>'+esc(r.ev)+'</pre></td><td><select data-i="'+i+'" aria-label="Status for rule '+(i+1)+'">'+[['nr','Not Reviewed'],['open','Open'],['naf','Not a Finding'],['na','Not Applicable']].map(o=>'<option value="'+o[0]+'"'+(s.s===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></td><td><textarea data-i="'+i+'" placeholder="Evidence, justification, or POA&M reference…">'+esc(s.c)+'</textarea></td></tr>'}).join('');
+}
+$('#ckl').addEventListener('change',e=>{const i=e.target.dataset.i;if(i===undefined)return;if(e.target.tagName==='SELECT')cklS[i].s=e.target.value;store.set('stig-ckl',cklS)});
+$('#ckl').addEventListener('input',e=>{if(e.target.tagName==='TEXTAREA'){cklS[e.target.dataset.i].c=e.target.value;store.set('stig-ckl',cklS)}});
+$('#cklGrade').addEventListener('click',()=>{
+  renderCkl(true);
+  const right=$$('#ckl tr.right').length;
+  const open=cklS.map((s,i)=>({s,r:CKL[i]})).filter(x=>x.s.s==='open');
+  const c1=open.filter(x=>x.r.sev===1).length,c2=open.filter(x=>x.r.sev===2).length,nr=cklS.filter(s=>s.s==='nr').length;
+  const evald=cklS.filter(s=>s.s==='naf'||s.s==='open').length,naf=cklS.filter(s=>s.s==='naf').length;
+  $('#cklSummary').innerHTML='<div class="summary-grid"><div><b>'+right+'/'+CKL.length+'</b><span class="small muted">Correct</span></div><div><b style="color:var(--cat1)">'+c1+'</b><span class="small muted">Open CAT I</span></div><div><b style="color:var(--cat2)">'+c2+'</b><span class="small muted">Open CAT II</span></div><div><b>'+nr+'</b><span class="small muted">Not Reviewed</span></div><div><b>'+(evald?Math.round(naf/evald*100):0)+'%</b><span class="small muted">Compliance (NaF ÷ assessed)</span></div></div>'+(c1?'<div class="callout warn small"><b>Risk note:</b> Open CAT I findings typically must be corrected or formally mitigated before an Authorization to Operate is granted.</div>':'');
+  if(right===CKL.length)complete('checklist','✅ Checklist is audit-ready!');else toast(right+'/'+CKL.length+' correct — review the red rows');
+});
+$('#cklReset').addEventListener('click',()=>{cklS=CKL.map(()=>({s:'nr',c:''}));store.set('stig-ckl',cklS);$('#cklSummary').innerHTML='';renderCkl(false)});
+$('#cklExport').addEventListener('click',()=>{
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';const L={nr:'Not Reviewed',open:'Open',naf:'Not a Finding',na:'Not Applicable'};
+  const csv=['Platform,Severity,Rule,Status,Comments'].concat(CKL.map((r,i)=>[r.p,'CAT '+'I'.repeat(r.sev),r.t,L[cklS[i].s],cklS[i].c].map(q).join(','))).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='stig-checklist.csv';document.body.appendChild(a);a.click();a.remove();
+});
+renderCkl(false);
+
+/* ---------- 9. Glossary ---------- */
+const GLOSS=[
+ ['STIG','Security Technical Implementation Guide — DISA\'s product-specific secure configuration standard.'],
+ ['DISA','Defense Information Systems Agency — the DoD agency that publishes STIGs and SRGs.'],
+ ['SRG','Security Requirements Guide — requirements for a whole technology class (e.g., OS, network device) that STIGs implement.'],
+ ['SCAP','Security Content Automation Protocol — NIST standards that let tools check configurations automatically.'],
+ ['XCCDF','Extensible Configuration Checklist Description Format — the SCAP language for benchmarks and results.'],
+ ['OVAL','Open Vulnerability and Assessment Language — SCAP language describing how to test a system\'s state.'],
+ ['CCI','Control Correlation Identifier — maps a STIG rule to a NIST SP 800-53 control.'],
+ ['CAT I / II / III','Severity categories: High (direct/immediate), Medium (potential), Low (degrades protections).'],
+ ['Vuln ID (V-ID)','Stable identifier for a STIG requirement used in checklists and POA&Ms.'],
+ ['Checklist (.cklb)','STIG Viewer file recording status and comments for every rule on one asset.'],
+ ['Not a Finding','Status meaning the system meets the requirement, supported by evidence.'],
+ ['Not Applicable','Status used when the rule\'s check text says it does not apply to this configuration.'],
+ ['POA&M','Plan of Action & Milestones — documents how and when an open finding will be fixed.'],
+ ['RMF','Risk Management Framework (NIST SP 800-37) — the process STIG results feed into.'],
+ ['ATO','Authorization to Operate — formal approval to run a system, granted by an Authorizing Official.'],
+ ['Drift','When a system\'s configuration slowly moves away from its approved baseline over time.']
+];
+$('#glossGrid').innerHTML=GLOSS.map(g=>'<div class="flip glossary" tabindex="0" role="button" aria-label="Flip card: '+esc(g[0])+'"><div class="flip-inner"><div class="flip-face flip-front"><b style="font-size:1.2rem">'+esc(g[0])+'</b><small>tap to flip</small></div><div class="flip-face flip-back" style="justify-content:center"><b>'+esc(g[0])+'</b>'+esc(g[1])+'</div></div></div>').join('');
+document.addEventListener('click',e=>{const f=e.target.closest('.flip');if(f)f.classList.toggle('flipped')});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('flip')){e.preventDefault();e.target.classList.toggle('flipped')}});
+
+/* ---------- 10. Quiz ---------- */
+const QUIZ=[
+ ['Which organization publishes STIGs?',['NIST','DISA','CISA','Microsoft'],1,'The Defense Information Systems Agency (DISA) publishes STIGs and SRGs for DoD systems.'],
+ ['What is the difference between an SRG and a STIG?',['They are the same document','An SRG is product-specific; a STIG covers a technology class','An SRG covers a technology class; a STIG gives product-specific settings','SRGs are only for cloud systems'],2,'SRGs state requirements for a class of technology (e.g., operating systems). STIGs implement those requirements for a specific product (e.g., RHEL 10).'],
+ ['A CAT I finding is one that…',['Degrades protective measures','Has a potential to cause loss of C/I/A','Directly and immediately results in loss of C/I/A','Only affects availability'],2,'CAT I = direct and immediate loss of Confidentiality, Integrity, or Availability. These are fixed first.'],
+ ['What does a CCI do?',['Encrypts the checklist','Maps a STIG rule to a NIST SP 800-53 control','Assigns the severity','Identifies the product version'],1,'Control Correlation Identifiers link technical rules to policy controls so results roll up into RMF.'],
+ ['On RHEL 10, which tool scans a system against the STIG profile out of the box?',['Evaluate-STIG','OpenSCAP (oscap) with the SCAP Security Guide','PowerSTIG','STIG Viewer'],1,'oscap xccdf eval --profile stig uses the SCAP Security Guide content shipped with RHEL.'],
+ ['Which Cisco IOS XE line configuration allows only SSH for remote management?',['transport input all','transport input telnet ssh','transport input ssh','ip ssh enable'],2,'transport input ssh on the vty lines blocks Telnet and allows only encrypted SSH.'],
+ ['What is the best way to apply the Windows 11 STIG to 500 domain-joined workstations?',['Edit the registry on each PC','Import the DISA STIG GPO package and link it after testing','Email users instructions','Run a SCAP scan — it fixes settings automatically'],1,'Group Policy (or Intune for cloud-managed devices) applies settings consistently and keeps them enforced. SCAP scanners assess; they do not remediate.'],
+ ['A RHEL rule says "If GNOME is not installed, this is Not Applicable." GNOME is not installed. The status is…',['Open','Not a Finding','Not Applicable','Not Reviewed'],2,'When the rule\'s own check text defines an N/A condition and it is met, mark Not Applicable and cite the evidence.'],
+ ['A CAT II finding cannot be fixed until a vendor releases an update next quarter. What should you do?',['Mark it Not a Finding','Delete it from the checklist','Leave it Open and document a POA&M with mitigations','Mark it Not Applicable'],2,'Never misrepresent status. Keep it Open, document compensating controls, and create a POA&M with milestones.'],
+ ['Why should STIG settings be tested before production deployment?',['STIGs are optional suggestions','Some settings can break applications or services','Testing makes scans faster','DISA requires a 30-day wait'],1,'Hardening changes (disabling protocols, enforcing crypto) can break legacy apps. Pilot in a lab or test OU first.'],
+ ['On a Cisco access switch, unused ports should be…',['Left in VLAN 1 and enabled','Set to trunk mode','Administratively shut down and placed in an unused VLAN','Configured with DTP dynamic desirable'],2,'The L2S STIG requires unused ports to be disabled and parked in an isolated, unused VLAN.'],
+ ['In RHEL 10, how is FIPS mode enabled?',['fips-mode-setup --enable after install','At installation time (e.g., fips=1 boot option)','By editing /etc/fips.conf','It is always on by default'],1,'RHEL 10 removed fips-mode-setup; FIPS mode is set during installation, so plan hardening before you build.'],
+ ['Which Windows registry value set to 5 enforces "Send NTLMv2 response only. Refuse LM & NTLM"?',['NoDriveTypeAutoRun','LmCompatibilityLevel','UseLogonCredential','AlwaysInstallElevated'],1,'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Lsa\\LmCompatibilityLevel = 5.'],
+ ['Which file format does STIG Viewer 3 use for checklists?',['.docx','.cklb (JSON)','.pcap','.evtx'],1,'STIG Viewer 3 uses the JSON-based .cklb format; older versions used XML .ckl.']
+];
+let qA=store.get('stig-quiz',{});
+function renderQuiz(){
+  $('#qTotal').textContent=QUIZ.length;
+  $('#quizBox').innerHTML=QUIZ.map((q,i)=>{const a=qA[i];return '<div class="card q'+(a!==undefined?' answered':'')+'" data-i="'+i+'"><h4>'+(i+1)+'. '+esc(q[0])+'</h4><div class="opts">'+q[1].map((o,j)=>{let c='';if(a!==undefined){if(j===q[2])c='correct';else if(j===a)c='incorrect'}return '<button class="opt '+c+'" data-j="'+j+'"'+(a!==undefined?' disabled':'')+'>'+String.fromCharCode(65+j)+'. '+esc(o)+'</button>'}).join('')+'</div><div class="exp">'+(a===q[2]?'✅ <b>Correct.</b> ':'❌ <b>Not quite.</b> ')+esc(q[3])+'</div></div>'}).join('');
+  const ans=Object.keys(qA).length,sc=QUIZ.filter((q,i)=>qA[i]===q[2]).length;
+  $('#qScore').textContent=sc;$('#qAns').textContent=ans+'/'+QUIZ.length;
+  if(ans===QUIZ.length){const pct=Math.round(sc/QUIZ.length*100);$('#qResult').innerHTML='<div class="callout '+(pct>=80?'green':'warn')+'"><b>Final: '+pct+'%</b> — '+(pct>=80?'Excellent! You\'ve demonstrated STIG fundamentals.':'Review the explanations and the glossary, then retake.')+'</div>';if(pct>=80)complete('quiz','🎉 Quiz passed: '+pct+'%')}else $('#qResult').innerHTML='';
+}
+$('#quizBox').addEventListener('click',e=>{const b=e.target.closest('.opt');if(!b||b.disabled)return;const i=+b.closest('.q').dataset.i;qA[i]=+b.dataset.j;store.set('stig-quiz',qA);renderQuiz()});
+$('#qReset').addEventListener('click',()=>{qA={};store.set('stig-quiz',qA);renderQuiz()});
+renderQuiz();
+})();
+</script>
+</body>
+</html>
