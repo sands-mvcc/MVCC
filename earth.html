@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Earth as a System: ES101 Interactive Simulator</title>
+<script>try{if(localStorage.getItem("es101-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}</script>
+<style>
+:root{
+  --font:"Avenir Next","Avenir","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --bg:#f3f6fa;--surface:#ffffff;--surface2:#e9eff7;--ink:#13213a;--muted:#55637c;--line:#d3dce8;
+  --navy:#0047AB;--link:#0047AB;--green:#00a86b;--onaccent:#ffffff;
+  --geo:#a3622b;--hyd:#1b6fd0;--atm:#7357cf;--bio:#00a86b;--cryo:#1597b0;
+  --good:#0a8a55;--bad:#c03a2b;--warn:#b7791f;
+  --sky1:#bfdcfb;--sky2:#eef6ff;--sun:#f6b93b;--cloud:#ffffff;--land:#c8a679;--land2:#8c6a45;--bare:#b07a4a;--grass:#5f9e4f;--leaf:#2f7d3e;--ocean:#3b86d6;--deep:#1d4f8f;--ice:#f4fbff;--sed:#a99a83;--mud:#8a5a2b;
+  --shadow:0 1px 2px rgba(19,33,58,.06),0 8px 24px rgba(19,33,58,.06);
+  color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1524;--surface:#141f33;--surface2:#1b2840;--ink:#e6edf9;--muted:#9eaecb;--line:#2a3a58;
+    --navy:#3f7be0;--link:#8db3ff;--green:#22c98a;
+    --geo:#d48d52;--hyd:#4f9cf0;--atm:#a08bf2;--bio:#22c98a;--cryo:#4fcbe0;
+    --good:#3ccf8e;--bad:#ff7b6b;--warn:#f0b54a;
+    --sky1:#1c2f52;--sky2:#0f1a2e;--sun:#f6c453;--cloud:#c9d4e6;--land:#7a6040;--land2:#4d3b26;--bare:#8a5e38;--grass:#4f8a45;--leaf:#2f6b3a;--ocean:#2565ad;--deep:#123766;--ice:#dbeefa;--sed:#6e6352;--mud:#9b6a38;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1524;--surface:#141f33;--surface2:#1b2840;--ink:#e6edf9;--muted:#9eaecb;--line:#2a3a58;
+  --navy:#3f7be0;--link:#8db3ff;--green:#22c98a;
+  --geo:#d48d52;--hyd:#4f9cf0;--atm:#a08bf2;--bio:#22c98a;--cryo:#4fcbe0;
+  --good:#3ccf8e;--bad:#ff7b6b;--warn:#f0b54a;
+  --sky1:#1c2f52;--sky2:#0f1a2e;--sun:#f6c453;--cloud:#c9d4e6;--land:#7a6040;--land2:#4d3b26;--bare:#8a5e38;--grass:#4f8a45;--leaf:#2f6b3a;--ocean:#2565ad;--deep:#123766;--ice:#dbeefa;--sed:#6e6352;--mud:#9b6a38;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--font);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+a{color:var(--link)}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1260px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 20px 0;flex-wrap:wrap}
+.brand{display:flex;gap:12px;align-items:center;flex:1;min-width:240px}
+.brand h1{font-size:1.2rem;margin:0;letter-spacing:-.01em;line-height:1.2}
+.brand p{margin:0;color:var(--muted);font-size:.86rem}
+.prog{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--muted)}
+.prog .bar{width:120px;height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.prog .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--green));transition:width .5s}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 13px;cursor:pointer;font-weight:600;font-size:.9rem}
+.btn:hover{border-color:var(--navy)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:var(--onaccent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.tabs{max-width:1260px;margin:0 auto;display:flex;gap:2px;padding:6px 14px 0;overflow-x:auto;scrollbar-width:thin}
+.tab{border:0;background:none;padding:10px 12px 11px;border-bottom:3px solid transparent;color:var(--muted);font-weight:600;font-size:.93rem;white-space:nowrap;cursor:pointer;display:flex;gap:8px;align-items:center}
+.tab .n{width:23px;height:23px;border-radius:50%;display:grid;place-items:center;font-size:.76rem;background:var(--surface2);color:var(--ink);font-weight:700}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--navy)}
+.tab[aria-selected="true"] .n{background:var(--navy);color:var(--onaccent)}
+.tab.done .n{background:var(--green);color:#fff}
+
+main{max-width:1260px;margin:0 auto;padding:18px 20px 70px}
+details.obj{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 16px;margin-bottom:18px}
+details.obj summary{cursor:pointer;font-weight:600;padding:8px 0;color:var(--link)}
+.objt{width:100%;border-collapse:collapse;font-size:.9rem;margin:6px 0 12px}
+.objt th,.objt td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+.objt th{font-size:.82rem;color:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto}
+
+.lab{display:none}
+.lab.active{display:block}
+.lab-head h2{font-size:1.65rem;margin:.1em 0 .15em;letter-spacing:-.015em;line-height:1.2}
+.lede{color:var(--muted);max-width:74ch;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:18px;align-items:start}
+.grid.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:920px){.grid,.grid.even{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);min-width:0}
+.panel+.panel{margin-top:18px}
+.panel h3{margin:0 0 6px;font-size:1.05rem;letter-spacing:-.005em}
+.panel h4{margin:14px 0 6px;font-size:.92rem}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:11px;padding:3px;background:var(--surface2)}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;padding:2px 9px 2px 7px;border-radius:99px;background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--ink);white-space:nowrap}
+.tag i{width:9px;height:9px;border-radius:50%;background:var(--c);display:inline-block}
+.tag.off{opacity:.38;filter:grayscale(.6)}
+.kind{font-size:.72rem;font-weight:700;padding:1px 7px;border-radius:6px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.kind.m{color:var(--hyd);border-color:color-mix(in srgb,var(--hyd) 40%,transparent)}
+.kind.e{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
+.kind.i{color:var(--atm);border-color:color-mix(in srgb,var(--atm) 40%,transparent)}
+
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:.87rem;cursor:pointer;transition:background .15s,border-color .15s}
+.chip:hover{border-color:var(--navy)}
+.chip.sel{background:var(--navy);border-color:var(--navy);color:var(--onaccent)}
+.chip.used{background:color-mix(in srgb,var(--good) 14%,transparent);border-color:color-mix(in srgb,var(--good) 45%,transparent);cursor:default}
+.fb{border-left:4px solid var(--line);padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:.92rem;margin-top:10px}
+.fb.good{border-left-color:var(--good)}
+.fb.bad{border-left-color:var(--bad)}
+.fb:empty{display:none}
+.shake{animation:shake .38s}
+@keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+
+/* Lab 1 map */
+.svgbox{width:100%;height:auto;display:block}
+.cap{font-size:13px;font-weight:600;fill:var(--muted)}
+.node{cursor:pointer}
+.node .halo{fill:var(--c);opacity:.13;transition:opacity .2s}
+.node .disc{fill:var(--surface);stroke:var(--c);stroke-width:4}
+.node .ico{font-size:28px}
+.node .nm{font-size:13px;font-weight:700;fill:var(--ink)}
+.node:hover .halo{opacity:.25}
+.node.sel .halo{opacity:.42}
+.node.dim{opacity:.4}
+.node:focus{outline:none}
+.node:focus-visible .disc{stroke-width:8}
+.edge .ln{stroke:var(--line);stroke-width:2.5;stroke-dasharray:5 7;transition:stroke .2s}
+.edge .hit{stroke:transparent;stroke-width:20;cursor:pointer}
+.edge:hover .ln{stroke:var(--muted)}
+.edge.on .ln{stroke:var(--navy);stroke-width:5;stroke-dasharray:none}
+.buildmode #edgeG{display:none}
+.blink{fill:none;stroke:var(--navy);stroke-width:3.5;stroke-linecap:round;opacity:.85}
+.bnum circle{fill:var(--navy)}
+.bnum text{fill:#fff;font-size:12px;font-weight:700}
+.ilist{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.ilist li{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.ilist li b{display:block;margin-bottom:2px}
+.ilist .row{margin-top:4px}
+.blist{margin:8px 0 0;padding-left:22px;font-size:.92rem}
+.blist li{margin:3px 0}
+.meter{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;margin:6px 0 2px}
+.meter i{display:block;height:100%;background:var(--green);transition:width .3s}
+
+/* Lab 2 cycles */
+.pill{fill:var(--surface);stroke:var(--line);opacity:.95}
+.rlab{font-size:12px;font-weight:700;fill:var(--ink)}
+.rnode{cursor:pointer}
+.rnode .ring{fill:var(--surface);stroke:var(--c);stroke-width:4}
+.rnode.cur .ring{stroke-width:6}
+.rnode.target .pulse{fill:none;stroke:var(--navy);stroke-width:2.5;animation:pulse 1.4s infinite}
+.rnode .pulse{fill:none;stroke:none}
+@keyframes pulse{0%{r:20;opacity:.9}100%{r:34;opacity:0}}
+.mpath{fill:none;stroke:var(--navy);stroke-width:2.2;stroke-dasharray:6 6;opacity:.75}
+.optbtns{display:grid;gap:8px;margin-top:8px}
+.optbtn{display:flex;justify-content:space-between;gap:10px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px;cursor:pointer}
+.optbtn:hover{border-color:var(--navy)}
+.optbtn b{font-weight:700}
+.reserv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.9rem;margin-top:8px}
+.reserv dt{color:var(--muted)}
+.reserv dd{margin:0;font-weight:600}
+.log{margin:6px 0 0;padding-left:22px;font-size:.88rem;max-height:200px;overflow:auto}
+.log li{margin:2px 0}
+.bigtime{font-size:1.35rem;font-weight:700;letter-spacing:-.01em}
+
+/* Lab 3 watershed */
+.cv{width:100%;height:330px;display:block;border-radius:12px;background:var(--sky2)}
+.ctrl{display:grid;gap:12px}
+.ctrl label{display:grid;gap:2px;font-size:.9rem;font-weight:600}
+.ctrl label span.v{color:var(--muted);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--navy)}
+.ctrl label.switch,.switch{display:flex;align-items:center;gap:10px;font-size:.9rem;font-weight:600;cursor:pointer}
+.switch input{width:18px;height:18px;accent-color:var(--green)}
+.chain{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;padding:4px 0 6px;margin-top:12px}
+@media (max-width:640px){.chain{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.clink::after{content:"→";position:absolute;right:-14px;top:40%;color:var(--muted);font-weight:700}
+.clink:last-child::after{content:none}
+.clink{border:1px solid var(--line);border-top:4px solid var(--c);border-radius:10px;padding:8px 9px;background:var(--surface);font-size:.8rem;line-height:1.3;position:relative}
+.clink .dir{font-size:1.15rem;font-weight:800;display:block;margin-top:2px}
+.clink .dir.up{color:var(--bad)}
+.clink .dir.down{color:var(--bad)}
+.clink .dir.ok{color:var(--good)}
+.clink .dir.same{color:var(--muted)}
+.carrow{flex:0 0 18px;display:grid;place-items:center;color:var(--muted);font-weight:700}
+.metrics{display:grid;gap:9px;margin-top:6px}
+.metric{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:.87rem;align-items:center}
+.metric .bar{grid-column:1/-1;height:7px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.metric .bar i{display:block;height:100%;transition:width .35s,background .35s}
+.metric .val{font-weight:700;font-variant-numeric:tabular-nums}
+.delta{font-size:.78rem;font-weight:700;margin-left:6px}
+.delta.badd{color:var(--bad)}
+.delta.goodd{color:var(--good)}
+.poe{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
+.poe p{margin:0 0 8px;font-weight:600;font-size:.93rem}
+.opts{display:grid;gap:6px}
+.opts label{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;cursor:pointer}
+.opts input{margin-top:4px;accent-color:var(--navy)}
+
+/* Lab 4 feedback */
+.lnode rect{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.lnode text{font-size:12.5px;font-weight:700;fill:var(--ink)}
+.larrow{fill:none;stroke:var(--muted);stroke-width:2.5}
+.sign{cursor:pointer}
+.sign circle{fill:var(--surface);stroke:var(--navy);stroke-width:2.5}
+.sign text{font-size:17px;font-weight:800;fill:var(--navy)}
+.sign.good circle{stroke:var(--good);fill:color-mix(in srgb,var(--good) 15%,var(--surface))}
+.sign.good text{fill:var(--good)}
+.sign.bad circle{stroke:var(--bad);fill:color-mix(in srgb,var(--bad) 12%,var(--surface))}
+.sign.bad text{fill:var(--bad)}
+.sign:focus{outline:none}
+.sign:focus-visible circle{stroke-width:5}
+.centerlab{font-size:14px;font-weight:700;fill:var(--muted)}
+.cvchart{width:100%;height:280px;display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;margin-top:6px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:20px;height:3px;display:inline-block;border-radius:2px}
+
+/* Lab 5 sorting & scales */
+.pool{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;padding:10px;border:1px dashed var(--line);border-radius:12px;margin-top:10px}
+.pool:empty::after{content:"All sorted. Nice work.";color:var(--muted);font-size:.9rem}
+.bins{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.bin{border:2px solid var(--line);border-radius:12px;padding:10px;min-height:130px;background:var(--surface2);cursor:pointer;transition:border-color .15s}
+.bin h5{margin:0 0 8px;font-size:.93rem}
+.bin.hot{border-color:var(--navy)}
+.bin .chip{cursor:default;margin:0 4px 6px 0;display:inline-block}
+.sgrid{stroke:var(--line);stroke-width:1}
+.saxis{font-size:11.5px;fill:var(--muted)}
+.slab{font-size:11.5px;font-weight:700;fill:var(--ink)}
+.sitems{display:grid;gap:8px;max-height:520px;overflow:auto;padding-right:4px}
+.sitem{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.88rem}
+.sitem.done{background:color-mix(in srgb,var(--good) 10%,transparent);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.sitem .row{margin-top:6px}
+.sitem .chip{font-size:.78rem;padding:4px 9px}
+.sitem .note{font-size:.8rem;color:var(--muted);margin-top:4px}
+
+/* Lab 6 quiz & glossary */
+.q{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 12px}
+.q legend{font-weight:700;padding:0 4px;font-size:.95rem}
+.q .opts label{padding:4px 6px;border-radius:6px}
+.q .opts label.right{background:color-mix(in srgb,var(--good) 14%,transparent)}
+.q .opts label.wrong{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.score{font-size:1.3rem;font-weight:700}
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.card{perspective:800px;border:0;background:none;padding:0;height:150px;cursor:pointer;text-align:left}
+.card .in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.card.flip .in{transform:rotateY(180deg)}
+.card .f,.card .b{position:absolute;inset:0;border-radius:12px;padding:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+.card .f{background:var(--surface);border-top:5px solid var(--c,var(--navy));font-weight:700;font-size:1rem}
+.card .f small{font-weight:500;color:var(--muted);font-size:.75rem;margin-top:6px}
+.card .b{background:var(--surface2);transform:rotateY(180deg);font-size:.84rem;line-height:1.4}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,140%);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:12px;font-weight:600;font-size:.92rem;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .35s;z-index:40;max-width:90vw}
+.toast{visibility:hidden;opacity:0}
+.toast.show{transform:translate(-50%,0);visibility:visible;opacity:1}
+.foot{color:var(--muted);font-size:.82rem;margin-top:26px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="17" fill="none" stroke="var(--atm)" stroke-width="4" stroke-dasharray="20 7" style="stroke:var(--atm)"/>
+        <circle cx="20" cy="20" r="11" style="fill:var(--hyd)"/>
+        <path d="M13 17c3-4 7-3 9 0s5 3 6 1v6c-3 4-8 3-10 0s-4-3-5-2z" style="fill:var(--bio)"/>
+        <path d="M14 10c3-2 9-2 12 0-3 1-9 1-12 0z" style="fill:var(--cryo)"/>
+      </svg>
+      <div><h1>Earth as an interconnected system</h1><p>Earth Science 101 interactive lab</p></div>
+    </div>
+    <div class="prog" aria-live="polite"><span id="progText">0 of 6 labs complete</span><span class="bar"><i id="progBar"></i></span></div>
+    <button class="btn" id="themeBtn" aria-pressed="false">🌙 Dark</button>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Labs">
+    <button class="tab" role="tab" data-lab="map"><span class="n">1</span>Systems map</button>
+    <button class="tab" role="tab" data-lab="cycles"><span class="n">2</span>Cycle tracer</button>
+    <button class="tab" role="tab" data-lab="watershed"><span class="n">3</span>Hillside chain reaction</button>
+    <button class="tab" role="tab" data-lab="feedback"><span class="n">4</span>Feedback lab</button>
+    <button class="tab" role="tab" data-lab="scales"><span class="n">5</span>Energy and scale</button>
+    <button class="tab" role="tab" data-lab="check"><span class="n">6</span>Check your understanding</button>
+  </nav>
+</header>
+
+<main>
+<details class="obj">
+  <summary>What you’ll learn and practice in these six labs</summary>
+  <div class="tablewrap"><table class="objt">
+    <tr><th>Lab</th><th>Essential knowledge</th><th>Skill you’ll demonstrate</th><th>How it’s completed</th></tr>
+    <tr><td>1 Systems map</td><td>Earth works through interactions among five spheres; change in one affects others.</td><td>Construct a diagram showing interactions among Earth’s systems.</td><td>Build 6 correct links that touch all five spheres.</td></tr>
+    <tr><td>2 Cycle tracer</td><td>Matter cycles among systems; processes run on very different timescales.</td><td>Trace water or carbon through several systems.</td><td>Move a molecule or atom through all five spheres.</td></tr>
+    <tr><td>3 Hillside chain reaction</td><td>Changes cascade across systems.</td><td>Explain a chain of effects from vegetation loss to water quality.</td><td>Answer all three predict, test, explain challenges.</td></tr>
+    <tr><td>4 Feedback lab</td><td>Feedbacks can amplify or reduce change.</td><td>Classify loops and predict their effect on temperature.</td><td>Correctly sign and classify all three loops.</td></tr>
+    <tr><td>5 Energy and scale</td><td>Solar energy and internal heat drive different processes; energy flows while matter cycles; processes span many scales.</td><td>Sort processes by energy source and place them on space and time scales.</td><td>Finish both sorts and place every process on the scale map.</td></tr>
+    <tr><td>6 Check your understanding</td><td>All of the above.</td><td>Apply the systems perspective to new situations.</td><td>Score 70% or higher on the quiz.</td></tr>
+  </table></div>
+  <p class="small muted">Progress saves in this browser. <button class="btn" id="resetProg" style="padding:3px 10px;font-size:.8rem">Reset my progress</button></p>
+</details>
+
+<!-- ===================== LAB 1 ===================== -->
+<section class="lab" id="lab-map" role="tabpanel" aria-label="Systems map">
+  <div class="lab-head"><h2>Five spheres, one system</h2>
+  <p class="lede">Every dashed line is a two-way connection. Explore what flows between the spheres, then build your own systems diagram by linking real processes to the spheres they connect.</p></div>
+  <div class="grid">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div class="seg" role="group" aria-label="Mode">
+          <button id="m1Explore" aria-pressed="true">Explore</button>
+          <button id="m1BuildBtn" aria-pressed="false">Build a diagram</button>
+        </div>
+        <span class="small muted" id="m1Hint">Select a sphere, then a second sphere.</span>
+      </div>
+      <svg id="mapSvg" class="svgbox" viewBox="0 0 600 592" role="img" aria-label="Interactive diagram of the five Earth spheres"></svg>
+    </div>
+    <div>
+      <div class="panel" id="m1ExplorePanel">
+        <div id="m1Info">
+          <h3>How to explore</h3>
+          <p class="small">Select one sphere to see what it contains and how it connects. Select a second sphere, or tap any dashed line, to see the processes that pass between that pair.</p>
+          <p class="small">Each process is tagged by what it moves:</p>
+          <div class="row"><span class="kind m">Matter</span><span class="small muted">water, carbon, sediment, gases</span></div>
+          <div class="row" style="margin-top:6px"><span class="kind e">Energy</span><span class="small muted">heat, sunlight, motion</span></div>
+          <div class="row" style="margin-top:6px"><span class="kind i">Shapes conditions</span><span class="small muted">one sphere sets the stage for another</span></div>
+        </div>
+      </div>
+      <div class="panel" id="m1BuildPanel" hidden>
+        <h3>Build your systems diagram</h3>
+        <p class="small">Choose a process, then select the two spheres it connects. Goal: at least 6 correct links that touch all five spheres.</p>
+        <div class="row" id="m1Chips" style="margin-top:8px"></div>
+        <div class="fb" id="m1Fb" aria-live="polite"></div>
+        <h4>Your diagram <span class="muted small" id="m1Count">(0 links, 0 of 5 spheres)</span></h4>
+        <div class="meter"><i id="m1Meter" style="width:0"></i></div>
+        <ol class="blist" id="m1List"></ol>
+        <div class="row" style="margin-top:10px"><button class="btn" id="m1Undo">Undo last link</button><button class="btn" id="m1Clear">Clear diagram</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== LAB 2 ===================== -->
+<section class="lab" id="lab-cycles" role="tabpanel" aria-label="Cycle tracer">
+  <div class="lab-head"><h2>Follow one molecule</h2>
+  <p class="lede">Matter is never used up; it moves between reservoirs. Pick a path for a water molecule or a carbon atom and see which spheres it passes through and how long it might stay in each place.</p></div>
+  <div class="grid">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div class="seg" role="group" aria-label="Cycle">
+          <button id="cycWater" aria-pressed="true">💧 Water cycle</button>
+          <button id="cycCarbon" aria-pressed="false">⚫ Carbon cycle</button>
+        </div>
+        <div class="row"><button class="btn" id="m2Random">Take a random journey</button><button class="btn" id="m2Reset">Start over</button></div>
+      </div>
+      <svg id="cycSvg" class="svgbox" viewBox="0 0 800 470" role="img" aria-label="Landscape with water or carbon reservoirs" style="margin-top:10px;border-radius:12px"></svg>
+      <div class="fb" id="m2Fb" aria-live="polite"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h3 id="m2CurName">Ocean</h3>
+        <div id="m2CurTag"></div>
+        <dl class="reserv" id="m2CurFacts"></dl>
+        <h4>Where can it go next?</h4>
+        <div class="optbtns" id="m2Opts"></div>
+      </div>
+      <div class="panel">
+        <h3>Your trace</h3>
+        <p class="small muted" style="margin:0 0 6px">Spheres visited (goal: all five)</p>
+        <div class="row" id="m2Spheres"></div>
+        <h4>Approximate time spent so far</h4>
+        <div class="bigtime" id="m2Time">0 days</div>
+        <p class="small muted" style="margin:2px 0 0">Based on typical residence times. Notice how a single trip can mix days with millennia.</p>
+        <h4>Path</h4>
+        <ol class="log" id="m2Log"></ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== LAB 3 ===================== -->
+<section class="lab" id="lab-watershed" role="tabpanel" aria-label="Hillside chain reaction">
+  <div class="lab-head"><h2>What happens when the trees come down?</h2>
+  <p class="lede">Change the hillside and watch the effects ripple from the biosphere to the geosphere to the hydrosphere. Every result is compared with a forested hillside under the same storm, so you can isolate the effect of vegetation.</p></div>
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <canvas id="wsCanvas" class="cv" aria-label="Animated hillside with rain, runoff, and a stream"></canvas>
+        <div class="row" style="margin-top:10px" id="wsPresets"></div>
+        <h4>Chain of effects compared with a forested hillside</h4>
+        <div class="chain" id="wsChain"></div>
+        <div class="fb" id="wsExplain" aria-live="polite"></div>
+      </div>
+      <div class="panel">
+        <h3>Predict, test, explain</h3>
+        <p class="small muted" style="margin:0">Commit to a prediction, then run the test to check it against the model.</p>
+        <div id="wsPoe"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Hillside controls</h3>
+      <div class="ctrl">
+        <label for="wsVeg">Vegetation cover <span class="v" id="wsVegV"></span><input type="range" id="wsVeg" min="0" max="100" value="90"></label>
+        <label for="wsRain">Rainfall intensity <span class="v" id="wsRainV"></span><input type="range" id="wsRain" min="5" max="80" value="30"></label>
+        <label for="wsSlope">Hillslope steepness <span class="v" id="wsSlopeV"></span><input type="range" id="wsSlope" min="2" max="30" value="12"></label>
+        <label class="switch"><input type="checkbox" id="wsBuffer"> Grassy buffer strip along the stream</label>
+      </div>
+      <h4>Results</h4>
+      <div class="metrics" id="wsMetrics"></div>
+      <p class="small muted" style="margin-top:12px">This is a teaching model with simplified relationships, built to show direction and relative size of change rather than exact field values.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== LAB 4 ===================== -->
+<section class="lab" id="lab-feedback" role="tabpanel" aria-label="Feedback lab">
+  <div class="lab-head"><h2>Does the loop push harder or push back?</h2>
+  <p class="lede">A feedback loop forms when a change travels around a set of connections and returns to affect itself. Label each link, decide whether the loop amplifies or stabilizes change, then test it on the temperature model.</p></div>
+  <div class="grid even">
+    <div class="panel">
+      <div class="seg" role="group" aria-label="Loop" id="fbLoops"></div>
+      <svg id="loopSvg" class="svgbox" viewBox="0 0 480 384" role="img" aria-label="Feedback loop diagram" style="margin-top:8px"></svg>
+      <p class="small">Select each circle to set the link: <b>+</b> if both change in the <b>same direction</b> (one rises, the next rises), <b>−</b> if they change in <b>opposite directions</b>.</p>
+      <div class="row"><span class="small" style="font-weight:600">This loop is</span>
+        <div class="seg" role="group" aria-label="Loop type"><button data-type="amp" aria-pressed="false">Amplifying</button><button data-type="stab" aria-pressed="false">Stabilizing</button></div>
+        <button class="btn primary" id="fbCheck">Check my loop</button></div>
+      <div class="fb" id="fbFb" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <h3>Temperature response</h3>
+      <p class="small muted" style="margin:0 0 6px">A sudden push is applied at time zero. Compare the response without the loop and with it.</p>
+      <canvas id="fbChart" class="cvchart" aria-label="Line chart of temperature change over time"></canvas>
+      <div class="legend"><span><i style="background:var(--muted)"></i>Without this feedback</span><span><i id="fbLegC" style="background:var(--bad)"></i>With this feedback</span></div>
+      <div class="ctrl" style="margin-top:12px">
+        <label for="fbForce">Initial push (radiative forcing) <span class="v" id="fbForceV"></span><input type="range" id="fbForce" min="-4" max="4" step="0.1" value="3.7"></label>
+        <label for="fbStr">Feedback strength <span class="v" id="fbStrV"></span><input type="range" id="fbStr" min="0" max="2" step="0.1" value="1"></label>
+      </div>
+      <div class="fb" id="fbRead"></div>
+      <p class="small muted">Conceptual model only: one box, illustrative numbers, not a climate projection. Try a negative push to see that feedbacks work during cooling too.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== LAB 5 ===================== -->
+<section class="lab" id="lab-scales" role="tabpanel" aria-label="Energy and scale">
+  <div class="lab-head"><h2>What powers it, and how big and slow is it?</h2>
+  <p class="lede">Two engines run the Earth system: energy from the Sun and heat from Earth’s interior. Meanwhile, matter cycles while energy flows through. Sort the cards, then map processes from lightning to supercontinents onto space and time scales.</p></div>
+  <div class="grid even">
+    <div class="panel">
+      <div class="seg" role="group" aria-label="Sorting deck"><button id="deckEnergy" aria-pressed="true">Energy source</button><button id="deckMatter" aria-pressed="false">Matter or energy?</button></div>
+      <p class="small" id="deckPrompt" style="margin:10px 0 0"></p>
+      <div class="pool" id="pool"></div>
+      <div class="bins" id="bins"></div>
+      <div class="fb" id="sortFb" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <h3>Scale explorer</h3>
+      <p class="small muted" style="margin:0 0 6px">Choose how long each process takes. Correct answers appear on the map.</p>
+      <svg id="scaleSvg" class="svgbox" viewBox="0 0 640 440" role="img" aria-label="Log-log map of process size versus duration"></svg>
+      <div class="fb" id="scaleFb" aria-live="polite"></div>
+      <div class="row" style="margin:10px 0 6px;justify-content:space-between"><span class="small" id="scaleCount"></span><button class="btn" id="scaleReveal">Reveal all</button></div>
+      <div class="sitems" id="sitems"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== LAB 6 ===================== -->
+<section class="lab" id="lab-check" role="tabpanel" aria-label="Check your understanding">
+  <div class="lab-head"><h2>Check your understanding</h2>
+  <p class="lede">Ten questions that ask you to apply the systems perspective. Each answer comes with an explanation. Flip the glossary cards to review key terms.</p></div>
+  <div class="grid">
+    <div class="panel">
+      <form id="quiz" onsubmit="return false"></form>
+      <div class="row"><button class="btn primary" id="quizSubmit">Submit answers</button><button class="btn" id="quizRetry" hidden>Try again</button><span class="score" id="quizScore" aria-live="polite"></span></div>
+    </div>
+    <div class="panel">
+      <h3>Glossary flip cards</h3>
+      <p class="small muted" style="margin:0 0 10px">Select a card to flip it.</p>
+      <div class="gloss" id="gloss"></div>
+    </div>
+  </div>
+</section>
+<p class="foot">Residence times and reservoir sizes are rounded estimates from standard Earth science references, intended for comparison rather than precision.</p>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>[...(r||document).querySelectorAll(s)];
+const root=document.documentElement;
+const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let PAL={};
+function refreshPal(){const cs=getComputedStyle(root);["bg","surface","surface2","ink","muted","line","navy","green","geo","hyd","atm","bio","cryo","good","bad","warn","sky1","sky2","sun","cloud","land","land2","bare","grass","leaf","ocean","deep","ice","sed","mud"].forEach(k=>PAL[k]=cs.getPropertyValue("--"+k).trim());}
+function hex(h){h=h.replace("#","");if(h.length===3)h=h.split("").map(c=>c+c).join("");const n=parseInt(h,16);return [(n>>16)&255,(n>>8)&255,n&255];}
+function mix(a,b,t){const A=hex(a),B=hex(b);return "rgb("+A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(",")+")";}
+function rgba(a,al){const A=hex(a);return `rgba(${A[0]},${A[1]},${A[2]},${al})`;}
+const SPH={
+  atm:{name:"Atmosphere",icon:"🌬️",desc:"The thin envelope of gases around Earth: mostly nitrogen and oxygen, plus argon, water vapor, and carbon dioxide. It moves heat from the equator toward the poles and carries water as vapor and clouds."},
+  hyd:{name:"Hydrosphere",icon:"💧",desc:"All liquid water: oceans (about 97% of Earth’s water), lakes, rivers, and groundwater. The ocean stores enormous amounts of heat and carbon and redistributes them with currents."},
+  cryo:{name:"Cryosphere",icon:"🧊",desc:"Frozen water: glaciers, ice sheets, sea ice, snow cover, and permafrost. Its bright surfaces reflect sunlight, and its melting changes sea level and ocean circulation."},
+  geo:{name:"Geosphere",icon:"🪨",desc:"The solid Earth: rocks, minerals, soil, and the hot interior. Plate tectonics, volcanoes, erosion, and weathering link it to every other sphere."},
+  bio:{name:"Biosphere",icon:"🌿",desc:"All living things, from microbes to forests, including people. Life moves carbon, oxygen, water, and nutrients between the other spheres and reshapes the land."}
+};
+const tag=(s,off)=>`<span class="tag${off?" off":""}" style="--c:var(--${s})"><i></i>${SPH[s].name}</span>`;
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("show"),4200);}
+
+/* ---------- progress, tabs, theme ---------- */
+const LABS=["map","cycles","watershed","feedback","scales","check"];
+let prog=store.get("es101-progress",{});
+function renderProg(){const n=LABS.filter(l=>prog[l]).length;$("#progText").textContent=`${n} of 6 labs complete`;$("#progBar").style.width=(n/6*100)+"%";$$(".tab").forEach(b=>b.classList.toggle("done",!!prog[b.dataset.lab]));}
+function complete(id,msg){if(prog[id])return;prog[id]=true;store.set("es101-progress",prog);renderProg();toast("✓ "+msg);}
+$("#resetProg").addEventListener("click",()=>{prog={};store.set("es101-progress",prog);renderProg();toast("Progress reset.");});
+let current="map";
+function openLab(id,setHash){
+  if(!LABS.includes(id))id="map";current=id;
+  $$(".tab").forEach(b=>{const on=b.dataset.lab===id;b.setAttribute("aria-selected",on);b.tabIndex=on?0:-1;});
+  $$(".lab").forEach(s=>s.classList.toggle("active",s.id==="lab-"+id));
+  if(setHash){try{history.replaceState(null,"","#"+id)}catch(e){}}
+  if(id==="watershed")wsStart();
+  if(id==="feedback")fbDrawChart();
+}
+$$(".tab").forEach((b,i,all)=>{
+  b.addEventListener("click",()=>openLab(b.dataset.lab,true));
+  b.addEventListener("keydown",e=>{let j=null;if(e.key==="ArrowRight")j=(i+1)%all.length;if(e.key==="ArrowLeft")j=(i-1+all.length)%all.length;if(j!=null){e.preventDefault();all[j].focus();openLab(all[j].dataset.lab,true);}});
+});
+window.addEventListener("hashchange",()=>openLab(location.hash.slice(1),false));
+const themeBtn=$("#themeBtn");
+function setThemeBtn(){const d=root.getAttribute("data-theme")==="dark";themeBtn.setAttribute("aria-pressed",d);themeBtn.textContent=d?"☀️ Light":"🌙 Dark";}
+themeBtn.addEventListener("click",()=>{const t=root.getAttribute("data-theme")==="dark"?"light":"dark";root.setAttribute("data-theme",t);try{localStorage.setItem("es101-theme",t)}catch(e){}setThemeBtn();refreshPal();wsDraw();fbDrawChart();});
+
+/* =============== LAB 1: SYSTEMS MAP =============== */
+const NODE={atm:[300,82],hyd:[500,228],cryo:[424,460],geo:[176,460],bio:[100,228]};
+const pk=(a,b)=>[a,b].sort().join("-");
+const PAIRS={
+ "atm-hyd":[{t:"Evaporation and precipitation",d:"Sunlight lifts water vapor off the sea; condensation returns it as rain.",k:"m"},{t:"Wind drives currents and waves",d:"Moving air transfers energy to the ocean surface.",k:"e"},{t:"Ocean absorbs carbon dioxide",d:"Seawater takes up roughly a quarter of the CO₂ people emit, becoming more acidic.",k:"m"},{t:"Ocean stores and releases heat",d:"Warm water fuels hurricanes and moderates coastal climates.",k:"e"}],
+ "atm-bio":[{t:"Photosynthesis",d:"Plants remove CO₂ from the air and release oxygen.",k:"m"},{t:"Respiration and decay",d:"Organisms and decomposers return CO₂ to the air.",k:"m"},{t:"Transpiration",d:"Forests pump water vapor into the air, feeding local rainfall.",k:"m"},{t:"Climate sets where life thrives",d:"Temperature and rainfall determine which biomes can grow.",k:"i"}],
+ "atm-cryo":[{t:"Snowfall builds ice",d:"Snow accumulates into snowpack and, over years, glacier ice.",k:"m"},{t:"Ice reflects sunlight",d:"Bright snow and ice (high albedo) send sunlight back to space.",k:"e"},{t:"Warm air melts ice",d:"Heat from the air melts snow and ice, and dry wind can sublimate it.",k:"e"},{t:"Cold air masses",d:"Ice sheets chill the air above them and steer weather patterns.",k:"i"}],
+ "atm-geo":[{t:"Volcanic gases and ash",d:"Eruptions add CO₂ and sulfur aerosols; aerosols can cool climate for a year or two.",k:"m"},{t:"Chemical weathering",d:"Rain and CO₂ slowly dissolve rock, drawing CO₂ out of the air over very long times.",k:"m"},{t:"Mountains steer weather",d:"Air forced up a range rains out, leaving a dry rain shadow behind.",k:"i"},{t:"Wind erosion and dust",d:"Wind lifts and carries soil and sand, sometimes across oceans.",k:"m"}],
+ "bio-cryo":[{t:"Permafrost carbon",d:"Frozen soils lock away ancient plant remains; thawing releases CO₂ and methane.",k:"m"},{t:"Darkened ice melts faster",d:"Algae and soot lower the albedo of snow and ice.",k:"e"},{t:"Ice-dependent ecosystems",d:"Sea ice supports algae, krill, seals, and polar bears.",k:"i"}],
+ "bio-geo":[{t:"Roots break rock and hold soil",d:"Root wedging cracks rock; root networks resist erosion.",k:"m"},{t:"Life builds soil",d:"Organic matter, microbes, and burrowers turn broken rock into soil.",k:"m"},{t:"Shells become limestone",d:"Reefs and shells pile up as carbonate rock.",k:"m"},{t:"Fossil fuels form",d:"Buried organisms become coal, oil, and gas over millions of years.",k:"m"}],
+ "bio-hyd":[{t:"Life depends on water",d:"Plants draw up soil water and groundwater; all cells need water.",k:"m"},{t:"Ocean photosynthesis",d:"Phytoplankton take up dissolved CO₂ and produce about half of Earth’s oxygen.",k:"m"},{t:"Wetlands clean water",d:"Wetland plants trap sediment and absorb nutrients.",k:"i"},{t:"Algal blooms",d:"Fertilizer runoff feeds algae; their decay can strip oxygen from water.",k:"m"}],
+ "cryo-geo":[{t:"Glaciers carve landscapes",d:"Moving ice grinds bedrock into U-shaped valleys and leaves moraines.",k:"m"},{t:"Frost wedging",d:"Water freezing in cracks expands and splits rock.",k:"i"},{t:"Crust sinks and rebounds",d:"The weight of ice sheets presses the crust down; it slowly rises after the ice melts.",k:"i"}],
+ "cryo-hyd":[{t:"Freezing and melting",d:"Water moves between solid and liquid as temperatures change.",k:"m"},{t:"Meltwater feeds rivers",d:"Mountain snow and glaciers supply summer streamflow for billions of people.",k:"m"},{t:"Sea-ice brine sinks",d:"Salt left behind as sea ice forms makes dense water that drives deep ocean circulation.",k:"m"},{t:"Sea level rises",d:"Melting land ice adds water to the ocean.",k:"m"}],
+ "geo-hyd":[{t:"Erosion and deposition",d:"Running water and waves wear away rock, carry sediment, and build deltas and beaches.",k:"m"},{t:"Caves and dissolved minerals",d:"Slightly acidic groundwater dissolves limestone.",k:"m"},{t:"Rock controls groundwater",d:"Porous rock and soil determine where water soaks in and where aquifers form.",k:"i"},{t:"Hydrothermal vents",d:"Seafloor vents heat seawater and add dissolved minerals.",k:"e"}]
+};
+const KIND={m:"Matter",e:"Energy",i:"Shapes conditions"};
+const PROC=[
+ {id:"evap",t:"Evaporation",p:["atm-hyd"],e:"Solar energy lifts water from the ocean into the air as vapor.",h:"Think about where the water starts and where the vapor ends up."},
+ {id:"photo",t:"Photosynthesis",p:["atm-bio","bio-hyd"],e:"Living things take CO₂ from the air (or seawater) and release oxygen.",h:"Which sphere does photosynthesis, and where does its CO₂ come from?"},
+ {id:"transp",t:"Transpiration",p:["atm-bio"],e:"Plants move soil water up through leaves and out into the air.",h:"Vapor leaves through leaves. Where does it go?"},
+ {id:"volc",t:"Volcanic outgassing",p:["atm-geo"],e:"Magma releases CO₂, sulfur gases, and ash from the solid Earth into the air.",h:"Volcanoes start inside the solid Earth. Where do their gases go?"},
+ {id:"weath",t:"Chemical weathering",p:["atm-geo","geo-hyd"],e:"CO₂ and water react with rock, slowly dissolving it and drawing down CO₂.",h:"Rock reacts with something from the air or with water."},
+ {id:"snow",t:"Snowfall",p:["atm-cryo"],e:"Precipitation falling as snow builds snowpack and glacier ice.",h:"Snow forms in the air and adds to frozen water."},
+ {id:"albedo",t:"Ice reflects sunlight",p:["atm-cryo"],e:"Bright snow and ice send sunlight back up through the air to space.",h:"Reflected sunlight leaves the ice and travels back through what?"},
+ {id:"melt",t:"Meltwater runoff",p:["cryo-hyd"],e:"Melting snow and ice feed streams, lakes, and the ocean.",h:"Frozen water becomes liquid water."},
+ {id:"glac",t:"Glacial erosion",p:["cryo-geo"],e:"Moving ice grinds and plucks bedrock, carving valleys.",h:"Ice acting on rock."},
+ {id:"perma",t:"Permafrost thaw",p:["bio-cryo","atm-cryo"],e:"Thawing frozen ground lets microbes decompose ancient plant matter, releasing CO₂ and methane.",h:"Frozen ground stores the remains of something that was once alive."},
+ {id:"erode",t:"Stream erosion",p:["geo-hyd"],e:"Running water carries sediment off the land and deposits it downstream.",h:"Moving liquid water acting on rock and soil."},
+ {id:"roots",t:"Root wedging",p:["bio-geo"],e:"Growing roots pry rock apart and help turn it into soil.",h:"Living things acting on rock."},
+ {id:"reef",t:"Reef and shell building",p:["bio-hyd","bio-geo"],e:"Corals and shelled organisms pull dissolved minerals from seawater and build limestone.",h:"Living things build something solid out of what’s dissolved in water."},
+ {id:"bloom",t:"Algal blooms",p:["bio-hyd"],e:"Excess nutrients in water feed algae; their decay uses up dissolved oxygen.",h:"Living things growing in nutrient-rich water."},
+ {id:"brine",t:"Sea-ice brine sinking",p:["cryo-hyd"],e:"Salt left behind when sea ice forms makes surface water dense enough to sink.",h:"Ice forming from seawater changes the water left behind."},
+ {id:"oceanco2",t:"Ocean CO₂ uptake",p:["atm-hyd"],e:"Seawater absorbs CO₂ from the air, storing carbon and becoming more acidic.",h:"A gas moving into water."}
+];
+const M1={mode:"explore",sel:null,pair:null,proc:null,first:null,links:store.get("es101-m1links",[])};
+M1.links=M1.links.filter(l=>PROC.find(p=>p.id===l.id));
+function m1Init(){
+  const svg=$("#mapSvg");
+  let h=`<defs><radialGradient id="heatG" cx="50%" cy="100%" r="100%"><stop offset="0" style="stop-color:#ff5a2e;stop-opacity:.75"/><stop offset="1" style="stop-color:#ff8a3d;stop-opacity:0"/></radialGradient></defs>`;
+  h+=`<g transform="translate(540,62)" aria-hidden="true"><circle r="22" style="fill:var(--sun)"/>`+[0,45,90,135,180,225,270,315].map(a=>`<line x1="0" y1="-29" x2="0" y2="-38" style="stroke:var(--sun)" stroke-width="3" stroke-linecap="round" transform="rotate(${a})"/>`).join("")+`<text y="60" text-anchor="middle" class="cap">Solar energy</text></g>`;
+  h+=`<g transform="translate(300,590)" aria-hidden="true"><ellipse rx="96" ry="34" fill="url(#heatG)"/><text y="-12" text-anchor="middle" class="cap">Internal heat</text></g>`;
+  h+=`<g id="edgeG">`+Object.keys(PAIRS).map(k=>{const [a,b]=k.split("-"),A=NODE[a],B=NODE[b];return `<g class="edge" data-k="${k}"><line class="ln" x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}"/><line class="hit" x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}"/></g>`}).join("")+`</g><g id="builtG"></g>`;
+  for(const s in NODE){const [x,y]=NODE[s];h+=`<g class="node" data-s="${s}" tabindex="0" role="button" aria-label="${SPH[s].name}" transform="translate(${x},${y})" style="--c:var(--${s})"><circle r="62" class="halo"/><circle r="52" class="disc"/><text y="-4" class="ico" text-anchor="middle">${SPH[s].icon}</text><text y="24" class="nm" text-anchor="middle">${SPH[s].name}</text></g>`;}
+  svg.innerHTML=h;
+  svg.addEventListener("click",e=>{const n=e.target.closest(".node");if(n)return m1Node(n.dataset.s);const ed=e.target.closest(".edge");if(ed&&M1.mode==="explore"){M1.sel=null;showPair(ed.dataset.k);}});
+  svg.addEventListener("keydown",e=>{const n=e.target.closest(".node");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();m1Node(n.dataset.s);}});
+  $("#m1Explore").addEventListener("click",()=>m1Mode("explore"));
+  $("#m1BuildBtn").addEventListener("click",()=>m1Mode("build"));
+  $("#m1Undo").addEventListener("click",()=>{M1.links.pop();m1Save();m1RenderBuild();});
+  $("#m1Clear").addEventListener("click",()=>{M1.links=[];m1Save();m1RenderBuild();$("#m1Fb").textContent="";});
+  m1RenderBuild();
+}
+function m1Save(){store.set("es101-m1links",M1.links);}
+function m1Mode(m){
+  M1.mode=m;M1.sel=null;M1.pair=null;M1.first=null;M1.proc=null;
+  $("#m1Explore").setAttribute("aria-pressed",m==="explore");$("#m1BuildBtn").setAttribute("aria-pressed",m==="build");
+  $("#mapSvg").classList.toggle("buildmode",m==="build");
+  $("#m1ExplorePanel").hidden=m!=="explore";$("#m1BuildPanel").hidden=m!=="build";
+  $("#m1Hint").textContent=m==="explore"?"Select a sphere, then a second sphere.":"Choose a process, then two spheres.";
+  m1Classes();m1RenderBuild();
+}
+function m1Node(s){
+  if(M1.mode==="explore"){
+    if(M1.sel===s){M1.sel=null;M1.pair=null;m1Classes();return;}
+    if(M1.sel){const k=pk(M1.sel,s);M1.sel=null;showPair(k);return;}
+    M1.sel=s;M1.pair=null;showSphere(s);return;
+  }
+  const fb=$("#m1Fb");
+  if(!M1.proc){fb.className="fb bad";fb.textContent="Choose a process from the list first, then select the two spheres it connects.";return;}
+  if(!M1.first){M1.first=s;m1Classes();fb.className="fb";fb.textContent=`${PROC.find(p=>p.id===M1.proc).t}: now select the second sphere.`;return;}
+  if(M1.first===s){M1.first=null;m1Classes();fb.textContent="";return;}
+  const p=PROC.find(x=>x.id===M1.proc),k=pk(M1.first,s);
+  if(p.p.includes(k)){
+    M1.links.push({id:p.id,k});m1Save();
+    fb.className="fb good";fb.innerHTML=`<b>Correct.</b> ${p.t} connects the ${SPH[M1.first].name.toLowerCase()} and the ${SPH[s].name.toLowerCase()}. ${p.e}`;
+  }else{
+    fb.className="fb bad shake";fb.innerHTML=`<b>Not quite.</b> ${p.t} doesn’t mainly connect the ${SPH[M1.first].name.toLowerCase()} and the ${SPH[s].name.toLowerCase()}. Hint: ${p.h}`;
+    setTimeout(()=>fb.classList.remove("shake"),400);
+  }
+  M1.first=null;M1.proc=null;m1RenderBuild();
+}
+function m1Classes(){
+  const on=new Set();let sel=new Set();
+  if(M1.mode==="explore"){
+    if(M1.sel){sel.add(M1.sel);Object.keys(PAIRS).forEach(k=>{if(k.split("-").includes(M1.sel))on.add(k)});}
+    if(M1.pair){on.add(M1.pair);M1.pair.split("-").forEach(s=>sel.add(s));}
+  }else if(M1.first)sel.add(M1.first);
+  $$("#mapSvg .edge").forEach(e=>e.classList.toggle("on",on.has(e.dataset.k)));
+  $$("#mapSvg .node").forEach(n=>{n.classList.toggle("sel",sel.has(n.dataset.s));n.classList.toggle("dim",M1.mode==="explore"&&!!M1.pair&&!sel.has(n.dataset.s));});
+}
+function showSphere(s){
+  m1Classes();
+  const others=Object.keys(PAIRS).filter(k=>k.split("-").includes(s));
+  $("#m1Info").innerHTML=`<h3>${SPH[s].icon} ${SPH[s].name}</h3><p class="small">${SPH[s].desc}</p><h4>Connected to</h4><div class="row">${others.map(k=>{const o=k.split("-").find(x=>x!==s);return `<button class="chip" data-pair="${k}">${SPH[o].icon} ${SPH[o].name}</button>`}).join("")}</div><p class="small muted" style="margin-top:10px">Select another sphere on the map, or one of the buttons, to see how the pair interacts.</p>`;
+  $$("#m1Info [data-pair]").forEach(b=>b.addEventListener("click",()=>{M1.sel=null;showPair(b.dataset.pair)}));
+}
+function showPair(k){
+  M1.pair=k;m1Classes();const [a,b]=k.split("-");
+  $("#m1Info").innerHTML=`<div class="row">${tag(a)}<span class="muted">and</span>${tag(b)}</div><h3 style="margin-top:8px">How these two spheres interact</h3><ul class="ilist">${PAIRS[k].map(i=>`<li><b>${i.t}</b><span class="small">${i.d}</span><div class="row"><span class="kind ${i.k}">${KIND[i.k]}</span></div></li>`).join("")}</ul><p class="small muted" style="margin-top:10px">Ask: if one of these spheres changed, what would happen to the other?</p>`;
+}
+function m1RenderBuild(){
+  const used=new Set(M1.links.map(l=>l.id));
+  $("#m1Chips").innerHTML=PROC.map(p=>`<button class="chip${used.has(p.id)?" used":""}${M1.proc===p.id?" sel":""}" data-id="${p.id}" ${used.has(p.id)?'aria-disabled="true"':""}>${used.has(p.id)?"✓ ":""}${p.t}</button>`).join("");
+  $$("#m1Chips .chip").forEach(c=>c.addEventListener("click",()=>{if(used.has(c.dataset.id))return;M1.proc=M1.proc===c.dataset.id?null:c.dataset.id;M1.first=null;m1Classes();const fb=$("#m1Fb");if(M1.proc){fb.className="fb";fb.textContent=`${PROC.find(p=>p.id===M1.proc).t}: select the first sphere it connects.`;}m1RenderBuild();}));
+  const counts={},idx={};M1.links.forEach(l=>counts[l.k]=(counts[l.k]||0)+1);
+  $("#builtG").innerHTML=M1.mode!=="build"?"":M1.links.map((l,i)=>{const [a,b]=l.k.split("-"),A=NODE[a],B=NODE[b];const n=idx[l.k]||0;idx[l.k]=n+1;const off=(n-(counts[l.k]-1)/2)*70;const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2,dx=B[0]-A[0],dy=B[1]-A[1],len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;const cx=mx+nx*off,cy=my+ny*off;const px=.25*A[0]+.5*cx+.25*B[0],py=.25*A[1]+.5*cy+.25*B[1];return `<path d="M${A[0]} ${A[1]} Q${cx} ${cy} ${B[0]} ${B[1]}" class="blink"/><g class="bnum" transform="translate(${px},${py})"><circle r="12"/><text y="4.5" text-anchor="middle">${i+1}</text></g>`}).join("");
+  $("#m1List").innerHTML=M1.links.map(l=>{const p=PROC.find(x=>x.id===l.id),[a,b]=l.k.split("-");return `<li><b>${p.t}:</b> ${SPH[a].name} ↔ ${SPH[b].name}</li>`}).join("")||`<li class="muted" style="list-style:none;margin-left:-22px">No links yet.</li>`;
+  const sph=new Set();M1.links.forEach(l=>l.k.split("-").forEach(s=>sph.add(s)));
+  $("#m1Count").textContent=`(${M1.links.length} link${M1.links.length===1?"":"s"}, ${sph.size} of 5 spheres)`;
+  $("#m1Meter").style.width=Math.min(100,(Math.min(M1.links.length,6)/6*60+sph.size/5*40))+"%";
+  m1Classes();
+  if(M1.links.length>=6&&sph.size===5)complete("map","Lab 1 complete: your diagram links all five spheres.");
+}
+
+/* =============== LAB 2: CYCLE TRACER =============== */
+const CYC={
+ water:{start:"ocean",unit:"Share of Earth’s water",res:{
+  ocean:{n:"Ocean",s:"hyd",x:690,y:340,amt:"≈96.5%",rt:"≈3,000 years",yrs:3000},
+  atm:{n:"Atmosphere",s:"atm",x:420,y:72,amt:"≈0.001%",rt:"≈9 days",yrs:9/365},
+  ice:{n:"Glaciers & ice sheets",s:"cryo",x:132,y:112,amt:"≈1.7%",rt:"decades to 100,000+ years",yrs:1000,lab:"b"},
+  river:{n:"Rivers & lakes",s:"hyd",x:395,y:262,amt:"≈0.013%",rt:"weeks to decades",yrs:1},
+  soil:{n:"Soil moisture",s:"geo",x:250,y:318,amt:"≈0.001%",rt:"1 to 2 months",yrs:.12},
+  plant:{n:"Plants",s:"bio",x:250,y:200,amt:"≈0.0001%",rt:"about a week",yrs:7/365,lab:"a"},
+  gw:{n:"Groundwater",s:"hyd",x:420,y:410,amt:"≈1.7%",rt:"centuries to 10,000 years",yrs:300}},
+ moves:{
+  ocean:[["atm","Evaporation","Solar energy heats the sea surface, and water molecules escape into the air as vapor."]],
+  atm:[["ocean","Precipitation","Vapor condenses into cloud droplets that grow heavy and fall as rain over the sea."],["river","Precipitation","Rain falls directly onto lakes and rivers."],["soil","Infiltration","Rain falls on land and soaks into the soil."],["ice","Snowfall","Over high mountains and the poles, snow piles up and compacts into glacier ice."]],
+  ice:[["river","Melting","Summer warmth melts ice, and meltwater flows into streams."],["atm","Sublimation","Dry wind and strong sunlight turn ice directly into vapor."],["ocean","Iceberg calving","Ice flows to the coast and breaks off as icebergs that melt into the sea."]],
+  river:[["ocean","Streamflow","Rivers carry water downhill to the ocean."],["atm","Evaporation","Sunlight evaporates water from lake and river surfaces."],["gw","Seepage","Water leaks through the riverbed into the aquifer below."]],
+  soil:[["plant","Root uptake","Roots pull water out of the soil."],["gw","Percolation","Water trickles down through pore spaces to the water table."],["river","Runoff","Saturated soil sheds water downhill into streams."],["atm","Evaporation","Sun-warmed soil dries as water evaporates."]],
+  plant:[["atm","Transpiration","Leaves release water vapor through tiny pores called stomata."]],
+  gw:[["river","Baseflow","Groundwater seeps into streams and springs, keeping rivers flowing between storms."],["ocean","Coastal discharge","Some groundwater flows underground directly into the sea."]]}},
+ carbon:{start:"atm",unit:"Carbon stored (approx.)",res:{
+  atm:{n:"Atmosphere",s:"atm",x:420,y:72,amt:"≈875 billion tonnes",rt:"≈5 years per molecule (added CO₂ lingers for centuries)",yrs:5},
+  plant:{n:"Land plants",s:"bio",x:250,y:200,amt:"≈550 billion tonnes",rt:"years to decades",yrs:10,lab:"a"},
+  soil:{n:"Soil",s:"geo",x:250,y:318,amt:"≈1,700 billion tonnes",rt:"decades to centuries",yrs:50},
+  perma:{n:"Permafrost",s:"cryo",x:110,y:222,amt:"≈1,500 billion tonnes",rt:"thousands of years",yrs:5000},
+  ocean:{n:"Ocean",s:"hyd",x:720,y:360,amt:"≈38,000 billion tonnes",rt:"centuries to millennia",yrs:500},
+  marine:{n:"Marine life",s:"bio",x:625,y:298,amt:"≈3 billion tonnes",rt:"days to weeks",yrs:.05,lab:"a"},
+  fossil:{n:"Fossil fuels",s:"geo",x:330,y:412,amt:"≈1,000 to 2,000 billion tonnes",rt:"millions of years",yrs:1e7},
+  rock:{n:"Sedimentary rock",s:"geo",x:640,y:436,amt:"≈60 million billion tonnes",rt:"hundreds of millions of years",yrs:2e8,lab:"a"}},
+ moves:{
+  atm:[["plant","Photosynthesis","Plants absorb CO₂ and use sunlight to build sugars."],["ocean","Dissolution","CO₂ dissolves into seawater at the ocean surface."]],
+  plant:[["atm","Respiration or fire","Plants and the animals that eat them release CO₂; wildfire releases it all at once."],["soil","Litterfall and death","Dead leaves, wood, and roots become soil organic matter."],["fossil","Burial","Swamp plants buried for millions of years under heat and pressure become coal."]],
+  soil:[["atm","Decomposition","Microbes break down organic matter and breathe out CO₂."],["perma","Freezing","In Arctic soils, cold slows decay and organic matter freezes into permafrost."]],
+  perma:[["atm","Thaw and decay","Warming thaws permafrost; microbes release CO₂ and methane."]],
+  ocean:[["atm","Outgassing","Where deep, carbon-rich water upwells and warms, CO₂ escapes to the air."],["marine","Phytoplankton photosynthesis","Microscopic algae take up dissolved CO₂ in sunlit surface water."]],
+  marine:[["ocean","Respiration","Marine organisms release dissolved CO₂ back into seawater."],["rock","Sedimentation","Shells and skeletons sink and pile up, becoming limestone."],["fossil","Burial","Buried plankton, cooked by heat and pressure, becomes oil and natural gas."]],
+  fossil:[["atm","Combustion","People burn coal, oil, and gas, releasing ancient carbon in decades instead of millions of years."]],
+  rock:[["atm","Volcanic outgassing","Carbonate rock carried down at subduction zones is heated, and volcanoes vent the CO₂."],["ocean","Weathering","Rain dissolves limestone, and rivers carry the carbon to the sea as bicarbonate."]]}}
+};
+const M2={cyc:"water",cur:null,visited:new Set(),log:[],time:0,busy:false,done:{}};
+function sceneSVG(){
+  return `<defs><linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sky1)"/><stop offset="1" style="stop-color:var(--sky2)"/></linearGradient><linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ocean)"/><stop offset="1" style="stop-color:var(--deep)"/></linearGradient></defs>
+  <rect width="800" height="470" fill="url(#skyG)"/>
+  <circle cx="738" cy="58" r="26" style="fill:var(--sun)"/>
+  <g style="fill:var(--cloud)" opacity=".9"><ellipse cx="420" cy="78" rx="70" ry="22"/><ellipse cx="390" cy="64" rx="34" ry="24"/><ellipse cx="444" cy="58" rx="30" ry="22"/></g>
+  <polygon points="0,470 0,240 50,160 132,92 200,150 270,232 560,262 590,470" style="fill:var(--land)"/>
+  <polygon points="0,470 0,300 270,286 560,300 590,470" style="fill:var(--land2)" opacity=".55"/>
+  <polygon points="98,124 132,92 168,124 152,118 136,130 116,116" style="fill:var(--ice)"/>
+  <polyline points="0,240 50,160" fill="none" style="stroke:var(--ice)" stroke-width="5" opacity=".7"/>
+  <polyline points="200,150 270,232 560,262" fill="none" style="stroke:var(--grass)" stroke-width="6" stroke-linecap="round"/>
+  <polygon points="560,262 800,262 800,470 590,470 572,330" fill="url(#seaG)"/>
+  <polygon points="590,450 800,450 800,470 590,470" style="fill:var(--sed)"/>
+  <ellipse cx="395" cy="258" rx="50" ry="9" style="fill:var(--ocean)"/>
+  <rect x="0" y="392" width="582" height="42" style="fill:var(--hyd)" opacity=".16"/>
+  <line x1="0" y1="392" x2="582" y2="392" style="stroke:var(--hyd)" stroke-dasharray="6 6" opacity=".6"/>
+  <text x="12" y="386" class="cap" style="font-size:11px">water table</text>
+  <g transform="translate(250,232)"><rect x="-4" y="-8" width="8" height="26" style="fill:var(--land2)"/><circle cx="0" cy="-22" r="22" style="fill:var(--leaf)"/><circle cx="-15" cy="-10" r="14" style="fill:var(--leaf)"/><circle cx="15" cy="-10" r="14" style="fill:var(--leaf)"/></g>
+  <g transform="translate(320,248)"><rect x="-3" y="-6" width="6" height="18" style="fill:var(--land2)"/><circle cx="0" cy="-16" r="15" style="fill:var(--leaf)"/></g>`;
+}
+function m2Init(){
+  $("#cycWater").addEventListener("click",()=>m2Switch("water"));
+  $("#cycCarbon").addEventListener("click",()=>m2Switch("carbon"));
+  $("#m2Reset").addEventListener("click",()=>{if(!M2.busy)m2Reset()});
+  $("#m2Random").addEventListener("click",m2Random);
+  $("#cycSvg").addEventListener("click",e=>{const n=e.target.closest(".rnode");if(n)m2ClickNode(n.dataset.r)});
+  $("#cycSvg").addEventListener("keydown",e=>{const n=e.target.closest(".rnode");if(n&&(e.key==="Enter"||e.key===" ")){e.preventDefault();m2ClickNode(n.dataset.r)}});
+  m2Reset();
+}
+function m2Switch(c){if(M2.busy)return;M2.cyc=c;$("#cycWater").setAttribute("aria-pressed",c==="water");$("#cycCarbon").setAttribute("aria-pressed",c==="carbon");m2Reset();}
+function m2Reset(){const C=CYC[M2.cyc];M2.cur=C.start;M2.visited=new Set([C.res[C.start].s]);M2.log=[];M2.time=0;$("#m2Fb").className="fb";$("#m2Fb").textContent=M2.cyc==="water"?"You are a water molecule in the ocean. Choose a process to move, or select a highlighted place on the landscape.":"You are a carbon atom in a CO₂ molecule in the air. Choose a process to move, or select a highlighted place on the landscape.";m2Draw();}
+function m2Draw(){
+  const C=CYC[M2.cyc],cur=C.res[M2.cur],opts=C.moves[M2.cur],targets=new Set(opts.map(o=>o[0]));
+  let h=sceneSVG();
+  h+=opts.map(o=>{const t=C.res[o[0]];const cx=(cur.x+t.x)/2,cy=Math.min(cur.y,t.y)-50;return `<path class="mpath" d="M${cur.x} ${cur.y} Q${cx} ${cy} ${t.x} ${t.y}"/>`}).join("");
+  for(const id in C.res){const r=C.res[id];const w=r.n.length*6.7+16;const ly=r.lab==="a"?r.y-38:r.y+28;const isT=targets.has(id);
+    h+=`<g class="rnode${id===M2.cur?" cur":""}${isT?" target":""}" data-r="${id}" style="--c:var(--${r.s})" ${isT?`tabindex="0" role="button" aria-label="Move to ${r.n}"`:""}><circle class="pulse" cx="${r.x}" cy="${r.y}" r="20"/><circle class="ring" cx="${r.x}" cy="${r.y}" r="14"/><rect class="pill" x="${r.x-w/2}" y="${ly}" width="${w}" height="20" rx="10"/><text class="rlab" x="${r.x}" y="${ly+14}" text-anchor="middle">${r.n}</text></g>`;}
+  h+=M2.cyc==="water"?`<g id="particle" transform="translate(${cur.x},${cur.y})" pointer-events="none"><path d="M0 -13 C6 -5 9 0 9 4 A9 9 0 0 1 -9 4 C-9 0 -6 -5 0 -13Z" style="fill:var(--hyd);stroke:#fff" stroke-width="2"/></g>`:`<g id="particle" transform="translate(${cur.x},${cur.y})" pointer-events="none"><circle r="11" style="fill:var(--ink);stroke:var(--surface)" stroke-width="2"/><text y="4.5" text-anchor="middle" style="fill:var(--surface);font-size:13px;font-weight:800">C</text></g>`;
+  $("#cycSvg").innerHTML=h;
+  $("#m2CurName").textContent=cur.n;
+  $("#m2CurTag").innerHTML=tag(cur.s);
+  $("#m2CurFacts").innerHTML=`<dt>${C.unit}</dt><dd>${cur.amt}</dd><dt>Typical stay</dt><dd>${cur.rt}</dd>`;
+  $("#m2Opts").innerHTML=opts.map((o,i)=>`<button class="optbtn" data-i="${i}"><span><b>${o[1]}</b><br><span class="small muted">to ${C.res[o[0]].n}</span></span>${tag(C.res[o[0]].s)}</button>`).join("");
+  $$("#m2Opts .optbtn").forEach(b=>b.addEventListener("click",()=>m2Move(opts[+b.dataset.i])));
+  $("#m2Spheres").innerHTML=["atm","hyd","cryo","geo","bio"].map(s=>tag(s,!M2.visited.has(s))).join("");
+  $("#m2Time").textContent=fmtYears(M2.time);
+  $("#m2Log").innerHTML=M2.log.map(l=>`<li>${l}</li>`).join("")||`<li class="muted" style="list-style:none;margin-left:-22px">No moves yet.</li>`;
+}
+function fmtYears(y){if(y===0)return "0 days";if(y<1/12)return Math.max(1,Math.round(y*365))+" days";if(y<1)return Math.round(y*12)+" months";if(y<1e6)return Math.round(y).toLocaleString()+" years";return (y/1e6).toLocaleString(undefined,{maximumFractionDigits:1})+" million years";}
+function m2ClickNode(id){if(M2.busy)return;const o=CYC[M2.cyc].moves[M2.cur].find(m=>m[0]===id);if(o)m2Move(o);}
+function m2Animate(a,b){return new Promise(res=>{const p=$("#particle");if(reduce||!p){return res();}const cx=(a.x+b.x)/2,cy=Math.min(a.y,b.y)-50,t0=performance.now(),d=850;(function f(t){let k=Math.min(1,(t-t0)/d);const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;const x=(1-e)*(1-e)*a.x+2*(1-e)*e*cx+e*e*b.x,y=(1-e)*(1-e)*a.y+2*(1-e)*e*cy+e*e*b.y;p.setAttribute("transform",`translate(${x},${y})`);if(k<1)requestAnimationFrame(f);else res();})(performance.now());});}
+async function m2Move(o){
+  if(M2.busy)return;M2.busy=true;const C=CYC[M2.cyc],from=C.res[M2.cur],to=C.res[o[0]];
+  await m2Animate(from,to);
+  M2.time+=from.yrs;M2.cur=o[0];M2.visited.add(to.s);
+  M2.log.push(`${from.n} → ${to.n} by <b>${o[1].toLowerCase()}</b>${from.s!==to.s?` <span class="muted">(${SPH[from.s].name} to ${SPH[to.s].name})</span>`:""}`);
+  const fb=$("#m2Fb");fb.className="fb";fb.innerHTML=`<b>${o[1]}.</b> ${o[2]}`;
+  m2Draw();M2.busy=false;
+  if(M2.visited.size===5&&!M2.done[M2.cyc]){M2.done[M2.cyc]=true;fb.className="fb good";fb.innerHTML=`<b>All five spheres visited.</b> ${o[2]} Your ${M2.cyc==="water"?"water molecule":"carbon atom"} never disappeared; it only changed reservoirs and form. That is what it means for matter to cycle.`;complete("cycles","Lab 2 complete: you traced matter through all five spheres.");}
+}
+async function m2Random(){
+  if(M2.busy)return;const btn=$("#m2Random");btn.disabled=true;
+  for(let i=0;i<8;i++){const opts=CYC[M2.cyc].moves[M2.cur];await m2Move(opts[Math.floor(Math.random()*opts.length)]);await new Promise(r=>setTimeout(r,reduce?150:350));}
+  btn.disabled=false;
+}
+
+/* =============== LAB 3: WATERSHED =============== */
+const ws={veg:.9,I:30,slope:12,buffer:false,drops:[],turb:0,run:false,W:0,H:0,dpr:1,ctx:null,poe:{}};
+function wsModel(veg,I,slope,buffer){
+  const icpt=Math.min(I,1+3*veg),cap=(8+42*veg)*(1-slope/100),net=I-icpt,inf=Math.min(net,cap),run=Math.max(0,net-inf),C=run/I;
+  const ero=Math.pow(run,1.3)*Math.pow(slope/10,1.2)*(1-.92*veg),sed=ero*(buffer?.35:1);
+  const shade=buffer?Math.max(veg,.8):veg,temp=14+9*(1-shade);
+  const rIdx=Math.min(100,run/80*100),peak=Math.min(100,run*(1+slope/40)/(80*1.75)*100),rech=Math.min(100,inf/50*100);
+  const eIdx=Math.min(100,100*Math.sqrt(ero/1000)),sIdx=Math.min(100,100*Math.sqrt(sed/1000));
+  const ntu=Math.round(4+sIdx*sIdx*.08+sIdx*1.5),pIdx=Math.min(100,.75*sIdx+.25*rIdx*(buffer?.6:1));
+  const tPen=(temp-14)/9*100,wq=Math.max(0,Math.round(100-(.45*sIdx+.3*pIdx+.25*tPen)));
+  return {icpt,inf,run,C,rIdx,peak,rech,eIdx,sIdx,ntu,pIdx,temp,wq,soak:icpt+inf};
+}
+const PRESETS=[["🌲 Mature forest",.9,30,12,false],["🔥 After a wildfire",.05,60,25,false],["🚧 Construction site",0,40,8,false],["🌾 Bare field with buffer",.15,40,10,true]];
+const POE=[
+  {q:"A wildfire burns most of the vegetation on a steep hillside. During the next heavy storm, what happens to stream turbidity (muddiness)?",o:["It rises sharply","It stays about the same","It drops"],a:0,set:[.05,60,25,false],ex:"Without leaves to break the fall of raindrops and roots to bind soil, rain hits bare ground, runs off fast, and carries soil into the stream. Turbidity can jump from clear to hundreds of NTU."},
+  {q:"On that same burned hillside, what happens to groundwater recharge?",o:["It increases because more water reaches the ground","It decreases because more water runs off instead of soaking in","It doesn’t change"],a:1,set:[.05,60,25,false],ex:"Burned and bare soil seals over and loses the pore spaces that roots and organic matter create, so less water infiltrates. More reaches the ground, but more of it leaves as runoff, so aquifers get less."},
+  {q:"A farmer plants a grassy buffer strip along the stream but leaves the field bare. What does the buffer mainly reduce?",o:["The runoff produced on the field","The sediment and nutrients that reach the stream","The amount of rainfall"],a:1,set:[.15,40,10,true],ex:"The buffer can’t stop runoff from forming upslope, but it slows the water at the stream’s edge, trapping much of the sediment and the phosphorus attached to it, and it shades the water. Compare runoff with and without the buffer: it barely changes."}
+];
+function wsInit(){
+  const cv=$("#wsCanvas");ws.ctx=cv.getContext("2d");
+  const upd=()=>{ws.veg=$("#wsVeg").value/100;ws.I=+$("#wsRain").value;ws.slope=+$("#wsSlope").value;ws.buffer=$("#wsBuffer").checked;wsUpdate();};
+  ["wsVeg","wsRain","wsSlope"].forEach(id=>$("#"+id).addEventListener("input",upd));$("#wsBuffer").addEventListener("change",upd);
+  $("#wsPresets").innerHTML=PRESETS.map((p,i)=>`<button class="chip" data-i="${i}">${p[0]}</button>`).join("");
+  $$("#wsPresets .chip").forEach(b=>b.addEventListener("click",()=>wsSet(PRESETS[+b.dataset.i].slice(1))));
+  $("#wsPoe").innerHTML=POE.map((p,i)=>`<div class="poe" data-i="${i}"><p>${i+1}. ${p.q}</p><div class="opts">${p.o.map((o,j)=>`<label><input type="radio" name="poe${i}" value="${j}"> ${o}</label>`).join("")}</div><div class="row" style="margin-top:8px"><button class="btn" data-test="${i}">Run the test</button></div><div class="fb"></div></div>`).join("");
+  $$("#wsPoe [data-test]").forEach(b=>b.addEventListener("click",()=>{const i=+b.dataset.test,box=b.closest(".poe"),sel=box.querySelector("input:checked"),fb=box.querySelector(".fb");if(!sel){fb.className="fb bad";fb.textContent="Make a prediction first, then run the test.";return;}wsSet(POE[i].set);const ok=+sel.value===POE[i].a;fb.className="fb "+(ok?"good":"bad");fb.innerHTML=`<b>${ok?"Your prediction holds.":"The model shows something different."}</b> ${POE[i].ex}`;ws.poe[i]=true;if(Object.keys(ws.poe).length===3)complete("watershed","Lab 3 complete: you explained the chain from vegetation to water quality.");}));
+  window.addEventListener("resize",()=>{if(current==="watershed"){wsSize();wsDraw();}});
+  wsUpdate();
+}
+function wsSet(a){$("#wsVeg").value=Math.round(a[0]*100);$("#wsRain").value=a[1];$("#wsSlope").value=a[2];$("#wsBuffer").checked=a[3];ws.veg=a[0];ws.I=a[1];ws.slope=a[2];ws.buffer=a[3];wsUpdate();}
+function wsUpdate(){
+  $("#wsVegV").textContent=Math.round(ws.veg*100)+"%";
+  $("#wsRainV").textContent=ws.I+" mm per hour ("+(ws.I<15?"light":ws.I<35?"moderate":ws.I<60?"heavy":"extreme")+")";
+  $("#wsSlopeV").textContent=ws.slope+"% ("+(ws.slope<8?"gentle":ws.slope<18?"moderate":"steep")+")";
+  const m=wsModel(ws.veg,ws.I,ws.slope,ws.buffer),b=wsModel(.9,ws.I,ws.slope,false);ws.m=m;
+  const rows=[
+    ["Water soaking in",`${Math.round(m.inf)} mm/hr`,m.rech,m.inf,b.inf,true],
+    ["Surface runoff",`${Math.round(m.C*100)}% of rain`,m.rIdx,m.run,b.run,false],
+    ["Peak streamflow (flood risk)",`${Math.round(m.peak)} / 100`,m.peak,m.peak,b.peak,false],
+    ["Soil erosion",`${Math.round(m.eIdx)} / 100`,m.eIdx,m.eIdx,b.eIdx,false],
+    ["Stream turbidity",`${m.ntu} NTU`,Math.min(100,m.ntu/8),m.ntu,b.ntu,false],
+    ["Phosphorus reaching stream",`${Math.round(m.pIdx)} / 100`,m.pIdx,m.pIdx,b.pIdx,false],
+    ["Stream temperature",`${m.temp.toFixed(1)} °C`,(m.temp-10)/15*100,m.temp,b.temp,false],
+    ["Water quality score",`${m.wq} / 100`,m.wq,m.wq,b.wq,true]
+  ];
+  $("#wsMetrics").innerHTML=rows.map(r=>{const d=r[3]-r[4],rel=Math.abs(d)/(Math.abs(r[4])+1e-6);let dl="";if(Math.abs(d)>.5&&rel>.03){const worse=r[5]?d<0:d>0;dl=`<span class="delta ${worse?"badd":"goodd"}">${d>0?"▲":"▼"}</span>`;}const good=r[5]?r[2]>=60:r[2]<30;const col=r[5]?(r[2]>=60?"var(--good)":r[2]>=35?"var(--warn)":"var(--bad)"):(r[2]<30?"var(--good)":r[2]<60?"var(--warn)":"var(--bad)");return `<div class="metric"><span>${r[0]}${dl}</span><span class="val">${r[1]}</span><span class="bar"><i style="width:${Math.max(2,Math.min(100,r[2]))}%;background:${col}"></i></span></div>`}).join("");
+  const dir=(v,base,harmUp)=>{const d=v-base,rel=Math.abs(d)/(Math.abs(base)+1e-6);if(Math.abs(d)<.5||rel<.05)return ["●","same","no change"];return d>0?["▲",harmUp?"up":"ok","higher"]:["▼",harmUp?"ok":"down","lower"];};
+  const ch=[["bio","Vegetation cover",dir(ws.veg*100,90,false)],["geo","Rain caught and soaked in",dir(m.soak,b.soak,false)],["hyd","Surface runoff",dir(m.run,b.run,true)],["geo","Soil erosion",dir(m.eIdx,b.eIdx,true)],["hyd","Sediment and nutrients in stream",dir(m.sIdx+m.pIdx,b.sIdx+b.pIdx,true)],["bio","Water quality and habitat",dir(m.wq,b.wq,false)]];
+  $("#wsChain").innerHTML=ch.map((c,i)=>`<div class="clink" style="--c:var(--${c[0]})"><span class="muted" style="font-size:.72rem;font-weight:700">${SPH[c[0]].name}</span><br>${c[1]}<span class="dir ${c[2][1]}" aria-label="${c[2][2]}">${c[2][0]}</span></div>`).join("");
+  let ex;
+  if(m.run<.5&&ws.veg>=.5)ex=`<b>The hillside absorbs this storm.</b> Leaves intercept about ${m.icpt.toFixed(0)} mm/hr and porous, root-filled soil takes in the rest, so almost nothing runs off. The stream stays clear and groundwater is recharged.`;
+  else{
+    ex=`<b>Follow the chain.</b> With ${Math.round(ws.veg*100)}% vegetation, `+(ws.veg<.9?`fewer leaves break the impact of raindrops and fewer roots keep the soil open, so infiltration falls from ${Math.round(b.inf)} to ${Math.round(m.inf)} mm/hr. `:"the soil is already soaking in all it can. ")+`About ${Math.round(m.C*100)}% of the rain becomes surface runoff`+(ws.slope>=18?", and on this steep slope it moves fast enough to scour soil":"")+`. Runoff carries soil to the stream (turbidity about ${m.ntu} NTU`+(m.ntu>100?", visibly muddy":m.ntu>25?", cloudy":"")+`), and phosphorus clinging to soil particles rides along, feeding algae downstream. `+(m.temp-b.temp>.5?`Less shade warms the stream by ${(m.temp-b.temp).toFixed(1)} °C, and warmer water holds less dissolved oxygen. `:"")+(ws.buffer?`The buffer strip traps much of the sediment before it reaches the channel and shades the water, even though runoff from the field is unchanged.`:"");
+  }
+  $("#wsExplain").className="fb";$("#wsExplain").innerHTML=ex;
+  if(reduce||!ws.run)wsDraw();
+}
+function wsSize(){const cv=$("#wsCanvas"),r=cv.getBoundingClientRect();ws.dpr=window.devicePixelRatio||1;ws.W=Math.max(300,r.width);ws.H=r.height||330;cv.width=ws.W*ws.dpr;cv.height=ws.H*ws.dpr;ws.ctx.setTransform(ws.dpr,0,0,ws.dpr,0,0);}
+function wsGeom(){const W=ws.W,H=ws.H,xs=W*.74,yB=H*.74,yT=yB-H*(.12+.5*ws.slope/30);return {W,H,xs,yB,yT,gy:x=>yT+(yB-yT)*(Math.min(x,xs)/xs)};}
+function wsStart(){wsSize();if(reduce){wsDraw();return;}if(ws.run)return;ws.run=true;requestAnimationFrame(wsFrame);}
+function wsFrame(){if(current!=="watershed"){ws.run=false;return;}wsStep();wsDraw();requestAnimationFrame(wsFrame);}
+function wsStep(){
+  const g=wsGeom(),m=ws.m;if(!m)return;
+  const n=ws.I/80*5;let k=Math.floor(n)+(Math.random()<n%1?1:0);
+  while(k--&&ws.drops.length<700)ws.drops.push({x:Math.random()*g.W,y:-8-Math.random()*30,s:"f"});
+  const fall=7*g.H/330,runV=1+ws.slope/7;
+  for(const d of ws.drops){
+    if(d.s==="f"){d.y+=fall;if(d.x<g.xs){const gy=g.gy(d.x);if(d.y>=gy){if(Math.random()<m.C){d.s="r";d.sed=Math.random()<Math.min(1,m.sIdx/70);d.y=gy-1.5;}else{d.s="i";d.life=40;d.y=gy+2;}}}else if(d.y>=g.yB+g.H*.04){d.s="x";}}
+    else if(d.s==="r"){d.x+=runV;if(ws.buffer&&d.sed&&d.x>g.xs-g.W*.07&&Math.random()<.08)d.sed=false;if(d.x>=g.xs)d.s="x";else d.y=g.gy(d.x)-1.5;}
+    else if(d.s==="i"){d.y+=.9;d.life--;if(d.life<=0)d.s="x";}
+  }
+  ws.drops=ws.drops.filter(d=>d.s!=="x");
+  ws.turb+=(m.sIdx-ws.turb)*.02;
+}
+function wsDraw(){
+  const c=ws.ctx;if(!c||!ws.W)return;if(!PAL.ink)refreshPal();const g=wsGeom(),{W,H,xs,yB,yT}=g,m=ws.m||wsModel(ws.veg,ws.I,ws.slope,ws.buffer);
+  if(reduce)ws.turb=m.sIdx;
+  c.clearRect(0,0,W,H);
+  let sk=c.createLinearGradient(0,0,0,H);sk.addColorStop(0,PAL.sky1);sk.addColorStop(1,PAL.sky2);c.fillStyle=sk;c.fillRect(0,0,W,H);
+  c.fillStyle=rgba(PAL.cloud,.85);c.beginPath();c.ellipse(W*.3,H*.07,W*.22,H*.06,0,0,7);c.ellipse(W*.66,H*.05,W*.2,H*.055,0,0,7);c.fill();
+  // ground
+  c.beginPath();c.moveTo(0,yT);c.lineTo(xs,yB);c.lineTo(xs+12,yB+H*.09);c.lineTo(W-12,yB+H*.09);c.lineTo(W,yB);c.lineTo(W,H);c.lineTo(0,H);c.closePath();
+  c.fillStyle=mix(PAL.land,PAL.bare,1-ws.veg);c.fill();
+  c.fillStyle=rgba(PAL.land2,.55);c.beginPath();c.moveTo(0,yT+H*.12);c.lineTo(xs,yB+H*.1);c.lineTo(W,yB+H*.14);c.lineTo(W,H);c.lineTo(0,H);c.closePath();c.fill();
+  c.strokeStyle=rgba(PAL.hyd,.6);c.setLineDash([6,6]);c.beginPath();c.moveTo(0,H*.93);c.lineTo(W,H*.93);c.stroke();c.setLineDash([]);
+  c.fillStyle=PAL.muted;c.font="600 11px "+getComputedStyle(document.body).fontFamily;c.fillText("water table",8,H*.93-5);
+  // surface line
+  c.lineWidth=5;c.strokeStyle=mix(PAL.bare,PAL.grass,ws.veg);c.beginPath();c.moveTo(0,yT);c.lineTo(xs,yB);c.stroke();c.lineWidth=1;
+  // rills when eroding
+  if(m.eIdx>25){c.strokeStyle=rgba(PAL.land2,.8);c.lineWidth=2;for(let i=1;i<7;i++){const x=xs*i/7.5;const y=g.gy(x);c.beginPath();c.moveTo(x,y+3);c.lineTo(x+xs*.06,g.gy(x+xs*.06)+6+m.eIdx/25);c.stroke();}c.lineWidth=1;}
+  // grass tufts
+  if(ws.veg>.12){c.strokeStyle=PAL.grass;c.lineWidth=1.5;const step=Math.max(8,26-ws.veg*18);for(let x=6;x<xs-4;x+=step){const y=g.gy(x);c.beginPath();c.moveTo(x,y);c.lineTo(x-2,y-6);c.moveTo(x,y);c.lineTo(x+2,y-7);c.stroke();}c.lineWidth=1;}
+  // buffer
+  if(ws.buffer){c.strokeStyle=PAL.leaf;c.lineWidth=2;for(let x=xs-W*.075;x<xs;x+=4){const y=g.gy(x);c.beginPath();c.moveTo(x,y);c.lineTo(x-1,y-12);c.stroke();}c.lineWidth=1;c.fillStyle=PAL.muted;c.fillText("buffer strip",xs-W*.11,g.gy(xs-W*.06)-18);}
+  // trees
+  const order=[0,7,3,10,5,12,1,8,4,11,2,9,6,13],count=Math.round(ws.veg*14),sc=H/330;
+  order.slice(0,count).forEach(i=>{const x=W*(.04+.62*i/13),y=g.gy(x);c.fillStyle=PAL.land2;c.fillRect(x-2.5*sc,y-18*sc,5*sc,18*sc);c.fillStyle=PAL.leaf;c.beginPath();c.arc(x,y-26*sc,13*sc,0,7);c.arc(x-9*sc,y-18*sc,9*sc,0,7);c.arc(x+9*sc,y-18*sc,9*sc,0,7);c.fill();});
+  // stream
+  const sw=mix(PAL.hyd,PAL.mud,Math.min(1,ws.turb/60));c.fillStyle=sw;c.beginPath();c.moveTo(xs+4,yB+H*.03);c.lineTo(W-4,yB+H*.03);c.lineTo(W-12,yB+H*.085);c.lineTo(xs+12,yB+H*.085);c.closePath();c.fill();
+  c.fillStyle=PAL.ink;c.fillText("stream",xs+16,yB+H*.03-6);
+  // drops
+  if(reduce){c.strokeStyle=rgba(PAL.hyd,.6);for(let i=0;i<ws.I*1.2;i++){const x=(i*97.3)%W,y=(i*53.7)%(H*.55);c.beginPath();c.moveTo(x,y);c.lineTo(x-1,y+7);c.stroke();}
+    if(m.C>.05){c.strokeStyle=m.sIdx>20?PAL.mud:PAL.hyd;c.lineWidth=3;for(let i=0;i<4;i++){const x0=xs*(.15+i*.2),x1=x0+xs*.12;c.beginPath();c.moveTo(x0,g.gy(x0)-3);c.lineTo(x1,g.gy(x1)-3);c.stroke();}c.lineWidth=1;}
+    return;}
+  for(const d of ws.drops){
+    if(d.s==="f"){c.strokeStyle=rgba(PAL.hyd,.75);c.beginPath();c.moveTo(d.x,d.y);c.lineTo(d.x-.8,d.y+7);c.stroke();}
+    else if(d.s==="r"){c.fillStyle=d.sed?PAL.mud:PAL.hyd;c.beginPath();c.arc(d.x,d.y,2.3,0,7);c.fill();}
+    else{c.fillStyle=rgba(PAL.hyd,Math.max(0,d.life/40)*.7);c.beginPath();c.arc(d.x,d.y,1.8,0,7);c.fill();}
+  }
+}
+
+/* =============== LAB 4: FEEDBACK =============== */
+const LOOPS=[
+ {id:"ice",name:"Ice–albedo",nodes:[["Global","temperature"],["Ice and snow","cover"],["Albedo","(reflectivity)"],["Sunlight","absorbed"]],signs:["−","+","−","+"],type:"amp",g:.45,unit:"decades",color:"cryo",
+  ex:"Warming shrinks bright ice, exposing darker ocean and land that absorb more sunlight, which warms things further. The loop has two opposite (−) links; two negatives multiply to a positive, so the loop amplifies change. It also runs in reverse: cooling grows ice, which cools further, one reason ice ages can deepen."},
+ {id:"perma",name:"Permafrost carbon",nodes:[["Global","temperature"],["Permafrost","thaw"],["CO₂ and methane","released"],["Greenhouse","effect"]],signs:["+","+","+","+"],type:"amp",g:.3,unit:"centuries",color:"bio",
+  ex:"Warmer temperatures thaw permafrost, microbes decompose long-frozen plant matter, and the CO₂ and methane they release strengthen the greenhouse effect, which raises temperature again. Every link is same-direction, so the loop amplifies change."},
+ {id:"weath",name:"Rock weathering",nodes:[["Global","temperature"],["Rainfall and","rock weathering"],["Atmospheric","CO₂"],["Greenhouse","effect"]],signs:["+","−","+","+"],type:"stab",g:-.9,unit:"100,000s of years",color:"geo",
+  ex:"A warmer world is wetter, so rain dissolves silicate rock faster. The reaction locks CO₂ into dissolved bicarbonate that ends up in limestone. Less CO₂ weakens the greenhouse effect and cools the planet. With one opposite (−) link the loop pushes back, a slow thermostat that has kept Earth habitable for billions of years but is far too slow to offset today’s warming."}
+];
+const LP=[[240,48],[400,192],[240,336],[80,192]];
+const ARC=[[[318,56],[400,56],[400,168]],[[400,216],[400,336],[318,336]],[[162,336],[80,336],[80,216]],[[80,168],[80,56],[162,56]]];
+const FB={i:0,guess:{},type:{},solved:{}};
+function fbInit(){
+  $("#fbLoops").innerHTML=LOOPS.map((l,i)=>`<button data-i="${i}" aria-pressed="${i===0}">${l.name}</button>`).join("");
+  $$("#fbLoops button").forEach(b=>b.addEventListener("click",()=>{FB.i=+b.dataset.i;$$("#fbLoops button").forEach(x=>x.setAttribute("aria-pressed",x===b));$("#fbFb").textContent="";fbDrawLoop();fbDrawChart();}));
+  $$('[data-type]').forEach(b=>b.addEventListener("click",()=>{FB.type[FB.i]=b.dataset.type;fbTypeBtns();}));
+  $("#fbCheck").addEventListener("click",fbCheck);
+  $("#loopSvg").addEventListener("click",e=>{const s=e.target.closest(".sign");if(s)fbCycle(+s.dataset.k)});
+  $("#loopSvg").addEventListener("keydown",e=>{const s=e.target.closest(".sign");if(s&&(e.key==="Enter"||e.key===" ")){e.preventDefault();fbCycle(+s.dataset.k);}});
+  ["fbForce","fbStr"].forEach(id=>$("#"+id).addEventListener("input",fbDrawChart));
+  window.addEventListener("resize",()=>{if(current==="feedback")fbDrawChart()});
+  fbDrawLoop();
+}
+function fbCycle(k){const g=FB.guess[FB.i]||(FB.guess[FB.i]=["?","?","?","?"]);g[k]=g[k]==="+"?"−":"+";fbDrawLoop();const s=$(`#loopSvg .sign[data-k="${k}"]`);if(s)s.focus();}
+function fbTypeBtns(){$$('[data-type]').forEach(b=>b.setAttribute("aria-pressed",FB.type[FB.i]===b.dataset.type));}
+function fbDrawLoop(marks){
+  const L=LOOPS[FB.i],g=FB.guess[FB.i]||["?","?","?","?"];
+  let h=`<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker></defs>`;
+  ARC.forEach(a=>{h+=`<path class="larrow" d="M${a[0][0]} ${a[0][1]} Q${a[1][0]} ${a[1][1]} ${a[2][0]} ${a[2][1]}" marker-end="url(#ah)"/>`;});
+  L.nodes.forEach((n,i)=>{const [x,y]=LP[i];h+=`<g class="lnode" transform="translate(${x},${y})"><rect x="-78" y="-25" width="156" height="50" rx="11" style="stroke:var(--${i===0?"bad":L.color})"/><text text-anchor="middle" y="-3">${n[0]}</text><text text-anchor="middle" y="13">${n[1]}</text></g>`;});
+  ARC.forEach((a,i)=>{const px=.25*a[0][0]+.5*a[1][0]+.25*a[2][0],py=.25*a[0][1]+.5*a[1][1]+.25*a[2][1];const mk=marks?marks[i]:"";h+=`<g class="sign ${mk}" data-k="${i}" tabindex="0" role="button" aria-label="Link ${i+1} sign: ${g[i]==="?"?"not set":g[i]==="+"?"same direction":"opposite direction"}" transform="translate(${px},${py})"><circle r="18"/><text text-anchor="middle" y="6">${g[i]}</text></g>`;});
+  h+=`<text class="centerlab" x="240" y="186" text-anchor="middle">${L.name} loop</text><text class="centerlab" x="240" y="206" text-anchor="middle" style="font-weight:500;font-size:12px">acts over ${L.unit}</text>`;
+  $("#loopSvg").innerHTML=h;fbTypeBtns();
+}
+function fbCheck(){
+  const L=LOOPS[FB.i],g=FB.guess[FB.i]||["?","?","?","?"],t=FB.type[FB.i],fb=$("#fbFb");
+  if(g.includes("?")){fb.className="fb bad";fb.textContent="Set a sign on all four links first.";return;}
+  if(!t){fb.className="fb bad";fb.textContent="Choose whether the loop is amplifying or stabilizing.";return;}
+  const marks=g.map((s,i)=>s===L.signs[i]?"good":"bad"),wrong=marks.filter(x=>x==="bad").length,typeOk=t===L.type;
+  fbDrawLoop(marks);
+  if(!wrong&&typeOk){fb.className="fb good";fb.innerHTML=`<b>Correct: ${L.type==="amp"?"amplifying":"stabilizing"}.</b> ${L.ex}`;FB.solved[FB.i]=true;
+    if(Object.keys(FB.solved).length===3)complete("feedback","Lab 4 complete: all three feedback loops classified.");
+    else fb.innerHTML+=` <br><span class="small">Next, try another loop with the buttons above.</span>`;}
+  else{const neg=g.filter(s=>s==="−").length;fb.className="fb bad shake";fb.innerHTML=`<b>${wrong?`${wrong} link${wrong>1?"s":""} marked in red need${wrong>1?"":"s"} another look.`:"The signs are right, but check the loop type."}</b> Read each arrow aloud: “If the first box goes up, does the next box go up or down?” ${!wrong?`You have ${neg} opposite link${neg===1?"":"s"}: an even number (including zero) makes a loop amplify, an odd number makes it stabilize.`:""}`;setTimeout(()=>fb.classList.remove("shake"),400);}
+}
+function fbSim(g,F){const lam=1.3,C=26,out=[];let T=0;for(let t=0;t<=160;t++){out.push(T);T+=(F-(lam-g)*T)/C;}return out;}
+function fbDrawChart(){
+  const cv=$("#fbChart");if(!cv||current!=="feedback")return;refreshPal();
+  const L=LOOPS[FB.i],F=+$("#fbForce").value,str=+$("#fbStr").value,g=L.g*str;
+  $("#fbForceV").textContent=(F>0?"+":"")+F.toFixed(1)+" W/m²"+(Math.abs(F-3.7)<.05?" (about a doubling of CO₂)":F<0?" (cooling)":"");
+  $("#fbStrV").textContent=str.toFixed(1)+"×";
+  $("#fbLegC").style.background=`var(--${L.type==="amp"?"bad":"good"})`;
+  const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1,W=r.width,H=r.height;cv.width=W*dpr;cv.height=H*dpr;const c=cv.getContext("2d");c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);
+  const a=fbSim(0,F),b=fbSim(g,F),all=a.concat(b);let lo=Math.min(0,...all),hi=Math.max(0,...all);if(hi-lo<1){hi=Math.max(hi,1);lo=Math.min(lo,-0)}const pad=(hi-lo)*.12;hi+=pad;lo-=lo<0?pad:0;
+  const L0=48,R0=12,T0=12,B0=34,pw=W-L0-R0,ph=H-T0-B0,X=i=>L0+pw*i/160,Y=v=>T0+ph*(hi-v)/(hi-lo);
+  const font=getComputedStyle(document.body).fontFamily;c.font="11px "+font;c.fillStyle=PAL.muted;c.strokeStyle=PAL.line;c.lineWidth=1;
+  const step=(hi-lo)>8?2:(hi-lo)>4?1:.5;for(let v=Math.ceil(lo/step)*step;v<=hi;v+=step){c.beginPath();c.moveTo(L0,Y(v));c.lineTo(W-R0,Y(v));c.stroke();c.fillText((v>0?"+":"")+v.toFixed(step<1?1:0)+"°",4,Y(v)+4);}
+  c.strokeStyle=PAL.muted;c.beginPath();c.moveTo(L0,Y(0));c.lineTo(W-R0,Y(0));c.stroke();
+  c.fillText("Time ("+L.unit+", illustrative)",L0,H-10);c.save();c.translate(12,T0+ph/2);c.restore();
+  const line=(arr,col,dash,w)=>{c.strokeStyle=col;c.lineWidth=w;c.setLineDash(dash);c.beginPath();arr.forEach((v,i)=>i?c.lineTo(X(i),Y(v)):c.moveTo(X(i),Y(v)));c.stroke();c.setLineDash([]);};
+  line(a,PAL.muted,[6,5],2);line(b,L.type==="amp"?PAL.bad:PAL.good,[],3);
+  const eqA=F/1.3,eqB=F/(1.3-g),amp=1.3/(1.3-g);
+  $("#fbRead").className="fb";$("#fbRead").innerHTML=`Without the loop, temperature settles near <b>${eqA>=0?"+":""}${eqA.toFixed(1)} °C</b>. With the ${L.name.toLowerCase()} loop at this strength, it heads toward <b>${eqB>=0?"+":""}${eqB.toFixed(1)} °C</b>, ${amp>1.02?`about ${amp.toFixed(1)} times the original change. The loop <b>amplifies</b>.`:amp<.98?`about ${Math.round(amp*100)}% of the original change. The loop <b>dampens</b> it.`:"essentially no difference."}${str===0?" (Strength is zero, so the loop is switched off.)":""}`;
+}
+
+/* =============== LAB 5: SORTING + SCALES =============== */
+const DECKS={
+ energy:{prompt:"Which energy source mainly drives each process? Select a card, then select a bin (or drag it).",bins:[["solar","☀️ Solar energy"],["internal","🌋 Earth’s internal heat"]],items:[
+  ["Hurricanes","solar","Sun-warmed ocean water evaporates; the heat released as it condenses powers the storm."],
+  ["Plate motion","internal","Mantle convection, driven by heat from radioactive decay and Earth’s formation, moves the plates."],
+  ["Evaporation","solar","Sunlight supplies the energy that turns liquid water into vapor."],
+  ["Volcanic eruptions","internal","Magma forms where interior heat melts rock."],
+  ["Winds and surface ocean currents","solar","Uneven solar heating creates pressure differences that drive winds, and winds push surface currents."],
+  ["Earthquakes","internal","Stress builds as plates move, ultimately powered by internal heat."],
+  ["Photosynthesis","solar","Plants capture sunlight to build sugars."],
+  ["Mountain building","internal","Colliding plates crumple and lift crust, driven by mantle convection."],
+  ["Geothermal hot springs","internal","Groundwater is heated by hot rock below."],
+  ["Sand dune migration","solar","Dunes move with the wind, and wind is driven by solar heating."]]},
+ matter:{prompt:"Does each thing cycle within the Earth system (matter), or enter, pass through, and eventually leave (energy)?",bins:[["cycle","🔁 Cycles (matter)"],["flow","➡️ Flows through (energy)"]],items:[
+  ["Carbon atoms","cycle","Carbon moves among air, life, ocean, and rock but stays on Earth."],
+  ["Water molecules","cycle","Water changes state and location but is reused over and over."],
+  ["Incoming sunlight","flow","Sunlight enters, drives processes, and ends up as heat radiated back to space."],
+  ["Infrared heat radiated to space","flow","This is energy leaving the system for good."],
+  ["Nitrogen","cycle","Nitrogen moves between air, soil, and organisms."],
+  ["Rock material in the rock cycle","cycle","Minerals are recycled into new igneous, sedimentary, and metamorphic rock."],
+  ["Heat rising from Earth’s interior","flow","Interior heat moves outward and is eventually lost to space."],
+  ["Food energy passed up a food chain","flow","About 90% is lost as heat at each step, so it must be resupplied by sunlight."]]}
+};
+const SORT={deck:"energy",placed:{energy:{},matter:{}},sel:null};
+function sortInit(){
+  $("#deckEnergy").addEventListener("click",()=>sortDeck("energy"));$("#deckMatter").addEventListener("click",()=>sortDeck("matter"));sortRender();
+}
+function sortDeck(d){SORT.deck=d;SORT.sel=null;$("#deckEnergy").setAttribute("aria-pressed",d==="energy");$("#deckMatter").setAttribute("aria-pressed",d==="matter");$("#sortFb").textContent="";sortRender();}
+function sortRender(){
+  const D=DECKS[SORT.deck],P=SORT.placed[SORT.deck];$("#deckPrompt").textContent=D.prompt;
+  $("#pool").innerHTML=D.items.map((it,i)=>P[i]?"":`<button class="chip${SORT.sel===i?" sel":""}" draggable="true" data-i="${i}">${it[0]}</button>`).join("");
+  $("#bins").innerHTML=D.bins.map(b=>`<div class="bin" data-b="${b[0]}" role="button" tabindex="0" aria-label="Place in ${b[1]}"><h5>${b[1]}</h5>${D.items.map((it,i)=>P[i]&&it[1]===b[0]?`<span class="chip used">✓ ${it[0]}</span>`:"").join("")}</div>`).join("");
+  $$("#pool .chip").forEach(c=>{c.addEventListener("click",()=>{SORT.sel=SORT.sel===+c.dataset.i?null:+c.dataset.i;sortRender();});c.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",c.dataset.i);});});
+  $$("#bins .bin").forEach(b=>{b.addEventListener("click",()=>{if(SORT.sel!=null)sortPlace(SORT.sel,b.dataset.b,b)});b.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&SORT.sel!=null){e.preventDefault();sortPlace(SORT.sel,b.dataset.b,b)}});b.addEventListener("dragover",e=>{e.preventDefault();b.classList.add("hot")});b.addEventListener("dragleave",()=>b.classList.remove("hot"));b.addEventListener("drop",e=>{e.preventDefault();b.classList.remove("hot");sortPlace(+e.dataTransfer.getData("text/plain"),b.dataset.b,b)});});
+}
+function sortPlace(i,bin,el){
+  const D=DECKS[SORT.deck],it=D.items[i],fb=$("#sortFb");
+  if(it[1]===bin){SORT.placed[SORT.deck][i]=true;SORT.sel=null;fb.className="fb good";fb.innerHTML=`<b>${it[0]}: correct.</b> ${it[2]}`;sortRender();
+    const done=["energy","matter"].every(d=>DECKS[d].items.every((_,j)=>SORT.placed[d][j]));
+    if(Object.keys(SORT.placed[SORT.deck]).length===D.items.length)fb.innerHTML+=SORT.deck==="energy"?" <br><b>Deck complete.</b> Now try “Matter or energy?”":" <br><b>Deck complete.</b> Matter cycles; energy flows through.";
+    if(done)SORT.done=true;scaleCheckDone();}
+  else{fb.className="fb bad shake";fb.innerHTML=`<b>Not quite for ${it[0].toLowerCase()}.</b> Ask: where does the energy for this ultimately come from${SORT.deck==="matter"?", or does this stay on Earth and get reused":""}?`;el.classList.add("shake");setTimeout(()=>{el.classList.remove("shake");fb.classList.remove("shake")},400);}
+}
+const BANDS=[["s","Seconds to days"],["y","Weeks to centuries"],["k","Thousands to 100,000s of years"],["m","Millions of years or more"]];
+const SCALE=[
+ ["Lightning strike","atm",1e3,.5,"s"],["Earthquake rupture","geo",1e5,60,"s"],["Thunderstorm","atm",2e4,3600,"s"],["Flash flood","hyd",5e3,3e4,"s"],
+ ["Seasonal snowpack","cryo",3e5,1.5e7,"y"],["El Niño event","hyd",1.5e7,4e7,"y"],["Forest regrowth after fire","bio",1e4,3e9,"y"],
+ ["Deep ocean overturning","hyd",2e7,3e10,"k"],["Soil formation","geo",10,1e11,"k"],["Ice age cycles","cryo",1e7,3e12,"k"],
+ ["Mountain building","geo",2e6,1.5e15,"m"],["Supercontinent cycle","geo",4e7,1.3e16,"m"],["Sand grains becoming sandstone","geo",1e3,3e14,"m"]
+];
+const SC={placed:{},tries:{}};
+function scaleInit(){
+  $("#scaleReveal").addEventListener("click",()=>{SCALE.forEach((_,i)=>SC.placed[i]=true);scaleRender();$("#scaleFb").className="fb";$("#scaleFb").textContent="All processes revealed. Notice the diagonal trend: bigger processes tend to be slower.";});
+  scaleRender();
+}
+function scaleRender(){
+  const L=70,R=20,T=16,B=50,W=640,H=440,pw=W-L-R,ph=H-T-B,X=m=>L+pw*(Math.log10(m))/8,Y=s=>T+ph*(17-Math.log10(s))/18;
+  let h="";
+  [[1,"1 m"],[1e3,"1 km"],[1e6,"1,000 km"],[4e7,"Earth"]].forEach(([v,l])=>{h+=`<line class="sgrid" x1="${X(v)}" y1="${T}" x2="${X(v)}" y2="${T+ph}"/><text class="saxis" x="${X(v)}" y="${T+ph+16}" text-anchor="middle">${l}</text>`;});
+  [[1,"1","second"],[3600,"1","hour"],[3.15e7,"1","year"],[3.15e10,"1,000","years"],[3.15e13,"1 million","years"],[3.15e16,"1 billion","years"]].forEach(([v,a,b])=>{h+=`<line class="sgrid" x1="${L}" y1="${Y(v)}" x2="${W-R}" y2="${Y(v)}"/><text class="saxis" x="${L-6}" y="${Y(v)-1}" text-anchor="end">${a}</text><text class="saxis" x="${L-6}" y="${Y(v)+11}" text-anchor="end">${b}</text>`;});
+  h+=`<text class="saxis" x="${L+pw/2}" y="${H-8}" text-anchor="middle" style="font-weight:700">Size (log scale)</text><text class="saxis" transform="translate(12,${T+ph/2}) rotate(-90)" text-anchor="middle" style="font-weight:700">Duration</text>`;
+  h+=`<line x1="${X(1)}" y1="${Y(.3)}" x2="${X(4e7)}" y2="${Y(1e16)}" style="stroke:var(--muted)" stroke-dasharray="3 6" opacity=".5"/>`;
+  SCALE.forEach((p,i)=>{if(!SC.placed[i])return;const x=X(p[2]),y=Y(p[3]),right=x<W-170;h+=`<g><circle cx="${x}" cy="${y}" r="7" style="fill:var(--${p[1]})"/><text class="slab" x="${right?x+11:x-11}" y="${y+4}" text-anchor="${right?"start":"end"}">${p[0]}</text></g>`;});
+  $("#scaleSvg").innerHTML=h;
+  $("#sitems").innerHTML=SCALE.map((p,i)=>`<div class="sitem${SC.placed[i]?" done":""}"><div class="row" style="justify-content:space-between;margin:0"><b>${p[0]}</b>${tag(p[1])}</div>${SC.placed[i]?`<div class="note">${BANDS.find(b=>b[0]===p[4])[1]}</div>`:`<div class="row">${BANDS.map(b=>`<button class="chip" data-i="${i}" data-b="${b[0]}">${b[1]}</button>`).join("")}</div>`}</div>`).join("");
+  $$("#sitems .chip").forEach(c=>c.addEventListener("click",()=>{const i=+c.dataset.i,p=SCALE[i],fb=$("#scaleFb");if(c.dataset.b===p[4]){SC.placed[i]=true;fb.className="fb good";fb.innerHTML=`<b>${p[0]}: correct.</b> It now appears on the map.`;scaleRender();scaleCheckDone();}else{c.classList.add("shake");setTimeout(()=>c.classList.remove("shake"),400);fb.className="fb bad";fb.innerHTML=`<b>${p[0]}: try again.</b> ${BANDS.findIndex(b=>b[0]===c.dataset.b)<BANDS.findIndex(b=>b[0]===p[4])?"It takes longer than that.":"It happens faster than that."}`;}}));
+  const n=Object.keys(SC.placed).length;$("#scaleCount").textContent=`${n} of ${SCALE.length} placed`;
+}
+function scaleCheckDone(){const sd=["energy","matter"].every(d=>DECKS[d].items.every((_,j)=>SORT.placed[d][j]));if(sd&&Object.keys(SC.placed).length===SCALE.length)complete("scales","Lab 5 complete: energy sources, matter vs. energy, and scales mastered.");}
+
+/* =============== LAB 6: QUIZ + GLOSSARY =============== */
+const QUIZ=[
+ {q:"Which statement best describes how matter and energy move through the Earth system?",o:["Both matter and energy cycle endlessly within the system.","Matter cycles among the spheres, while energy flows through and is eventually radiated to space.","Energy cycles, while matter is gradually used up.","Neither moves between spheres."],a:1,ex:"Atoms of water and carbon are reused again and again. Energy arrives (mostly as sunlight), drives processes, and leaves as infrared radiation, so it must be continually resupplied."},
+ {q:"Which process is driven mainly by Earth’s internal heat?",o:["Hurricane formation","Monsoon rains","Seafloor spreading","Evaporation from lakes"],a:2,ex:"Seafloor spreading results from mantle convection powered by interior heat. The other three are powered by solar energy."},
+ {q:"A forest on a hillside is clear-cut. Which chain of effects is most likely during the next big storm?",o:["Infiltration up, runoff down, clearer streams","Infiltration down, runoff up, erosion up, muddier streams","Runoff down, erosion up, no change in water quality","Rainfall decreases, so streams dry up"],a:1,ex:"Losing leaves and roots reduces interception and infiltration, so more water runs off the surface, carrying soil and attached nutrients into streams."},
+ {q:"Why is the ice–albedo feedback considered amplifying?",o:["Ice reflects sunlight, which always cools the planet.","Melting ice exposes darker surfaces that absorb more sunlight, causing more warming and more melting.","Meltwater cools the ocean and stops the warming.","Ice releases CO₂ when it melts."],a:1,ex:"The change feeds back on itself in the same direction: warming leads to less ice, lower albedo, more absorbed sunlight, and more warming."},
+ {q:"A water molecule evaporates from the ocean, falls as snow on a glacier, melts into a river, and is taken up by a tree. Which sequence of spheres did it pass through?",o:["Hydrosphere, atmosphere, cryosphere, hydrosphere, biosphere","Atmosphere, hydrosphere, biosphere, cryosphere","Hydrosphere, cryosphere, atmosphere, biosphere","Hydrosphere, atmosphere, geosphere, biosphere"],a:0,ex:"Ocean (hydrosphere) to vapor (atmosphere) to glacier (cryosphere) to river (hydrosphere) to tree (biosphere)."},
+ {q:"In which reservoir does a water molecule typically stay the longest?",o:["Atmosphere","Soil moisture","Rivers","Ocean"],a:3,ex:"Average residence time in the ocean is about 3,000 years, compared with about 9 days in the atmosphere and weeks to months in soil and rivers."},
+ {q:"How does chemical weathering of silicate rock act as a stabilizing feedback over very long timescales?",o:["It releases methane when the climate warms.","It speeds up in warmer, wetter climates and removes CO₂ from the atmosphere, cooling the planet.","It increases Earth’s albedo.","It adds water vapor to the atmosphere."],a:1,ex:"Warming speeds weathering, which draws down CO₂, which weakens the greenhouse effect: the response opposes the original change."},
+ {q:"Which process operates over millions of years and thousands of kilometers?",o:["A thunderstorm","An El Niño event","Mountain building","Seasonal snowpack"],a:2,ex:"Mountain ranges form as plates collide over tens of millions of years and span thousands of kilometers."},
+ {q:"Burning fossil fuels moves carbon mainly from which sphere to which sphere?",o:["Geosphere to atmosphere","Biosphere to hydrosphere","Atmosphere to geosphere","Cryosphere to atmosphere"],a:0,ex:"Fossil fuels are carbon stored in rock for millions of years; combustion releases it as CO₂ into the air in a matter of decades."},
+ {q:"Thawing permafrost most directly connects which spheres?",o:["Only the cryosphere","The geosphere and hydrosphere only","The cryosphere, biosphere (ancient organic matter and microbes), and atmosphere","The hydrosphere and biosphere only"],a:2,ex:"Frozen ground (cryosphere) holds the remains of plants (biosphere); when it thaws, microbes release CO₂ and methane into the atmosphere."}
+];
+const GLOSS=[
+ ["Earth system","geo","The set of interacting spheres (geosphere, hydrosphere, atmosphere, biosphere, cryosphere) that together make up the planet."],
+ ["Reservoir","hyd","A place where matter is stored for a time, such as the ocean, a glacier, or a forest."],
+ ["Flux","hyd","The rate at which matter or energy moves from one reservoir to another, such as evaporation or photosynthesis."],
+ ["Residence time","hyd","The average time a molecule or atom stays in a reservoir before moving on."],
+ ["Amplifying feedback","bad","A loop in which a change causes effects that push it further in the same direction. Also called a positive feedback."],
+ ["Stabilizing feedback","good","A loop in which a change triggers effects that oppose it. Also called a negative feedback."],
+ ["Albedo","cryo","The fraction of sunlight a surface reflects. Fresh snow reflects up to about 90%; open ocean reflects under 10%."],
+ ["Infiltration","geo","Water soaking from the surface into the soil."],
+ ["Runoff","hyd","Water flowing over the land surface toward streams."],
+ ["Turbidity","hyd","Cloudiness of water caused by suspended particles, measured in NTU."],
+ ["Transpiration","bio","The release of water vapor from plant leaves."],
+ ["Weathering","geo","The breakdown of rock by physical, chemical, or biological processes."],
+ ["Permafrost","cryo","Ground that stays frozen for at least two years in a row."],
+ ["Internal heat","bad","Heat from Earth’s formation and radioactive decay that drives mantle convection, volcanism, and plate motion."]
+];
+function quizInit(){
+  $("#quiz").innerHTML=QUIZ.map((q,i)=>`<fieldset class="q"><legend>${i+1}. ${q.q}</legend><div class="opts">${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join("")}</div><div class="fb"></div></fieldset>`).join("");
+  $("#quizSubmit").addEventListener("click",quizGrade);
+  $("#quizRetry").addEventListener("click",()=>{quizInit();$("#quizScore").textContent="";$("#quizSubmit").hidden=false;$("#quizRetry").hidden=true;});
+  $("#gloss").innerHTML=GLOSS.map(g=>`<button class="card" style="--c:var(--${g[1]})" aria-pressed="false"><span class="in"><span class="f">${g[0]}<small>Select to flip</small></span><span class="b">${g[2]}</span></span></button>`).join("");
+  $$("#gloss .card").forEach(c=>c.addEventListener("click",()=>{c.classList.toggle("flip");c.setAttribute("aria-pressed",c.classList.contains("flip"));}));
+}
+function quizGrade(){
+  let score=0,answered=0;
+  $$("#quiz .q").forEach((f,i)=>{const sel=f.querySelector("input:checked"),q=QUIZ[i],fb=f.querySelector(".fb");$$("label",f).forEach((l,j)=>{l.classList.toggle("right",j===q.a);l.classList.toggle("wrong",!!sel&&+sel.value===j&&j!==q.a);});
+    if(sel){answered++;if(+sel.value===q.a)score++;}
+    fb.className="fb "+(sel&&+sel.value===q.a?"good":"bad");fb.innerHTML=`<b>${sel?(+sel.value===q.a?"Correct.":"Not quite."):"Not answered."}</b> ${q.ex}`;
+    $$("input",f).forEach(x=>x.disabled=true);});
+  const pct=Math.round(score/QUIZ.length*100);$("#quizScore").textContent=`${score} / ${QUIZ.length} (${pct}%)`;
+  $("#quizSubmit").hidden=true;$("#quizRetry").hidden=false;
+  if(pct>=70)complete("check","Lab 6 complete: quiz passed with "+pct+"%.");else toast("Review the explanations and try again. 70% completes the lab.");
+}
+
+/* ---------- boot ---------- */
+refreshPal();setThemeBtn();renderProg();
+m1Init();m2Init();wsInit();fbInit();sortInit();scaleInit();quizInit();
+openLab((location.hash||"#map").slice(1),false);
+})();
+</script>
+</body>
+</html>
