@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ICS Wastewater Treatment Plant Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E1E5E9; --panel:#F6F7F9; --panel2:#ECEFF2; --ink:#1B2630; --muted:#55616D; --line:#C6CCD3;
+  --navy:#0047AB; --navy-ink:#0047AB; --green:#00a86b; --amber:#B47A00; --red:#C8102E;
+  --chip:#DDE2E7; --wire:#8A949E;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141A20; --panel:#1D242C; --panel2:#252D36; --ink:#E3E8ED; --muted:#99A5B1; --line:#36414C;
+    --navy:#2F6FD6; --navy-ink:#86AEF2; --green:#1DBF86; --amber:#E2AA33; --red:#EE5468; --chip:#2E3742; --wire:#5F6B77;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141A20; --panel:#1D242C; --panel2:#252D36; --ink:#E3E8ED; --muted:#99A5B1; --line:#36414C;
+  --navy:#2F6FD6; --navy-ink:#86AEF2; --green:#1DBF86; --amber:#E2AA33; --red:#EE5468; --chip:#2E3742; --wire:#5F6B77;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.wrap{max-width:1560px;margin:0 auto;padding:14px 16px 40px}
+.cond{font-family:'Barlow Condensed','Arial Narrow',sans-serif}
+
+header.top{display:flex;align-items:flex-end;gap:12px 20px;flex-wrap:wrap;padding:2px 0 12px;border-bottom:2px solid var(--navy);margin-bottom:12px}
+.brand h1{margin:0;font:600 30px/1.05 'Barlow Condensed','Arial Narrow',sans-serif}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:14px;max-width:66ch}
+.top .sp{flex:1}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.clock{font:600 22px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;padding:2px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}
+.clock small{font-size:13px;color:var(--muted);font-weight:500;margin-right:6px}
+.lbl{font-size:13px;color:var(--muted);margin-right:-4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;font:600 14px 'Barlow Condensed',sans-serif;padding:6px 11px;cursor:pointer;min-width:38px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:6px 12px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--navy)}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.warn{border-color:var(--red);color:var(--red)}
+.btn.warn:hover{background:var(--red);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* stage navigator */
+.stagenav{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.stagenav button{flex:1;border:0;background:transparent;padding:9px 12px;cursor:pointer;text-align:left;display:flex;gap:10px;align-items:center;border-right:1px solid var(--line)}
+.stagenav button:last-child{border-right:0}
+.stagenav .n{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--wire);font:700 14px 'Barlow Condensed',sans-serif;flex:0 0 auto}
+.stagenav b{display:block;font:600 17px/1.1 'Barlow Condensed',sans-serif}
+.stagenav small{display:block;color:var(--muted);font-size:12.5px;line-height:1.2}
+.stagenav button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.stagenav button[aria-pressed="true"] small{color:#d6e2f7}
+.stagenav button[aria-pressed="true"] .n{border-color:#fff}
+@media (max-width:760px){.stagenav{flex-wrap:wrap}.stagenav button{flex:1 1 50%;border-bottom:1px solid var(--line)}}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px;align-items:start}
+@media (max-width:1150px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.scene-card{padding:10px}
+.scene-wrap{overflow-x:auto;border-radius:7px;-webkit-overflow-scrolling:touch}
+#scene{display:block;width:100%;min-width:900px;aspect-ratio:1400/530;border-radius:7px;touch-action:manipulation}
+.scene-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 2px 0;font-size:13px;color:var(--muted)}
+.scene-bar label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+
+.fx{display:grid;grid-template-columns:repeat(8,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:10px}
+@media (max-width:900px){.fx{grid-template-columns:repeat(4,1fr)}}
+.fx>div{background:var(--panel2);padding:6px 10px}
+.fx .k{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.fx .v{font:600 20px/1.15 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fx .lim{font-size:11.5px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--wire);flex:0 0 auto;display:inline-block}
+.dot.g{background:var(--green)}.dot.a{background:var(--amber)}.dot.r{background:var(--red)}
+.fx .bad .v{color:var(--red)}
+
+.under{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:10px}
+@media (max-width:900px){.under{grid-template-columns:1fr}}
+.about,.inspector{padding:12px 14px}
+.about h3,.inspector h3{margin:0 0 4px;font:600 19px 'Barlow Condensed',sans-serif}
+.about p,.inspector p{margin:4px 0 8px;max-width:80ch}
+.about ul{margin:0;padding-left:18px}
+.about li{margin-bottom:3px}
+.metrics{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.metrics span{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font:600 14px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.metrics span i{font-style:normal;font-weight:500;color:var(--muted);margin-right:4px}
+.inspector .meta{color:var(--muted);font-size:13.5px}
+.inspector .live{font:600 16px 'Barlow Condensed',sans-serif;color:var(--navy-ink)}
+.inspector.empty{color:var(--muted)}
+
+/* HMI */
+.hmi{padding:14px}
+.hmi h2{margin:0;font:600 21px 'Barlow Condensed',sans-serif}
+.hmi .sub{margin:0 0 10px;font-size:13px;color:var(--muted)}
+.hmi section{padding:11px 0;border-top:1px solid var(--line)}
+.hmi h3{margin:0 0 8px;font:600 16px 'Barlow Condensed',sans-serif;color:var(--muted)}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin-bottom:10px;align-items:center}
+.ctl label{font-size:14px}
+.ctl output{font:600 18px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;text-align:right}
+.ctl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--navy)}
+.ctl .hint{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ro{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ro>div{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 9px}
+.ro .k{font-size:12px;color:var(--muted)}
+.ro .v{font:600 18px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);margin-bottom:6px;cursor:pointer}
+.sw input{accent-color:var(--navy);width:16px;height:16px}
+.equip{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.eq{border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:var(--panel2)}
+.eq b{font:600 15px 'Barlow Condensed',sans-serif;display:flex;align-items:center;gap:6px}
+.eq small{display:block;color:var(--muted);font-size:12.5px}
+.eq .btn{margin-top:4px;padding:2px 8px;font-size:13px}
+.note{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.stagepanel[hidden]{display:none}
+/* faceplate */
+.fp{border:2px solid var(--line);border-radius:9px;padding:10px;background:var(--panel2);margin-bottom:8px}
+.fp .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.fp .hd b{font:700 17px 'Barlow Condensed',sans-serif}
+.fp .hd span{font-size:12.5px;color:var(--muted)}
+.fp .vals{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.fp .vals>div{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 7px}
+.fp .vals .k{font-size:11.5px;color:var(--muted)}
+.fp .vals .v{font:600 19px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fp .bar{height:8px;border-radius:4px;background:var(--chip);overflow:hidden;margin:2px 0 8px}
+.fp .bar i{display:block;height:100%;background:var(--navy);width:0}
+.fp .tune{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.fp .tune label{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column}
+.fp .tune input{width:100%;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:var(--panel)}
+.fp .seg{width:100%}.fp .seg button{flex:1}
+.tote{display:grid;grid-template-columns:1fr 70px auto;gap:8px;align-items:center;margin-bottom:6px;font-size:14px}
+.tote .lv{height:9px;border-radius:5px;background:var(--chip);overflow:hidden}
+.tote .lv i{display:block;height:100%;background:var(--green)}
+.tote .btn{padding:2px 8px;font-size:13px}
+
+/* tabs */
+.tabs{margin-top:14px}
+.tablist{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 8px}
+.tablist button{border:0;background:transparent;padding:11px 13px 9px;font:600 16px 'Barlow Condensed',sans-serif;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tablist button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--navy)}
+.badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:9px;background:var(--red);color:#fff;font-size:12px;line-height:18px;text-align:center}
+.badge:empty{display:none}
+.panel{padding:16px 18px}
+.panel[hidden]{display:none}
+.panel h3{margin:0 0 6px;font:600 20px 'Barlow Condensed',sans-serif}
+.panel .lead{margin:0 0 14px;color:var(--muted);max-width:88ch}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+
+/* loops */
+.loop{border:1px solid var(--line);border-radius:9px;padding:12px;margin-bottom:12px;background:var(--panel2)}
+.loop h4{margin:0 0 4px;font:600 18px 'Barlow Condensed',sans-serif}
+.loop p{margin:0 0 10px;color:var(--muted);font-size:14px;max-width:90ch}
+.chain{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:22px;position:relative}
+.blk{flex:0 0 auto;min-width:118px;border:2px solid var(--wire);border-radius:7px;padding:5px 9px;background:var(--panel)}
+.blk .t{font:600 13px 'Barlow Condensed',sans-serif;color:var(--muted)}
+.blk .v{font:600 18px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.blk.act{border-color:var(--green)}
+.blk.bad{border-color:var(--red)}
+.arr{flex:0 0 26px;align-self:center;height:2px;background:var(--wire);position:relative}
+.arr::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:var(--wire)}
+.fbk{position:absolute;left:58px;right:58px;bottom:4px;height:14px;border:2px solid var(--wire);border-top:0;border-radius:0 0 8px 8px}
+.fbk span{position:absolute;left:50%;transform:translateX(-50%);bottom:-2px;background:var(--panel2);padding:0 6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.steps{display:flex;flex-wrap:wrap;gap:6px}
+.steps span{padding:4px 10px;border:2px solid var(--line);border-radius:16px;font:600 14px 'Barlow Condensed',sans-serif;color:var(--muted)}
+.steps span.on{border-color:var(--green);color:var(--ink);background:color-mix(in srgb,var(--green) 15%,transparent)}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:600 14px 'Barlow Condensed',sans-serif;color:var(--muted);background:var(--panel2)}
+td.c{font-family:'Barlow Condensed',sans-serif;font-weight:600}
+td.n{font:600 15px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;text-align:right}
+td.d{white-space:normal;min-width:200px;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.grp td{background:var(--panel2);font:600 13px 'Barlow Condensed',sans-serif;color:var(--navy-ink)}
+.chip{display:inline-block;min-width:40px;text-align:center;padding:0 7px;border-radius:5px;font:600 12.5px/20px 'Barlow Condensed',sans-serif;background:var(--chip);color:var(--muted)}
+.chip.on{background:var(--green);color:#fff}
+.chip.bad{background:var(--red);color:#fff}
+.al-hi td:first-child{box-shadow:inset 4px 0 0 var(--red)}
+.al-me td:first-child{box-shadow:inset 4px 0 0 var(--amber)}
+.al-lo td:first-child{box-shadow:inset 4px 0 0 var(--wire)}
+.al-unack.al-act td{animation:blink 1s steps(2,start) infinite}
+@keyframes blink{50%{background:color-mix(in srgb,var(--red) 14%,transparent)}}
+.log{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px;font-size:13.5px}
+.log div{padding:5px 10px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:62px 72px 1fr;gap:8px}
+.log .t,.log .c{font:600 13px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.log .t{color:var(--muted)}
+.log .sec .c{color:var(--red)} .log .alarm .c{color:var(--amber)} .log .op .c{color:var(--navy-ink)} .log .sys .c{color:var(--muted)}
+.empty-msg{padding:14px;color:var(--muted)}
+#trend{width:100%;height:280px;display:block;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+.tkeys{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;margin-top:8px}
+.tkeys i{display:inline-block;width:16px;height:3px;margin-right:6px;vertical-align:middle;border-radius:2px}
+
+/* lab */
+.lab h4{margin:12px 0 6px;font:600 17px 'Barlow Condensed',sans-serif}
+.tog{display:flex;align-items:flex-start;gap:10px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--panel2);cursor:pointer}
+.tog input{margin-top:4px;accent-color:var(--navy);width:16px;height:16px;flex:0 0 auto}
+.tog b{font-weight:600;display:block}
+.tog small{color:var(--muted);font-size:13px;display:block;line-height:1.35}
+.atk{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--panel2)}
+.atk small{display:block;color:var(--muted);font-size:13px;line-height:1.35}
+.mystery{margin-top:14px;padding:12px;border:2px dashed var(--navy);border-radius:10px}
+.fb{margin-top:8px;padding:8px 10px;border-radius:7px;font-size:14px}
+.fb.ok{background:color-mix(in srgb,var(--green) 16%,transparent)}
+.fb.no{background:color-mix(in srgb,var(--red) 13%,transparent)}
+.fb:empty{display:none}
+select.inp{padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}
+
+/* learn */
+.learn p,.learn li{max-width:84ch}
+details.acc{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:var(--panel2)}
+details.acc summary{cursor:pointer;padding:10px 14px;font:600 17px 'Barlow Condensed',sans-serif}
+details.acc .in{padding:0 16px 12px}
+.formula{font:600 15px 'Barlow Condensed',sans-serif;background:var(--panel);border-left:4px solid var(--navy);padding:6px 10px;border-radius:4px;margin:6px 0}
+.purdue{display:grid;gap:4px;margin:6px 0}
+.purdue div{display:grid;grid-template-columns:86px 1fr;gap:10px;padding:6px 10px;border-radius:6px;background:var(--panel)}
+.purdue b{font-family:'Barlow Condensed',sans-serif}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.flip{perspective:800px;height:140px;cursor:pointer;border:0;padding:0;background:none;text-align:left}
+.flip .fi{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.flip[aria-pressed="true"] .fi{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:9px;padding:12px;border:1px solid var(--line);display:flex;align-items:center;background:var(--panel)}
+.flip .f{font:600 20px 'Barlow Condensed',sans-serif;justify-content:center;text-align:center;border-top:4px solid var(--navy)}
+.flip .b{transform:rotateY(180deg);font-size:13.5px;line-height:1.4;border-top:4px solid var(--green)}
+.quiz .q{padding:12px 14px;border:1px solid var(--line);border-radius:9px;margin-bottom:10px;background:var(--panel2)}
+.quiz .q p{margin:0 0 8px;font-weight:600}
+.quiz label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;cursor:pointer}
+.quiz input{accent-color:var(--navy);margin-top:5px}
+.score{font:600 20px 'Barlow Condensed',sans-serif;margin-left:10px}
+@media (prefers-reduced-motion: reduce){.flip .fi{transition:none}.al-unack.al-act td{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Wastewater treatment plant</h1>
+      <p>An ICS process simulator covering primary, secondary and tertiary treatment: field instruments, PLCs, PID loops, SCADA alarms and the network behind them.</p>
+    </div>
+    <div class="sp"></div>
+    <div class="tools">
+      <div class="clock" aria-live="off"><small id="day">Day 1</small><span id="clk">06:00</span></div>
+      <span class="lbl">Speed</span>
+      <div class="seg" id="simSpeed">
+        <button data-v="0" aria-pressed="false">Pause</button>
+        <button data-v="1" aria-pressed="false">1×</button>
+        <button data-v="5" aria-pressed="true">5×</button>
+        <button data-v="20" aria-pressed="false">20×</button>
+        <button data-v="60" aria-pressed="false">60×</button>
+      </div>
+      <button class="btn" id="themeBtn" aria-label="Toggle dark mode">Dark mode</button>
+    </div>
+  </header>
+
+  <nav class="stagenav" aria-label="Plant areas">
+    <button data-stage="plant" aria-pressed="true"><span class="n">⌂</span><span><b>Whole plant</b><small>Influent, permit, overview</small></span></button>
+    <button data-stage="primary" aria-pressed="false"><span class="n">1</span><span><b>Primary</b><small>Settling and sludge removal</small></span></button>
+    <button data-stage="secondary" aria-pressed="false"><span class="n">2</span><span><b>Secondary</b><small>Activated sludge and clarifier</small></span></button>
+    <button data-stage="tertiary" aria-pressed="false"><span class="n">3</span><span><b>Tertiary</b><small>Phosphorus, filtration, disinfection</small></span></button>
+  </nav>
+
+  <div class="grid">
+    <div>
+      <div class="card scene-card">
+        <div class="scene-wrap"><canvas id="scene" role="img" aria-label="Animated cutaway of the treatment plant. Click a tank or instrument to inspect it."></canvas></div>
+        <div class="scene-bar">
+          <span>1× runs one plant minute per second. Click any tank, pump or instrument to inspect it.</span>
+          <span class="row"><label><input type="checkbox" id="showTags" checked> Tag labels</label><label><input type="checkbox" id="showVals" checked> Live values</label></span>
+        </div>
+        <div class="fx" aria-live="polite">
+          <div><div class="k">Plant flow</div><div class="v" id="fxQ">–</div><div class="lim">MGD</div></div>
+          <div id="c-bod"><div class="k"><span class="dot"></span>CBOD₅</div><div class="v">–</div><div class="lim">limit 10 mg/L</div></div>
+          <div id="c-tss"><div class="k"><span class="dot"></span>TSS</div><div class="v">–</div><div class="lim">limit 12 mg/L</div></div>
+          <div id="c-nh3"><div class="k"><span class="dot"></span>NH₃-N</div><div class="v">–</div><div class="lim">limit 1.5 mg/L</div></div>
+          <div id="c-tp"><div class="k"><span class="dot"></span>Total P</div><div class="v">–</div><div class="lim">limit 1.0 mg/L</div></div>
+          <div id="c-trc"><div class="k"><span class="dot"></span>TRC</div><div class="v">–</div><div class="lim">limit 0.019 mg/L</div></div>
+          <div id="c-ecoli"><div class="k"><span class="dot"></span>E. coli</div><div class="v">–</div><div class="lim">limit 126 /100 mL</div></div>
+          <div><div class="k">In compliance</div><div class="v" id="fxComp">100%</div><div class="lim">of plant time</div></div>
+        </div>
+      </div>
+      <div class="under">
+        <div class="card about" id="about"></div>
+        <div class="card inspector empty" id="inspector">Click a tank, pump or instrument in the scene to see its tag, Purdue level, PLC address and live value.</div>
+      </div>
+    </div>
+
+    <aside class="card hmi" aria-label="Operator HMI">
+      <h2 id="hmiTitle">Plant overview</h2>
+      <p class="sub" id="hmiSub">SCADA HMI-1. Writes go to the PLCs over Modbus/TCP.</p>
+
+      <div class="stagepanel" data-panel="plant">
+        <section>
+          <h3>Influent from pretreatment</h3>
+          <div class="ctl"><label>Flow pattern</label><span></span>
+            <div class="seg" id="pattern" style="grid-column:1/-1"><button data-v="constant" aria-pressed="false" style="flex:1">Constant</button><button data-v="diurnal" aria-pressed="true" style="flex:1">Diurnal</button></div></div>
+          <div class="ctl"><label for="qavg">Average daily flow</label><output id="oQ">4.0 MGD</output><input type="range" id="qavg" min="2" max="6" step="0.1" value="4"><span class="hint">Design average flow is 4.0 MGD.</span></div>
+          <div class="ctl"><label for="temp">Wastewater temperature</label><output id="oT">20 °C</output><input type="range" id="temp" min="8" max="28" step="1" value="20"><span class="hint">Cold water slows nitrifying bacteria.</span></div>
+          <div class="row"><button class="btn" id="storm">Start a 4-hour storm</button><button class="btn" id="slug">Industrial slug load</button></div>
+        </section>
+        <section>
+          <h3>Plant at a glance</h3>
+          <div class="ro">
+            <div><div class="k">Primary TSS removal</div><div class="v" id="g1">–</div></div>
+            <div><div class="k">Aeration DO</div><div class="v" id="g2">–</div></div>
+            <div><div class="k">Filter headloss</div><div class="v" id="g3">–</div></div>
+            <div><div class="k">Cl₂ residual</div><div class="v" id="g4">–</div></div>
+            <div><div class="k">Aeration power</div><div class="v" id="g5">–</div></div>
+            <div><div class="k">Active alarms</div><div class="v" id="g6">0</div></div>
+          </div>
+          <p class="note">Pick a treatment stage above to open its controls.</p>
+        </section>
+      </div>
+
+      <div class="stagepanel" data-panel="primary" hidden>
+        <section>
+          <h3>Primary clarifier PC-101</h3>
+          <div class="ro">
+            <div><div class="k">Surface overflow rate</div><div class="v" id="p1">–</div></div>
+            <div><div class="k">Sludge blanket</div><div class="v" id="p2">–</div></div>
+            <div><div class="k">TSS removal</div><div class="v" id="p3">–</div></div>
+            <div><div class="k">BOD removal</div><div class="v" id="p4">–</div></div>
+          </div>
+        </section>
+        <section>
+          <h3>Primary sludge pump P-110</h3>
+          <div class="ctl"><label for="pmin">Run time per hour (timer)</label><output id="oPmin">6 min</output><input type="range" id="pmin" min="0" max="20" step="1" value="6"><span class="hint">Too little pumping lets the blanket rise and solids carry over. Too much pumps thin, watery sludge.</span></div>
+          <div class="equip">
+            <div class="eq"><b><span class="dot" id="p110d"></span>P-110</b><small id="p110s">Off</small><button class="btn" id="pumpNow">Hold to pump now</button></div>
+            <div class="eq"><b><span class="dot" id="m101d"></span>Scraper M-101</b><small id="m101s">Running</small><button class="btn" id="scraperBtn">Stop drive</button></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="stagepanel" data-panel="secondary" hidden>
+        <section>
+          <h3>Dissolved oxygen control</h3>
+          <div id="fpDO"></div>
+        </section>
+        <section>
+          <h3>Aeration blowers</h3>
+          <div class="equip">
+            <div class="eq"><b><span class="dot" id="bAd"></span>B-201A</b><small id="bAs">–</small><button class="btn" data-reset="A">Reset trip</button></div>
+            <div class="eq"><b><span class="dot" id="bBd"></span>B-201B</b><small id="bBs">–</small><button class="btn" data-reset="B">Reset trip</button></div>
+          </div>
+          <div class="row" style="margin-bottom:6px"><span class="note" style="margin:0">Lead blower</span><div class="seg" id="leadSel"><button data-v="A" aria-pressed="true">A</button><button data-v="B" aria-pressed="false">B</button></div></div>
+          <label class="sw"><span>Lag blower auto-start</span><input type="checkbox" id="lagAuto" checked></label>
+        </section>
+        <section>
+          <h3>Sludge return and wasting</h3>
+          <div class="ctl"><label for="ras">RAS pump P-220 (% of influent)</label><output id="oRas">50%</output><input type="range" id="ras" min="20" max="100" step="5" value="50"></div>
+          <div class="ctl"><label for="was">WAS pump P-221</label><output id="oWas">35 gpm</output><input type="range" id="was" min="5" max="100" step="1" value="35"><span class="hint">Wasting less sludge raises SRT, which helps nitrification in cold water.</span></div>
+          <div class="ro">
+            <div><div class="k">MLSS</div><div class="v" id="s1">–</div></div>
+            <div><div class="k">SRT (sludge age)</div><div class="v" id="s2">–</div></div>
+            <div><div class="k">F/M ratio</div><div class="v" id="s3">–</div></div>
+            <div><div class="k">SVI</div><div class="v" id="s4">–</div></div>
+            <div><div class="k">Clarifier blanket</div><div class="v" id="s5">–</div></div>
+            <div><div class="k">Solids loading</div><div class="v" id="s6">–</div></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="stagepanel" data-panel="tertiary" hidden>
+        <section>
+          <h3>Chemical phosphorus removal</h3>
+          <div class="ctl"><label for="alum">Alum dose (flow-paced, CP-301)</label><output id="oAlum">45 mg/L</output><input type="range" id="alum" min="0" max="80" step="1" value="45"></div>
+        </section>
+        <section>
+          <h3>Filter F-301</h3>
+          <div class="ro" style="margin-bottom:8px">
+            <div><div class="k">Headloss (PDIT-301)</div><div class="v" id="t1">–</div></div>
+            <div><div class="k">Sequence step</div><div class="v" id="t2">–</div></div>
+          </div>
+          <div class="ctl"><label for="bwsp">Backwash at headloss</label><output id="oBw">7.0 ft</output><input type="range" id="bwsp" min="4" max="9.5" step="0.5" value="7"></div>
+          <label class="sw"><span>Automatic backwash</span><input type="checkbox" id="bwAuto" checked></label>
+          <button class="btn" id="bwNow">Start backwash now</button>
+        </section>
+        <section>
+          <h3>Disinfection</h3>
+          <div id="fpCL"></div>
+          <div class="ctl"><label for="bis">Bisulfite to chlorine ratio (CP-320)</label><output id="oBis">1.6 : 1</output><input type="range" id="bis" min="1" max="2.5" step="0.05" value="1.6"><span class="hint">Theory needs about 1.46 mg sodium bisulfite per mg chlorine.</span></div>
+        </section>
+        <section>
+          <h3>Chemical totes</h3>
+          <div class="tote"><span>Alum</span><span class="lv"><i id="lvA"></i></span><button class="btn" data-refill="alum">Refill</button></div>
+          <div class="tote"><span>Sodium hypochlorite</span><span class="lv"><i id="lvH"></i></span><button class="btn" data-refill="hypo">Refill</button></div>
+          <div class="tote"><span>Sodium bisulfite</span><span class="lv"><i id="lvB"></i></span><button class="btn" data-refill="bis">Refill</button></div>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <div class="card tabs">
+    <div class="tablist" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="loops">Control loops</button>
+      <button role="tab" aria-selected="false" data-tab="lab">Stage performance</button>
+      <button role="tab" aria-selected="false" data-tab="trends">Trends</button>
+      <button role="tab" aria-selected="false" data-tab="alarms">Alarms and events<span class="badge" id="alBadge"></span></button>
+      <button role="tab" aria-selected="false" data-tab="io">I/O and tags</button>
+      <button role="tab" aria-selected="false" data-tab="faults">Fault and attack lab</button>
+      <button role="tab" aria-selected="false" data-tab="learn">Learn and quiz</button>
+    </div>
+
+    <div class="panel" id="p-loops" role="tabpanel">
+      <h3>How the PLCs are controlling the process right now</h3>
+      <p class="lead">Each loop reads a sensor, compares it to a setpoint, and moves a final control element. Green blocks are acting; red blocks show a problem.</p>
+      <div id="loopsBox"></div>
+    </div>
+
+    <div class="panel" id="p-lab" role="tabpanel" hidden>
+      <h3>What each stage removes</h3>
+      <p class="lead">Instantaneous concentrations through the plant, as an operator’s lab sheet would show them. Watch how each stage takes a different bite out of the pollution load.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Parameter</th><th>Influent</th><th>After primary</th><th>After secondary</th><th>Final effluent</th><th>Total removal</th><th>Permit limit</th><th>Status</th></tr></thead><tbody id="labBody"></tbody></table></div>
+      <p class="note">Limits are typical of a NPDES permit for a plant discharging to a sensitive stream. Real permits use daily, weekly and monthly averages; this sim checks instantaneous values so you can see cause and effect quickly.</p>
+    </div>
+
+    <div class="panel" id="p-trends" role="tabpanel" hidden>
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <h3>SCADA historian, last 24 plant hours</h3>
+        <div class="seg" id="trendSel"><button data-v="air" aria-pressed="true">Aeration</button><button data-v="clar" aria-pressed="false">Clarifiers</button><button data-v="eff" aria-pressed="false">Nutrients</button><button data-v="dis" aria-pressed="false">Disinfection</button></div>
+      </div>
+      <canvas id="trend"></canvas>
+      <div class="tkeys" id="tkeys"></div>
+    </div>
+
+    <div class="panel" id="p-alarms" role="tabpanel" hidden>
+      <div class="two">
+        <div>
+          <div class="row" style="justify-content:space-between;margin-bottom:8px"><h3>Alarm summary</h3><button class="btn primary" id="ackAll">Acknowledge all</button></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Priority</th><th>State</th><th>Message</th></tr></thead><tbody id="alBody"></tbody></table></div>
+          <p class="note">ISA-18.2 life cycle: flashing rows are unacknowledged. A cleared alarm stays listed until it is acknowledged.</p>
+        </div>
+        <div><h3>Event log</h3><div class="log" id="evLog"></div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="p-io" role="tabpanel" hidden>
+      <h3>PLC tag database and Modbus map</h3>
+      <p class="lead">Values read directly from PLC-100, PLC-200 and PLC-300. Compare these with what the HMI shows if you ever suspect the HMI is lying.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>PLC</th><th>Modbus</th><th>Tag</th><th>Type</th><th>Value</th><th>Description</th></tr></thead><tbody id="ioBody"></tbody></table></div>
+    </div>
+
+    <div class="panel lab" id="p-faults" role="tabpanel" hidden>
+      <div class="two">
+        <div>
+          <h3>Equipment and process faults</h3>
+          <p class="lead">Inject a failure, then find it using the scene, the loops, the trends and the alarms.</p>
+          <div id="faultList"></div>
+          <div class="row" style="margin-top:8px"><button class="btn" id="clearFaults">Clear all faults</button><button class="btn" id="resetSim">Restart simulation</button></div>
+          <div class="mystery">
+            <h4 style="margin-top:0">Mystery fault challenge</h4>
+            <p class="note" style="margin-top:0">A random fault or attack is injected without telling you which. Run at 20× or 60×, investigate, then submit a diagnosis.</p>
+            <button class="btn primary" id="mStart" style="margin-top:8px">Inject a mystery fault</button>
+            <div id="mBox" hidden style="margin-top:10px">
+              <div class="row"><select class="inp" id="mGuess" style="flex:1;min-width:220px" aria-label="Your diagnosis"></select><button class="btn primary" id="mSubmit">Submit diagnosis</button></div>
+            </div>
+            <div class="fb" id="mFb" role="status"></div>
+          </div>
+        </div>
+        <div>
+          <h3>Cyber attacks on the SCADA network</h3>
+          <p class="lead">Water sector incidents, such as the 2021 Oldsmar, Florida intrusion, show attackers reaching chemical setpoints through remote access and flat networks.</p>
+          <div id="atkList"></div>
+          <h4>Defenses</h4>
+          <div id="defList"></div>
+          <button class="btn primary" id="restore" style="margin-top:6px">Restore PLCs from known-good backup</button>
+          <p class="note">Restoring reloads validated logic and setpoints, re-enables alarms and returns equipment to its normal state.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel learn" id="p-learn" role="tabpanel" hidden>
+      <h3>How the treatment train works</h3>
+      <p class="lead">Pretreatment (screens and grit removal) and solids processing are outside this simulator. Flow arrives screened and de-gritted; sludge leaves to solids handling.</p>
+      <details class="acc" open><summary>Primary treatment: gravity settling</summary><div class="in">
+        <p>Primary clarifiers slow the flow so heavy organic solids settle and grease floats. A rotating scraper pushes settled sludge to a center hopper, where the primary sludge pump draws it off on a timer. A well-run primary removes about 50–70% of suspended solids and 25–40% of BOD, which cuts the oxygen demand on the aeration basins.</p>
+        <div class="formula">Surface overflow rate (gpd/ft²) = flow (gpd) ÷ clarifier surface area (ft²)</div>
+        <p>Typical design is about 800–1,200 gpd/ft² at average flow. As SOR rises, particles have less time to settle and removal drops. If the sludge blanket is allowed to rise, solids carry over the weir and the sludge turns septic.</p>
+      </div></details>
+      <details class="acc"><summary>Secondary treatment: activated sludge</summary><div class="in">
+        <p>In the aeration basin, a suspension of bacteria (mixed liquor) consumes dissolved organics and, given enough oxygen and sludge age, converts ammonia to nitrate (nitrification). Blowers push air through fine-bubble diffusers. A PID loop trims blower output to hold dissolved oxygen near 2 mg/L: enough for the bacteria, without wasting energy. Aeration is often more than half of a plant’s electricity bill.</p>
+        <p>The secondary clarifier settles the biomass. Return activated sludge (RAS) pumps it back to the basin to keep the population up; waste activated sludge (WAS) removes the growth, which sets the sludge age.</p>
+        <div class="formula">SRT (days) = solids in system ÷ solids wasted per day</div>
+        <div class="formula">F/M = BOD load (lb/d) ÷ MLVSS under aeration (lb)</div>
+        <div class="formula">Solids loading (lb/d/ft²) = (Q + RAS) × MLSS × 8.34 ÷ clarifier area</div>
+        <p>Nitrifiers grow slowly, and slower still when cold, so winter operation usually needs a longer SRT. Filamentous bulking (high SVI) makes sludge settle poorly and can wash the blanket over the weirs.</p>
+      </div></details>
+      <details class="acc"><summary>Tertiary treatment: polishing and disinfection</summary><div class="in">
+        <p>Alum is dosed in proportion to flow to precipitate phosphorus, which helps prevent algae blooms downstream. Media filters catch the remaining floc and fine solids. As solids accumulate, headloss across the media rises until the PLC runs a backwash sequence: drain, air scour, backwash, then filter-to-waste rinse.</p>
+        <p>Sodium hypochlorite disinfects in a baffled contact tank. The baffles prevent short-circuiting so every parcel of water gets enough contact time. A residual analyzer feeds a PID loop that trims the flow-paced dose. Sodium bisulfite then removes the chlorine before discharge, because even 0.02 mg/L of residual chlorine is toxic to fish.</p>
+        <div class="formula">CT = chlorine residual (mg/L) × contact time (min). Higher CT means a higher log kill.</div>
+      </div></details>
+      <details class="acc"><summary>Control system and the Purdue model</summary><div class="in">
+        <div class="purdue">
+          <div><b>Level 3–5</b><span>Operations and enterprise: historian, LIMS, CMMS, business IT. Separated by a DMZ.</span></div>
+          <div><b>Level 2</b><span>SCADA server and HMI-1, plus the vendor remote-access gateway RA-1.</span></div>
+          <div><b>Level 1</b><span>PLC-100 (primary), PLC-200 (secondary), PLC-300 (tertiary). PID loops and sequences run here.</span></div>
+          <div><b>Level 0</b><span>Instruments and actuators: DO and chlorine analyzers, flow meters, pumps, blowers, valves.</span></div>
+        </div>
+        <p>Unlike a discrete manufacturing line, a treatment plant is continuous. It responds over minutes to days, and its consequences reach the environment and public health. Chemical feed setpoints are high-value targets.</p>
+      </div></details>
+      <details class="acc"><summary>Guided exercises</summary><div class="in">
+        <ol>
+          <li>At 20×, watch one full diurnal cycle. When does the lag blower start, and why?</li>
+          <li>Raise average flow to 6 MGD. What happens to SOR and primary removal? Which downstream stage feels it first?</li>
+          <li>Drop the temperature to 10 °C and wait. When ammonia climbs, fix it with the WAS pump alone. Explain why it worked.</li>
+          <li>On the DO faceplate, set Kp to 120 and Ti to 1 min. Describe the response on the Aeration trend, then retune it.</li>
+          <li>Start a storm. Track the secondary clarifier blanket and E. coli. What could an operator change before the storm arrives?</li>
+          <li>With every defense off, launch the chlorine setpoint attack. Which permit parameter fails, and how would the fish fare? Restore, enable one defense, and repeat.</li>
+          <li>Launch the remote-access hijack with the firewall on. Why does the firewall not stop it?</li>
+          <li>Complete three mystery fault challenges.</li>
+        </ol>
+      </div></details>
+      <h3 style="margin-top:16px">Glossary</h3>
+      <p class="lead">Tap a card to flip it.</p>
+      <div class="cards" id="gloss"></div>
+      <h3 style="margin-top:18px">Check your understanding</h3>
+      <div class="quiz" id="quiz"></div>
+      <div class="row"><button class="btn primary" id="qGrade">Grade quiz</button><button class="btn" id="qReset">Reset quiz</button><span class="score" id="qScore"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const root = document.documentElement;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- theme: light by default ---------- */
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('ics-wwtp-theme'); } catch (e) {}
+root.dataset.theme = savedTheme || 'light';
+const isDark = () => root.dataset.theme === 'dark';
+const updThemeBtn = () => { $('#themeBtn').textContent = isDark() ? 'Light mode' : 'Dark mode'; };
+$('#themeBtn').onclick = () => { const n = isDark() ? 'light' : 'dark'; root.dataset.theme = n; try { localStorage.setItem('ics-wwtp-theme', n); } catch (e) {} updThemeBtn(); };
+updThemeBtn();
+
+/* ---------- plant constants ---------- */
+const W = 1400, H = 530;
+const V_AB = 1.5, A_PC = 4000, A_SC = 5600, V_CCT = 0.15, BLOWER_CAP = 3500;
+const PERMIT = { bod: 10, tss: 12, nh3: 1.5, tp: 1.0, trc: 0.019, ecoli: 126 };
+const FAULTS = {
+  p110:     { name: 'Primary sludge pump P-110 failed', stage: 'primary', sym: 'The pump is commanded on its timer but moves no sludge. The primary blanket climbs, removal falls and more load reaches aeration.', fix: 'Check the pump for a ragged impeller or plugged suction, then pump the blanket down.' },
+  scraper:  { name: 'Clarifier scraper drive M-101 torque trip', stage: 'primary', sym: 'The collector stops, so sludge is not swept to the hopper. Pumping becomes ineffective and the blanket rises.', fix: 'Find the obstruction, reset the overload, and restart the drive.' },
+  blowerA:  { name: 'Lead blower B-201A tripped', stage: 'secondary', sym: 'Airflow drops. If lag auto-start is enabled, B-201B takes over; if not, DO collapses and nitrification fails.', fix: 'Reset after inspecting the motor and VFD. Keep lag auto-start enabled.' },
+  doFoul:   { name: 'DO probe AIT-201 fouled (reads high)', stage: 'secondary', sym: 'The probe reads about 1.8 mg/L above actual, so the PID loop under-aerates. Measured DO looks perfect while ammonia climbs.', fix: 'Clean and calibrate the probe; verify with a handheld meter.' },
+  diffuser: { name: 'Fine-bubble diffusers fouled', stage: 'secondary', sym: 'Oxygen transfer drops about 45%. Blowers run harder for the same DO, and on peaks they cannot keep up.', fix: 'Schedule diffuser cleaning; watch blower output and power.' },
+  p220:     { name: 'RAS pump P-220 failed', stage: 'secondary', sym: 'Sludge is no longer returned. The clarifier blanket rises fast, solids wash over the weirs and MLSS falls.', fix: 'Restore RAS quickly, using the standby pump in a real plant.' },
+  bulking:  { name: 'Filamentous bulking (SVI rising to 320)', stage: 'secondary', sym: 'Sludge settles poorly. The blanket rises even with normal RAS, and effluent TSS climbs.', fix: 'Identify the cause (low DO, low F/M, septic feed), raise RAS, and consider selective chlorination of RAS.' },
+  bwValve:  { name: 'Filter backwash valve stuck closed', stage: 'tertiary', sym: 'Backwash runs but headloss does not recover. Eventually the filter overflows and bypasses solids.', fix: 'Repair the valve actuator, then backwash manually.' },
+  cp310:    { name: 'Hypochlorite pump CP-310 lost prime', stage: 'tertiary', sym: 'The PID loop drives the pump output up, yet the residual falls toward zero. E. coli breaks through.', fix: 'Re-prime the pump and check for gas binding, which is common with hypochlorite.' },
+  bisLine:  { name: 'Bisulfite feed line plugged', stage: 'tertiary', sym: 'Dechlorination stops. Residual chlorine leaves the plant and TRC violates the permit. Downstream fish are harmed.', fix: 'Clear the line and switch to the standby pump.' }
+};
+const ATTACKS = {
+  clsp:   { name: 'Chlorine setpoint overwrite', detail: 'Modbus function 06 from 10.20.5.77 writes 8.0 mg/L to AIC-310 setpoint (40021).', path: 'net', range: true },
+  air:    { name: 'Blower shutdown command', detail: 'Modbus writes put AIC-201 in manual at 0% and stop both blowers (coils 00031–00032).', path: 'net', range: false },
+  remote: { name: 'Remote-access session hijack', detail: 'Stolen vendor credentials open a remote HMI session, suppress alarms and stop RAS pump P-220.', path: 'remote', range: false }
+};
+const DEFENSES = {
+  fw:    { name: 'IT/OT segmentation firewall FW-1', d: 'Only SCADA-1 may send Modbus/TCP to the PLCs. Blocks direct network attacks, but allows the approved vendor remote-access path.' },
+  mfa:   { name: 'Secure remote access', d: 'Multi-factor authentication plus operator approval for every vendor session through RA-1.' },
+  range: { name: 'PLC setpoint limits', d: 'Logic in PLC-300 rejects any chlorine residual setpoint outside 0.5–4.0 mg/L, whatever the source.' },
+  mon:   { name: 'Independent process monitor', d: 'Passive network and process monitoring that alarms on unusual writes, unsafe setpoints and suppressed alarms.' }
+};
+const AL = {
+  INF_HI:   ['Medium', 'Influent flow above 2× design average (wet weather)'],
+  PC_BLKT:  ['Medium', 'Primary clarifier sludge blanket high (>4 ft)'],
+  P110:     ['High', 'P-110 commanded but no discharge flow'],
+  M101:     ['High', 'Primary collector drive M-101 torque trip'],
+  DO_LO:    ['High', 'Aeration DO low (<1.0 mg/L)'],
+  DO_HI:    ['Low', 'Aeration DO high (>4.0 mg/L): wasting energy'],
+  BLW_A:    ['High', 'Blower B-201A tripped'],
+  BLW_B:    ['High', 'Blower B-201B tripped'],
+  NO_AIR:   ['High', 'No aeration air flow'],
+  RAS:      ['High', 'RAS flow low: P-220 not delivering'],
+  SC_BLKT:  ['High', 'Secondary clarifier blanket high (>6 ft)'],
+  MLSS_LO:  ['Medium', 'MLSS below 1,500 mg/L'],
+  F_HL:     ['Medium', 'Filter headloss high (>9 ft)'],
+  F_BYP:    ['High', 'Filter overflowing: solids bypassing media'],
+  BW_FAIL:  ['High', 'Backwash failed: headloss did not recover'],
+  CL_LO:    ['High', 'Chlorine residual low (<0.5 mg/L)'],
+  CL_HI:    ['Medium', 'Chlorine residual high (>4.0 mg/L)'],
+  CP310:    ['High', 'CP-310 running with no flow (FS-310)'],
+  CP320:    ['High', 'CP-320 no flow: dechlorination lost'],
+  T_ALUM:   ['Low', 'Alum tote low'],
+  T_HYPO:   ['Medium', 'Hypochlorite tote low'],
+  T_BIS:    ['Medium', 'Bisulfite tote low'],
+  V_BOD:    ['High', 'Permit: CBOD₅ above limit'],
+  V_TSS:    ['High', 'Permit: TSS above limit'],
+  V_NH3:    ['High', 'Permit: ammonia above limit'],
+  V_TP:     ['High', 'Permit: total phosphorus above limit'],
+  V_TRC:    ['High', 'Permit: total residual chlorine above limit'],
+  V_EC:     ['High', 'Permit: E. coli above limit'],
+  MON_SP:   ['High', 'Monitor: unsafe chlorine setpoint written to PLC-300'],
+  MON_AIR:  ['High', 'Monitor: blowers stopped by network command'],
+  MON_ALM:  ['High', 'Monitor: HMI alarm reporting disabled'],
+  MON_RAS:  ['High', 'Monitor: RAS stopped by remote session']
+};
+
+/* ---------- state ---------- */
+let S;
+function loop(sp, kp, ti, out) { return { mode: 'auto', sp, kp, ti, out, i: out, pv: 0, man: out }; }
+function newState() {
+  S = {
+    t: 360, inf: { pattern: 'diurnal', qavg: 4, temp: 20 }, storm: 0, slug: 0, q: 4,
+    pri: { blanket: 1.0, pumpMin: 6, scraper: true, manualPump: false, pumpCmd: false, pumpRun: false, eff: .6, sor: 1000 },
+    sec: { mlss: 2650, do: 2.0, doMeas: 2.0, bodSol: 6, nh3: 0.5, blanket: 1.1, ras: 50, was: 35, svi: 120, tox: 0, srt: 10, rasRun: true, rasStop: false },
+    air: { loop: loop(2.0, 25, 8, 78), b: { A: { cmd: true, trip: false }, B: { cmd: false, trip: false } }, lead: 'A', lagAuto: true, hiT: 0, loT: 0, airflow: 2700, forcedOff: false },
+    ter: { alum: 45, filter: { h: 2.5, sp: 7, auto: true, step: 'Filtering', stepT: 0, bwFail: false }, cl: { loop: loop(1.5, 8, 12, 20), res: 1.5, meas: 1.5, hist: [], dose: 3 }, bis: 1.6, trc: 0, hmiClSp: 1.5 },
+    totes: { alum: 85, hypo: 85, bis: 85 },
+    faults: {}, def: { fw: false, mfa: false, range: false, mon: false }, suppress: false,
+    alarms: [], events: [], trend: [], trendT: 0, comp: { tot: 0, ok: 0 }, st: null, mystery: null, packets: [], fish: 1
+  };
+  logEv('sys', 'Simulation started at 06:00. All three PLCs in RUN.');
+}
+
+/* ---------- helpers ---------- */
+const clockStr = t => { const m = Math.floor(t) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+function logEv(cat, msg) { S.events.unshift({ t: S.t, cat, msg }); if (S.events.length > 150) S.events.pop(); }
+function pid(L, pv, dt) {
+  L.pv = pv; const e = L.sp - pv;
+  if (L.mode === 'auto') {
+    const p = L.kp * e;
+    L.i = clamp(L.i + (L.kp / Math.max(0.2, L.ti)) * e * dt, -50, 150);
+    L.out = clamp(p + L.i, 0, 100);
+    if (p + L.i > 100) L.i = 100 - p; else if (p + L.i < 0) L.i = -p;
+  } else { L.out = L.man; L.i = L.out - L.kp * e; }
+}
+
+/* ---------- process model (one step = dt plant minutes) ---------- */
+function step(dt) {
+  S.t += dt;
+  const hr = (S.t / 60) % 24;
+  // influent
+  let f = S.inf.pattern === 'diurnal' ? 1 + 0.35 * Math.sin(2 * Math.PI * (hr - 9) / 24) : 1, dil = 1;
+  if (S.storm > 0) { S.storm -= dt; const k = clamp(Math.min((240 - S.storm) / 30, S.storm / 40), 0, 1); const sf = 1 + 1.4 * k; f *= sf; dil = 1 / (0.4 + 0.6 * sf); }
+  if (S.slug > 0) S.slug -= dt;
+  const Q = S.inf.qavg * f; S.q = Q;
+  const IN = { bod: 220 * dil * (S.slug > 0 ? 2.2 : 1), tss: 230 * dil, nh3: 32 * dil, tp: 6.5 * dil, ecoli: 4e6 };
+
+  // ---- primary ----
+  const P = S.pri;
+  P.sor = Q * 1e6 / A_PC;
+  P.pumpCmd = P.manualPump || ((S.t % 60) < P.pumpMin);
+  P.pumpRun = P.pumpCmd && !S.faults.p110;
+  const scrapeOk = P.scraper && !S.faults.scraper;
+  const accum = 0.005 * (Q / 4) * (IN.tss / 230);
+  const remove = P.pumpRun ? 0.06 * (scrapeOk ? 1 : 0.3) : 0;
+  P.blanket = clamp(P.blanket + (accum - remove) * dt, 0.3, 11);
+  let eff = clamp(0.68 - 0.18 * (P.sor / 1000 - 1), 0.2, 0.72);
+  if (P.blanket > 4) eff *= Math.max(0.3, 1 - (P.blanket - 4) * 0.22);
+  P.eff = eff;
+  const PE = { bod: IN.bod * (1 - 0.55 * eff), tss: IN.tss * (1 - eff), nh3: IN.nh3, tp: IN.tp * (1 - 0.25 * eff), ecoli: IN.ecoli * 0.7 };
+
+  // ---- secondary ----
+  const B = S.sec, A = S.air, T = S.inf.temp;
+  B.tox += ((S.slug > 0 ? 0.7 : 0) - B.tox) * dt / 30;
+  const r = B.ras / 100;
+  B.rasRun = !S.faults.p220 && !B.rasStop;
+  const rEff = B.rasRun ? r : 0.02;
+  B.rasFlow = rEff * Q;
+  B.srt = V_AB * r / ((1 + r) * Math.max(5, B.was) * 1.44e-3);
+  const hrt = V_AB / Q;
+  const fT = clamp(Math.pow(1.08, T - 20), 0.35, 1.5);
+  const Cs = 14.62 - 0.3898 * T + 0.006969 * T * T - 0.00005897 * T * T * T;
+  // DO loop + blowers
+  B.doMeas = B.do + (S.faults.doFoul ? 1.8 : 0) + (Math.random() - .5) * 0.04;
+  pid(A.loop, B.doMeas, dt);
+  blowers(dt);
+  const kla = A.airflow / BLOWER_CAP * 0.085 * (S.faults.diffuser ? 0.55 : 1);
+  // Monod kinetics: effluent soluble concentration set by SRT, DO and temperature
+  const fDOc = B.do / (0.2 + B.do), fDOn = B.do / (1.0 + B.do);
+  const fXn = clamp((B.mlss / (B.mlss + 400)) / 0.86, 0, 1.1);
+  const kH = 5 * fDOc * fXn * (1 - 0.6 * B.tox);
+  const denC = B.srt * (0.6 * kH - 0.06) - 1;
+  const bodT = denC > 0 ? clamp(60 * (1 + 0.06 * B.srt) / denC + 2, 2, PE.bod) : PE.bod;
+  const muN = 0.8 * fT * fDOn * (1 - B.tox) * Math.min(1, fXn + 0.1);
+  const denN = B.srt * (muN - 0.08) - 1;
+  const nh3T = denN > 0 ? clamp(0.7 * (1 + 0.08 * B.srt) / denN * clamp(Q / 4, 1, 3) + 0.1, 0.1, PE.nh3) : PE.nh3;
+  B.bodSol += (bodT - B.bodSol) * dt / 20;
+  B.nh3 += (nh3T - B.nh3) * dt / 45;
+  const qv = Q / V_AB / 1440;
+  const our = 0.7 * Math.max(0, PE.bod - B.bodSol) * qv + 4.57 * Math.max(0, PE.nh3 - B.nh3) * qv + 0.06 * (B.mlss / 3000) * fDOc;
+  B.our = our;
+  B.do = clamp(B.do + (kla * (Cs - B.do) - our) * dt, 0, Cs);
+  // biomass
+  const xT = clamp(0.9 * B.srt * (Math.max(0, PE.bod - B.bodSol) + 0.5 * PE.tss) / (hrt * (1 + 0.06 * B.srt)), 300, 9000);
+  // clarifier
+  const svi = S.faults.bulking ? 320 : 120; B.svi += (svi - B.svi) * dt / 120;
+  B.slr = (Q + B.rasFlow) * B.mlss * 8.34 / A_SC;
+  const bt = !B.rasRun ? 13 : clamp(1.2 * Math.pow(B.slr / 25, 2) * Math.pow(B.svi / 120, 1.5) * Math.pow(0.5 / Math.max(rEff, 0.02), 0.8), 0.5, 13);
+  B.blanket += (bt - B.blanket) * dt / (B.rasRun ? 40 : 70);
+  const tssSe = Math.min(3000, 6 + Math.pow(Math.max(0, B.blanket - 5), 2) * 6 + B.tox * 10);
+  let loss = Math.max(0, tssSe - 8) * qv;
+  if (rEff < r) loss += B.mlss * qv * (1 - rEff / r) * 0.8;
+  B.mlss = clamp(B.mlss + (xT - B.mlss) * dt / 600 - loss * dt, 200, 9000);
+  B.fm = PE.bod * Q / (B.mlss * V_AB);
+  const SE = { tss: tssSe, bod: B.bodSol + 0.5 * tssSe, nh3: B.nh3, tpSol: PE.tp * 0.72, ecoli: 3e4 * (1 + tssSe / 15) };
+  SE.tp = SE.tpSol + 0.025 * tssSe;
+
+  // ---- tertiary ----
+  const R = S.ter, F = R.filter, TO = S.totes;
+  const alumDose = TO.alum > 0 ? R.alum : 0;
+  TO.alum = Math.max(0, TO.alum - alumDose * Q * 0.00004 * dt);
+  const tpChem = SE.tpSol * Math.exp(-alumDose / 25) + 0.04;
+  filterSeq(dt, SE.tss, Q, alumDose);
+  let fEff = 0.78 * (alumDose > 10 ? 1 : 0.8);
+  if (F.step !== 'Filtering') fEff *= 0.7;
+  if (F.h > 10) fEff = 0;
+  const FE_tss = SE.tss * (1 - fEff);
+  // chlorine (PID trims flow-paced dose; analyzer has a sample delay)
+  const L = R.cl.loop;
+  R.cl.hist.push({ t: S.t, v: R.cl.res });
+  while (R.cl.hist.length > 2 && R.cl.hist[1].t < S.t - 8) R.cl.hist.shift();
+  R.cl.meas = R.cl.hist[0].v;
+  pid(L, R.cl.meas, dt);
+  const hypoOk = !S.faults.cp310 && TO.hypo > 0;
+  R.cl.dose = hypoOk ? L.out / 100 * 15 : 0;
+  TO.hypo = Math.max(0, TO.hypo - R.cl.dose * Q * 0.00025 * dt);
+  const demand = 0.8 + 0.12 * SE.nh3 + 0.04 * FE_tss;
+  R.cl.res += (Math.max(0, R.cl.dose - demand) - R.cl.res) * dt / 15;
+  R.ct = V_CCT / Q * 1440;
+  const logKill = 0.045 * R.cl.res * R.ct / (1 + FE_tss / 20);
+  const ecIn = SE.ecoli * (F.h > 10 ? 1 : 0.3);
+  // dechlorination
+  const bisOk = !S.faults.bisLine && TO.bis > 0;
+  R.bisDose = bisOk ? Math.min(6, R.bis * R.cl.meas) : 0;
+  TO.bis = Math.max(0, TO.bis - R.bisDose * Q * 0.0003 * dt);
+  const trcT = Math.max(0, R.cl.res - R.bisDose / 1.46) + 0.004;
+  R.trc += (trcT - R.trc) * dt / 3;
+  const FE = { bod: B.bodSol + 0.45 * FE_tss, tss: FE_tss, nh3: B.nh3, tp: tpChem + 0.025 * FE_tss, trc: R.trc, ecoli: Math.max(1, ecIn / Math.pow(10, logKill)) };
+  S.st = { IN, PE, SE, FE };
+  // compliance and fish
+  const ok = FE.bod <= PERMIT.bod && FE.tss <= PERMIT.tss && FE.nh3 <= PERMIT.nh3 && FE.tp <= PERMIT.tp && FE.trc <= PERMIT.trc && FE.ecoli <= PERMIT.ecoli;
+  S.comp.tot += dt; if (ok) S.comp.ok += dt;
+  const toxic = FE.trc > 0.05 || FE.nh3 > 6;
+  S.fish = clamp(S.fish + (toxic ? -0.006 : 0.004) * dt, 0, 1);
+  // historian
+  S.trendT += dt;
+  if (S.trendT >= 2) {
+    S.trendT = 0;
+    S.trend.push({ do: B.doMeas, doA: B.do, air: A.airflow, q: Q, pb: P.blanket, sb: B.blanket, mlss: B.mlss, nh3: FE.nh3, tss: FE.tss, tp: FE.tp, cl: R.cl.meas, trc: FE.trc, ec: Math.log10(FE.ecoli) });
+    if (S.trend.length > 720) S.trend.shift();
+  }
+  alarmsScan();
+}
+
+function blowers(dt) {
+  const A = S.air, L = A.loop, lead = A.lead, lag = lead === 'A' ? 'B' : 'A', b = A.b;
+  for (const k of ['A', 'B']) if (S.faults['blower' + k] && !b[k].trip) { b[k].trip = true; logEv('alarm', 'Blower B-201' + k + ' tripped on overload.'); }
+  if (A.forcedOff) { b.A.cmd = false; b.B.cmd = false; }
+  else {
+    b[lead].cmd = true;
+    A.hiT = L.out >= 95 ? A.hiT + dt : 0;
+    A.loT = L.out < 45 ? A.loT + dt : 0;
+    const leadOk = !b[lead].trip;
+    if (A.lagAuto) {
+      if (!leadOk && !b[lag].cmd) { b[lag].cmd = true; logEv('sys', 'Lead blower unavailable: lag blower B-201' + lag + ' auto-started.'); }
+      else if (A.hiT > 5 && !b[lag].cmd) { b[lag].cmd = true; logEv('sys', 'Lag blower B-201' + lag + ' started on high air demand.'); }
+      else if (leadOk && A.loT > 10 && b[lag].cmd) { b[lag].cmd = false; logEv('sys', 'Lag blower B-201' + lag + ' stopped on low demand.'); }
+    } else if (b[lag].cmd && leadOk) b[lag].cmd = false;
+  }
+  let n = 0; for (const k of ['A', 'B']) { b[k].run = b[k].cmd && !b[k].trip; if (b[k].run) n++; }
+  A.n = n;
+  const target = L.out / 100 * BLOWER_CAP * n;
+  A.airflow += (target - A.airflow) * Math.min(1, dt / 1.5);
+  A.kw = n ? (A.airflow / BLOWER_CAP) * 150 + n * 12 : 0;
+}
+
+function filterSeq(dt, tssIn, Q, alum) {
+  const F = S.ter.filter;
+  const seq = ['Filtering', 'Drain down', 'Air scour', 'Backwash', 'Filter to waste'];
+  const dur = { 'Drain down': 4, 'Air scour': 4, 'Backwash': 8, 'Filter to waste': 4 };
+  if (F.step === 'Filtering') {
+    F.h += 0.004 * tssIn * (Q / 4) * (alum > 0 ? 1.15 : 1) * dt;
+    if (F.auto && F.h >= F.sp) startBackwash('headloss reached ' + F.sp.toFixed(1) + ' ft');
+  } else {
+    F.stepT += dt;
+    if (F.stepT >= dur[F.step]) {
+      F.stepT = 0;
+      if (F.step === 'Backwash') {
+        if (S.faults.bwValve) { F.bwFail = true; logEv('alarm', 'Backwash complete but headloss still ' + F.h.toFixed(1) + ' ft: backwash valve did not open.'); }
+        else { F.h = 1.6; F.bwFail = false; }
+      }
+      F.step = seq[(seq.indexOf(F.step) + 1) % seq.length];
+      if (F.step === 'Filtering') logEv('sys', 'Filter F-301 returned to service.');
+    }
+  }
+  F.h = Math.min(F.h, 12);
+}
+function startBackwash(why) {
+  const F = S.ter.filter; if (F.step !== 'Filtering') return;
+  F.step = 'Drain down'; F.stepT = 0; logEv('sys', 'Filter F-301 backwash started: ' + why + '.');
+}
+
+/* ---------- alarms ---------- */
+function cond(id, active) {
+  let a = S.alarms.find(x => x.id === id && !x.done);
+  if (active) {
+    if (!a) { S.alarms.unshift({ id, p: AL[id][0], txt: AL[id][1], t: S.t, active: true, acked: false, done: false }); logEv(id.startsWith('MON') ? 'sec' : 'alarm', AL[id][1]); }
+    else if (!a.active) { a.active = true; a.acked = false; a.t = S.t; }
+  } else if (a && a.active) { a.active = false; if (a.acked) a.done = true; }
+}
+function alarmsScan() {
+  const P = S.pri, B = S.sec, A = S.air, R = S.ter, FE = S.st.FE;
+  cond('INF_HI', S.q > 2 * S.inf.qavg);
+  cond('PC_BLKT', P.blanket > 4);
+  cond('P110', P.pumpCmd && !P.pumpRun);
+  cond('M101', P.scraper && S.faults.scraper);
+  cond('DO_LO', B.doMeas < 1.0);
+  cond('DO_HI', B.doMeas > 4.0);
+  cond('BLW_A', A.b.A.trip); cond('BLW_B', A.b.B.trip);
+  cond('NO_AIR', A.airflow < 200);
+  cond('RAS', !B.rasRun);
+  cond('SC_BLKT', B.blanket > 6);
+  cond('MLSS_LO', B.mlss < 1500);
+  cond('F_HL', R.filter.h > 9);
+  cond('F_BYP', R.filter.h > 10);
+  cond('BW_FAIL', R.filter.bwFail);
+  cond('CL_LO', R.cl.meas < 0.5);
+  cond('CL_HI', R.cl.meas > 4);
+  cond('CP310', R.cl.loop.out > 1 && (S.faults.cp310 || S.totes.hypo <= 0));
+  cond('CP320', S.faults.bisLine || S.totes.bis <= 0);
+  cond('T_ALUM', S.totes.alum < 15); cond('T_HYPO', S.totes.hypo < 15); cond('T_BIS', S.totes.bis < 15);
+  cond('V_BOD', FE.bod > PERMIT.bod); cond('V_TSS', FE.tss > PERMIT.tss); cond('V_NH3', FE.nh3 > PERMIT.nh3);
+  cond('V_TP', FE.tp > PERMIT.tp); cond('V_TRC', FE.trc > PERMIT.trc); cond('V_EC', FE.ecoli > PERMIT.ecoli);
+  const m = S.def.mon;
+  cond('MON_SP', m && (R.cl.loop.sp > 4 || R.cl.loop.sp < 0.5));
+  cond('MON_AIR', m && A.forcedOff);
+  cond('MON_ALM', m && S.suppress);
+  cond('MON_RAS', m && B.rasStop);
+  S.alarms = S.alarms.filter(a => !a.done).slice(0, 60);
+}
+const visibleAlarms = () => S.alarms.filter(a => !a.done && (!S.suppress || a.id.startsWith('MON')));
+
+/* ====================================================== */
+/*                     RENDERING                           */
+/* ====================================================== */
+const cv = $('#scene'), ctx = cv.getContext('2d');
+let showTags = true, showVals = true, hover = null, selected = null, stage = 'plant';
+const STAGES = { primary: [0, 312], secondary: [316, 892], tertiary: [896, 1400] };
+function resize() { const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.width * H / W * dpr)); }
+window.addEventListener('resize', () => { resize(); sizeTrend(); if (activeTab === 'trends') drawTrend(); });
+
+function rr(x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+function hex2rgb(h) { if (h[0] !== '#') return h.match(/\d+/g).slice(0, 3).map(Number); const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mix(a, b, t) { const A = hex2rgb(a), B = hex2rgb(b); t = clamp(t, 0, 1); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',') + ')'; }
+function waterCol(tss) { return tss < 30 ? mix('#5aaed3', '#86a993', tss / 30) : mix('#86a993', '#80603c', (tss - 30) / 170); }
+function txt(s, x, y, o = {}) {
+  ctx.font = (o.w || 600) + ' ' + (o.s || 12) + "px 'Barlow Condensed','Arial Narrow',sans-serif";
+  ctx.textAlign = o.a || 'center'; ctx.textBaseline = 'middle';
+  if (o.halo) { ctx.lineWidth = 3; ctx.strokeStyle = o.halo; ctx.strokeText(s, x, y); }
+  ctx.fillStyle = o.c || '#1b2630'; ctx.fillText(s, x, y);
+}
+function tag(s, x, y, a) { if (!showTags) return; const d = isDark(); txt(s, x, y, { s: 12, a, c: d ? '#cdd6de' : '#24303b', halo: d ? 'rgba(20,26,32,.85)' : 'rgba(238,241,244,.9)' }); }
+function badge(s, x, y, bad) {
+  if (!showVals) return;
+  ctx.font = "700 12px 'Barlow Condensed','Arial Narrow',sans-serif";
+  const w = ctx.measureText(s).width + 10;
+  rr(x - w / 2, y - 9, w, 18, 4); ctx.fillStyle = bad ? '#7d0a1d' : '#14202b'; ctx.fill();
+  txt(s, x, y + .5, { s: 12, c: bad ? '#ffd2d8' : '#7dffc0', w: 700 });
+}
+function led(x, y, on, col, r = 3) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = on ? col : '#3a4148'; ctx.fill(); if (on) { ctx.save(); ctx.globalAlpha = .3; ctx.beginPath(); ctx.arc(x, y, r * 2.3, 0, Math.PI * 2); ctx.fill(); ctx.restore(); } }
+function pipe(pts, w, flowing, col, speed = 1) {
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) ctx.lineTo(p[0], p[1]);
+  ctx.strokeStyle = '#5f6871'; ctx.lineWidth = w + 2; ctx.stroke();
+  ctx.strokeStyle = isDark() ? '#8d97a1' : '#b8c0c7'; ctx.lineWidth = w; ctx.stroke();
+  if (flowing) { ctx.save(); ctx.setLineDash([5, 9]); ctx.lineDashOffset = -anim.t * 30 * speed; ctx.strokeStyle = col || 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(1.5, w / 3); ctx.stroke(); ctx.restore(); }
+}
+function concrete(d) { return d ? '#6d6a63' : '#b3afa6'; }
+function pump(x, y, on, fail, label, valTxt) {
+  const d = isDark();
+  ctx.fillStyle = '#4b545c'; ctx.fillRect(x - 22, y + 14, 44, 6);
+  rr(x - 20, y - 6, 22, 16, 3); ctx.fillStyle = '#2c5b8f'; ctx.fill();
+  for (let i = 0; i < 4; i++) { ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillRect(x - 18 + i * 5, y - 4, 2, 12); }
+  ctx.beginPath(); ctx.arc(x + 10, y + 2, 10, 0, Math.PI * 2); ctx.fillStyle = fail ? '#9b3a3a' : (d ? '#7f8a94' : '#9aa4ad'); ctx.fill();
+  ctx.save(); ctx.translate(x + 10, y + 2); ctx.rotate(on ? anim.t * 8 : 0); ctx.strokeStyle = '#eef2f5'; ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i++) { ctx.rotate(Math.PI * 2 / 3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(7, 0); ctx.stroke(); } ctx.restore();
+  led(x - 9, y - 11, on, '#3be37f', 2.6);
+  if (fail) led(x + 2, y - 11, true, '#ff3b4f', 2.6);
+  tag(label, x, y + 30);
+  if (valTxt) badge(valTxt, x, y - 24, fail);
+}
+
+const anim = { t: 0, angle1: 0, angle2: 0, bubbles: [], fish: [{ x: 1320, y: 395, v: 14 }, { x: 1365, y: 410, v: -11 }, { x: 1340, y: 425, v: 9 }] };
+
+function drawSky(d) {
+  let g = ctx.createLinearGradient(0, 0, 0, 360);
+  g.addColorStop(0, d ? '#1b2530' : '#dbe7f0'); g.addColorStop(1, d ? '#232c36' : '#eef2f5');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 360);
+}
+function drawGround(d) {
+  ctx.fillStyle = d ? '#3a3129' : '#9b8466'; ctx.fillRect(0, 360, W, 60);
+  ctx.fillStyle = d ? 'rgba(0,0,0,.18)' : 'rgba(80,60,40,.18)';
+  for (let x = 6; x < W; x += 22) for (let y = 370; y < 418; y += 14) ctx.fillRect(x + ((y / 14) % 2) * 11, y, 3, 2);
+  ctx.fillStyle = d ? '#3f5a35' : '#6fa35a'; ctx.fillRect(0, 356, W, 5);
+  // gallery
+  const g = ctx.createLinearGradient(0, 420, 0, H);
+  g.addColorStop(0, d ? '#2a3037' : '#c8cbce'); g.addColorStop(1, d ? '#20252b' : '#b2b6ba');
+  ctx.fillStyle = g; ctx.fillRect(0, 420, W, H - 420);
+  ctx.fillStyle = d ? '#15191d' : '#8f949a'; ctx.fillRect(0, 418, W, 3); ctx.fillRect(0, 512, W, 2);
+  txt('Pump, blower and chemical gallery', 10, 432, { s: 12, a: 'left', c: d ? '#97a3ae' : '#4f5b66', w: 600 });
+}
+function drawNetwork(d) {
+  ctx.strokeStyle = '#1f6fd1'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(30, 34); ctx.lineTo(1330, 34); ctx.stroke();
+  const box = (x, y, w, h, label, sub) => {
+    rr(x, y, w, h, 4); ctx.fillStyle = d ? '#3a434d' : '#4a535c'; ctx.fill();
+    txt(label, x + w / 2, y + h / 2 - (sub ? 5 : 0), { s: 13, c: '#fff' });
+    if (sub) txt(sub, x + w / 2, y + h / 2 + 8, { s: 10.5, c: '#b9c3cc', w: 500 });
+  };
+  for (const [x, l] of [[240, 'PLC-100'], [600, 'PLC-200'], [1080, 'PLC-300']]) {
+    ctx.strokeStyle = '#1f6fd1'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, 34); ctx.lineTo(x, 52); ctx.stroke();
+    box(x - 38, 52, 76, 26, l);
+    led(x + 30, 58, true, '#3be37f', 2); led(x + 30, 66, Math.floor(anim.t * 5 + x) % 2 === 0, '#ffb020', 2);
+  }
+  ctx.beginPath(); ctx.moveTo(840, 34); ctx.lineTo(840, 14); ctx.stroke();
+  box(790, 2, 100, 22, 'SCADA-1 / HMI-1');
+  // left: enterprise + remote access
+  txt('IT network and internet', 8, 12, { s: 11, a: 'left', c: d ? '#9aa6b2' : '#56626e', w: 500 });
+  ctx.strokeStyle = '#1f6fd1'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 34); ctx.lineTo(30, 34); ctx.stroke();
+  rr(70, 42, 52, 20, 3); ctx.fillStyle = d ? '#3a434d' : '#4a535c'; ctx.fill(); txt('RA-1', 96, 52, { s: 12, c: '#fff' });
+  ctx.beginPath(); ctx.moveTo(96, 34); ctx.lineTo(96, 42); ctx.stroke();
+  tag('vendor remote access', 96, 76);
+  if (S.def.fw) shield(36, 34, '#00a86b', 'FW');
+  if (S.def.mfa) shield(136, 52, '#0047AB', 'MFA');
+  // packets
+  const now = performance.now();
+  S.packets = S.packets.filter(p => now - p.t0 < 2400);
+  for (const p of S.packets) {
+    const k = Math.min(1, (now - p.t0) / 1100), path = p.path;
+    const stopAt = p.blocked ? p.stopAt : 1, kk = Math.min(k, stopAt);
+    const segs = path.length - 1, s = kk * segs, i = Math.min(segs - 1, Math.floor(s)), f = s - i;
+    const x = path[i][0] + (path[i + 1][0] - path[i][0]) * f, y = path[i][1] + (path[i + 1][1] - path[i][1]) * f;
+    ctx.fillStyle = '#ff3b4f'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.globalAlpha = .3; ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    if (k >= stopAt && p.blocked) { ctx.strokeStyle = '#00a86b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 7, y - 7); ctx.lineTo(x + 7, y + 7); ctx.moveTo(x + 7, y - 7); ctx.lineTo(x - 7, y + 7); ctx.stroke(); }
+  }
+}
+function shield(x, y, col, t) {
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, y - 13); ctx.lineTo(x + 10, y - 9); ctx.lineTo(x + 10, y + 1); ctx.quadraticCurveTo(x + 6, y + 10, x, y + 13); ctx.quadraticCurveTo(x - 6, y + 10, x - 10, y + 1); ctx.lineTo(x - 10, y - 9); ctx.closePath(); ctx.fill();
+  txt(t, x, y, { s: t.length > 2 ? 8 : 9.5, c: '#fff', w: 700 });
+}
+function drawStageBands(d) {
+  const names = { primary: 'Primary treatment', secondary: 'Secondary treatment', tertiary: 'Tertiary treatment' };
+  for (const k in STAGES) {
+    const [x0, x1] = STAGES[k], on = stage === k, hv = hover === 'band-' + k;
+    rr(x0 + 4, 92, x1 - x0 - 8, 22, 5);
+    ctx.fillStyle = on ? '#0047AB' : hv ? (d ? '#2c3a4c' : '#cfdbea') : (d ? 'rgba(255,255,255,.06)' : 'rgba(0,71,171,.07)'); ctx.fill();
+    txt(names[k], (x0 + x1) / 2, 103.5, { s: 14, c: on ? '#fff' : (d ? '#c5d4e8' : '#0047AB') });
+  }
+}
+
+function drawClarifier(o) {
+  const d = isDark(), { x0, x1, top, water, wb, hb, cx, tss, blanket, angle, sludge, id, running } = o;
+  const path = () => { ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0, wb); ctx.lineTo(cx - 14, hb - 8); ctx.lineTo(cx - 14, hb); ctx.lineTo(cx + 14, hb); ctx.lineTo(cx + 14, hb - 8); ctx.lineTo(x1, wb); ctx.lineTo(x1, top); };
+  ctx.save(); path(); ctx.closePath(); ctx.clip();
+  const g = ctx.createLinearGradient(0, water, 0, hb);
+  g.addColorStop(0, waterCol(tss * 0.6)); g.addColorStop(1, waterCol(Math.min(220, tss * 2 + 40)));
+  ctx.fillStyle = g; ctx.fillRect(x0, water, x1 - x0, hb - water);
+  const yb = hb - blanket * 15;
+  const sg = ctx.createLinearGradient(0, yb - 8, 0, yb + 14);
+  sg.addColorStop(0, 'rgba(0,0,0,0)'); sg.addColorStop(1, sludge);
+  ctx.fillStyle = sg; ctx.fillRect(x0, yb - 8, x1 - x0, 22); ctx.fillStyle = sludge; ctx.fillRect(x0, yb + 14, x1 - x0, hb - yb);
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x0, water, x1 - x0, 2);
+  // rake arm (rotating, seen in projection)
+  const c = Math.cos(angle), endX = c >= 0 ? x0 + 6 : x1 - 6, k = Math.abs(c);
+  const ax = cx + (endX - cx) * k, ay = (hb - 10) + (wb - 4 - (hb - 10)) * k;
+  ctx.strokeStyle = '#3d454c'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx, hb - 10); ctx.lineTo(ax, ay); ctx.stroke();
+  for (let i = 1; i <= 4; i++) { const px = cx + (ax - cx) * i / 4.5, py = hb - 10 + (ay - (hb - 10)) * i / 4.5; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + (c >= 0 ? 4 : -4), py + 5); ctx.stroke(); }
+  ctx.restore();
+  // walls
+  path(); ctx.strokeStyle = concrete(d); ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.fillStyle = concrete(d); ctx.fillRect(x0 - 6, top - 4, 12, 6); ctx.fillRect(x1 - 6, top - 4, 12, 6);
+  // center well + shaft
+  ctx.fillStyle = 'rgba(210,214,218,.28)'; ctx.fillRect(cx - 18, top + 4, 36, 70); ctx.strokeStyle = concrete(d); ctx.lineWidth = 2; ctx.strokeRect(cx - 18, top + 4, 36, 70);
+  ctx.strokeStyle = '#59626a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx, top - 8); ctx.lineTo(cx, hb - 10); ctx.stroke();
+  // bridge
+  ctx.strokeStyle = '#7c868f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, top - 10); ctx.lineTo(cx + 22, top - 10); ctx.moveTo(x0, top - 2); ctx.lineTo(cx + 22, top - 2);
+  for (let x = x0; x < cx + 20; x += 16) { ctx.moveTo(x, top - 10); ctx.lineTo(x + 8, top - 2); ctx.lineTo(x + 16, top - 10); } ctx.stroke();
+  rr(cx - 14, top - 30, 28, 18, 3); ctx.fillStyle = '#2c5b8f'; ctx.fill(); led(cx + 9, top - 25, running, '#3be37f', 2.4);
+  // weir + launder
+  ctx.fillStyle = concrete(d); ctx.fillRect(x1 - 16, water - 4, 12, 14);
+  ctx.fillStyle = waterCol(tss * 0.6); ctx.fillRect(x1 - 14, water - 1, 8, 8);
+  ctx.fillStyle = 'rgba(255,255,255,.7)';
+  for (let i = 0; i < 3; i++) { const yy = water + ((anim.t * 20 + i * 4) % 10); ctx.fillRect(x1 - 17, yy, 1.5, 3); }
+  tag(id, (x0 + x1) / 2, top - 40);
+}
+
+function drawPrimary(d) {
+  const P = S.pri, st = S.st;
+  // influent channel
+  ctx.fillStyle = concrete(d); ctx.fillRect(0, 196, 100, 6);
+  ctx.fillStyle = waterCol(st ? st.IN.tss : 230); ctx.fillRect(0, 182, 96, 14);
+  ctx.save(); ctx.setLineDash([8, 10]); ctx.lineDashOffset = -anim.t * 30 * (S.q / 4); ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 189); ctx.lineTo(96, 189); ctx.stroke(); ctx.restore();
+  // Parshall flume + flow transmitter
+  ctx.fillStyle = concrete(d); ctx.beginPath(); ctx.moveTo(38, 178); ctx.lineTo(48, 184); ctx.lineTo(58, 178); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#2d6ab0'; rr(36, 150, 24, 14, 3); ctx.fill(); ctx.strokeStyle = '#59626a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(48, 164); ctx.lineTo(48, 178); ctx.stroke();
+  tag('FIT-100', 48, 140);
+  badge(S.q.toFixed(2) + ' MGD', 48, 124 + 0, S.q > 2 * S.inf.qavg);
+  txt('from pretreatment', 4, 212, { s: 11, a: 'left', c: d ? '#9aa6b2' : '#56626e', w: 500 });
+  ctx.fillStyle = waterCol(st ? st.IN.tss : 230); ctx.fillRect(94, 184, 18, 8);
+  drawClarifier({ x0: 112, x1: 300, top: 166, water: 178, wb: 340, hb: 392, cx: 206, tss: st ? st.IN.tss : 230, blanket: P.blanket, angle: anim.angle1, sludge: d ? '#4a3420' : '#5a3d22', id: 'PC-101', running: P.scraper && !S.faults.scraper });
+  badge('Blanket ' + P.blanket.toFixed(1) + ' ft', 206, 300, P.blanket > 4);
+  // sludge line to P-110
+  pipe([[206, 396], [206, 470], [186, 470]], 6, P.pumpRun, 'rgba(120,80,40,.9)');
+  pump(170, 470, P.pumpRun, P.pumpCmd && !P.pumpRun, 'P-110', P.pumpCmd ? (P.pumpRun ? 'Pumping' : 'No flow') : 'Timer idle');
+  pipe([[150, 470], [40, 470], [40, 500]], 6, P.pumpRun, 'rgba(120,80,40,.9)');
+  txt('to solids handling', 50, 505, { s: 11, a: 'left', c: d ? '#9aa6b2' : '#56626e', w: 500 });
+  // primary effluent to aeration
+  pipe([[300, 188], [330, 188]], 7, true, st ? waterCol(st.PE.tss) : '#888', S.q / 4);
+}
+
+function drawAeration(d) {
+  const B = S.sec, A = S.air, x0 = 332, x1 = 640, top = 160, water = 174, bot = 344;
+  const ml = mix(mix('#a7864f', '#6f5530', (B.mlss - 1500) / 4000), '#4c4a40', clamp((0.6 - B.do) / 0.6, 0, 1));
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, top, x1 - x0, bot - top); ctx.clip();
+  const g = ctx.createLinearGradient(0, water, 0, bot); g.addColorStop(0, ml); g.addColorStop(1, mix(ml, '#3b2e1c', 0.4));
+  ctx.fillStyle = g; ctx.fillRect(x0, water, x1 - x0, bot - water);
+  // drop legs + diffusers
+  for (const x of [372, 452, 532, 612]) { ctx.fillStyle = 'rgba(180,188,195,.75)'; ctx.fillRect(x - 2, top - 4, 4, bot - top - 8); }
+  ctx.fillStyle = 'rgba(200,205,210,.7)'; ctx.fillRect(x0 + 10, bot - 10, x1 - x0 - 20, 3);
+  for (let x = x0 + 16; x < x1 - 10; x += 14) { ctx.beginPath(); ctx.ellipse(x, bot - 11, 5, 2.5, 0, Math.PI, 0); ctx.fillStyle = '#e8ecef'; ctx.fill(); }
+  // bubbles
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  for (const b of anim.bubbles) { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); }
+  // surface turbulence
+  const amp = 1 + A.airflow / 1800;
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.moveTo(x0, water);
+  for (let x = x0; x <= x1; x += 6) ctx.lineTo(x, water + Math.sin(x * 0.12 + anim.t * 5) * amp);
+  ctx.lineTo(x1, water + 4); ctx.lineTo(x0, water + 4); ctx.closePath(); ctx.fill();
+  if (B.svi > 180) { ctx.fillStyle = 'rgba(205,180,140,.9)'; for (let i = 0; i < 14; i++) { const x = x0 + 14 + i * 21 + Math.sin(anim.t + i) * 4; ctx.beginPath(); ctx.ellipse(x, water - 1, 10, 4, 0, 0, Math.PI * 2); ctx.fill(); } }
+  ctx.restore();
+  ctx.strokeStyle = concrete(d); ctx.lineWidth = 8; ctx.strokeRect(x0, top, x1 - x0, bot - top + 2);
+  // walkway + air header
+  ctx.fillStyle = '#7c868f'; ctx.fillRect(x0 - 6, top - 10, x1 - x0 + 12, 4);
+  ctx.strokeStyle = '#9aa3ab'; ctx.lineWidth = 1.5; for (let x = x0; x <= x1; x += 22) { ctx.beginPath(); ctx.moveTo(x, top - 10); ctx.lineTo(x, top - 24); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(x0 - 6, top - 24); ctx.lineTo(x1 + 6, top - 24); ctx.stroke();
+  pipe([[372, top - 2], [612, top - 2]], 6, false);
+  pipe([[322, 470], [322, top - 2], [372, top - 2]], 8, A.airflow > 100, 'rgba(255,255,255,.9)', A.airflow / 3000);
+  tag('AB-201 aeration basin', 470, top - 34);
+  // DO probe
+  ctx.strokeStyle = '#59626a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(590, top - 12); ctx.lineTo(590, 248); ctx.stroke();
+  ctx.fillStyle = '#20262c'; ctx.fillRect(586, 244, 8, 14);
+  ctx.fillStyle = '#2d6ab0'; rr(576, top - 40, 28, 18, 3); ctx.fill();
+  tag('AIT-201', 630, top - 31);
+  badge('DO ' + B.doMeas.toFixed(2), 590, top + 34, B.doMeas < 1);
+  badge('MLSS ' + Math.round(B.mlss), 470, 320, B.mlss < 1500);
+  // RAS return entering basin
+  // blowers in gallery
+  blowerSkid(380, 470, 'A'); blowerSkid(480, 470, 'B');
+  pipe([[400, 456], [400, 446], [322, 446]], 7, A.b.A.run, 'rgba(255,255,255,.9)');
+  pipe([[500, 456], [500, 446], [400, 446]], 7, A.b.B.run, 'rgba(255,255,255,.9)');
+  badge(Math.round(A.airflow) + ' scfm', 446, 432, A.airflow < 200);
+  // to secondary clarifier
+  pipe([[640, 186], [672, 186]], 7, true, ml, S.q / 4);
+}
+function blowerSkid(x, y, k) {
+  const b = S.air.b[k], d = isDark();
+  ctx.fillStyle = '#4b545c'; ctx.fillRect(x - 34, y + 22, 72, 6);
+  rr(x - 32, y - 6, 30, 24, 4); ctx.fillStyle = '#2c5b8f'; ctx.fill();
+  for (let i = 0; i < 5; i++) { ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillRect(x - 29 + i * 6, y - 3, 2, 18); }
+  rr(x, y - 10, 30, 32, 6); ctx.fillStyle = b.trip ? '#9b3a3a' : (d ? '#7f8a94' : '#a3acb4'); ctx.fill();
+  ctx.save(); ctx.translate(x + 15, y + 6); ctx.rotate(b.run ? anim.t * 10 : 0); ctx.strokeStyle = '#eef2f5'; ctx.lineWidth = 2;
+  for (let i = 0; i < 4; i++) { ctx.rotate(Math.PI / 2); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(9, 0); ctx.stroke(); } ctx.restore();
+  ctx.fillStyle = '#6c757d'; ctx.fillRect(x + 12, y - 22, 16, 12);
+  led(x - 26, y - 11, b.run, '#3be37f', 2.6); if (b.trip) led(x - 18, y - 11, true, '#ff3b4f', 2.6);
+  tag('B-201' + k + (S.air.lead === k ? ' (lead)' : ''), x, y + 38);
+}
+
+function drawSecondary(d) {
+  const B = S.sec, st = S.st;
+  const tss = st ? st.SE.tss : 8;
+  drawClarifier({ x0: 672, x1: 880, top: 166, water: 178, wb: 340, hb: 392, cx: 776, tss: Math.max(tss, 6) * 1.5, blanket: B.blanket, angle: anim.angle2, sludge: d ? '#5a4326' : '#7a5a32', id: 'SC-201', running: true });
+  badge('Blanket ' + B.blanket.toFixed(1) + ' ft', 776, 300, B.blanket > 6);
+  // RAS / WAS
+  pipe([[776, 396], [776, 470], [752, 470]], 6, B.rasRun, 'rgba(150,110,60,.95)');
+  pump(736, 470, B.rasRun, !B.rasRun, 'P-220 RAS', Math.round(B.ras) + '%');
+  pipe([[716, 470], [700, 470], [700, 494], [342, 494], [342, 336]], 6, B.rasRun, 'rgba(150,110,60,.95)', B.rasRun ? 1 : 0);
+  pipe([[776, 470], [800, 470], [800, 482], [830, 482]], 5, true, 'rgba(150,110,60,.95)', .5);
+  pump(846, 482, true, false, 'P-221 WAS', Math.round(B.was) + ' gpm');
+  pipe([[866, 482], [886, 482], [886, 506]], 5, true, 'rgba(150,110,60,.95)', .5);
+  tag('to solids', 892, 512, 'left');
+  // effluent to tertiary
+  pipe([[880, 186], [912, 186]], 7, true, st ? waterCol(st.SE.tss) : '#888', S.q / 4);
+}
+
+function drawTertiary(d) {
+  const R = S.ter, F = R.filter, st = S.st, TO = S.totes;
+  // alum injection mixer on line
+  ctx.fillStyle = '#4b545c'; ctx.fillRect(892, 178, 12, 16);
+  // filter box
+  const x0 = 914, x1 = 1040, top = 160, bot = 346;
+  const bw = F.step !== 'Filtering';
+  let wl = clamp(232 - F.h * 6.5, 166, 232);
+  if (F.step === 'Drain down') wl = 232 + (262 - 232) * clamp(F.stepT / 4, 0, 1);
+  if (F.step === 'Air scour') wl = 262;
+  if (F.step === 'Backwash') wl = 262 - (262 - 176) * clamp(F.stepT / 3, 0, 1);
+  const tssIn = st ? st.SE.tss : 8;
+  ctx.fillStyle = waterCol(F.step === 'Backwash' || F.step === 'Air scour' ? 160 : tssIn * 1.3); ctx.fillRect(x0, wl, x1 - x0, 268 - wl);
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x0, wl, x1 - x0, 2);
+  ctx.fillStyle = '#2c2c2c'; ctx.fillRect(x0, 268, x1 - x0, 24);
+  ctx.fillStyle = '#cbb27a'; ctx.fillRect(x0, 292, x1 - x0, 24);
+  ctx.fillStyle = '#8c8579'; ctx.fillRect(x0, 316, x1 - x0, 16);
+  ctx.fillStyle = '#9aa3ab'; ctx.fillRect(x0, 332, x1 - x0, bot - 332);
+  for (let x = x0 + 6; x < x1; x += 10) { ctx.fillStyle = '#5f6871'; ctx.fillRect(x, 336, 4, 3); }
+  if (F.step === 'Air scour' || F.step === 'Backwash') {
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    for (let i = 0; i < 26; i++) { const x = x0 + 8 + (i * 37) % (x1 - x0 - 16), y = 340 - ((anim.t * (F.step === 'Air scour' ? 90 : 40) + i * 23) % (340 - wl)); ctx.beginPath(); ctx.arc(x, y, 1.8, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // wash trough
+  ctx.fillStyle = concrete(d); ctx.fillRect(x0 + 40, 176, 46, 10);
+  ctx.strokeStyle = concrete(d); ctx.lineWidth = 8; ctx.strokeRect(x0, top, x1 - x0, bot - top);
+  tag('F-301 media filter', (x0 + x1) / 2, top - 22);
+  badge('Headloss ' + F.h.toFixed(1) + ' ft', (x0 + x1) / 2, 206, F.h > 9);
+  if (bw) badge(F.step, (x0 + x1) / 2, 250, F.bwFail);
+  if (F.h > 10) { ctx.fillStyle = waterCol(tssIn * 1.3); ctx.fillRect(x1 + 2, 160, 6, 30); }
+  tag('PDIT-301', x1 + 2, 362);
+  // filtered water to CCT
+  pipe([[1040, 338], [1056, 338], [1056, 200], [1072, 200]], 6, !bw || true, 'rgba(120,200,240,.9)', S.q / 4);
+  // CCT
+  const c0 = 1072, c1 = 1240, ct = 178, cb = 344, cw = 190;
+  const clTint = clamp(R.cl.res / 6, 0, 1);
+  const fc = mix(waterCol(st ? st.FE.tss : 2), '#b9d86a', clTint * 0.7);
+  ctx.fillStyle = fc; ctx.fillRect(c0, cw, c1 - c0, cb - cw);
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(c0, cw, c1 - c0, 2);
+  ctx.fillStyle = concrete(d);
+  const baffles = [1106, 1140, 1174, 1208];
+  baffles.forEach((x, i) => { if (i % 2 === 0) ctx.fillRect(x - 3, ct, 6, cb - ct - 30); else ctx.fillRect(x - 3, cw + 26, 6, cb - cw - 26); });
+  ctx.save(); ctx.setLineDash([5, 8]); ctx.lineDashOffset = -anim.t * 24 * (S.q / 4); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(1080, 205); ctx.lineTo(1088, 330); ctx.lineTo(1123, 330); ctx.lineTo(1123, 205); ctx.lineTo(1157, 205); ctx.lineTo(1157, 330); ctx.lineTo(1191, 330); ctx.lineTo(1191, 205); ctx.lineTo(1225, 205); ctx.lineTo(1228, 330); ctx.stroke(); ctx.restore();
+  ctx.strokeStyle = concrete(d); ctx.lineWidth = 8; ctx.strokeRect(c0, ct, c1 - c0, cb - ct);
+  tag('CCT-310 chlorine contact tank', 1192, ct - 9);
+  // analyzer AIT-310
+  ctx.strokeStyle = '#59626a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1123, 160); ctx.lineTo(1123, 210); ctx.stroke();
+  ctx.fillStyle = '#2d6ab0'; rr(1108, 140, 30, 18, 3); ctx.fill();
+  tag('AIT-310', 1160, 149);
+  badge('Cl₂ ' + R.cl.meas.toFixed(2), 1123, 127, R.cl.meas < 0.5 || R.cl.meas > 4);
+  // outfall + dechlor
+  pipe([[1240, 330], [1300, 330], [1300, 384]], 7, true, 'rgba(120,200,240,.9)', S.q / 4);
+  ctx.fillStyle = '#4b545c'; ctx.fillRect(1256, 322, 10, 16);
+  ctx.fillStyle = '#2d6ab0'; rr(1268, 286, 28, 16, 3); ctx.fill(); ctx.strokeStyle = '#59626a'; ctx.beginPath(); ctx.moveTo(1282, 302); ctx.lineTo(1282, 324); ctx.stroke();
+  tag('AIT-320', 1282, 276);
+  badge('TRC ' + R.trc.toFixed(3), 1282, 258, R.trc > PERMIT.trc);
+  // chemical totes in gallery
+  tote(920, 'Alum', TO.alum, '#e8e2c8', 'CP-301', alumOn(), [[958, 492], [972, 492], [972, 420], [898, 420], [898, 194]]);
+  tote(1080, 'NaOCl', TO.hypo, '#e7f2b0', 'CP-310', R.cl.dose > 0.05, [[1118, 492], [1132, 492], [1132, 420], [1078, 420], [1078, 196]], S.faults.cp310 && R.cl.loop.out > 1);
+  tote(1196, 'NaHSO₃', TO.bis, '#dfe8f5', 'CP-320', R.bisDose > 0.05, [[1234, 492], [1250, 492], [1250, 420], [1261, 420], [1261, 338]], S.faults.bisLine);
+  // river + fish
+  const rv = ctx.createLinearGradient(0, 368, 0, 440);
+  rv.addColorStop(0, d ? '#24557a' : '#4f9ccc'); rv.addColorStop(1, d ? '#163a56' : '#2f6f9e');
+  ctx.fillStyle = rv; ctx.beginPath(); ctx.moveTo(1290, 368); ctx.quadraticCurveTo(1300, 420, 1330, 418); ctx.lineTo(1400, 418); ctx.lineTo(1400, 368); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.3)'; for (let i = 0; i < 4; i++) ctx.fillRect(1310 + ((anim.t * 12 + i * 30) % 90), 374 + i * 9, 14, 1.5);
+  for (const f of anim.fish) drawFish(f);
+  tag('Receiving stream', 1350, 350);
+}
+function alumOn() { return S.ter.alum > 0 && S.totes.alum > 0; }
+function tote(x, label, lvl, liq, pumpId, on, line, fail) {
+  const d = isDark();
+  pipe(line, 3, on, 'rgba(255,255,255,.95)', 0.6);
+  ctx.fillStyle = d ? '#c8ccd0' : '#f2f3f4'; rr(x, 440, 36, 56, 3); ctx.fill();
+  ctx.fillStyle = liq; const h = 52 * clamp(lvl / 100, 0, 1); ctx.fillRect(x + 2, 494 - h, 32, h);
+  ctx.strokeStyle = '#7d868e'; ctx.lineWidth = 1.2; for (let i = 0; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(x + i * 12, 440); ctx.lineTo(x + i * 12, 496); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(x, 468); ctx.lineTo(x + 36, 468); ctx.stroke();
+  txt(label, x + 18, 432, { s: 11, c: d ? '#c9d3dc' : '#2b3742' });
+  rr(x + 40, 484, 18, 14, 3); ctx.fillStyle = fail ? '#9b3a3a' : '#4a6f99'; ctx.fill();
+  led(x + 49, 479, on, '#3be37f', 2.2);
+  tag(pumpId, x + 49, 507);
+}
+function drawFish(f) {
+  const dead = S.fish < 0.35, sick = S.fish < 0.75;
+  ctx.save();
+  if (dead) { ctx.translate(f.x, 371); ctx.scale(1, -1); }
+  else ctx.translate(f.x, f.y);
+  if (f.v < 0) ctx.scale(-1, 1);
+  const col = dead ? '#a9aeb2' : sick ? '#c8b46a' : '#f2a33a';
+  ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(0, 0, 9, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-14, -5); ctx.lineTo(-14, 5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#1b1b1b'; ctx.beginPath(); ctx.arc(5, -1, 1.2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+const DEVICES = [
+  { id: 'fit100', stage: 'plant', x: 30, y: 116, w: 40, h: 70, name: 'Influent flow meter FIT-100 (Parshall flume)', lvl: 'Level 0', addr: 'PLC-100 AI 30001', desc: 'An ultrasonic level sensor over a Parshall flume converts water depth to flow. Flow paces chemical feeds and drives many alarms.', val: () => S.q.toFixed(2) + ' MGD' },
+  { id: 'pc101', stage: 'primary', x: 112, y: 150, w: 188, h: 246, name: 'Primary clarifier PC-101', lvl: 'Level 0 process', addr: 'Area 4,000 ft²', desc: 'Quiescent settling removes heavy organic solids. A rotating scraper sweeps sludge to the center hopper.', val: () => 'SOR ' + Math.round(S.pri.sor) + ' gpd/ft², TSS removal ' + Math.round(S.pri.eff * 100) + '%, blanket ' + S.pri.blanket.toFixed(1) + ' ft' },
+  { id: 'm101', stage: 'primary', x: 190, y: 132, w: 32, h: 22, name: 'Collector drive M-101', lvl: 'Level 0', addr: 'PLC-100 DO 00011, torque switch DI 10012', desc: 'A slow gearmotor turns the scraper arms. A torque switch trips the drive if the arms hit an obstruction or heavy sludge.', val: () => S.pri.scraper && !S.faults.scraper ? 'Running' : (S.faults.scraper ? 'Tripped on torque' : 'Stopped by operator') },
+  { id: 'p110', stage: 'primary', x: 146, y: 452, w: 50, h: 40, name: 'Primary sludge pump P-110', lvl: 'Level 0', addr: 'PLC-100 DO 00012, flow switch DI 10013', desc: 'A progressive cavity pump that draws thickened sludge from the hopper on a timer and sends it to solids handling.', val: () => S.pri.pumpCmd ? (S.pri.pumpRun ? 'Pumping' : 'Commanded, no flow') : 'Off (timer)' },
+  { id: 'ab201', stage: 'secondary', x: 332, y: 160, w: 308, h: 186, name: 'Aeration basin AB-201', lvl: 'Level 0 process', addr: 'Volume 1.5 MG', desc: 'Activated sludge bacteria consume organics and nitrify ammonia. Fine-bubble diffusers on the floor supply oxygen and keep the mixed liquor suspended.', val: () => 'MLSS ' + Math.round(S.sec.mlss) + ' mg/L, DO actual ' + S.sec.do.toFixed(2) + ' mg/L, OUR ' + (S.sec.our * 60).toFixed(0) + ' mg/L/h' },
+  { id: 'ait201', stage: 'secondary', x: 572, y: 116, w: 36, h: 146, name: 'DO analyzer AIT-201', lvl: 'Level 0', addr: 'PLC-200 AI 30011 (AIC-201 PV)', desc: 'An optical luminescent DO probe. It is the process variable for the DO PID loop, so if it reads wrong, the PLC confidently does the wrong thing.', val: () => 'Reads ' + S.sec.doMeas.toFixed(2) + ' mg/L' },
+  { id: 'blowerA', stage: 'secondary', x: 346, y: 448, w: 66, h: 60, name: 'Aeration blower B-201A', lvl: 'Level 0', addr: 'PLC-200 DO 00031, VFD speed HR 40031', desc: 'A multistage centrifugal blower on a VFD. The DO loop output sets speed. Aeration can be half of plant energy use.', val: () => bl('A') },
+  { id: 'blowerB', stage: 'secondary', x: 446, y: 448, w: 66, h: 60, name: 'Aeration blower B-201B', lvl: 'Level 0', addr: 'PLC-200 DO 00032, VFD speed HR 40032', desc: 'The lag or standby blower. Lead/lag logic starts it on high demand or when the lead trips.', val: () => bl('B') },
+  { id: 'sc201', stage: 'secondary', x: 672, y: 150, w: 208, h: 246, name: 'Secondary clarifier SC-201', lvl: 'Level 0 process', addr: 'Area 5,600 ft²', desc: 'Settles the biomass so clear water flows over the weirs. The blanket depth is the key indicator of clarifier health.', val: () => 'Blanket ' + S.sec.blanket.toFixed(1) + ' ft, solids loading ' + S.sec.slr.toFixed(1) + ' lb/d/ft², SVI ' + Math.round(S.sec.svi) },
+  { id: 'p220', stage: 'secondary', x: 712, y: 452, w: 50, h: 40, name: 'RAS pump P-220', lvl: 'Level 0', addr: 'PLC-200 DO 00035, flow FIT-220 AI 30015', desc: 'Returns settled sludge to the aeration basin, paced as a percentage of influent flow.', val: () => S.sec.rasRun ? Math.round(S.sec.rasFlow * 694) + ' gpm' : 'Not running' },
+  { id: 'p221', stage: 'secondary', x: 822, y: 464, w: 50, h: 40, name: 'WAS pump P-221', lvl: 'Level 0', addr: 'PLC-200 HR 40036', desc: 'Removes excess biomass. The wasting rate sets the sludge age (SRT).', val: () => Math.round(S.sec.was) + ' gpm, SRT ' + S.sec.srt.toFixed(1) + ' days' },
+  { id: 'f301', stage: 'tertiary', x: 914, y: 150, w: 126, h: 196, name: 'Media filter F-301', lvl: 'Level 0 process', addr: 'PLC-300, headloss PDIT-301 AI 30021', desc: 'Dual media (anthracite over sand) catches floc and fine solids. Rising headloss triggers an automatic backwash sequence.', val: () => S.ter.filter.step + ', headloss ' + S.ter.filter.h.toFixed(1) + ' ft' },
+  { id: 'cct', stage: 'tertiary', x: 1072, y: 178, w: 168, h: 166, name: 'Chlorine contact tank CCT-310', lvl: 'Level 0 process', addr: 'Volume 0.15 MG', desc: 'Serpentine baffles force plug flow so every parcel gets full contact time.', val: () => 'Contact time ' + Math.round(S.ter.ct) + ' min, residual ' + S.ter.cl.res.toFixed(2) + ' mg/L' },
+  { id: 'ait310', stage: 'tertiary', x: 1104, y: 124, w: 38, h: 40, name: 'Chlorine residual analyzer AIT-310', lvl: 'Level 0', addr: 'PLC-300 AI 30025 (AIC-310 PV)', desc: 'An amperometric analyzer sampling partway down the tank. The sample line adds about 8 minutes of dead time, which makes tuning harder.', val: () => S.ter.cl.meas.toFixed(2) + ' mg/L' },
+  { id: 'ait320', stage: 'tertiary', x: 1264, y: 250, w: 40, h: 56, name: 'Final effluent TRC analyzer AIT-320', lvl: 'Level 0', addr: 'PLC-300 AI 30027', desc: 'Confirms chlorine has been removed before discharge. The permit limit is 0.019 mg/L.', val: () => S.ter.trc.toFixed(3) + ' mg/L' },
+  { id: 'cp301', stage: 'tertiary', x: 916, y: 428, w: 66, h: 80, name: 'Alum tote and metering pump CP-301', lvl: 'Level 0', addr: 'PLC-300 HR 40041 (dose)', desc: 'Flow-paced alum precipitates phosphate as aluminum phosphate floc ahead of the filter.', val: () => S.ter.alum + ' mg/L, tote ' + Math.round(S.totes.alum) + '%' },
+  { id: 'cp310', stage: 'tertiary', x: 1076, y: 428, w: 66, h: 80, name: 'Hypochlorite tote and pump CP-310', lvl: 'Level 0', addr: 'PLC-300 HR 40022 (speed), FS-310 DI 10031', desc: 'Doses sodium hypochlorite. The output combines a flow-paced feed with residual trim from AIC-310.', val: () => 'Dose ' + S.ter.cl.dose.toFixed(2) + ' mg/L, tote ' + Math.round(S.totes.hypo) + '%' },
+  { id: 'cp320', stage: 'tertiary', x: 1192, y: 428, w: 66, h: 80, name: 'Bisulfite tote and pump CP-320', lvl: 'Level 0', addr: 'PLC-300 HR 40026 (ratio)', desc: 'Doses sodium bisulfite in ratio to measured chlorine to dechlorinate before discharge.', val: () => 'Dose ' + S.ter.bisDose.toFixed(2) + ' mg/L, tote ' + Math.round(S.totes.bis) + '%' },
+  { id: 'river', stage: 'tertiary', x: 1290, y: 362, w: 110, h: 58, name: 'Receiving stream', lvl: 'Environment', addr: 'NPDES outfall 001', desc: 'Everything the plant fails to remove ends up here. Ammonia and residual chlorine are acutely toxic to fish.', val: () => S.fish > 0.75 ? 'Fish healthy' : S.fish > 0.35 ? 'Fish stressed' : 'Fish kill in progress' },
+  { id: 'plc', stage: 'plant', x: 120, y: 50, w: 1000, h: 30, name: 'PLCs and SCADA network', lvl: 'Levels 1–2', addr: 'PLC-100 10.30.1.10, PLC-200 .20, PLC-300 .30, SCADA-1 10.30.2.5', desc: 'Three PLCs, one per treatment area, polled by SCADA-1 over Modbus/TCP. Modbus has no authentication.', val: () => (S.def.fw ? 'FW-1 active' : 'Flat network, no FW-1') + (S.def.mfa ? ', remote access needs MFA' : ', vendor access with password only') }
+];
+function bl(k) { const b = S.air.b[k]; return b.trip ? 'Tripped' : b.run ? 'Running, ' + Math.round(S.air.loop.out) + '% speed' : 'Standby'; }
+
+function draw() {
+  const d = isDark();
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  drawSky(d); drawGround(d); drawNetwork(d); drawStageBands(d);
+  drawPrimary(d); drawAeration(d); drawSecondary(d); drawTertiary(d);
+  if (stage !== 'plant') {
+    ctx.fillStyle = d ? 'rgba(20,26,32,.55)' : 'rgba(225,229,233,.6)';
+    for (const k in STAGES) if (k !== stage) { const [a, b] = STAGES[k]; ctx.fillRect(a, 118, b - a, H - 118); }
+  }
+  for (const id of [hover, selected]) {
+    const dv = DEVICES.find(x => x.id === id); if (!dv) continue;
+    ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = id === selected ? '#00a86b' : '#0047AB'; ctx.lineWidth = 2;
+    rr(dv.x - 3, dv.y - 3, dv.w + 6, dv.h + 6, 5); ctx.stroke(); ctx.restore();
+  }
+}
+function animate(rdt) {
+  anim.t += rdt;
+  const sp = simSpeed > 0 ? 1 : 0;
+  if (S.pri.scraper && !S.faults.scraper) anim.angle1 += rdt * 0.5 * sp;
+  anim.angle2 += rdt * 0.4 * sp;
+  // bubbles
+  const rate = S.air.airflow / 3500 * 160 * rdt * sp * (S.faults.diffuser ? 0.6 : 1);
+  for (let i = 0; i < rate; i++) if (anim.bubbles.length < 320) anim.bubbles.push({ x: 344 + Math.random() * 286, y: 332, r: 1 + Math.random() * 1.8, v: 40 + Math.random() * 40 });
+  for (const b of anim.bubbles) { b.y -= b.v * rdt * Math.max(sp, .2); b.x += Math.sin(b.y * .1) * .3; }
+  anim.bubbles = anim.bubbles.filter(b => b.y > 176);
+  for (const f of anim.fish) { if (S.fish >= 0.35) { f.x += f.v * rdt; if (f.x > 1390 || f.x < 1312) f.v *= -1; f.x = clamp(f.x, 1312, 1390); } }
+}
+
+function hit(e) {
+  const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+  if (y >= 92 && y <= 114) for (const k in STAGES) if (x >= STAGES[k][0] && x <= STAGES[k][1]) return 'band-' + k;
+  const c = DEVICES.filter(dv => x >= dv.x && x <= dv.x + dv.w && y >= dv.y && y <= dv.y + dv.h).sort((a, b) => a.w * a.h - b.w * b.h);
+  return c[0] ? c[0].id : null;
+}
+cv.addEventListener('mousemove', e => { hover = hit(e); cv.style.cursor = hover ? 'pointer' : 'default'; });
+cv.addEventListener('mouseleave', () => hover = null);
+cv.addEventListener('click', e => {
+  const h = hit(e);
+  if (h && h.startsWith('band-')) { setStage(h.slice(5)); return; }
+  selected = h; renderInspector();
+  const dv = DEVICES.find(x => x.id === h); if (dv && dv.stage !== 'plant' && dv.stage !== stage) setStage(dv.stage);
+});
+function renderInspector() {
+  const el = $('#inspector'), dv = DEVICES.find(x => x.id === selected);
+  if (!dv) { el.className = 'card inspector empty'; el.textContent = 'Click a tank, pump or instrument in the scene to see its tag, Purdue level, PLC address and live value.'; return; }
+  el.className = 'card inspector';
+  el.innerHTML = `<h3>${dv.name}</h3><div class="meta">${dv.lvl}. ${dv.addr}</div><p>${dv.desc}</p><div class="live" id="insLive"></div>`;
+  updInspector();
+}
+function updInspector() { const dv = DEVICES.find(x => x.id === selected), l = $('#insLive'); if (dv && l) l.textContent = 'Live: ' + dv.val(); }
+
+/* ---------- stage navigation ---------- */
+const STAGE_INFO = {
+  plant: { h: 'Whole plant', hmi: ['Plant overview', 'SCADA HMI-1. Writes go to the PLCs over Modbus/TCP.'], p: 'Screened, de-gritted wastewater enters on the left and leaves as clean, disinfected effluent on the right. Water color tells the story: brown in, clear blue out.', w: ['The permit bar under the scene: every value should stay green.', 'Influent flow swings through the day (diurnal pattern), peaking mid-afternoon.', 'Select a stage above, or click a stage label in the scene, to open its controls.'], m: () => [['Flow', S.q.toFixed(2) + ' MGD'], ['Influent BOD', Math.round(S.st.IN.bod) + ' mg/L'], ['Influent TSS', Math.round(S.st.IN.tss) + ' mg/L'], ['Temperature', S.inf.temp + ' °C']] },
+  primary: { h: 'Primary treatment', hmi: ['Primary treatment', 'PLC-100: clarifier drive and sludge pumping.'], p: 'Gravity does the work. Slowing the flow lets heavy organic solids settle to the floor, where the scraper pushes them into the hopper for the sludge pump.', w: ['Surface overflow rate: higher flow means less settling time and lower removal.', 'The sludge blanket: keep it low by pumping often enough.', 'Primary removal reduces the oxygen the aeration basin has to supply.'], m: () => [['SOR', Math.round(S.pri.sor) + ' gpd/ft²'], ['TSS removed', Math.round(S.pri.eff * 100) + '%'], ['BOD removed', Math.round(S.pri.eff * 55) + '%'], ['Blanket', S.pri.blanket.toFixed(1) + ' ft']] },
+  secondary: { h: 'Secondary treatment', hmi: ['Secondary treatment', 'PLC-200: DO control, blowers, RAS and WAS.'], p: 'Activated sludge bacteria eat dissolved organics and convert ammonia to nitrate. The DO loop meters just enough air, and the clarifier returns the biomass so the population stays strong.', w: ['DO near 2 mg/L: lower starves nitrifiers, higher wastes blower power.', 'SRT (sludge age) set by the WAS pump, especially in cold water.', 'Clarifier blanket depth: rising blankets mean solids will soon wash out.'], m: () => [['DO', S.sec.doMeas.toFixed(2) + ' mg/L'], ['MLSS', Math.round(S.sec.mlss) + ' mg/L'], ['SRT', S.sec.srt.toFixed(1) + ' d'], ['F/M', S.sec.fm.toFixed(2)], ['NH₃ out', S.sec.nh3.toFixed(2) + ' mg/L']] },
+  tertiary: { h: 'Tertiary treatment', hmi: ['Tertiary treatment', 'PLC-300: chemical feed, filter sequence, disinfection.'], p: 'Polishing and protection of public health. Alum binds phosphorus, the filter catches what the clarifier missed, chlorine kills pathogens, and bisulfite removes the chlorine before the stream.', w: ['Filter headloss climbing toward the backwash setpoint.', 'Chlorine residual and contact time (CT) against E. coli.', 'TRC at the outfall: it must be essentially zero to protect fish.'], m: () => [['Headloss', S.ter.filter.h.toFixed(1) + ' ft'], ['Cl₂ residual', S.ter.cl.meas.toFixed(2) + ' mg/L'], ['Contact time', Math.round(S.ter.ct) + ' min'], ['CT', (S.ter.cl.res * S.ter.ct).toFixed(0) + ' mg·min/L'], ['TRC', S.ter.trc.toFixed(3)]] }
+};
+function setStage(s) {
+  stage = s;
+  $$('.stagenav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.stage === s));
+  $$('.stagepanel').forEach(p => p.hidden = p.dataset.panel !== s);
+  const I = STAGE_INFO[s];
+  $('#hmiTitle').textContent = I.hmi[0]; $('#hmiSub').textContent = I.hmi[1];
+  $('#about').innerHTML = `<h3>${I.h}</h3><p>${I.p}</p><ul>${I.w.map(x => `<li>${x}</li>`).join('')}</ul><div class="metrics" id="aboutM"></div>`;
+  updAbout();
+}
+function updAbout() { const el = $('#aboutM'); if (!el || !S.st) return; el.innerHTML = STAGE_INFO[stage].m().map(([k, v]) => `<span><i>${k}</i>${v}</span>`).join(''); }
+$$('.stagenav button').forEach(b => b.onclick = () => setStage(b.dataset.stage));
+
+/* ---------- faceplates ---------- */
+function faceplate(el, key, title, unit, spMin, spMax, spStep, final) {
+  el.innerHTML = `<div class="fp"><div class="hd"><b>${title}</b><span>${final}</span></div>
+    <div class="vals"><div><div class="k">PV</div><div class="v" data-pv></div></div><div><div class="k">SP</div><div class="v" data-sp></div></div><div><div class="k">Output</div><div class="v" data-out></div></div></div>
+    <div class="bar"><i data-bar></i></div>
+    <div class="ctl" style="margin-bottom:6px"><label>Setpoint (${unit})</label><span></span><input type="range" data-spr min="${spMin}" max="${spMax}" step="${spStep}"></div>
+    <div class="seg" data-mode><button data-v="auto" style="flex:1">Auto</button><button data-v="manual" style="flex:1">Manual</button></div>
+    <div class="ctl" style="margin:8px 0 0"><label>Manual output (%)</label><span></span><input type="range" data-man min="0" max="100" step="1"></div>
+    <div class="tune"><label>Gain Kp (% per ${unit})<input type="number" data-kp min="0.5" max="300" step="0.5"></label><label>Integral time Ti (min)<input type="number" data-ti min="0.2" max="120" step="0.2"></label></div></div>`;
+  const L = () => key === 'do' ? S.air.loop : S.ter.cl.loop;
+  el.querySelector('[data-spr]').oninput = e => { L().sp = +e.target.value; if (key === 'cl') S.ter.hmiClSp = +e.target.value; };
+  el.querySelector('[data-spr]').onchange = e => logEv('op', title + ' setpoint changed to ' + e.target.value + ' ' + unit + '.');
+  el.querySelectorAll('[data-mode] button').forEach(b => b.onclick = () => { const l = L(); if (l.mode === b.dataset.v) return; if (b.dataset.v === 'manual') l.man = Math.round(l.out); l.mode = b.dataset.v; logEv('op', title + ' switched to ' + b.dataset.v + '.'); });
+  el.querySelector('[data-man]').oninput = e => { L().man = +e.target.value; };
+  el.querySelector('[data-kp]').onchange = e => { L().kp = clamp(+e.target.value || 1, 0.5, 300); logEv('op', title + ' Kp set to ' + L().kp + '.'); };
+  el.querySelector('[data-ti]').onchange = e => { L().ti = clamp(+e.target.value || 1, 0.2, 120); logEv('op', title + ' Ti set to ' + L().ti + ' min.'); };
+  el._upd = () => {
+    const l = L(), dp = key === 'do' ? 2 : 2;
+    el.querySelector('[data-pv]').textContent = l.pv.toFixed(dp);
+    el.querySelector('[data-sp]').textContent = l.sp.toFixed(1);
+    el.querySelector('[data-sp]').style.color = (key === 'cl' && (l.sp > 4 || l.sp < 0.5)) ? 'var(--red)' : '';
+    el.querySelector('[data-out]').textContent = Math.round(l.out) + '%';
+    el.querySelector('[data-bar]').style.width = l.out + '%';
+    const spr = el.querySelector('[data-spr]'); if (document.activeElement !== spr) spr.value = l.sp;
+    el.querySelectorAll('[data-mode] button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === l.mode));
+    const man = el.querySelector('[data-man]'); man.disabled = l.mode !== 'manual'; if (document.activeElement !== man) man.value = l.mode === 'manual' ? l.man : Math.round(l.out);
+    const kp = el.querySelector('[data-kp]'), ti = el.querySelector('[data-ti]');
+    if (document.activeElement !== kp) kp.value = l.kp; if (document.activeElement !== ti) ti.value = l.ti;
+  };
+}
+faceplate($('#fpDO'), 'do', 'AIC-201 dissolved oxygen', 'mg/L', 0.5, 4, 0.1, 'to blower VFDs');
+faceplate($('#fpCL'), 'cl', 'AIC-310 chlorine residual', 'mg/L', 0.5, 4, 0.1, 'trims CP-310');
+
+/* ---------- other controls ---------- */
+const bindRange = (id, out, fn, fmt) => { const el = $(id); el.oninput = () => { fn(+el.value); $(out).textContent = fmt(+el.value); }; };
+$$('#pattern button').forEach(b => b.onclick = () => { S.inf.pattern = b.dataset.v; $$('#pattern button').forEach(x => x.setAttribute('aria-pressed', x === b)); logEv('op', 'Influent pattern set to ' + b.dataset.v + '.'); });
+bindRange('#qavg', '#oQ', v => S.inf.qavg = v, v => v.toFixed(1) + ' MGD');
+bindRange('#temp', '#oT', v => S.inf.temp = v, v => v + ' °C');
+$('#storm').onclick = () => { S.storm = 240; logEv('sys', 'Wet-weather event: storm flow arriving over the next 30 minutes.'); };
+$('#slug').onclick = () => { S.slug = 120; logEv('sys', 'Industrial slug load: high-strength, inhibitory discharge entering the plant.'); };
+bindRange('#pmin', '#oPmin', v => S.pri.pumpMin = v, v => v + ' min');
+const pn = $('#pumpNow');
+pn.addEventListener('pointerdown', e => { e.preventDefault(); S.pri.manualPump = true; });
+['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => pn.addEventListener(ev, () => S.pri.manualPump = false));
+$('#scraperBtn').onclick = () => { S.pri.scraper = !S.pri.scraper; logEv('op', 'Collector drive M-101 ' + (S.pri.scraper ? 'started.' : 'stopped.')); };
+$$('[data-reset]').forEach(b => b.onclick = () => { const k = b.dataset.reset; if (S.faults['blower' + k]) { logEv('op', 'Reset of B-201' + k + ' failed: fault still present.'); return; } S.air.b[k].trip = false; logEv('op', 'Blower B-201' + k + ' trip reset.'); });
+$$('#leadSel button').forEach(b => b.onclick = () => { S.air.lead = b.dataset.v; $$('#leadSel button').forEach(x => x.setAttribute('aria-pressed', x === b)); logEv('op', 'Lead blower set to B-201' + b.dataset.v + '.'); });
+$('#lagAuto').onchange = e => { S.air.lagAuto = e.target.checked; logEv('op', 'Lag blower auto-start ' + (e.target.checked ? 'enabled.' : 'disabled.')); };
+bindRange('#ras', '#oRas', v => S.sec.ras = v, v => v + '%');
+bindRange('#was', '#oWas', v => S.sec.was = v, v => v + ' gpm');
+bindRange('#alum', '#oAlum', v => S.ter.alum = v, v => v + ' mg/L');
+bindRange('#bwsp', '#oBw', v => S.ter.filter.sp = v, v => v.toFixed(1) + ' ft');
+$('#bwAuto').onchange = e => { S.ter.filter.auto = e.target.checked; logEv('op', 'Automatic backwash ' + (e.target.checked ? 'enabled.' : 'disabled.')); };
+$('#bwNow').onclick = () => startBackwash('operator request');
+bindRange('#bis', '#oBis', v => S.ter.bis = v, v => v.toFixed(2) + ' : 1');
+$$('[data-refill]').forEach(b => b.onclick = () => { S.totes[b.dataset.refill] = 100; logEv('op', 'Chemical tote refilled: ' + b.dataset.refill + '.'); });
+let simSpeed = 5;
+$$('#simSpeed button').forEach(b => b.onclick = () => { simSpeed = +b.dataset.v; $$('#simSpeed button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+$('#showTags').onchange = e => showTags = e.target.checked;
+$('#showVals').onchange = e => showVals = e.target.checked;
+function syncControls() {
+  $('#qavg').value = S.inf.qavg; $('#oQ').textContent = S.inf.qavg.toFixed(1) + ' MGD';
+  $('#temp').value = S.inf.temp; $('#oT').textContent = S.inf.temp + ' °C';
+  $('#pmin').value = S.pri.pumpMin; $('#oPmin').textContent = S.pri.pumpMin + ' min';
+  $('#ras').value = S.sec.ras; $('#oRas').textContent = S.sec.ras + '%';
+  $('#was').value = S.sec.was; $('#oWas').textContent = S.sec.was + ' gpm';
+  $('#alum').value = S.ter.alum; $('#oAlum').textContent = S.ter.alum + ' mg/L';
+  $('#bwsp').value = S.ter.filter.sp; $('#oBw').textContent = S.ter.filter.sp.toFixed(1) + ' ft';
+  $('#bis').value = S.ter.bis; $('#oBis').textContent = S.ter.bis.toFixed(2) + ' : 1';
+  $('#bwAuto').checked = S.ter.filter.auto; $('#lagAuto').checked = S.air.lagAuto;
+  $$('#pattern button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === S.inf.pattern));
+  $$('#leadSel button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === S.air.lead));
+}
+
+/* ---------- tabs ---------- */
+let activeTab = 'loops';
+$$('[role=tab]').forEach(t => t.onclick = () => {
+  activeTab = t.dataset.tab;
+  $$('[role=tab]').forEach(x => x.setAttribute('aria-selected', x === t));
+  $$('[role=tabpanel]').forEach(p => p.hidden = p.id !== 'p-' + activeTab);
+  if (activeTab === 'trends') { sizeTrend(); drawTrend(); }
+  updTabs();
+});
+
+/* ---------- control loops tab ---------- */
+function blk(t, v, cls) { return `<div class="blk ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div></div>`; }
+const arr = '<span class="arr"></span>';
+function updLoops() {
+  const A = S.air, L = A.loop, B = S.sec, R = S.ter, CL = R.cl.loop, F = R.filter, P = S.pri;
+  const doBad = Math.abs(L.sp - L.pv) > 0.6;
+  const seq = ['Filtering', 'Drain down', 'Air scour', 'Backwash', 'Filter to waste'];
+  $('#loopsBox').innerHTML = `
+  <div class="loop"><h4>AIC-201 dissolved oxygen (PLC-200)</h4><p>PI control. The DO probe is the process variable, the blower VFD speed is the output. Lead/lag logic adds the second blower when output stays above 95% for 5 minutes.</p>
+    <div class="chain">${blk('Setpoint', L.sp.toFixed(1) + ' mg/L')}${arr}${blk('Error', (L.sp - L.pv).toFixed(2), doBad ? 'bad' : '')}${arr}${blk('PI controller (' + L.mode + ')', Math.round(L.out) + '%', 'act')}${arr}${blk('Blowers running', A.n + ' of 2', A.n ? 'act' : 'bad')}${arr}${blk('Air to diffusers', Math.round(A.airflow) + ' scfm', A.airflow > 200 ? 'act' : 'bad')}${arr}${blk('Basin DO (actual)', B.do.toFixed(2) + ' mg/L', B.do < 1 ? 'bad' : '')}${arr}${blk('AIT-201 reads', B.doMeas.toFixed(2) + ' mg/L', S.faults.doFoul ? 'bad' : '')}<div class="fbk"><span>feedback: measured DO</span></div></div></div>
+  <div class="loop"><h4>AIC-310 chlorine residual (PLC-300)</h4><p>Flow-paced hypochlorite feed with PI residual trim. The analyzer sample line adds about 8 minutes of dead time, so aggressive tuning oscillates.</p>
+    <div class="chain">${blk('Setpoint', CL.sp.toFixed(1) + ' mg/L', CL.sp > 4 ? 'bad' : '')}${arr}${blk('PI controller (' + CL.mode + ')', Math.round(CL.out) + '%', 'act')}${arr}${blk('CP-310 dose', R.cl.dose.toFixed(2) + ' mg/L', R.cl.dose > 0.05 ? 'act' : 'bad')}${arr}${blk('Contact tank residual', R.cl.res.toFixed(2) + ' mg/L')}${arr}${blk('Sample delay', '8 min')}${arr}${blk('AIT-310 reads', R.cl.meas.toFixed(2) + ' mg/L', R.cl.meas < 0.5 ? 'bad' : '')}<div class="fbk"><span>feedback: measured residual</span></div></div></div>
+  <div class="loop"><h4>FFC-320 dechlorination ratio (PLC-300)</h4><p>Feedforward ratio control: bisulfite dose = ratio × measured chlorine. No feedback from the outfall; AIT-320 only alarms.</p>
+    <div class="chain">${blk('AIT-310 residual', R.cl.meas.toFixed(2) + ' mg/L')}${arr}${blk('× Ratio', R.bis.toFixed(2))}${arr}${blk('CP-320 dose', R.bisDose.toFixed(2) + ' mg/L', R.bisDose > 0.05 ? 'act' : 'bad')}${arr}${blk('Final TRC (AIT-320)', R.trc.toFixed(3) + ' mg/L', R.trc > PERMIT.trc ? 'bad' : 'act')}</div></div>
+  <div class="loop"><h4>F-301 backwash sequence (PLC-300)</h4><p>Starts automatically at ${F.sp.toFixed(1)} ft of headloss${F.auto ? '' : ' (automatic start is disabled)'}. Current headloss ${F.h.toFixed(1)} ft.</p>
+    <div class="steps">${seq.map(s => `<span class="${s === F.step ? 'on' : ''}">${s}</span>`).join('')}</div></div>
+  <div class="loop"><h4>P-110 primary sludge timer (PLC-100)</h4><p>Runs the first ${P.pumpMin} minutes of every hour. Minute ${Math.floor(S.t % 60)} of this hour. Pump is ${P.pumpRun ? 'running' : P.pumpCmd ? 'commanded but not moving sludge' : 'idle'}.</p></div>`;
+}
+
+/* ---------- stage performance tab ---------- */
+function updLab() {
+  const { IN, PE, SE, FE } = S.st;
+  const rows = [['CBOD₅ (mg/L)', 'bod', 1, PERMIT.bod], ['TSS (mg/L)', 'tss', 1, PERMIT.tss], ['Ammonia NH₃-N (mg/L)', 'nh3', 2, PERMIT.nh3], ['Total phosphorus (mg/L)', 'tp', 2, PERMIT.tp], ['E. coli (/100 mL)', 'ecoli', 0, PERMIT.ecoli]];
+  const fm = (v, dp, k) => k === 'ecoli' ? (v >= 1e4 ? v.toExponential(1) : Math.round(v).toLocaleString()) : v.toFixed(dp);
+  $('#labBody').innerHTML = rows.map(([n, k, dp, lim]) => {
+    const fe = FE[k], ok = fe <= lim, rem = k === 'ecoli' ? (Math.log10(IN[k] / Math.max(1, fe))).toFixed(1) + ' log' : Math.max(0, (1 - fe / IN[k]) * 100).toFixed(1) + '%';
+    return `<tr><td>${n}</td><td class="n">${fm(IN[k], dp, k)}</td><td class="n">${fm(PE[k], dp, k)}</td><td class="n">${fm(SE[k], dp, k)}</td><td class="n">${fm(fe, dp, k)}</td><td class="n">${rem}</td><td class="n">${lim}</td><td><span class="chip ${ok ? 'on' : 'bad'}">${ok ? 'Meets' : 'Violates'}</span></td></tr>`;
+  }).join('') + `<tr><td>Total residual chlorine (mg/L)</td><td class="n">–</td><td class="n">–</td><td class="n">–</td><td class="n">${FE.trc.toFixed(3)}</td><td class="n">–</td><td class="n">0.019</td><td><span class="chip ${FE.trc <= PERMIT.trc ? 'on' : 'bad'}">${FE.trc <= PERMIT.trc ? 'Meets' : 'Violates'}</span></td></tr>`;
+}
+
+/* ---------- trends ---------- */
+const TG = {
+  air: [['do', '#0047AB', 0, 5, 'DO measured (0–5 mg/L)'], ['doA', '#7aa7e6', 0, 5, 'DO actual (0–5 mg/L)'], ['air', '#00a86b', 0, 7000, 'Airflow (0–7,000 scfm)'], ['q', '#c08a00', 0, 12, 'Influent flow (0–12 MGD)']],
+  clar: [['pb', '#8a5a2b', 0, 12, 'Primary blanket (0–12 ft)'], ['sb', '#c8102e', 0, 14, 'Secondary blanket (0–14 ft)'], ['mlss', '#00a86b', 0, 6000, 'MLSS (0–6,000 mg/L)'], ['q', '#c08a00', 0, 12, 'Influent flow (0–12 MGD)']],
+  eff: [['nh3', '#0047AB', 0, 10, 'Ammonia (0–10 mg/L)'], ['tss', '#8a5a2b', 0, 40, 'TSS (0–40 mg/L)'], ['tp', '#00a86b', 0, 4, 'Total P (0–4 mg/L)']],
+  dis: [['cl', '#0047AB', 0, 6, 'Cl₂ residual AIT-310 (0–6 mg/L)'], ['trc', '#c8102e', 0, 0.5, 'Final TRC (0–0.5 mg/L)'], ['ec', '#00a86b', 0, 6, 'E. coli, log₁₀ (0–6)'], ['q', '#c08a00', 0, 12, 'Influent flow (0–12 MGD)']]
+};
+let tgroup = 'air';
+$$('#trendSel button').forEach(b => b.onclick = () => { tgroup = b.dataset.v; $$('#trendSel button').forEach(x => x.setAttribute('aria-pressed', x === b)); drawTrend(); });
+const tc = $('#trend'), tctx = tc.getContext('2d');
+function sizeTrend() { const r = tc.getBoundingClientRect(); if (!r.width) return; const dpr = Math.min(2, window.devicePixelRatio || 1); tc.width = r.width * dpr; tc.height = r.height * dpr; tctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+function drawTrend() {
+  const r = tc.getBoundingClientRect(); if (!r.width) return;
+  const w = r.width, h = r.height, d = isDark(), pl = 10, pr = 10, pt = 10, pb = 22;
+  tctx.clearRect(0, 0, w, h);
+  tctx.strokeStyle = d ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'; tctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const y = pt + (h - pt - pb) * i / 4; tctx.beginPath(); tctx.moveTo(pl, y); tctx.lineTo(w - pr, y); tctx.stroke(); }
+  for (let i = 0; i <= 6; i++) { const x = pl + (w - pl - pr) * i / 6; tctx.beginPath(); tctx.moveTo(x, pt); tctx.lineTo(x, h - pb); tctx.stroke(); }
+  const n = 720, data = S.trend;
+  for (const [k, col, mn, mx] of TG[tgroup]) {
+    tctx.strokeStyle = col; tctx.lineWidth = 2; tctx.beginPath();
+    data.forEach((p, i) => { const x = pl + (w - pl - pr) * (i + n - data.length) / (n - 1), y = pt + (h - pt - pb) * (1 - clamp((p[k] - mn) / (mx - mn), 0, 1)); i ? tctx.lineTo(x, y) : tctx.moveTo(x, y); });
+    tctx.stroke();
+  }
+  tctx.fillStyle = d ? '#9aa6b2' : '#56626e'; tctx.font = '12px Barlow, sans-serif';
+  tctx.textAlign = 'left'; tctx.fillText('−24 h', pl, h - 6); tctx.textAlign = 'right'; tctx.fillText('now ' + clockStr(S.t), w - pr, h - 6);
+  $('#tkeys').innerHTML = TG[tgroup].map(([, c, , , l]) => `<span><i style="background:${c}"></i>${l}</span>`).join('');
+}
+
+/* ---------- alarms ---------- */
+$('#ackAll').onclick = () => { let n = 0; for (const a of visibleAlarms()) if (!a.acked) { a.acked = true; n++; if (!a.active) a.done = true; } if (n) logEv('op', 'Operator acknowledged ' + n + ' alarm' + (n > 1 ? 's.' : '.')); updAlarms(); };
+function updAlarms() {
+  const list = visibleAlarms();
+  $('#alBody').innerHTML = list.length ? list.map(a => {
+    const st = a.active ? (a.acked ? 'Active, acknowledged' : 'Active, unacknowledged') : 'Cleared, unacknowledged';
+    const cls = (a.p === 'High' ? 'al-hi' : a.p === 'Medium' ? 'al-me' : 'al-lo') + (a.acked ? '' : ' al-unack') + (a.active ? ' al-act' : '');
+    return `<tr class="${cls}"><td class="c">${clockStr(a.t)}</td><td>${a.p}</td><td>${st}</td><td style="white-space:normal">${a.txt}</td></tr>`;
+  }).join('') : '<tr><td colspan="4" class="empty-msg">No alarms.</td></tr>';
+  const ev = S.suppress ? S.events.filter(e => e.cat !== 'alarm') : S.events;
+  $('#evLog').innerHTML = ev.map(e => `<div class="${e.cat}"><span class="t">D${Math.floor(e.t / 1440) + 1} ${clockStr(e.t)}</span><span class="c">${{ op: 'Operator', alarm: 'Alarm', sec: 'Security', sys: 'System' }[e.cat]}</span><span>${e.msg}</span></div>`).join('');
+}
+
+/* ---------- I/O table ---------- */
+const IO = [
+  ['PLC-100: primary'],
+  ['PLC-100', '30001', 'FIT_100', 'AI', () => S.q.toFixed(2), 'Influent flow (MGD)'],
+  ['PLC-100', '30002', 'LIT_101_BLKT', 'AI', () => S.pri.blanket.toFixed(1), 'Primary sludge blanket (ft)'],
+  ['PLC-100', '00011', 'M101_RUN', 'DO', () => S.pri.scraper, 'Collector drive run command'],
+  ['PLC-100', '10012', 'M101_TQ_TRIP', 'DI', () => !!S.faults.scraper, 'Collector torque switch'],
+  ['PLC-100', '00012', 'P110_RUN', 'DO', () => S.pri.pumpCmd, 'Primary sludge pump command'],
+  ['PLC-100', '10013', 'P110_FLOW', 'DI', () => S.pri.pumpRun, 'Primary sludge discharge flow switch'],
+  ['PLC-100', '40001', 'P110_MIN_HR', 'HR', () => S.pri.pumpMin, 'Pump minutes per hour'],
+  ['PLC-200: secondary'],
+  ['PLC-200', '30011', 'AIT_201_DO', 'AI', () => S.sec.doMeas.toFixed(2), 'Aeration DO (mg/L), PV of AIC-201'],
+  ['PLC-200', '40011', 'AIC_201_SP', 'HR', () => S.air.loop.sp.toFixed(1), 'DO setpoint (mg/L)'],
+  ['PLC-200', '40012', 'AIC_201_OUT', 'HR', () => Math.round(S.air.loop.out), 'DO loop output (%)'],
+  ['PLC-200', '00030', 'AIC_201_MAN', 'Coil', () => S.air.loop.mode === 'manual', 'DO loop in manual'],
+  ['PLC-200', '00031', 'B201A_RUN', 'DO', () => S.air.b.A.run, 'Blower A running'],
+  ['PLC-200', '00032', 'B201B_RUN', 'DO', () => S.air.b.B.run, 'Blower B running'],
+  ['PLC-200', '30013', 'FIT_201_AIR', 'AI', () => Math.round(S.air.airflow), 'Total airflow (scfm)'],
+  ['PLC-200', '00035', 'P220_RUN', 'DO', () => S.sec.rasRun, 'RAS pump running'],
+  ['PLC-200', '40035', 'RAS_PCT', 'HR', () => S.sec.ras, 'RAS rate (% of influent)'],
+  ['PLC-200', '40036', 'WAS_GPM', 'HR', () => S.sec.was, 'WAS rate (gpm)'],
+  ['PLC-200', '30016', 'LIT_201_BLKT', 'AI', () => S.sec.blanket.toFixed(1), 'Secondary blanket (ft)'],
+  ['PLC-300: tertiary'],
+  ['PLC-300', '40041', 'ALUM_DOSE', 'HR', () => S.ter.alum, 'Alum dose (mg/L)'],
+  ['PLC-300', '30021', 'PDIT_301', 'AI', () => S.ter.filter.h.toFixed(1), 'Filter headloss (ft)'],
+  ['PLC-300', '40023', 'BW_SP', 'HR', () => S.ter.filter.sp.toFixed(1), 'Backwash headloss setpoint (ft)'],
+  ['PLC-300', '30025', 'AIT_310_CL', 'AI', () => S.ter.cl.meas.toFixed(2), 'Chlorine residual (mg/L), PV of AIC-310'],
+  ['PLC-300', '40021', 'AIC_310_SP', 'HR', () => S.ter.cl.loop.sp.toFixed(1), 'Chlorine residual setpoint (mg/L)'],
+  ['PLC-300', '40022', 'AIC_310_OUT', 'HR', () => Math.round(S.ter.cl.loop.out), 'CP-310 speed (%)'],
+  ['PLC-300', '10031', 'FS_310', 'DI', () => S.ter.cl.dose > 0.05, 'Hypochlorite flow switch'],
+  ['PLC-300', '40026', 'BIS_RATIO', 'HR', () => S.ter.bis.toFixed(2), 'Bisulfite ratio'],
+  ['PLC-300', '30027', 'AIT_320_TRC', 'AI', () => S.ter.trc.toFixed(3), 'Final effluent TRC (mg/L)'],
+  ['SCADA-1'],
+  ['SCADA-1', '–', 'ALARM_ENABLE', 'Tag', () => !S.suppress, 'HMI alarm annunciation enabled']
+];
+function buildIO() { $('#ioBody').innerHTML = IO.map((r, i) => r.length === 1 ? `<tr class="grp"><td colspan="6">${r[0]}</td></tr>` : `<tr><td class="c">${r[0]}</td><td class="c">${r[1]}</td><td class="c">${r[2]}</td><td>${r[3]}</td><td data-io="${i}"></td><td class="d">${r[5]}</td></tr>`).join(''); }
+function updIO() { $$('[data-io]').forEach(td => { const v = IO[+td.dataset.io][4](); td.innerHTML = typeof v === 'boolean' ? `<span class="chip${v ? ' on' : ''}">${v ? 'ON' : 'OFF'}</span>` : `<span class="c" style="font-variant-numeric:tabular-nums">${v}</span>`; }); }
+
+/* ---------- fault & attack lab ---------- */
+function buildLab() {
+  $('#faultList').innerHTML = Object.entries(FAULTS).map(([k, f]) => `<label class="tog"><input type="checkbox" data-f="${k}"><span><b>${f.name}</b><small>${f.sym}</small></span></label>`).join('');
+  $$('[data-f]').forEach(c => c.onchange = () => { S.faults[c.dataset.f] = c.checked; logEv('sys', 'Instructor ' + (c.checked ? 'injected' : 'cleared') + ': ' + FAULTS[c.dataset.f].name + '.'); });
+  $('#atkList').innerHTML = Object.entries(ATTACKS).map(([k, a]) => `<div class="atk"><span><b>${a.name}</b><small>${a.detail}</small></span><button class="btn warn" data-a="${k}">Launch</button></div>`).join('');
+  $$('[data-a]').forEach(b => b.onclick = () => launch(b.dataset.a));
+  $('#defList').innerHTML = Object.entries(DEFENSES).map(([k, a]) => `<label class="tog"><input type="checkbox" data-d="${k}"><span><b>${a.name}</b><small>${a.d}</small></span></label>`).join('');
+  $$('[data-d]').forEach(c => c.onchange = () => { S.def[c.dataset.d] = c.checked; logEv('sec', DEFENSES[c.dataset.d].name + (c.checked ? ' enabled.' : ' disabled.')); });
+  $('#mGuess').innerHTML = '<option value="">Choose a diagnosis…</option>' + Object.entries(FAULTS).map(([k, f]) => `<option value="f:${k}">${f.name}</option>`).join('') + Object.entries(ATTACKS).map(([k, a]) => `<option value="a:${k}">Attack: ${a.name}</option>`).join('');
+}
+function syncLab() {
+  $$('[data-f]').forEach(c => c.checked = !!S.faults[c.dataset.f] && S.mystery !== 'f:' + c.dataset.f);
+  $$('[data-d]').forEach(c => c.checked = !!S.def[c.dataset.d]);
+}
+function launch(id, silent) {
+  const a = ATTACKS[id];
+  let blocked = null, msg = '';
+  const target = id === 'clsp' ? 1080 : id === 'air' ? 600 : 840;
+  let path, stopAt = 1;
+  if (a.path === 'net') { path = [[0, 34], [target, 34], [target, 52]]; if (S.def.fw) { blocked = 'fw'; stopAt = 0.03; msg = 'FW-1 dropped Modbus/TCP from 10.20.5.77: source not on the allow-list (' + a.name + ').'; } else if (S.def.range && a.range) { blocked = 'plc'; msg = 'PLC-300 rejected AIC-310 setpoint 8.0 mg/L: outside 0.5–4.0 limits.'; } }
+  else { path = [[0, 34], [96, 34], [96, 42], [96, 34], [840, 34], [840, 24]]; if (S.def.mfa) { blocked = 'mfa'; stopAt = 0.4; msg = 'RA-1 denied the vendor session: MFA challenge failed and no operator approval.'; } }
+  S.packets.push({ t0: performance.now(), blocked, stopAt, path });
+  if (!silent) logEv('sec', (a.path === 'net' ? 'Inbound Modbus/TCP: ' : 'Remote-access login attempt: ') + a.detail);
+  setTimeout(() => {
+    if (blocked) { if (!silent) logEv('sec', msg); return; }
+    if (id === 'clsp') { S.ter.cl.loop.sp = 8; S.ter.cl.loop.mode = 'auto'; }
+    if (id === 'air') { S.air.forcedOff = true; S.air.loop.mode = 'manual'; S.air.loop.man = 0; }
+    if (id === 'remote') { S.suppress = true; S.sec.rasStop = true; }
+    if (!silent) logEv('sys', { clsp: 'PLC-300 accepted the write: AIC-310 setpoint is now 8.0 mg/L.', air: 'PLC-200 accepted the writes: both blowers stopped, AIC-201 in manual at 0%.', remote: 'Remote session active on HMI-1: P-220 stopped, alarm annunciation disabled.' }[id]);
+  }, 1150);
+}
+function restoreAll() {
+  S.ter.cl.loop.sp = S.ter.hmiClSp; S.air.forcedOff = false; if (S.air.loop.mode === 'manual' && S.air.loop.man === 0) S.air.loop.mode = 'auto';
+  S.suppress = false; S.sec.rasStop = false;
+}
+$('#restore').onclick = () => { restoreAll(); if (S.mystery && S.mystery.startsWith('a:')) S.mystery = null; logEv('sec', 'PLCs restored from known-good backup: logic and setpoints verified, alarms re-enabled.'); };
+$('#clearFaults').onclick = () => { S.faults = {}; S.air.b.A.trip = false; S.air.b.B.trip = false; S.ter.filter.bwFail = false; if (S.mystery && S.mystery.startsWith('f:')) S.mystery = null; syncLab(); logEv('sys', 'All equipment faults cleared and trips reset.'); };
+$('#resetSim').onclick = () => { newState(); syncControls(); syncLab(); $('#mBox').hidden = true; $('#mFb').textContent = ''; $('#mFb').className = 'fb'; };
+$('#mStart').onclick = () => {
+  restoreAll(); S.faults = {}; S.air.b.A.trip = false; S.air.b.B.trip = false;
+  const pool = Object.keys(FAULTS).map(k => 'f:' + k).concat(Object.keys(ATTACKS).map(k => 'a:' + k));
+  const pick = pool[Math.floor(Math.random() * pool.length)]; S.mystery = pick;
+  if (pick.startsWith('f:')) S.faults[pick.slice(2)] = true;
+  else { const save = { ...S.def }; S.def = { fw: false, mfa: false, range: false, mon: save.mon }; launch(pick.slice(2), true); setTimeout(() => { S.def = save; }, 1300); }
+  syncLab(); $('#mBox').hidden = false; $('#mGuess').value = ''; $('#mFb').className = 'fb'; $('#mFb').textContent = '';
+  logEv('sys', 'A mystery fault is active. Investigate and submit a diagnosis.');
+};
+$('#mSubmit').onclick = () => {
+  const g = $('#mGuess').value, fb = $('#mFb');
+  if (!S.mystery) { fb.className = 'fb no'; fb.textContent = 'No mystery fault is active. Inject one first.'; return; }
+  if (!g) { fb.className = 'fb no'; fb.textContent = 'Choose a diagnosis from the list first.'; return; }
+  const [kind, k] = S.mystery.split(':'), info = kind === 'f' ? FAULTS[k] : ATTACKS[k];
+  if (g === S.mystery) {
+    fb.className = 'fb ok';
+    fb.innerHTML = `<b>Correct: ${info.name}.</b> ${kind === 'f' ? info.sym + ' Corrective action: ' + info.fix : info.detail + ' Recovery: restore from a known-good backup, then add the defense that would have stopped it.'}`;
+    if (kind === 'f') { S.faults[k] = false; if (k === 'blowerA') S.air.b.A.trip = false; if (k === 'bwValve') S.ter.filter.bwFail = false; } else restoreAll();
+    S.mystery = null; syncLab(); logEv('sys', 'Mystery fault diagnosed: ' + info.name + '.');
+  } else {
+    fb.className = 'fb no';
+    const hints = { p110: 'Look at P-110 when its timer runs, and at the primary blanket.', scraper: 'Is anything moving inside PC-101?', blowerA: 'Check the blower status and airflow.', doFoul: 'The DO reading looks perfect. Is the process behaving as if it is?', diffuser: 'Compare blower output and airflow with what DO is doing.', p220: 'Watch the secondary clarifier blanket and the RAS line.', bulking: 'RAS is normal, but the blanket rises. Check SVI and the basin surface.', bwValve: 'Watch headloss before and after the backwash sequence.', cp310: 'Compare the AIC-310 output with the residual.', bisLine: 'Chlorine residual is fine. Where does the chlorine go next?' };
+    fb.textContent = 'Not that one. ' + (kind === 'f' ? hints[k] : 'Check the event log, the I/O table and setpoints against what you expect.');
+  }
+};
+
+/* ---------- glossary & quiz ---------- */
+const GLOSS = [
+  ['Primary clarifier', 'A settling tank that removes heavy suspended solids and floatables by gravity, before biological treatment.'],
+  ['Activated sludge', 'A suspension of bacteria kept in an aerated basin and recycled from a clarifier, which consumes dissolved organic matter.'],
+  ['Nitrification', 'Bacterial oxidation of ammonia to nitrate. Needs DO, enough sludge age, and is slowed by cold water.'],
+  ['MLSS', 'Mixed liquor suspended solids: the concentration of biomass in the aeration basin, typically 1,500–4,000 mg/L.'],
+  ['SRT', 'Solids retention time, or sludge age: how long biomass stays in the system on average. Set by the wasting rate.'],
+  ['RAS and WAS', 'Return activated sludge goes back to aeration to keep the biomass up. Waste activated sludge leaves to solids handling.'],
+  ['SVI', 'Sludge volume index. How well sludge settles; above about 150 mL/g suggests bulking.'],
+  ['Headloss', 'Pressure lost as water passes through filter media. It rises as solids load the bed and triggers backwash.'],
+  ['CT', 'Disinfectant concentration × contact time. The higher the CT, the greater the pathogen kill.'],
+  ['TRC', 'Total residual chlorine. Permits for sensitive streams set limits near 0.019 mg/L because chlorine is toxic to aquatic life.'],
+  ['PID loop', 'Feedback control that adjusts an output based on present error (P), accumulated error (I) and rate of change (D).'],
+  ['NPDES permit', 'The Clean Water Act permit that sets a plant’s discharge limits and monitoring requirements.']
+];
+$('#gloss').innerHTML = GLOSS.map(g => `<button class="flip" aria-pressed="false"><div class="fi"><div class="f">${g[0]}</div><div class="b">${g[1]}</div></div></button>`).join('');
+$$('.flip').forEach(b => b.onclick = () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'));
+const QUIZ = [
+  { q: 'Influent flow doubles during a storm. What happens in the primary clarifier first?', o: ['The sludge blanket disappears', 'Surface overflow rate doubles and solids removal falls', 'BOD removal improves from dilution', 'The scraper speeds up'], a: 1, e: 'SOR is flow divided by surface area. Higher SOR leaves less time for particles to settle.' },
+  { q: 'Measured DO holds at 2.0 mg/L, but ammonia keeps rising and blower output is lower than usual. Most likely cause?', o: ['Cold weather', 'A fouled DO probe reading high', 'Too much RAS', 'Alum overdose'], a: 1, e: 'If the probe reads high, the PID loop is satisfied while the basin is actually starved of oxygen.' },
+  { q: 'In cold water, nitrification fails. Which single change most directly helps?', o: ['Raise alum dose', 'Reduce WAS to increase SRT', 'Lower the DO setpoint', 'Increase P-110 run time'], a: 1, e: 'Nitrifiers grow slowly, and slower when cold. A longer sludge age keeps enough of them in the system.' },
+  { q: 'The RAS pump fails. What do you expect in the secondary clarifier?', o: ['Blanket falls', 'Blanket rises and solids wash over the weirs', 'Nothing for several days', 'DO in the clarifier rises'], a: 1, e: 'Without return, settled sludge accumulates in the clarifier until the blanket reaches the weirs.' },
+  { q: 'Why does the chlorine residual loop oscillate when Kp is set very high?', o: ['The analyzer has dead time from its sample line', 'Hypochlorite decays instantly', 'The filter backwashes', 'Bisulfite fights the loop'], a: 0, e: 'Dead time between a change in dose and a change in the measurement makes high-gain loops overshoot and oscillate.' },
+  { q: 'Bisulfite feed stops. Which permit parameter fails?', o: ['E. coli', 'Total residual chlorine', 'Ammonia', 'Phosphorus'], a: 1, e: 'Chlorine that is not neutralized leaves the plant, and TRC limits are extremely low.' },
+  { q: 'The firewall is enabled, yet a remote-access hijack succeeds. Why?', o: ['The firewall was misconfigured', 'The attacker used an allowed path: the vendor remote-access gateway', 'Modbus bypasses firewalls', 'PLCs ignore firewalls'], a: 1, e: 'Segmentation does not stop an attacker who logs in through an approved path with stolen credentials. MFA and operator approval do.' },
+  { q: 'At which Purdue level is the DO analyzer AIT-201?', o: ['Level 0', 'Level 1', 'Level 2', 'Level 3'], a: 0, e: 'Field instruments and actuators are Level 0. The PLCs are Level 1 and SCADA/HMI is Level 2.' }
+];
+function buildQuiz() { $('#quiz').innerHTML = QUIZ.map((x, i) => `<div class="q"><p>${i + 1}. ${x.q}</p>${x.o.map((o, j) => `<label><input type="radio" name="q${i}" value="${j}"><span>${o}</span></label>`).join('')}<div class="fb" id="qf${i}"></div></div>`).join(''); $('#qScore').textContent = ''; }
+$('#qGrade').onclick = () => {
+  let s = 0;
+  QUIZ.forEach((x, i) => {
+    const c = document.querySelector(`input[name=q${i}]:checked`), fb = $('#qf' + i);
+    if (!c) { fb.className = 'fb no'; fb.textContent = 'Not answered. ' + x.e; return; }
+    const ok = +c.value === x.a; if (ok) s++;
+    fb.className = 'fb ' + (ok ? 'ok' : 'no'); fb.textContent = (ok ? 'Correct. ' : 'Not quite. The answer is “' + x.o[x.a] + '.” ') + x.e;
+  });
+  $('#qScore').textContent = s + ' / ' + QUIZ.length;
+};
+$('#qReset').onclick = buildQuiz;
+
+/* ---------- periodic UI ---------- */
+function setFx(id, v, lim, txt) { const el = $('#c-' + id); el.classList.toggle('bad', v > lim); el.querySelector('.v').textContent = txt; el.querySelector('.dot').className = 'dot ' + (v > lim ? 'r' : v > lim * 0.8 ? 'a' : 'g'); }
+function updTabs() {
+  if (!S.st) return;
+  if (activeTab === 'loops') updLoops();
+  else if (activeTab === 'lab') updLab();
+  else if (activeTab === 'alarms') updAlarms();
+  else if (activeTab === 'io') updIO();
+}
+let trendTimer = 0;
+function updUI(rdt) {
+  if (!S.st) return;
+  const FE = S.st.FE, P = S.pri, B = S.sec, A = S.air, R = S.ter;
+  $('#clk').textContent = clockStr(S.t); $('#day').textContent = 'Day ' + (Math.floor(S.t / 1440) + 1);
+  $('#fxQ').textContent = S.q.toFixed(2);
+  setFx('bod', FE.bod, PERMIT.bod, FE.bod.toFixed(1)); setFx('tss', FE.tss, PERMIT.tss, FE.tss.toFixed(1));
+  setFx('nh3', FE.nh3, PERMIT.nh3, FE.nh3.toFixed(2)); setFx('tp', FE.tp, PERMIT.tp, FE.tp.toFixed(2));
+  setFx('trc', FE.trc, PERMIT.trc, FE.trc.toFixed(3)); setFx('ecoli', FE.ecoli, PERMIT.ecoli, FE.ecoli >= 1e4 ? FE.ecoli.toExponential(1) : Math.round(FE.ecoli));
+  $('#fxComp').textContent = (S.comp.ok / Math.max(1, S.comp.tot) * 100).toFixed(1) + '%';
+  const vis = visibleAlarms();
+  $('#alBadge').textContent = vis.filter(a => !a.acked).length || '';
+  if (stage === 'plant') {
+    $('#g1').textContent = Math.round(P.eff * 100) + '%'; $('#g2').textContent = B.doMeas.toFixed(2) + ' mg/L';
+    $('#g3').textContent = R.filter.h.toFixed(1) + ' ft'; $('#g4').textContent = R.cl.meas.toFixed(2) + ' mg/L';
+    $('#g5').textContent = Math.round(A.kw) + ' kW'; $('#g6').textContent = vis.filter(a => a.active).length;
+  } else if (stage === 'primary') {
+    $('#p1').textContent = Math.round(P.sor) + ' gpd/ft²'; $('#p2').textContent = P.blanket.toFixed(1) + ' ft';
+    $('#p3').textContent = Math.round(P.eff * 100) + '%'; $('#p4').textContent = Math.round(P.eff * 55) + '%';
+    $('#p110d').className = 'dot ' + (P.pumpRun ? 'g' : P.pumpCmd ? 'r' : ''); $('#p110s').textContent = P.pumpRun ? 'Pumping' : P.pumpCmd ? 'Commanded, no flow' : 'Off (timer)';
+    const sc = P.scraper && !S.faults.scraper;
+    $('#m101d').className = 'dot ' + (sc ? 'g' : S.faults.scraper ? 'r' : 'a'); $('#m101s').textContent = sc ? 'Running' : S.faults.scraper ? 'Torque trip' : 'Stopped';
+    $('#scraperBtn').textContent = P.scraper ? 'Stop drive' : 'Start drive';
+  } else if (stage === 'secondary') {
+    $('#fpDO')._upd();
+    for (const k of ['A', 'B']) { const b = A.b[k]; $('#b' + k + 'd').className = 'dot ' + (b.trip ? 'r' : b.run ? 'g' : ''); $('#b' + k + 's').textContent = b.trip ? 'Tripped' : b.run ? 'Running ' + Math.round(A.loop.out) + '%' : (A.forcedOff ? 'Stopped by command' : 'Standby'); }
+    $('#s1').textContent = Math.round(B.mlss) + ' mg/L'; $('#s2').textContent = B.srt.toFixed(1) + ' d'; $('#s3').textContent = B.fm.toFixed(2);
+    $('#s4').textContent = Math.round(B.svi) + ' mL/g'; $('#s5').textContent = B.blanket.toFixed(1) + ' ft'; $('#s6').textContent = B.slr.toFixed(1) + ' lb/d/ft²';
+  } else {
+    $('#fpCL')._upd();
+    $('#t1').textContent = R.filter.h.toFixed(1) + ' ft'; $('#t2').textContent = R.filter.step;
+    $('#lvA').style.width = S.totes.alum + '%'; $('#lvH').style.width = S.totes.hypo + '%'; $('#lvB').style.width = S.totes.bis + '%';
+    for (const [id, v] of [['#lvA', S.totes.alum], ['#lvH', S.totes.hypo], ['#lvB', S.totes.bis]]) $(id).style.background = v < 15 ? 'var(--red)' : 'var(--green)';
+  }
+  updAbout(); updInspector(); updTabs();
+  trendTimer += rdt; if (activeTab === 'trends' && trendTimer > 0.5) { trendTimer = 0; drawTrend(); }
+}
+
+/* ---------- main loop ---------- */
+let last = performance.now(), uiT = 0;
+function frame(now) {
+  const rdt = Math.min(0.1, (now - last) / 1000); last = now;
+  let simMin = rdt * simSpeed;
+  const DT = 0.25; let n = 0;
+  while (simMin > 1e-9 && n < 400) { const dt = Math.min(DT, simMin); step(dt); simMin -= dt; n++; }
+  animate(rdt); draw();
+  uiT += rdt; if (uiT > 0.15) { updUI(uiT); uiT = 0; }
+  requestAnimationFrame(frame);
+}
+
+
+newState();
+for (let i = 0; i < 40; i++) step(0.25);
+buildIO(); buildLab(); buildQuiz(); syncControls(); setStage('plant');
+resize();
+requestAnimationFrame(t => { last = t; resize(); requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>
