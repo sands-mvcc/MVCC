@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ICS Wastewater Pretreatment Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --bg:#E1E5E9; --panel:#F6F7F9; --panel2:#ECEFF2; --ink:#1B2630; --muted:#55616D; --line:#C6CCD3;
+  --navy:#0047AB; --navy-ink:#0047AB; --green:#00a86b; --amber:#B47A00; --red:#C8102E;
+  --chip:#DDE2E7; --wire:#8A949E;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141A20; --panel:#1D242C; --panel2:#252D36; --ink:#E3E8ED; --muted:#99A5B1; --line:#36414C;
+    --navy:#2F6FD6; --navy-ink:#86AEF2; --green:#1DBF86; --amber:#E2AA33; --red:#EE5468; --chip:#2E3742; --wire:#5F6B77;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141A20; --panel:#1D242C; --panel2:#252D36; --ink:#E3E8ED; --muted:#99A5B1; --line:#36414C;
+  --navy:#2F6FD6; --navy-ink:#86AEF2; --green:#1DBF86; --amber:#E2AA33; --red:#EE5468; --chip:#2E3742; --wire:#5F6B77;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.wrap{max-width:1560px;margin:0 auto;padding:14px 16px 40px}
+.cond{font-family:'Barlow Condensed','Arial Narrow',sans-serif}
+
+header.top{display:flex;align-items:flex-end;gap:12px 20px;flex-wrap:wrap;padding:2px 0 12px;border-bottom:2px solid var(--navy);margin-bottom:12px}
+.brand h1{margin:0;font:600 30px/1.05 'Barlow Condensed','Arial Narrow',sans-serif}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:14px;max-width:66ch}
+.top .sp{flex:1}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.clock{font:600 22px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;padding:2px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}
+.clock small{font-size:13px;color:var(--muted);font-weight:500;margin-right:6px}
+.lbl{font-size:13px;color:var(--muted);margin-right:-4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;font:600 14px 'Barlow Condensed',sans-serif;padding:6px 11px;cursor:pointer;min-width:38px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:6px 12px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--navy)}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.warn{border-color:var(--red);color:var(--red)}
+.btn.warn:hover{background:var(--red);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* stage navigator */
+.stagenav{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.stagenav button{flex:1;border:0;background:transparent;padding:9px 12px;cursor:pointer;text-align:left;display:flex;gap:10px;align-items:center;border-right:1px solid var(--line)}
+.stagenav button:last-child{border-right:0}
+.stagenav .n{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--wire);font:700 14px 'Barlow Condensed',sans-serif;flex:0 0 auto}
+.stagenav b{display:block;font:600 17px/1.1 'Barlow Condensed',sans-serif}
+.stagenav small{display:block;color:var(--muted);font-size:12.5px;line-height:1.2}
+.stagenav button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.stagenav button[aria-pressed="true"] small{color:#d6e2f7}
+.stagenav button[aria-pressed="true"] .n{border-color:#fff}
+@media (max-width:760px){.stagenav{flex-wrap:wrap}.stagenav button{flex:1 1 50%;border-bottom:1px solid var(--line)}}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px;align-items:start}
+@media (max-width:1150px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.scene-card{padding:10px}
+.scene-wrap{overflow-x:auto;border-radius:7px;-webkit-overflow-scrolling:touch}
+#scene{display:block;width:100%;min-width:900px;aspect-ratio:1400/530;border-radius:7px;touch-action:manipulation}
+.scene-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 2px 0;font-size:13px;color:var(--muted)}
+.scene-bar label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+
+.fx{display:grid;grid-template-columns:repeat(8,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:10px}
+@media (max-width:900px){.fx{grid-template-columns:repeat(4,1fr)}}
+.fx>div{background:var(--panel2);padding:6px 10px}
+.fx .k{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.fx .v{font:600 20px/1.15 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fx .lim{font-size:11.5px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--wire);flex:0 0 auto;display:inline-block}
+.dot.g{background:var(--green)}.dot.a{background:var(--amber)}.dot.r{background:var(--red)}
+.fx .bad .v{color:var(--red)}
+
+.under{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-top:10px}
+@media (max-width:900px){.under{grid-template-columns:1fr}}
+.about,.inspector{padding:12px 14px}
+.about h3,.inspector h3{margin:0 0 4px;font:600 19px 'Barlow Condensed',sans-serif}
+.about p,.inspector p{margin:4px 0 8px;max-width:80ch}
+.about ul{margin:0;padding-left:18px}
+.about li{margin-bottom:3px}
+.metrics{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.metrics span{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font:600 14px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.metrics span i{font-style:normal;font-weight:500;color:var(--muted);margin-right:4px}
+.inspector .meta{color:var(--muted);font-size:13.5px}
+.inspector .live{font:600 16px 'Barlow Condensed',sans-serif;color:var(--navy-ink)}
+.inspector.empty{color:var(--muted)}
+
+/* HMI */
+.hmi{padding:14px}
+.hmi h2{margin:0;font:600 21px 'Barlow Condensed',sans-serif}
+.hmi .sub{margin:0 0 10px;font-size:13px;color:var(--muted)}
+.hmi section{padding:11px 0;border-top:1px solid var(--line)}
+.hmi h3{margin:0 0 8px;font:600 16px 'Barlow Condensed',sans-serif;color:var(--muted)}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin-bottom:10px;align-items:center}
+.ctl label{font-size:14px}
+.ctl output{font:600 18px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;text-align:right}
+.ctl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--navy)}
+.ctl .hint{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ro{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ro>div{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 9px}
+.ro .k{font-size:12px;color:var(--muted)}
+.ro .v{font:600 18px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);margin-bottom:6px;cursor:pointer}
+.sw input{accent-color:var(--navy);width:16px;height:16px}
+.equip{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.eq{border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:var(--panel2)}
+.eq b{font:600 15px 'Barlow Condensed',sans-serif;display:flex;align-items:center;gap:6px}
+.eq small{display:block;color:var(--muted);font-size:12.5px}
+.eq .btn{margin-top:4px;padding:2px 8px;font-size:13px}
+.note{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.stagepanel[hidden]{display:none}
+/* faceplate */
+.fp{border:2px solid var(--line);border-radius:9px;padding:10px;background:var(--panel2);margin-bottom:8px}
+.fp .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.fp .hd b{font:700 17px 'Barlow Condensed',sans-serif}
+.fp .hd span{font-size:12.5px;color:var(--muted)}
+.fp .vals{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.fp .vals>div{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 7px}
+.fp .vals .k{font-size:11.5px;color:var(--muted)}
+.fp .vals .v{font:600 19px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.fp .bar{height:8px;border-radius:4px;background:var(--chip);overflow:hidden;margin:2px 0 8px}
+.fp .bar i{display:block;height:100%;background:var(--navy);width:0}
+.fp .tune{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.fp .tune label{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column}
+.fp .tune input{width:100%;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:var(--panel)}
+.fp .seg{width:100%}.fp .seg button{flex:1}
+.tote{display:grid;grid-template-columns:1fr 70px auto;gap:8px;align-items:center;margin-bottom:6px;font-size:14px}
+.tote .lv{height:9px;border-radius:5px;background:var(--chip);overflow:hidden}
+.tote .lv i{display:block;height:100%;background:var(--green)}
+.tote .btn{padding:2px 8px;font-size:13px}
+
+/* tabs */
+.tabs{margin-top:14px}
+.tablist{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 8px}
+.tablist button{border:0;background:transparent;padding:11px 13px 9px;font:600 16px 'Barlow Condensed',sans-serif;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tablist button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--navy)}
+.badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:9px;background:var(--red);color:#fff;font-size:12px;line-height:18px;text-align:center}
+.badge:empty{display:none}
+.panel{padding:16px 18px}
+.panel[hidden]{display:none}
+.panel h3{margin:0 0 6px;font:600 20px 'Barlow Condensed',sans-serif}
+.panel .lead{margin:0 0 14px;color:var(--muted);max-width:88ch}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+
+/* loops */
+.loop{border:1px solid var(--line);border-radius:9px;padding:12px;margin-bottom:12px;background:var(--panel2)}
+.loop h4{margin:0 0 4px;font:600 18px 'Barlow Condensed',sans-serif}
+.loop p{margin:0 0 10px;color:var(--muted);font-size:14px;max-width:90ch}
+.chain{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:22px;position:relative}
+.blk{flex:0 0 auto;min-width:118px;border:2px solid var(--wire);border-radius:7px;padding:5px 9px;background:var(--panel)}
+.blk .t{font:600 13px 'Barlow Condensed',sans-serif;color:var(--muted)}
+.blk .v{font:600 18px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.blk.act{border-color:var(--green)}
+.blk.bad{border-color:var(--red)}
+.arr{flex:0 0 26px;align-self:center;height:2px;background:var(--wire);position:relative}
+.arr::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:var(--wire)}
+.fbk{position:absolute;left:58px;right:58px;bottom:4px;height:14px;border:2px solid var(--wire);border-top:0;border-radius:0 0 8px 8px}
+.fbk span{position:absolute;left:50%;transform:translateX(-50%);bottom:-2px;background:var(--panel2);padding:0 6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.steps{display:flex;flex-wrap:wrap;gap:6px}
+.steps span{padding:4px 10px;border:2px solid var(--line);border-radius:16px;font:600 14px 'Barlow Condensed',sans-serif;color:var(--muted)}
+.steps span.on{border-color:var(--green);color:var(--ink);background:color-mix(in srgb,var(--green) 15%,transparent)}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:600 14px 'Barlow Condensed',sans-serif;color:var(--muted);background:var(--panel2)}
+td.c{font-family:'Barlow Condensed',sans-serif;font-weight:600}
+td.n{font:600 15px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;text-align:right}
+td.d{white-space:normal;min-width:200px;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.grp td{background:var(--panel2);font:600 13px 'Barlow Condensed',sans-serif;color:var(--navy-ink)}
+.chip{display:inline-block;min-width:40px;text-align:center;padding:0 7px;border-radius:5px;font:600 12.5px/20px 'Barlow Condensed',sans-serif;background:var(--chip);color:var(--muted)}
+.chip.on{background:var(--green);color:#fff}
+.chip.bad{background:var(--red);color:#fff}
+.al-hi td:first-child{box-shadow:inset 4px 0 0 var(--red)}
+.al-me td:first-child{box-shadow:inset 4px 0 0 var(--amber)}
+.al-lo td:first-child{box-shadow:inset 4px 0 0 var(--wire)}
+.al-unack.al-act td{animation:blink 1s steps(2,start) infinite}
+@keyframes blink{50%{background:color-mix(in srgb,var(--red) 14%,transparent)}}
+.log{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px;font-size:13.5px}
+.log div{padding:5px 10px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:62px 72px 1fr;gap:8px}
+.log .t,.log .c{font:600 13px 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.log .t{color:var(--muted)}
+.log .sec .c{color:var(--red)} .log .alarm .c{color:var(--amber)} .log .op .c{color:var(--navy-ink)} .log .sys .c{color:var(--muted)}
+.empty-msg{padding:14px;color:var(--muted)}
+#trend{width:100%;height:280px;display:block;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+.tkeys{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;margin-top:8px}
+.tkeys i{display:inline-block;width:16px;height:3px;margin-right:6px;vertical-align:middle;border-radius:2px}
+
+/* lab */
+.lab h4{margin:12px 0 6px;font:600 17px 'Barlow Condensed',sans-serif}
+.tog{display:flex;align-items:flex-start;gap:10px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--panel2);cursor:pointer}
+.tog input{margin-top:4px;accent-color:var(--navy);width:16px;height:16px;flex:0 0 auto}
+.tog b{font-weight:600;display:block}
+.tog small{color:var(--muted);font-size:13px;display:block;line-height:1.35}
+.atk{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--panel2)}
+.atk small{display:block;color:var(--muted);font-size:13px;line-height:1.35}
+.mystery{margin-top:14px;padding:12px;border:2px dashed var(--navy);border-radius:10px}
+.fb{margin-top:8px;padding:8px 10px;border-radius:7px;font-size:14px}
+.fb.ok{background:color-mix(in srgb,var(--green) 16%,transparent)}
+.fb.no{background:color-mix(in srgb,var(--red) 13%,transparent)}
+.fb:empty{display:none}
+select.inp{padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}
+
+/* learn */
+.learn p,.learn li{max-width:84ch}
+details.acc{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:var(--panel2)}
+details.acc summary{cursor:pointer;padding:10px 14px;font:600 17px 'Barlow Condensed',sans-serif}
+details.acc .in{padding:0 16px 12px}
+.formula{font:600 15px 'Barlow Condensed',sans-serif;background:var(--panel);border-left:4px solid var(--navy);padding:6px 10px;border-radius:4px;margin:6px 0}
+.purdue{display:grid;gap:4px;margin:6px 0}
+.purdue div{display:grid;grid-template-columns:86px 1fr;gap:10px;padding:6px 10px;border-radius:6px;background:var(--panel)}
+.purdue b{font-family:'Barlow Condensed',sans-serif}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.flip{perspective:800px;height:140px;cursor:pointer;border:0;padding:0;background:none;text-align:left}
+.flip .fi{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.flip[aria-pressed="true"] .fi{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:9px;padding:12px;border:1px solid var(--line);display:flex;align-items:center;background:var(--panel)}
+.flip .f{font:600 20px 'Barlow Condensed',sans-serif;justify-content:center;text-align:center;border-top:4px solid var(--navy)}
+.flip .b{transform:rotateY(180deg);font-size:13.5px;line-height:1.4;border-top:4px solid var(--green)}
+.quiz .q{padding:12px 14px;border:1px solid var(--line);border-radius:9px;margin-bottom:10px;background:var(--panel2)}
+.quiz .q p{margin:0 0 8px;font-weight:600}
+.quiz label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;cursor:pointer}
+.quiz input{accent-color:var(--navy);margin-top:5px}
+.score{font:600 20px 'Barlow Condensed',sans-serif;margin-left:10px}
+@media (prefers-reduced-motion: reduce){.flip .fi{transition:none}.al-unack.al-act td{animation:none}}
+
+#scene{aspect-ratio:1400/540}
+.stagenav button{min-width:0}
+.fx{grid-template-columns:repeat(8,1fr)}
+.pumps3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Wastewater pretreatment</h1>
+      <p>An ICS simulator for the front door of a treatment plant: a remote lift station, the headworks screens, vortex grit removal, influent quality protection, flow measurement, sampling and odor control.</p>
+    </div>
+    <div class="sp"></div>
+    <div class="tools">
+      <div class="clock"><small id="day">Day 1</small><span id="clk">06:00</span></div>
+      <span class="lbl">Speed</span>
+      <div class="seg" id="simSpeed">
+        <button data-v="0" aria-pressed="false">Pause</button>
+        <button data-v="1" aria-pressed="true">1×</button>
+        <button data-v="5" aria-pressed="false">5×</button>
+        <button data-v="20" aria-pressed="false">20×</button>
+        <button data-v="60" aria-pressed="false">60×</button>
+      </div>
+      <button class="btn" id="themeBtn" aria-label="Toggle dark mode">Dark mode</button>
+    </div>
+  </header>
+
+  <nav class="stagenav" aria-label="Process areas">
+    <button data-stage="plant" aria-pressed="true"><span class="n">⌂</span><span><b>Whole system</b><small>Inflow, targets, overview</small></span></button>
+    <button data-stage="lift" aria-pressed="false"><span class="n">1</span><span><b>Lift station</b><small>Wet well and pumps</small></span></button>
+    <button data-stage="screen" aria-pressed="false"><span class="n">2</span><span><b>Screening</b><small>Diversion, screens, screenings</small></span></button>
+    <button data-stage="grit" aria-pressed="false"><span class="n">3</span><span><b>Grit removal</b><small>Vortex, cyclone, classifier</small></span></button>
+    <button data-stage="flow" aria-pressed="false"><span class="n">4</span><span><b>Flow and odor</b><small>Flume, sampler, scrubber</small></span></button>
+  </nav>
+
+  <div class="grid">
+    <div>
+      <div class="card scene-card">
+        <div class="scene-wrap"><canvas id="scene" role="img" aria-label="Animated cutaway of the lift station and headworks. Click equipment to inspect it."></canvas></div>
+        <div class="scene-bar">
+          <span>1× runs one plant minute per second. Click any equipment to inspect it.</span>
+          <span class="row"><label><input type="checkbox" id="showTags" checked> Tag labels</label><label><input type="checkbox" id="showVals" checked> Live values</label></span>
+        </div>
+        <div class="fx" aria-live="polite">
+          <div id="c-lvl"><div class="k"><span class="dot"></span>Wet well</div><div class="v">–</div><div class="lim">overflow at 19 ft</div></div>
+          <div id="c-sso"><div class="k"><span class="dot"></span>Sewer overflow</div><div class="v">–</div><div class="lim">gal today (target 0)</div></div>
+          <div id="c-dp"><div class="k"><span class="dot"></span>Screen ΔP</div><div class="v">–</div><div class="lim">in, keep below 8</div></div>
+          <div id="c-rag"><div class="k"><span class="dot"></span>Rags passed</div><div class="v">–</div><div class="lim">ft³ today</div></div>
+          <div id="c-grit"><div class="k"><span class="dot"></span>Grit removal</div><div class="v">–</div><div class="lim">target 85% or more</div></div>
+          <div id="c-acid"><div class="k"><span class="dot"></span>Acid passed</div><div class="v">–</div><div class="lim">minutes today (target 0)</div></div>
+          <div id="c-smp"><div class="k"><span class="dot"></span>Sample hold</div><div class="v">–</div><div class="lim">must be 6 °C or less</div></div>
+          <div id="c-h2s"><div class="k"><span class="dot"></span>Building H₂S</div><div class="v">–</div><div class="lim">ppm, alarm at 10</div></div>
+        </div>
+      </div>
+      <div class="under">
+        <div class="card about" id="about"></div>
+        <div class="card inspector empty" id="inspector">Click any pump, screen, instrument or tank in the scene to see its tag, Purdue level, address and live value.</div>
+      </div>
+    </div>
+
+    <aside class="card hmi" aria-label="Operator HMI">
+      <h2 id="hmiTitle">System overview</h2>
+      <p class="sub" id="hmiSub">SCADA HMI-1. Polls RTU-100 by radio and PLC-200 to PLC-400 over Ethernet.</p>
+
+      <div class="stagepanel" data-panel="plant">
+        <section>
+          <h3>Collection system inflow</h3>
+          <div class="ctl"><label>Flow pattern</label><span></span>
+            <div class="seg" id="pattern" style="grid-column:1/-1"><button data-v="constant" style="flex:1">Constant</button><button data-v="diurnal" aria-pressed="true" style="flex:1">Diurnal</button></div></div>
+          <div class="ctl"><label for="qavg">Average daily flow</label><output id="oQ">4.0 MGD</output><input type="range" id="qavg" min="2" max="7" step="0.1" value="4"></div>
+          <div class="row"><button class="btn" id="evStorm">Storm with first flush</button><button class="btn" id="evWipes">“Flushable” wipes surge</button><button class="btn" id="evAcid">Industrial acid dump</button><button class="btn" id="evSeptic">Septic, high H₂S</button></div>
+        </section>
+        <section>
+          <h3>At a glance</h3>
+          <div class="ro">
+            <div><div class="k">Inflow</div><div class="v" id="g1">–</div></div>
+            <div><div class="k">Pumped</div><div class="v" id="g2">–</div></div>
+            <div><div class="k">Pump power</div><div class="v" id="g3">–</div></div>
+            <div><div class="k">Screenings today</div><div class="v" id="g4">–</div></div>
+            <div><div class="k">Grit today</div><div class="v" id="g5">–</div></div>
+            <div><div class="k">Active alarms</div><div class="v" id="g6">0</div></div>
+          </div>
+          <p class="note">Pick an area above to open its controls.</p>
+        </section>
+      </div>
+
+      <div class="stagepanel" data-panel="lift" hidden>
+        <section><h3>Wet well level control (RTU-100)</h3><div id="fpLV"></div></section>
+        <section>
+          <h3>Submersible pumps</h3>
+          <div class="pumps3" id="pumpCards"></div>
+          <div class="row" style="margin-bottom:8px"><span class="note" style="margin:0">Lead pump</span><div class="seg" id="leadSel"><button data-v="0" aria-pressed="true">A</button><button data-v="1">B</button><button data-v="2">C</button></div></div>
+          <button class="btn" id="derag">Run de-rag cycle on all pumps</button>
+          <p class="note">The de-rag cycle briefly reverses each VFD to shed rags wrapped on the impellers.</p>
+        </section>
+        <section>
+          <h3>Hardwired backup</h3>
+          <div class="ro"><div><div class="k">High-level float LSHH (16 ft)</div><div class="v" id="l1">–</div></div><div><div class="k">Low-level float LSLL (1.5 ft)</div><div class="v" id="l2">–</div></div></div>
+          <p class="note">Floats are wired straight to the pump starters. They work even if the RTU, radio or HMI fails or is compromised.</p>
+        </section>
+      </div>
+
+      <div class="stagepanel" data-panel="screen" hidden>
+        <section>
+          <h3>Influent pH diversion</h3>
+          <div class="ro" style="margin-bottom:8px"><div><div class="k">pH AIT-201</div><div class="v" id="s1">–</div></div><div><div class="k">Diversion basin DB-202</div><div class="v" id="s2">–</div></div></div>
+          <label class="sw"><span>Automatic diversion on pH below 5.5 or above 10</span><input type="checkbox" id="divAuto" checked></label>
+          <label class="sw"><span>Return pump P-203 (bleed basin back slowly)</span><input type="checkbox" id="retPump"></label>
+        </section>
+        <section>
+          <h3>Fine screens SC-201A and SC-201B</h3>
+          <label class="sw"><span>Channel A in service</span><input type="checkbox" id="chA" checked></label>
+          <label class="sw"><span>Channel B in service</span><input type="checkbox" id="chB" checked></label>
+          <div class="ctl"><label for="dpSp">Rake starts at ΔP</label><output id="oDp">6 in</output><input type="range" id="dpSp" min="2" max="14" step="0.5" value="6"><span class="hint">The rake also runs on a timer, and stops 3 in below this setpoint.</span></div>
+          <div class="ctl"><label for="rakeT">Timer: rake every</label><output id="oRakeT">15 min</output><input type="range" id="rakeT" min="5" max="60" step="5" value="15"></div>
+          <div class="ro">
+            <div><div class="k">Screen A ΔP</div><div class="v" id="s3">–</div></div>
+            <div><div class="k">Screen B ΔP</div><div class="v" id="s4">–</div></div>
+            <div><div class="k">Bypass flow</div><div class="v" id="s5">–</div></div>
+            <div><div class="k">Screenings dumpster</div><div class="v" id="s6">–</div></div>
+          </div>
+          <div class="row" style="margin-top:8px"><button class="btn" id="rakeA">Hold to rake A</button><button class="btn" id="rakeB">Hold to rake B</button><button class="btn" id="swapScr">Swap screenings dumpster</button></div>
+        </section>
+      </div>
+
+      <div class="stagepanel" data-panel="grit" hidden>
+        <section>
+          <h3>Vortex grit chamber GC-301</h3>
+          <label class="sw"><span>Paddle drive M-301 running</span><input type="checkbox" id="paddle" checked></label>
+          <div class="ctl"><label for="gpMin">Grit pump P-301 run time per hour</label><output id="oGp">10 min</output><input type="range" id="gpMin" min="0" max="30" step="1" value="10"><span class="hint">Storms deliver most of the year’s grit in a few hours. Pump more during first flush.</span></div>
+          <label class="sw"><span>Classifier wash water on</span><input type="checkbox" id="wash" checked></label>
+          <div class="ro">
+            <div><div class="k">Removal efficiency</div><div class="v" id="r1">–</div></div>
+            <div><div class="k">Hopper inventory</div><div class="v" id="r2">–</div></div>
+            <div><div class="k">Organics in grit</div><div class="v" id="r3">–</div></div>
+            <div><div class="k">Grit dumpster</div><div class="v" id="r4">–</div></div>
+          </div>
+          <div class="row" style="margin-top:8px"><button class="btn" id="gpNow">Hold to pump grit now</button><button class="btn" id="swapGrit">Swap grit dumpster</button></div>
+        </section>
+      </div>
+
+      <div class="stagepanel" data-panel="flow" hidden>
+        <section>
+          <h3>Flow measurement and sampling</h3>
+          <div class="ro" style="margin-bottom:8px"><div><div class="k">Parshall flume FIT-401</div><div class="v" id="f1">–</div></div><div><div class="k">Lift station FIT-102</div><div class="v" id="f2">–</div></div></div>
+          <div class="ctl"><label for="pace">Sampler pacing: one aliquot every</label><output id="oPace">40,000 gal</output><input type="range" id="pace" min="10000" max="120000" step="5000" value="40000"><span class="hint">Flow-paced compositing weights the sample by flow, as most permits require.</span></div>
+          <div class="ro"><div><div class="k">Aliquots today</div><div class="v" id="f3">–</div></div><div><div class="k">Refrigerator</div><div class="v" id="f4">–</div></div></div>
+        </section>
+        <section>
+          <h3>Odor control</h3>
+          <div id="fpH2S"></div>
+          <div class="tote"><span>Scrubber chemical</span><span class="lv"><i id="lvChem"></i></span><button class="btn" id="refillChem">Refill</button></div>
+          <div class="ro"><div><div class="k">Stack H₂S</div><div class="v" id="f5">–</div></div><div><div class="k">Influent dissolved sulfide</div><div class="v" id="f6">–</div></div></div>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <div class="card tabs">
+    <div class="tablist" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="loops">Control logic</button>
+      <button role="tab" aria-selected="false" data-tab="perf">Headworks performance</button>
+      <button role="tab" aria-selected="false" data-tab="trends">Trends</button>
+      <button role="tab" aria-selected="false" data-tab="alarms">Alarms and events<span class="badge" id="alBadge"></span></button>
+      <button role="tab" aria-selected="false" data-tab="io">I/O and tags</button>
+      <button role="tab" aria-selected="false" data-tab="faults">Fault and attack lab</button>
+      <button role="tab" aria-selected="false" data-tab="learn">Learn and quiz</button>
+    </div>
+    <div class="panel" id="p-loops" role="tabpanel">
+      <h3>How the RTU and PLCs are controlling the process right now</h3>
+      <p class="lead">Green blocks are acting; red blocks show a problem. The lift station floats are drawn separately because they bypass the RTU entirely.</p>
+      <div id="loopsBox"></div>
+    </div>
+    <div class="panel" id="p-perf" role="tabpanel" hidden>
+      <h3>What pretreatment removed and protected</h3>
+      <p class="lead">Pretreatment does not clean water much. Its job is to protect everything downstream: pumps, pipes, clarifiers, digesters and the biology. These are today’s running totals.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Today</th><th>Yesterday</th><th>Why it matters</th></tr></thead><tbody id="perfBody"></tbody></table></div>
+    </div>
+    <div class="panel" id="p-trends" role="tabpanel" hidden>
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <h3>SCADA historian, last 24 plant hours</h3>
+        <div class="seg" id="trendSel"><button data-v="lift" aria-pressed="true">Lift station</button><button data-v="scr" aria-pressed="false">Screens</button><button data-v="grit" aria-pressed="false">Grit</button><button data-v="qual" aria-pressed="false">Quality and odor</button></div>
+      </div>
+      <canvas id="trend"></canvas>
+      <div class="tkeys" id="tkeys"></div>
+    </div>
+    <div class="panel" id="p-alarms" role="tabpanel" hidden>
+      <div class="two">
+        <div>
+          <div class="row" style="justify-content:space-between;margin-bottom:8px"><h3>Alarm summary</h3><button class="btn primary" id="ackAll">Acknowledge all</button></div>
+          <div class="tbl-wrap"><table><thead><tr><th>Time</th><th>Priority</th><th>State</th><th>Message</th></tr></thead><tbody id="alBody"></tbody></table></div>
+          <p class="note">ISA-18.2 life cycle: flashing rows are unacknowledged. A cleared alarm stays listed until acknowledged.</p>
+        </div>
+        <div><h3>Event log</h3><div class="log" id="evLog"></div></div>
+      </div>
+    </div>
+    <div class="panel" id="p-io" role="tabpanel" hidden>
+      <h3>RTU and PLC tag database</h3>
+      <p class="lead">Values read directly from the controllers. RTU-100 reports over DNP3 by licensed radio; the headworks PLCs use Modbus/TCP.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Controller</th><th>Address</th><th>Tag</th><th>Type</th><th>Value</th><th>Description</th></tr></thead><tbody id="ioBody"></tbody></table></div>
+    </div>
+    <div class="panel lab" id="p-faults" role="tabpanel" hidden>
+      <div class="two">
+        <div>
+          <h3>Equipment and process faults</h3>
+          <p class="lead">Inject a failure, then find it using the scene, the logic view, trends and alarms.</p>
+          <div id="faultList"></div>
+          <div class="row" style="margin-top:8px"><button class="btn" id="clearFaults">Clear all faults</button><button class="btn" id="resetSim">Restart simulation</button></div>
+          <div class="mystery">
+            <h4 style="margin-top:0">Mystery fault challenge</h4>
+            <p class="note" style="margin-top:0">A random fault or attack is injected without telling you which. Investigate, then submit a diagnosis.</p>
+            <button class="btn primary" id="mStart" style="margin-top:8px">Inject a mystery fault</button>
+            <div id="mBox" hidden style="margin-top:10px"><div class="row"><select class="inp" id="mGuess" style="flex:1;min-width:220px" aria-label="Your diagnosis"></select><button class="btn primary" id="mSubmit">Submit diagnosis</button></div></div>
+            <div class="fb" id="mFb" role="status"></div>
+          </div>
+        </div>
+        <div>
+          <h3>Cyber attacks</h3>
+          <p class="lead">In 2000 a former contractor used radio equipment to send commands to sewage pumping stations in Maroochy Shire, Australia, causing hundreds of thousands of liters of sewage spills. Remote lift stations remain a soft target.</p>
+          <div id="atkList"></div>
+          <h4>Defenses</h4>
+          <div id="defList"></div>
+          <button class="btn primary" id="restore" style="margin-top:6px">Restore controllers from known-good backup</button>
+          <p class="note">Try the attacks with the high-level float failed as well. The hardwired float is often the last thing between an attack and a sewage spill.</p>
+        </div>
+      </div>
+    </div>
+    <div class="panel learn" id="p-learn" role="tabpanel" hidden>
+      <h3>How pretreatment works</h3>
+      <p class="lead">Pretreatment (the headworks) removes material that would damage or clog equipment downstream and measures and characterizes what is arriving. It changes BOD very little, but a plant without it fails quickly.</p>
+      <details class="acc" open><summary>Lift station</summary><div class="in">
+        <p>Gravity sewers end deep underground, so a lift station collects flow in a wet well and pumps it up to the headworks. Submersible pumps on variable-frequency drives (VFDs) are typical. A remote terminal unit (RTU) runs a level loop: as level rises above setpoint, pumps speed up. Lead/lag logic starts more pumps as demand rises and rotates the lead pump to even out wear.</p>
+        <p>Because a failure means sewage in streets and streams, stations carry hardwired backups: a high-level float that forces pumps on, and a low-level float that stops them before they run dry. A sanitary sewer overflow (SSO) is a reportable violation under the Clean Water Act.</p>
+      </div></details>
+      <details class="acc"><summary>Screening</summary><div class="in">
+        <p>Mechanically cleaned fine screens (often 6 mm openings) catch rags, wipes, plastics and debris. As material builds up, the screen blinds and the water level upstream rises above the level downstream. The PLC runs the rake on a timer and whenever differential level (ΔP) exceeds setpoint. Screenings are washed and compacted to reduce weight and odor before disposal.</p>
+        <div class="formula">Headloss rises roughly with the square of flow and with blinding: ΔP ∝ (Q ÷ open area)²</div>
+        <p>If screens cannot keep up, water overtops into a bypass channel with a coarse manual bar rack. Rags that pass foul pumps, mixers, diffusers and digesters for months.</p>
+      </div></details>
+      <details class="acc"><summary>Influent quality protection</summary><div class="in">
+        <p>A pH or conductivity analyzer on the influent gives early warning of illegal industrial discharges. Automatic diversion to an emergency basin protects the biological process, and the stored flow is bled back slowly once the event passes.</p>
+      </div></details>
+      <details class="acc"><summary>Grit removal</summary><div class="in">
+        <p>Grit (sand, gravel, coffee grounds, eggshells) is heavier than organic solids. In a vortex grit chamber, a paddle maintains a circular flow; grit spirals to the center hopper while lighter organics stay in suspension. A grit pump sends the slurry to a cyclone and a screw classifier that washes and dewaters it. Grit that escapes wears pumps and centrifuges and fills digesters and channels.</p>
+        <p>Removal efficiency falls at high flows, and storms deliver huge grit loads in the first flush, which is why operators increase grit pumping ahead of wet weather.</p>
+      </div></details>
+      <details class="acc"><summary>Flow, sampling and odor</summary><div class="in">
+        <p>A Parshall flume with an ultrasonic level sensor measures influent flow. That flow paces the composite sampler, which takes a small aliquot every set volume and holds it refrigerated at 6 °C or below. These samples are the legal basis for removal efficiency reporting.</p>
+        <p>Headworks release hydrogen sulfide, a toxic and corrosive gas. Fans draw air through a chemical scrubber or biofilter. Gas detectors protect workers; H₂S above about 10 ppm calls for action, and at high concentrations it deadens the sense of smell.</p>
+      </div></details>
+      <details class="acc"><summary>Control system and the Purdue model</summary><div class="in">
+        <div class="purdue">
+          <div><b>Level 3–5</b><span>Historian, LIMS for composite samples, CMMS, business IT.</span></div>
+          <div><b>Level 2</b><span>SCADA-1, HMI-1, radio master, and vendor remote access gateway RA-1.</span></div>
+          <div><b>Level 1</b><span>RTU-100 at the lift station; PLC-200 screens and diversion; PLC-300 grit; PLC-400 flow, sampling and odor.</span></div>
+          <div><b>Level 0</b><span>Level sensors, floats, pumps and VFDs, screens, gates, analyzers, fans.</span></div>
+        </div>
+        <p>Remote sites such as lift stations often reach SCADA over radio or cellular links. Those links must be authenticated and encrypted, or anyone with a radio can send commands, as Maroochy Shire showed.</p>
+      </div></details>
+      <details class="acc"><summary>Guided exercises</summary><div class="in">
+        <ol>
+          <li>Run a full day at 20×. When do the lag pumps start? Compare pump power at night and at the afternoon peak.</li>
+          <li>Start a storm. Track wet well level, the number of pumps running and screen ΔP. Did anything overflow?</li>
+          <li>During the storm’s first flush, watch the grit hopper. Raise grit pumping until the hopper stops climbing.</li>
+          <li>Trigger a wipes surge. Watch pump amps rise as rags build up, then run a de-rag cycle.</li>
+          <li>Take channel B out of service during a wipes surge. When does the bypass start, and how many rags get through?</li>
+          <li>Trigger an acid dump with automatic diversion on, then with it off. Compare acid minutes passed.</li>
+          <li>Launch the radio pump-stop attack. What stopped the overflow? Repeat with the high-level float failed.</li>
+          <li>Complete three mystery fault challenges.</li>
+        </ol>
+      </div></details>
+      <h3 style="margin-top:16px">Glossary</h3>
+      <p class="lead">Tap a card to flip it.</p>
+      <div class="cards" id="gloss"></div>
+      <h3 style="margin-top:18px">Check your understanding</h3>
+      <div class="quiz" id="quiz"></div>
+      <div class="row"><button class="btn primary" id="qGrade">Grade quiz</button><button class="btn" id="qReset">Reset quiz</button><span class="score" id="qScore"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const root = document.documentElement;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- theme: light by default ---------- */
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('ics-pretreat-theme'); } catch (e) {}
+root.dataset.theme = savedTheme || 'light';
+const isDark = () => root.dataset.theme === 'dark';
+const updThemeBtn = () => { $('#themeBtn').textContent = isDark() ? 'Light mode' : 'Dark mode'; };
+$('#themeBtn').onclick = () => { const n = isDark() ? 'light' : 'dark'; root.dataset.theme = n; try { localStorage.setItem('ics-pretreat-theme', n); } catch (e) {} updThemeBtn(); };
+updThemeBtn();
+
+/* ---------- constants ---------- */
+const W = 1400, H = 540, GAL_FT = 11220, PUMP_CAP = 4000, SCR_DES = 2778, DB_VOL = 500000, GRIT_HOP = 300;
+const PN = ['A', 'B', 'C'];
+const FAULTS = {
+  pumpA:   { name: 'Pump P-101A tripped on overload', sym: 'The lead pump stops. The RTU should skip to the next available pump; watch the level and the pump cards.', fix: 'Megger the motor and check for a jammed impeller before resetting.' },
+  pumpRag: { name: 'Pump P-101B heavily ragged', sym: 'P-101B draws high amps but delivers about half its flow. The level loop compensates with more speed and earlier lag starts.', fix: 'Run a de-rag cycle; if it returns, pull the pump and clean the impeller.' },
+  lit:     { name: 'Wet well level transmitter LIT-101 frozen', sym: 'The level reading stops changing. The loop thinks nothing is happening while the real level drifts. Only the floats, or a plausibility check, catch it.', fix: 'Compare with the floats and a manual tape measurement; replace the transmitter.' },
+  float:   { name: 'High-level float LSHH stuck', sym: 'Nothing visible in normal operation. The hidden danger: the last line of defense against an overflow is gone.', fix: 'Test floats on a schedule by lifting them and confirming pump response.' },
+  screenJam: { name: 'Screen SC-201A rake drive jammed', sym: 'Screen A cannot clean itself. Its ΔP climbs until flow overtops into the bypass, carrying rags downstream.', fix: 'Lock out the screen, clear the obstruction, and reset the torque switch.' },
+  compactor: { name: 'Washer/compactor WC-201 jammed', sym: 'With nowhere to discharge, both rakes are interlocked off. Both screens blind together.', fix: 'Clear the compactor; consider a manual bypass chute during repairs.' },
+  gritPump:  { name: 'Grit pump P-301 plugged', sym: 'The pump runs on its timer but moves nothing. The hopper fills and grit carries over downstream.', fix: 'Back-flush the suction line and check the knife-gate valve.' },
+  paddle:    { name: 'Vortex paddle drive M-301 failed', sym: 'Without the controlled vortex, grit removal falls sharply, especially at high flow.', fix: 'Repair the drive; the paddle must run whenever the chamber is in service.' },
+  phProbe:   { name: 'Influent pH probe AIT-201 fouled', sym: 'The probe reads a steady 7.2 no matter what arrives. Acid slugs pass straight to the biology without diversion.', fix: 'Clean and calibrate; consider a second analyzer, such as conductivity, for redundancy.' },
+  sampler:   { name: 'Sampler refrigerator failed', sym: 'Sample hold temperature rises above 6 °C, invalidating the composite sample for permit reporting.', fix: 'Repair the refrigerator; document the invalid sample and resample.' },
+  odorFan:   { name: 'Odor control fan EF-401 failed', sym: 'Air is no longer drawn through the scrubber. H₂S builds up inside the headworks building.', fix: 'Repair the fan. Until then, require gas monitors and ventilation before entry.' }
+};
+const ATTACKS = {
+  stop:  { name: 'Radio command: stop all pumps', detail: 'An attacker with a radio sends unauthenticated DNP3 control commands that stop all three pumps and lock out auto restart at RTU-100.', path: 'radio' },
+  spoof: { name: 'Radio level spoofing', detail: 'Injected DNP3 responses make LIT-101 read 3.0 ft, so the RTU slows the pumps while the real level rises.', path: 'radio' },
+  remote:{ name: 'Remote session: screens off, alarms off', detail: 'Stolen vendor credentials open a session on HMI-1. The attacker puts both rakes in manual off, disables pH diversion and suppresses alarms.', path: 'remote' }
+};
+const DEFENSES = {
+  auth: { name: 'Authenticated, encrypted telemetry', d: 'DNP3 Secure Authentication over an encrypted radio link. Unauthenticated commands and responses are rejected.' },
+  mfa:  { name: 'Secure remote access', d: 'MFA plus operator approval for every vendor session through RA-1.' },
+  safe: { name: 'RTU plausibility and safe-state logic', d: 'RTU-100 checks the level reading against flow balance and a backup bubbler, and refuses to keep pumps off above 12 ft.' },
+  mon:  { name: 'Independent process monitor', d: 'Passive monitoring that alarms on stop commands, implausible readings, suppressed alarms and disabled automation.' }
+};
+const AL = {
+  WW_HI: ['Medium', 'Wet well level high (>14 ft)'], WW_HH: ['High', 'Wet well high-high: float LSHH tripped'], SSO: ['High', 'Sanitary sewer overflow at manhole MH-1'],
+  WW_LO: ['Medium', 'Wet well low level: pumps stopped'], P_A: ['High', 'Pump P-101A tripped'], P_B: ['High', 'Pump P-101B tripped'], P_C: ['High', 'Pump P-101C tripped'],
+  P_AMP: ['Medium', 'Pump motor amps high: possible ragging'], LIT_BAD: ['High', 'LIT-101 failed plausibility: RTU switched to backup bubbler'],
+  DIV: ['Medium', 'Influent pH out of range: diverting to DB-202'], DB_HI: ['Medium', 'Diversion basin above 80%'],
+  SCR_A: ['Medium', 'Screen A differential high (>10 in)'], SCR_B: ['Medium', 'Screen B differential high (>10 in)'], SCR_JAM: ['High', 'Screen SC-201A rake torque trip'],
+  BYPASS: ['High', 'Flow overtopping into bypass channel'], COMP: ['High', 'Washer/compactor WC-201 jammed: rakes interlocked'], DUMP_S: ['Medium', 'Screenings dumpster full'],
+  GRIT_HOP: ['Medium', 'Grit hopper above 80%'], GRIT_P: ['High', 'P-301 running with no flow'], PADDLE: ['High', 'Vortex paddle M-301 not running'], DUMP_G: ['Medium', 'Grit dumpster full'],
+  SMP_T: ['Medium', 'Sampler refrigerator above 6 °C'], H2S_10: ['High', 'Headworks H₂S at 10 ppm'], H2S_20: ['High', 'Headworks H₂S at 20 ppm: evacuate'], FAN: ['High', 'Odor fan EF-401 not running'],
+  STACK: ['Medium', 'Scrubber stack H₂S high: odor complaints likely'], CHEM: ['Low', 'Scrubber chemical tote low'],
+  MON_STOP: ['High', 'Monitor: pump stop commands received from unknown radio source'], MON_LIT: ['High', 'Monitor: LIT-101 value inconsistent with flow balance'],
+  MON_ALM: ['High', 'Monitor: HMI alarm reporting disabled'], MON_SCR: ['High', 'Monitor: screen rakes and diversion disabled by remote session']
+};
+
+/* ---------- state ---------- */
+let S;
+function loop(sp, kp, ti, out, dir = 1) { return { mode: 'auto', sp, kp, ti, out, i: out, pv: 0, man: out, dir }; }
+function pumpObj() { return { trip: false, rag: 0.05, run: false, q: 0, amps: 0, hours: 0 }; }
+function newState() {
+  S = {
+    t: 360, inf: { pattern: 'diurnal', qavg: 4 }, ev: { storm: 0, wipes: 0, acid: 0, septic: 0 },
+    q: 4, qin: 2778, ph: 7.3, sulf: 1,
+    ww: { L: 8, lit: 8, frozen: null, loop: loop(8, 15, 20, 79, -1), n: 1, lead: 0, hiT: 0, loT: 0, pumps: [pumpObj(), pumpObj(), pumpObj()], qout: 2778, floatHH: false, floatLL: false, sso: 0, ssoRate: 0, stopCmd: false, spoof: false, useBackup: false, badT: 0, kw: 0 },
+    div: { auto: true, on: false, okT: 0, basin: 0, ret: false, retQ: 0, disabled: false, meas: 7.3 },
+    scr: { ch: [{ on: true, blind: 0.15, dp: 1, rake: false, man: false, t: 0, last: 0, dis: false }, { on: true, blind: 0.25, dp: 1, rake: false, man: false, t: 0, last: 7, dis: false }], dpSp: 6, timer: 15, bypass: 0, dump: 20, remoteOff: false },
+    grit: { paddle: true, pumpMin: 10, man: false, inv: 60, eff: 0.9, wash: true, dump: 20, pumpRun: false, pumpCmd: false, org: 8 },
+    flow: { meas: 2778, pace: 40000, acc: 0, aliquots: 0, fridge: 4, loop: loop(5, 6, 20, 60, -1), bH2S: 4, stack: 0.05, chem: 80 },
+    day: { sso: 0, rags: 0, acid: 0, screenings: 0, grit: 0, gritPassed: 0, kwh: 0, mg: 0, idx: 0 }, prev: null,
+    faults: {}, def: { auth: false, mfa: false, safe: false, mon: false }, suppress: false,
+    alarms: [], events: [], trend: [], trendT: 0, mystery: null, packets: []
+  };
+  logEv('sys', 'Simulation started. RTU-100 and PLC-200 to PLC-400 in RUN.');
+}
+const clockStr = t => { const m = Math.floor(t) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+function logEv(cat, msg) { S.events.unshift({ t: S.t, cat, msg }); if (S.events.length > 160) S.events.pop(); }
+function pid(L, pv, dt) {
+  L.pv = pv; const e = L.dir * (L.sp - pv);
+  if (L.mode === 'auto') {
+    const p = L.kp * e;
+    L.i = clamp(L.i + (L.kp / Math.max(0.2, L.ti)) * e * dt, -50, 150);
+    if (p + L.i > 100) L.i = 100 - p; else if (p + L.i < 0) L.i = -p;
+    L.out = clamp(p + L.i, 0, 100);
+  } else { L.out = L.man; L.i = L.out - L.kp * e; }
+}
+
+/* ---------- process model (dt in plant minutes) ---------- */
+function step(dt) {
+  S.t += dt;
+  const di = Math.floor(S.t / 1440);
+  if (di !== S.day.idx) { S.prev = { ...S.day }; S.day = { sso: 0, rags: 0, acid: 0, screenings: 0, grit: 0, gritPassed: 0, kwh: 0, mg: 0, idx: di }; S.flow.aliquots = 0; }
+  const hr = (S.t / 60) % 24, E = S.ev;
+  for (const k in E) if (E[k] > 0) E[k] -= dt;
+  // inflow
+  let f = S.inf.pattern === 'diurnal' ? 1 + 0.4 * Math.sin(2 * Math.PI * (hr - 8) / 24) : 1;
+  let stormF = 1, flush = 1;
+  if (E.storm > 0) { const k = clamp(Math.min((360 - E.storm) / 40, E.storm / 60), 0, 1); stormF = 1 + 1.8 * k; flush = (360 - E.storm) < 150 ? 1 + 7 * k : 1 + 1.5 * k; }
+  S.q = S.inf.qavg * f * stormF; S.qin = S.q * 694.4;
+  const ragLoad = (E.wipes > 0 ? 4 : 1) * (E.storm > 0 && (360 - E.storm) < 150 ? 2.5 : 1);
+  S.ph = E.acid > 0 ? 3.6 : 7.3;
+  S.sulf += ((E.septic > 0 ? 5 : 1) * (S.q < 3 ? 1.2 : 1) - S.sulf) * dt / 30;
+
+  // ---- lift station ----
+  const Wl = S.ww, P = Wl.pumps;
+  if (S.faults.pumpA && !P[0].trip) { P[0].trip = true; logEv('alarm', 'P-101A tripped on motor overload.'); }
+  if (S.faults.pumpRag) P[1].rag = Math.max(P[1].rag, 0.8);
+  // transmitter
+  if (S.faults.lit && Wl.frozen == null) Wl.frozen = Wl.lit;
+  if (!S.faults.lit) Wl.frozen = null;
+  const raw = Wl.spoof ? 3.0 : (Wl.frozen != null ? Wl.frozen : Wl.L);
+  Wl.lit = raw + (Wl.frozen != null || Wl.spoof ? 0 : (Math.random() - .5) * 0.04);
+  // plausibility check (defense)
+  if (S.def.safe) { Wl.badT = Math.abs(Wl.lit - Wl.L) > 1.5 ? Wl.badT + dt : 0; if (Wl.badT > 5 && !Wl.useBackup) { Wl.useBackup = true; logEv('alarm', 'RTU-100 rejected LIT-101 as implausible and switched to backup bubbler LIT-101B.'); } }
+  else Wl.useBackup = false;
+  if (Wl.useBackup && Math.abs(Wl.lit - Wl.L) < 0.3) { Wl.badT = 0; }
+  const lvl = Wl.useBackup ? Wl.L : Wl.lit;
+  pid(Wl.loop, lvl, dt);
+  // lead/lag on available pumps
+  const order = [0, 1, 2].map(i => (Wl.lead + i) % 3).filter(i => !P[i].trip);
+  Wl.hiT = Wl.loop.out >= 97 ? Wl.hiT + dt : 0;
+  Wl.loT = Wl.loop.out < 50 ? Wl.loT + dt : 0;
+  if (Wl.n === 0 && lvl > 4) Wl.n = 1;
+  if (lvl < 2.5) Wl.n = 0;
+  if (Wl.hiT > 2 && Wl.n < order.length && Wl.n > 0) { Wl.n++; Wl.hiT = 0; logEv('sys', 'RTU-100 started a lag pump: ' + Wl.n + ' running.'); }
+  if (Wl.loT > 5 && Wl.n > 1) { Wl.n--; Wl.loT = 0; logEv('sys', 'RTU-100 stopped a lag pump: ' + Wl.n + ' running.'); }
+  Wl.n = Math.min(Wl.n, order.length);
+  let nRun = Wl.n, spd = Math.max(35, Wl.loop.out);
+  if (Wl.stopCmd) { const override = S.def.safe && Wl.L > 12; nRun = override ? Math.max(1, Wl.n) : 0; }
+  // hardwired floats (actual level)
+  Wl.floatHH = Wl.L >= 16 && !S.faults.float;
+  Wl.floatLL = Wl.L <= 1.5;
+  let forced = false;
+  if (Wl.floatHH) { nRun = Math.max(nRun, Math.min(2, order.length)); forced = true; }
+  if (Wl.floatLL) nRun = 0;
+  let qout = 0, kw = 0;
+  P.forEach(p => { p.run = false; p.q = 0; p.amps = 0; });
+  order.slice(0, nRun).forEach(i => {
+    const p = P[i], s = forced ? 100 : spd;
+    p.run = true; p.s = s;
+    p.q = PUMP_CAP * clamp((s - 30) / 70, 0, 1) * (1 - 0.6 * p.rag);
+    p.amps = Math.pow(s / 100, 2) * 100 * (1 + 0.5 * p.rag);
+    p.rag = clamp(p.rag + ragLoad * 0.00012 * dt, 0, 1);
+    p.hours += dt / 60;
+    qout += p.q; kw += 110 * Math.pow(s / 100, 3) * (1 + 0.3 * p.rag) + 8;
+  });
+  Wl.qout = qout; Wl.kw = kw; Wl.forced = forced; Wl.nRun = nRun;
+  S.day.kwh += kw * dt / 60; S.day.mg += qout * dt / 1e6;
+  Wl.L += (S.qin - qout) * dt / GAL_FT;
+  Wl.ssoRate = 0;
+  if (Wl.L > 19) { const ex = (Wl.L - 19) * GAL_FT; Wl.sso += ex; S.day.sso += ex; Wl.ssoRate = ex / dt; Wl.L = 19; }
+  Wl.L = Math.max(0, Wl.L);
+
+  // ---- diversion ----
+  const D = S.div;
+  D.meas = S.faults.phProbe ? 7.2 : S.ph;
+  const bad = D.meas < 5.5 || D.meas > 10;
+  if (D.auto && !D.disabled && bad && !D.on && D.basin < 99) { D.on = true; logEv('alarm', 'pH ' + D.meas.toFixed(1) + ' at AIT-201: gate GV-202 diverting influent to DB-202.'); }
+  if (D.on) { D.okT = bad ? 0 : D.okT + dt; if (D.okT > 10 || D.basin >= 99 || D.disabled || !D.auto) { D.on = false; logEv('sys', 'Diversion ended; flow returned to the screens.'); } }
+  if (D.on) D.basin = clamp(D.basin + qout * dt / DB_VOL * 100, 0, 100);
+  D.retQ = D.ret && D.basin > 0.1 ? 400 : 0;
+  D.basin = clamp(D.basin - D.retQ * dt / DB_VOL * 100, 0, 100);
+  if (S.ph < 5.5 && !D.on) S.day.acid += dt;
+  const Qf = (D.on ? 0 : qout) + D.retQ;
+  S.qf = Qf;
+
+  // ---- screens ----
+  const C = S.scr, ch = C.ch;
+  const compOK = !S.faults.compactor && C.dump < 100;
+  const inServ = ch.filter(c => c.on);
+  const qEach = inServ.length ? Qf / inServ.length : 0;
+  let bypassFrac = inServ.length ? 0 : 1, maxdp = 0;
+  ch.forEach((c, i) => {
+    if (!c.on) { c.dp = 0; c.rake = false; return; }
+    c.blind = clamp(c.blind + 0.02 * ragLoad * (qEach / SCR_DES) * dt, 0, 0.97);
+    c.dp = clamp(2.5 * Math.pow(qEach / SCR_DES, 2) / Math.pow(1 - c.blind, 2), 0, 30);
+    const jam = i === 0 && S.faults.screenJam;
+    let want;
+    if (C.remoteOff) want = false;
+    else if (c.man) want = true;
+    else { c.last += dt; const timerOn = (c.last % C.timer) < 2; want = timerOn || c.dp >= C.dpSp || (c.rake && c.dp > C.dpSp - 3); }
+    c.rake = want && !jam && compOK;
+    c.jam = jam;
+    if (c.rake) { const rem = Math.min(c.blind - 0.03, 0.12 * dt); if (rem > 0) { c.blind -= rem; C.dump = clamp(C.dump + rem * 0.35, 0, 100); S.day.screenings += rem * 5; } }
+    maxdp = Math.max(maxdp, c.dp);
+    if (c.dp > 18) bypassFrac = Math.max(bypassFrac, clamp((c.dp - 18) / 8, 0, 0.9) / inServ.length);
+  });
+  C.bypass = Qf * bypassFrac; C.maxdp = maxdp;
+  const ragsPassed = (bypassFrac * 0.7 + (1 - bypassFrac) * 0.04) * ragLoad * Qf / 1e6 * 4; // ft3/min
+  S.day.rags += ragsPassed * dt;
+
+  // ---- grit ----
+  const G = S.grit;
+  const qmgd = Qf / 694.4;
+  const gritIn = 50 * qmgd / 1440 * flush;
+  const pad = G.paddle && !S.faults.paddle;
+  G.padOn = pad;
+  G.eff = clamp(1.1 - 0.05 * qmgd, 0.4, 0.97) * (pad ? 1 : 0.55) * (G.inv / GRIT_HOP > 0.7 ? clamp(1 - (G.inv / GRIT_HOP - 0.7) * 2.5, 0.2, 1) : 1);
+  G.inv = clamp(G.inv + gritIn * G.eff * dt, 0, GRIT_HOP);
+  G.pumpCmd = G.man || (S.t % 60) < G.pumpMin;
+  G.pumpRun = G.pumpCmd && !S.faults.gritPump;
+  if (G.pumpRun && G.inv > 0) { const out = Math.min(G.inv, 8 * dt); G.inv -= out; G.dump = clamp(G.dump + out / 30, 0, 100); S.day.grit += out; }
+  G.org = G.wash ? 6 : 22;
+  S.day.gritPassed += gritIn * (1 - G.eff) * dt;
+
+  // ---- flow, sampling, odor ----
+  const F = S.flow;
+  F.meas = Qf;
+  F.acc += Qf * dt;
+  while (F.acc >= F.pace) { F.acc -= F.pace; F.aliquots++; }
+  F.fridge += ((S.faults.sampler ? 24 : 4) - F.fridge) * dt / 120;
+  const fanOK = !S.faults.odorFan;
+  pid(F.loop, F.bH2S, dt);
+  const fanSp = fanOK ? F.loop.out : 0;
+  F.fanOn = fanOK && fanSp > 5; F.fanSp = fanSp;
+  const src = S.sulf * 4.5 * Math.sqrt(Math.max(0.2, Qf / 2778));
+  F.bTarget = src / (0.25 + 0.95 * fanSp / 100);
+  F.bH2S += (F.bTarget - F.bH2S) * dt / 10;
+  const chemOK = F.chem > 0;
+  F.stack = F.fanOn ? F.bH2S * (chemOK ? 0.01 : 0.45) : 0;
+  F.chem = Math.max(0, F.chem - (F.fanOn ? F.bH2S * 0.0004 * dt : 0));
+
+  // historian
+  S.trendT += dt;
+  if (S.trendT >= 2) {
+    S.trendT = 0;
+    S.trend.push({ L: Wl.L, lit: Wl.lit, spd: Wl.nRun ? (Wl.forced ? 100 : spd) : 0, n: Wl.nRun, qin: S.qin, dpa: ch[0].dp, dpb: ch[1].dp, byp: C.bypass, eff: G.eff * 100, inv: G.inv / GRIT_HOP * 100, flush, phm: D.meas, pha: S.ph, bh: F.bH2S, fr: F.fridge });
+    if (S.trend.length > 720) S.trend.shift();
+  }
+  alarmsScan();
+}
+
+/* ---------- alarms ---------- */
+function cond(id, active) {
+  let a = S.alarms.find(x => x.id === id && !x.done);
+  if (active) {
+    if (!a) { S.alarms.unshift({ id, p: AL[id][0], txt: AL[id][1], t: S.t, active: true, acked: false, done: false }); logEv(id.startsWith('MON') ? 'sec' : 'alarm', AL[id][1]); }
+    else if (!a.active) { a.active = true; a.acked = false; a.t = S.t; }
+  } else if (a && a.active) { a.active = false; if (a.acked) a.done = true; }
+}
+function alarmsScan() {
+  const Wl = S.ww, P = Wl.pumps, C = S.scr, G = S.grit, F = S.flow, D = S.div;
+  const lvl = Wl.useBackup ? Wl.L : Wl.lit;
+  cond('WW_HI', lvl > 14); cond('WW_HH', Wl.floatHH); cond('SSO', Wl.ssoRate > 0); cond('WW_LO', lvl < 2.5);
+  cond('P_A', P[0].trip); cond('P_B', P[1].trip); cond('P_C', P[2].trip);
+  cond('P_AMP', P.some(p => p.run && p.amps > 95 && p.rag > 0.4)); cond('LIT_BAD', Wl.useBackup);
+  cond('DIV', D.on); cond('DB_HI', D.basin > 80);
+  cond('SCR_A', C.ch[0].dp > 10); cond('SCR_B', C.ch[1].dp > 10); cond('SCR_JAM', S.faults.screenJam && C.ch[0].on);
+  cond('BYPASS', C.bypass > 1); cond('COMP', !!S.faults.compactor); cond('DUMP_S', C.dump >= 100);
+  cond('GRIT_HOP', G.inv / GRIT_HOP > 0.8); cond('GRIT_P', G.pumpCmd && !G.pumpRun); cond('PADDLE', !G.padOn); cond('DUMP_G', G.dump >= 100);
+  cond('SMP_T', F.fridge > 6); cond('H2S_10', F.bH2S >= 10 && F.bH2S < 20); cond('H2S_20', F.bH2S >= 20); cond('FAN', !F.fanOn);
+  cond('STACK', F.stack > 1); cond('CHEM', F.chem < 15);
+  const m = S.def.mon;
+  cond('MON_STOP', m && Wl.stopCmd); cond('MON_LIT', m && Math.abs(Wl.lit - Wl.L) > 1.5);
+  cond('MON_ALM', m && S.suppress); cond('MON_SCR', m && (C.remoteOff || D.disabled));
+  S.alarms = S.alarms.filter(a => !a.done).slice(0, 60);
+}
+const visibleAlarms = () => S.alarms.filter(a => !a.done && (!S.suppress || a.id.startsWith('MON')));
+
+/* ====================================================== */
+/*                       RENDERING                         */
+/* ====================================================== */
+const cv = $('#scene'), ctx = cv.getContext('2d');
+let showTags = true, showVals = true, hover = null, selected = null, stage = 'plant';
+const STAGES = { lift: [0, 330], screen: [334, 700], grit: [704, 1012], flow: [1016, 1400] };
+function resize() { const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.width * H / W * dpr)); }
+function rr(x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+function hex2rgb(h) { if (h[0] !== '#') return h.match(/\d+/g).slice(0, 3).map(Number); const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mix(a, b, t) { const A = hex2rgb(a), B = hex2rgb(b); t = clamp(t, 0, 1); return 'rgb(' + A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',') + ')'; }
+function txt(s, x, y, o = {}) {
+  ctx.font = (o.w || 600) + ' ' + (o.s || 12) + "px 'Barlow Condensed','Arial Narrow',sans-serif";
+  ctx.textAlign = o.a || 'center'; ctx.textBaseline = 'middle';
+  if (o.halo) { ctx.lineWidth = 3; ctx.strokeStyle = o.halo; ctx.strokeText(s, x, y); }
+  ctx.fillStyle = o.c || '#1b2630'; ctx.fillText(s, x, y);
+}
+function tag(s, x, y, a) { if (!showTags) return; const d = isDark(); txt(s, x, y, { s: 12, a, c: d ? '#cdd6de' : '#24303b', halo: d ? 'rgba(20,26,32,.85)' : 'rgba(238,241,244,.9)' }); }
+function note(s, x, y, a = 'left') { txt(s, x, y, { s: 11, a, c: isDark() ? '#9aa6b2' : '#56626e', w: 500 }); }
+function badge(s, x, y, bad) {
+  if (!showVals) return;
+  ctx.font = "700 12px 'Barlow Condensed','Arial Narrow',sans-serif";
+  const w = ctx.measureText(s).width + 10;
+  rr(x - w / 2, y - 9, w, 18, 4); ctx.fillStyle = bad ? '#7d0a1d' : '#14202b'; ctx.fill();
+  txt(s, x, y + .5, { s: 12, c: bad ? '#ffd2d8' : '#7dffc0', w: 700 });
+}
+function led(x, y, on, col, r = 3) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = on ? col : '#3a4148'; ctx.fill(); if (on) { ctx.save(); ctx.globalAlpha = .3; ctx.beginPath(); ctx.arc(x, y, r * 2.3, 0, Math.PI * 2); ctx.fill(); ctx.restore(); } }
+function pipe(pts, w, flowing, col, speed = 1, base) {
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) ctx.lineTo(p[0], p[1]);
+  ctx.strokeStyle = '#5f6871'; ctx.lineWidth = w + 2; ctx.stroke();
+  ctx.strokeStyle = base || (isDark() ? '#8d97a1' : '#b8c0c7'); ctx.lineWidth = w; ctx.stroke();
+  if (flowing) { ctx.save(); ctx.setLineDash([5, 9]); ctx.lineDashOffset = -anim.t * 30 * speed; ctx.strokeStyle = col || 'rgba(255,255,255,.85)'; ctx.lineWidth = Math.max(1.5, w / 3); ctx.stroke(); ctx.restore(); }
+}
+const concrete = d => d ? '#6d6a63' : '#b3afa6';
+function steel(x0, x1, d) { const g = ctx.createLinearGradient(x0, 0, x1, 0); if (d) { g.addColorStop(0, '#59626b'); g.addColorStop(.35, '#a5adb5'); g.addColorStop(1, '#4b535b'); } else { g.addColorStop(0, '#8a939c'); g.addColorStop(.35, '#eef1f4'); g.addColorStop(.6, '#bcc4cb'); g.addColorStop(1, '#7b848e'); } return g; }
+function shield(x, y, col, t) {
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, y - 13); ctx.lineTo(x + 10, y - 9); ctx.lineTo(x + 10, y + 1); ctx.quadraticCurveTo(x + 6, y + 10, x, y + 13); ctx.quadraticCurveTo(x - 6, y + 10, x - 10, y + 1); ctx.lineTo(x - 10, y - 9); ctx.closePath(); ctx.fill();
+  txt(t, x, y, { s: t.length > 2 ? 7.5 : 9.5, c: '#fff', w: 700 });
+}
+function dumpster(x, y, w, h, pct, col, label) {
+  ctx.fillStyle = isDark() ? '#2f6b4a' : '#3d8c5f'; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w - 4, y + h); ctx.lineTo(x + 4, y + h); ctx.closePath(); ctx.fill();
+  const fh = (h - 4) * clamp(pct / 100, 0, 1); ctx.fillStyle = col; ctx.fillRect(x + 4, y + h - 2 - fh, w - 8, fh);
+  if (pct > 60) { ctx.beginPath(); ctx.moveTo(x + 4, y + h - 2 - fh); ctx.quadraticCurveTo(x + w / 2, y + h - 2 - fh - 8 * (pct / 100), x + w - 4, y + h - 2 - fh); ctx.fill(); }
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x, y, w, 3);
+  tag(label, x + w / 2, y + h + 10);
+}
+const anim = { t: 0, paddle: 0, rake: [0, 0], swirl: 0, bub: [] };
+const SEW = '#6e5638', SEW2 = '#4f3e27';
+
+function drawBase(d) {
+  let g = ctx.createLinearGradient(0, 0, 0, 330);
+  g.addColorStop(0, d ? '#1b2530' : '#dbe7f0'); g.addColorStop(1, d ? '#232c36' : '#eef2f5');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 330);
+  g = ctx.createLinearGradient(0, 330, 0, H); g.addColorStop(0, d ? '#3a3129' : '#9b8466'); g.addColorStop(1, d ? '#2a231d' : '#7f6b52');
+  ctx.fillStyle = g; ctx.fillRect(0, 330, W, H - 330);
+  ctx.fillStyle = d ? 'rgba(0,0,0,.18)' : 'rgba(80,60,40,.18)';
+  for (let x = 6; x < W; x += 22) for (let y = 342; y < H; y += 14) ctx.fillRect(x + ((y / 14) % 2) * 11, y, 3, 2);
+  ctx.fillStyle = d ? '#3f5a35' : '#6fa35a'; ctx.fillRect(0, 326, W, 5);
+  // headworks building
+  ctx.fillStyle = d ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.45)'; ctx.fillRect(336, 116, 676, 214);
+  ctx.strokeStyle = concrete(d); ctx.lineWidth = 4; ctx.strokeRect(336, 116, 676, 214);
+  ctx.fillStyle = d ? '#4b545c' : '#8d969e'; ctx.fillRect(330, 110, 688, 8);
+  note('Headworks building', 342, 124);
+  ctx.fillStyle = concrete(d); ctx.fillRect(338, 258, 672, 4);
+  if (S.flow.bH2S > 6) { ctx.fillStyle = 'rgba(200,210,90,' + clamp((S.flow.bH2S - 6) / 40, 0, .35) + ')'; ctx.fillRect(338, 118, 672, 140); }
+}
+function drawNetwork(d) {
+  ctx.strokeStyle = '#1f6fd1'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(300, 32); ctx.lineTo(1330, 32); ctx.stroke();
+  const box = (x, y, w, h, label) => { rr(x, y, w, h, 4); ctx.fillStyle = d ? '#3a434d' : '#4a535c'; ctx.fill(); txt(label, x + w / 2, y + h / 2, { s: 13, c: '#fff' }); };
+  for (const [x, l] of [[520, 'PLC-200'], [860, 'PLC-300'], [1200, 'PLC-400']]) {
+    ctx.strokeStyle = '#1f6fd1'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, 32); ctx.lineTo(x, 48); ctx.stroke();
+    box(x - 38, 48, 76, 24, l); led(x + 30, 54, true, '#3be37f', 2); led(x + 30, 62, Math.floor(anim.t * 5 + x) % 2 === 0, '#ffb020', 2);
+  }
+  ctx.beginPath(); ctx.moveTo(700, 32); ctx.lineTo(700, 22); ctx.stroke(); box(645, 2, 110, 20, 'SCADA-1 / HMI-1');
+  // radio master + link to RTU
+  ctx.strokeStyle = '#5f6871'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(320, 32); ctx.lineTo(320, 8); ctx.stroke();
+  box(296, 36, 48, 18, 'Radio');
+  ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = S.def.auth ? '#00a86b' : '#c08a00'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(316, 10); ctx.quadraticCurveTo(200, -6, 46, 196); ctx.stroke(); ctx.restore();
+  note(S.def.auth ? 'DNP3-SA, encrypted' : 'licensed radio, DNP3 (no auth)', 150, 40);
+  if (S.def.auth) shield(250, 30, '#00a86b', 'SA');
+  // remote access
+  ctx.strokeStyle = '#1f6fd1'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(1330, 32); ctx.lineTo(1400, 32); ctx.stroke();
+  ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1300, 32); ctx.lineTo(1300, 48); ctx.stroke();
+  box(1274, 48, 52, 20, 'RA-1'); note('vendor remote access', 1300, 76, 'center');
+  if (S.def.mfa) shield(1340, 44, '#0047AB', 'MFA');
+  // packets
+  const now = performance.now();
+  S.packets = S.packets.filter(p => now - p.t0 < 2400);
+  for (const p of S.packets) {
+    const k = Math.min(1, (now - p.t0) / 1100), path = p.path, stopAt = p.blocked ? p.stopAt : 1, kk = Math.min(k, stopAt);
+    const segs = path.length - 1, s = kk * segs, i = Math.min(segs - 1, Math.floor(s)), f = s - i;
+    const x = path[i][0] + (path[i + 1][0] - path[i][0]) * f, y = path[i][1] + (path[i + 1][1] - path[i][1]) * f;
+    ctx.fillStyle = '#ff3b4f'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.globalAlpha = .3; ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    if (k >= stopAt && p.blocked) { ctx.strokeStyle = '#00a86b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - 7, y - 7); ctx.lineTo(x + 7, y + 7); ctx.moveTo(x + 7, y - 7); ctx.lineTo(x - 7, y + 7); ctx.stroke(); }
+  }
+}
+function drawBands(d) {
+  const names = { lift: 'Lift station', screen: 'Screening', grit: 'Grit removal', flow: 'Flow, sampling and odor' };
+  for (const k in STAGES) {
+    const [x0, x1] = STAGES[k], on = stage === k, hv = hover === 'band-' + k;
+    rr(x0 + 4, 84, x1 - x0 - 8, 22, 5);
+    ctx.fillStyle = on ? '#0047AB' : hv ? (d ? '#2c3a4c' : '#cfdbea') : (d ? 'rgba(255,255,255,.06)' : 'rgba(0,71,171,.07)'); ctx.fill();
+    txt(names[k], (x0 + x1) / 2, 95.5, { s: 14, c: on ? '#fff' : (d ? '#c5d4e8' : '#0047AB') });
+  }
+}
+
+function drawLift(d) {
+  const Wl = S.ww, P = Wl.pumps;
+  // RTU cabinet and antenna
+  ctx.strokeStyle = '#7c868f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(46, 270); ctx.lineTo(46, 196); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(40, 204); ctx.lineTo(52, 204); ctx.moveTo(38, 212); ctx.lineTo(54, 212); ctx.stroke();
+  rr(22, 270, 48, 56, 3); ctx.fillStyle = d ? '#7f8a94' : '#c3cad1'; ctx.fill();
+  rr(28, 278, 36, 22, 2); ctx.fillStyle = '#1a2026'; ctx.fill(); led(34, 284, true, '#3be37f', 2); led(42, 284, Math.floor(anim.t * 4) % 2 === 0, '#ffb020', 2);
+  tag('RTU-100', 46, 314);
+  // manhole + incoming sewer
+  ctx.fillStyle = concrete(d); ctx.fillRect(84, 330, 6, 104); ctx.fillRect(110, 330, 6, 104);
+  ctx.fillStyle = 'rgba(30,25,20,.6)'; ctx.fillRect(90, 330, 20, 104);
+  const sewerLvl = Math.min(1, Wl.L / 19);
+  ctx.fillStyle = SEW; ctx.fillRect(0, 418, 120, 16);
+  if (Wl.L > 9.5) { const h = (Wl.L - 9.5) / 9.5 * 90; ctx.fillRect(90, 418 - h, 20, h); }
+  ctx.fillStyle = '#4b545c'; ctx.fillRect(82, 324, 36, 6);
+  tag('MH-1', 100, 316);
+  // SSO puddle
+  if (S.day.sso > 0 || Wl.ssoRate > 0) {
+    const r = Math.min(70, 8 + Math.sqrt(S.day.sso) * 0.15);
+    ctx.fillStyle = 'rgba(110,86,56,.85)'; ctx.beginPath(); ctx.ellipse(100, 328, r, 4 + r * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+    if (Wl.ssoRate > 0) for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.arc(100 + Math.sin(anim.t * 5 + i) * 8, 322 - ((anim.t * 30 + i * 6) % 18), 3, 0, 7); ctx.fill(); }
+    badge('SSO ' + Math.round(S.day.sso).toLocaleString() + ' gal', 100, 296, true);
+  }
+  note('gravity sewer in', 4, 446);
+  // wet well
+  const x0 = 120, x1 = 306, top = 330, bot = 512, y = bot - Wl.L * 9.2;
+  ctx.fillStyle = d ? 'rgba(60,66,72,.6)' : 'rgba(200,204,208,.75)'; ctx.fillRect(x0, top, x1 - x0, bot - top);
+  const g = ctx.createLinearGradient(0, y, 0, bot); g.addColorStop(0, '#8a6c45'); g.addColorStop(1, SEW2);
+  ctx.fillStyle = g; ctx.fillRect(x0, y, x1 - x0, bot - y);
+  ctx.fillStyle = 'rgba(230,220,200,.5)'; for (let i = 0; i < 8 + (S.ev.wipes > 0 ? 10 : 0); i++) { const fx = x0 + 8 + ((i * 29 + anim.t * 6) % (x1 - x0 - 16)); ctx.fillRect(fx, y - 1, 8, 3); }
+  ctx.fillStyle = SEW; ctx.fillRect(x0 - 4, 420, 6, 10); for (let i = 0; i < 4; i++) ctx.fillRect(x0 + 2, 424 + ((anim.t * 40 + i * 8) % Math.max(4, y > 424 ? 0 : 430 - 424)), 3, 3);
+  ctx.strokeStyle = concrete(d); ctx.lineWidth = 7; ctx.strokeRect(x0, top - 2, x1 - x0, bot - top + 2);
+  ctx.fillStyle = concrete(d); ctx.fillRect(x0 - 4, top - 6, x1 - x0 + 8, 8);
+  tag('WW-101 wet well', 213, 342);
+  // level transmitter (ultrasonic) and floats
+  ctx.fillStyle = '#2d6ab0'; rr(288, 324, 14, 10, 2); ctx.fill();
+  ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = 'rgba(80,160,255,.6)'; ctx.beginPath(); ctx.moveTo(295, 334); ctx.lineTo(295, y); ctx.stroke(); ctx.restore();
+  badge('LIT ' + Wl.lit.toFixed(1) + ' ft', 262, 392, Wl.lit > 14 || Wl.frozen != null || Wl.spoof);
+  for (const [fy, on, lbl] of [[bot - 16 * 9.2, Wl.floatHH, 'LSHH'], [bot - 1.5 * 9.2, Wl.floatLL, 'LSLL']]) {
+    const by = Math.min(fy, Math.max(y - 2, fy - 16));
+    ctx.strokeStyle = '#2b3036'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(140, 334); ctx.lineTo(140, by); ctx.stroke();
+    ctx.fillStyle = S.faults.float && lbl === 'LSHH' ? '#777' : on ? '#ff3b4f' : '#ffcc00'; ctx.beginPath(); ctx.ellipse(140, by + 4, 4, 6, 0, 0, 7); ctx.fill();
+    note(lbl, 147, by + 4);
+  }
+  // pumps
+  P.forEach((p, i) => {
+    const px = 170 + i * 50, py = 486;
+    ctx.fillStyle = '#7c868f'; ctx.fillRect(px - 10, 336, 2, 150); ctx.fillRect(px + 8, 336, 2, 150);
+    pipe([[px + 12, py], [px + 22, py], [px + 22, 314]], 5, p.run, 'rgba(160,130,90,.95)', p.q / 2500);
+    rr(px - 8, py - 26, 18, 26, 4); ctx.fillStyle = p.trip ? '#9b3a3a' : '#2c5b8f'; ctx.fill();
+    ctx.beginPath(); ctx.arc(px + 1, py + 6, 11, 0, 7); ctx.fillStyle = d ? '#7f8a94' : '#9aa4ad'; ctx.fill();
+    if (p.rag > 0.3) { ctx.strokeStyle = 'rgba(230,220,200,.9)'; ctx.lineWidth = 2; for (let k = 0; k < p.rag * 6; k++) { ctx.beginPath(); ctx.arc(px + 1, py + 6, 6 + k, k, k + 2); ctx.stroke(); } }
+    ctx.save(); ctx.translate(px + 1, py + 6); ctx.rotate(p.run ? anim.t * 9 : 0); ctx.strokeStyle = '#eef2f5'; ctx.lineWidth = 2;
+    for (let k = 0; k < 3; k++) { ctx.rotate(Math.PI * 2 / 3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(7, 0); ctx.stroke(); } ctx.restore();
+    led(px + 1, py - 20, p.run, '#3be37f', 2.4);
+    tag('P-101' + PN[i] + (Wl.lead === i ? '*' : ''), px + 1, 524);
+  });
+  // valve vault + force main
+  rr(176, 296, 140, 30, 3); ctx.fillStyle = concrete(d); ctx.fill();
+  pipe([[192, 306], [316, 306]], 6, Wl.qout > 10, 'rgba(160,130,90,.95)', Wl.qout / 2500);
+  ctx.fillStyle = '#2d6ab0'; rr(252, 299, 16, 14, 3); ctx.fill(); tag('FIT-102', 260, 286);
+  pipe([[316, 306], [328, 306], [328, 214], [352, 214]], 7, Wl.qout > 10, 'rgba(160,130,90,.95)', Wl.qout / 2500);
+  badge(Math.round(Wl.qout) + ' gpm, ' + Wl.nRun + ' on', 248, 262, Wl.forced);
+}
+
+function drawScreens(d) {
+  const C = S.scr, D = S.div;
+  // inlet box + pH + diversion
+  ctx.fillStyle = concrete(d); ctx.fillRect(344, 200, 6, 120); ctx.fillRect(344, 316, 356, 6);
+  const q = Math.max(0.1, S.qf / SCR_DES);
+  const ch = C.ch[0].on ? C.ch[0] : C.ch[1];
+  const dpPx = Math.min(36, ch.dp * 2), base = 22 * Math.sqrt(q), up = 316 - base - dpPx, dn = 316 - base;
+  ctx.fillStyle = SEW; ctx.fillRect(350, up, 210, 316 - up);
+  ctx.fillStyle = mix(SEW, '#7a6a52', .3); ctx.fillRect(560, dn, 140, 316 - dn);
+  ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(350, up, 210, 1.5); ctx.fillRect(560, dn, 140, 1.5);
+  if (S.ph < 5.5) { ctx.fillStyle = 'rgba(190,220,60,.35)'; ctx.fillRect(350, up, 210, 316 - up); }
+  // pH analyzer
+  ctx.strokeStyle = '#59626a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(378, 230); ctx.lineTo(378, 306); ctx.stroke();
+  ctx.fillStyle = '#2d6ab0'; rr(366, 214, 24, 16, 3); ctx.fill(); tag('AIT-201', 378, 204);
+  badge('pH ' + D.meas.toFixed(1), 378, 186, D.meas < 5.5 || D.meas > 10);
+  // diversion gate + basin
+  ctx.fillStyle = D.on ? '#c08a00' : '#5f6871'; ctx.fillRect(404, 316, 22, D.on ? 2 : 6);
+  if (D.on) { ctx.fillStyle = SEW; ctx.fillRect(410, 316, 10, 40); }
+  tag('GV-202', 415, 332);
+  ctx.fillStyle = 'rgba(25,22,18,.55)'; ctx.fillRect(360, 350, 130, 84);
+  const bh = 80 * D.basin / 100; ctx.fillStyle = SEW; ctx.fillRect(362, 432 - bh, 126, bh);
+  ctx.strokeStyle = concrete(d); ctx.lineWidth = 5; ctx.strokeRect(360, 348, 130, 88);
+  tag('DB-202 diversion basin', 425, 446); badge(Math.round(D.basin) + '%', 425, 400, D.basin > 80);
+  pipe([[490, 420], [510, 420], [510, 322]], 4, D.retQ > 0, 'rgba(160,130,90,.95)', .5);
+  ctx.fillStyle = '#2c5b8f'; rr(500, 410, 20, 16, 3); ctx.fill(); tag('P-203', 520, 434, 'left');
+  // screen (elevation of the channel in service)
+  const sx0 = 560, sy0 = 316, sx1 = 604, sy1 = 146;
+  ctx.strokeStyle = steel(0, 0, d); ctx.strokeStyle = d ? '#8d97a1' : '#7c868f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(sx0, sy0); ctx.lineTo(sx1, sy1); ctx.stroke();
+  ctx.lineWidth = 1; for (let k = 0; k < 10; k++) { ctx.beginPath(); ctx.moveTo(sx0 - 4 + k, sy0); ctx.lineTo(sx1 - 4 + k, sy1); ctx.globalAlpha = .35; ctx.stroke(); ctx.globalAlpha = 1; }
+  // debris mat
+  const mat = ch.blind, mh = (sy0 - up) * Math.min(1, 0.4 + mat);
+  ctx.fillStyle = 'rgba(70,58,40,.9)'; ctx.beginPath(); ctx.moveTo(sx0 - 2, sy0); for (let k = 0; k <= 8; k++) { const t = k / 8 * mh / (sy0 - sy1); ctx.lineTo(sx0 + (sx1 - sx0) * t - 2 - mat * 10 - Math.sin(k * 2) * 2, sy0 - (sy0 - sy1) * t); } ctx.lineTo(sx0 + (sx1 - sx0) * (mh / (sy0 - sy1)), sy0 - mh); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(235,228,210,.75)'; ctx.lineWidth = 1.2; for (let k = 0; k < mat * 10; k++) { const t = (k * 0.09) % (mh / (sy0 - sy1)); const xx = sx0 + (sx1 - sx0) * t - 4, yy = sy0 - (sy0 - sy1) * t; ctx.beginPath(); ctx.moveTo(xx, yy); ctx.quadraticCurveTo(xx - 6, yy + 3, xx - 9, yy + 8); ctx.stroke(); }
+  // rake carriage
+  const rk = ch === C.ch[0] ? 0 : 1, rakePos = (anim.rake[rk] % 1);
+  const rx = sx0 + (sx1 - sx0) * rakePos, ry = sy0 - (sy0 - sy1) * rakePos;
+  ctx.fillStyle = ch.rake ? '#f2a900' : '#7c868f'; ctx.fillRect(rx - 10, ry - 3, 14, 6);
+  ctx.fillStyle = '#4b545c'; ctx.fillRect(sx1 - 6, sy1 - 14, 24, 14);
+  led(sx1 + 12, sy1 - 7, ch.rake, '#3be37f', 2.4); if (ch.jam) led(sx1 + 4, sy1 - 7, true, '#ff3b4f', 2.4);
+  tag('SC-201' + (ch === C.ch[0] ? 'A' : 'B'), sx1 + 30, sy1 - 6, 'left');
+  badge('ΔP ' + ch.dp.toFixed(1) + ' in', 520, 248, ch.dp > 10);
+  // conveyor + washer/compactor + dumpster
+  const compOK = !S.faults.compactor && C.dump < 100;
+  ctx.fillStyle = '#5f6871'; ctx.fillRect(604, 150, 52, 6);
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; for (let x = 604 + ((anim.t * 20) % 8) * (C.ch.some(c => c.rake) ? 1 : 0); x < 656; x += 8) ctx.fillRect(x, 151, 2, 4);
+  rr(642, 160, 52, 18, 8); ctx.fillStyle = steel(642, 694, d); ctx.fill(); ctx.strokeStyle = S.faults.compactor ? '#c8102e' : '#6c757d'; ctx.lineWidth = 2; ctx.stroke();
+  tag('WC-201', 668, 190);
+  ctx.fillStyle = '#5f6871'; ctx.fillRect(686, 178, 6, 26);
+  dumpster(650, 210, 46, 44, C.dump, '#6f6046', 'Screenings ' + Math.round(C.dump) + '%');
+  // plan view inset
+  const px0 = 410, py0 = 134;
+  rr(px0 - 6, py0 - 8, 160, 70, 5); ctx.fillStyle = d ? 'rgba(20,26,32,.75)' : 'rgba(255,255,255,.85)'; ctx.fill(); ctx.strokeStyle = d ? '#3a434d' : '#c5ccd3'; ctx.lineWidth = 1; ctx.stroke();
+  note('Plan view', px0, py0 - 1);
+  const rows = [['A', C.ch[0]], ['B', C.ch[1]], ['Bypass', null]];
+  rows.forEach(([n, c], i) => {
+    const yy = py0 + 10 + i * 16, on = c ? c.on : C.bypass > 1;
+    ctx.fillStyle = on ? (c ? '#7a6040' : '#c8102e') : (d ? '#2a3038' : '#dde2e7'); ctx.fillRect(px0 + 34, yy - 4, 110, 8);
+    if (on) { ctx.save(); ctx.setLineDash([4, 6]); ctx.lineDashOffset = -anim.t * 20; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px0 + 34, yy); ctx.lineTo(px0 + 144, yy); ctx.stroke(); ctx.restore(); }
+    ctx.fillStyle = c ? (c.rake ? '#f2a900' : '#59626a') : '#8a8f94'; ctx.fillRect(px0 + 88, yy - 6, 3, 12);
+    if (c && !c.on) { ctx.fillStyle = '#c8102e'; ctx.fillRect(px0 + 36, yy - 6, 3, 12); }
+    note(n, px0, yy);
+  });
+}
+
+function drawGrit(d) {
+  const G = S.grit;
+  const q = S.qf;
+  // channel from screens to grit
+  ctx.fillStyle = mix(SEW, '#7a6a52', .3); ctx.fillRect(700, 290, 26, 26); ctx.fillStyle = concrete(d); ctx.fillRect(700, 316, 26, 6);
+  // vortex chamber
+  const cx = 790, x0 = 728, x1 = 852, top = 262, wb = 330, hb = 392;
+  const path = () => { ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0, wb); ctx.lineTo(cx - 14, hb - 10); ctx.lineTo(cx - 14, hb); ctx.lineTo(cx + 14, hb); ctx.lineTo(cx + 14, hb - 10); ctx.lineTo(x1, wb); ctx.lineTo(x1, top); };
+  ctx.save(); path(); ctx.closePath(); ctx.clip();
+  ctx.fillStyle = mix(SEW, '#7a6a52', .35); ctx.fillRect(x0, 280, x1 - x0, hb - 280);
+  const gh = 6 + G.inv / GRIT_HOP * 70;
+  ctx.fillStyle = '#b39b6e'; ctx.fillRect(x0, hb - gh, x1 - x0, gh);
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; for (let i = 0; i < 30; i++) ctx.fillRect(cx - 14 + (i * 7) % 28, hb - gh + (i * 5) % Math.max(4, gh), 2, 2);
+  if (G.padOn) { ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; for (let k = 0; k < 4; k++) { const ph = anim.swirl + k * 1.6; ctx.beginPath(); ctx.ellipse(cx, 296 + k * 8, 50 - k * 6, 5, 0, ph, ph + 2.2); ctx.stroke(); } }
+  ctx.fillStyle = 'rgba(200,180,140,.8)'; for (let i = 0; i < 8; i++) { const a = anim.swirl * 1.3 + i; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * (40 - (i * 4 + anim.t * 10) % 34), 300 + ((anim.t * 8 + i * 9) % 60), 1.5, 0, 7); ctx.fill(); }
+  ctx.restore();
+  path(); ctx.strokeStyle = concrete(d); ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.stroke();
+  // paddle
+  ctx.strokeStyle = '#59626a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx, 226); ctx.lineTo(cx, 312); ctx.stroke();
+  ctx.save(); ctx.translate(cx, 306); ctx.scale(Math.cos(anim.paddle), 1); ctx.fillStyle = '#4b545c'; ctx.fillRect(-26, -4, 52, 8); ctx.restore();
+  rr(cx - 16, 210, 32, 18, 3); ctx.fillStyle = '#2c5b8f'; ctx.fill(); led(cx + 11, 215, G.padOn, '#3be37f', 2.4); if (S.faults.paddle) led(cx - 11, 215, true, '#ff3b4f', 2.4);
+  tag('GC-301 vortex grit', cx, 200); tag('M-301', cx - 34, 220);
+  badge('Removal ' + Math.round(G.eff * 100) + '%', cx, 350, G.eff < 0.85);
+  // to flume
+  ctx.fillStyle = mix(SEW, '#8b7c62', .5); ctx.fillRect(852, 290, 160, 26); ctx.fillStyle = concrete(d); ctx.fillRect(852, 316, 160, 6);
+  // grit pump, cyclone, classifier
+  pipe([[cx, hb + 2], [cx, 410], [878, 410], [878, 262]], 5, G.pumpRun, 'rgba(200,180,140,.95)', .8);
+  ctx.fillStyle = '#4b545c'; ctx.fillRect(866, 244, 26, 6);
+  rr(866, 226, 18, 18, 3); ctx.fillStyle = '#2c5b8f'; ctx.fill();
+  ctx.beginPath(); ctx.arc(890, 236, 8, 0, 7); ctx.fillStyle = S.faults.gritPump && G.pumpCmd ? '#9b3a3a' : (d ? '#7f8a94' : '#9aa4ad'); ctx.fill();
+  led(872, 222, G.pumpRun, '#3be37f', 2.2);
+  tag('P-301', 880, 206 + 0, 'center');
+  pipe([[890, 228], [890, 140], [912, 140]], 4, G.pumpRun, 'rgba(200,180,140,.95)', .8);
+  ctx.fillStyle = steel(904, 926, d); ctx.beginPath(); ctx.moveTo(904, 132); ctx.lineTo(926, 132); ctx.lineTo(926, 150); ctx.lineTo(918, 172); ctx.lineTo(912, 172); ctx.lineTo(904, 150); ctx.closePath(); ctx.fill();
+  tag('GCY-301', 915, 124);
+  // classifier screw (inclined)
+  ctx.strokeStyle = '#7c868f'; ctx.lineWidth = 12; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(904, 236); ctx.lineTo(996, 184); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1.5; const so = G.pumpRun || G.inv > 0 ? (anim.t * 10) % 10 : 0;
+  for (let k = so; k < 104; k += 10) { const t = k / 104, x = 904 + 92 * t, y = 236 - 52 * t; ctx.beginPath(); ctx.moveTo(x - 3, y - 4); ctx.lineTo(x + 3, y + 4); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(120,170,220,.6)'; if (G.wash) ctx.fillRect(918, 182, 2, 46);
+  tag('GCL-301 classifier', 950, 170);
+  ctx.fillStyle = '#5f6871'; ctx.fillRect(996, 184, 4, 22);
+  dumpster(966, 210, 40, 44, G.dump, '#b39b6e', 'Grit ' + Math.round(G.dump) + '%');
+}
+
+function drawFlow(d) {
+  const F = S.flow;
+  // flume channel outside
+  ctx.fillStyle = mix(SEW, '#8b7c62', .5); ctx.fillRect(1012, 296, 30, 24);
+  ctx.fillStyle = concrete(d); ctx.fillRect(1012, 320, 160, 8);
+  const lev = 18 * Math.sqrt(Math.max(.1, S.qf / 2778));
+  ctx.fillStyle = mix(SEW, '#8b7c62', .5);
+  ctx.beginPath(); ctx.moveTo(1042, 320 - lev); ctx.lineTo(1080, 320 - lev); ctx.lineTo(1100, 326 - lev * .6); ctx.lineTo(1130, 324 - lev * .5); ctx.lineTo(1172, 322 - lev * .55); ctx.lineTo(1172, 320); ctx.lineTo(1042, 320); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = concrete(d); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(1042, 290); ctx.lineTo(1042, 320); ctx.lineTo(1080, 320); ctx.lineTo(1100, 326); ctx.lineTo(1130, 324); ctx.lineTo(1172, 322); ctx.stroke();
+  ctx.save(); ctx.setLineDash([5, 8]); ctx.lineDashOffset = -anim.t * 30 * (S.qf / 2778); ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(1044, 316 - lev / 2); ctx.lineTo(1170, 320 - lev / 3); ctx.stroke(); ctx.restore();
+  ctx.strokeStyle = '#59626a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1066, 246); ctx.lineTo(1066, 262); ctx.lineTo(1080, 262); ctx.stroke();
+  ctx.fillStyle = '#2d6ab0'; rr(1072, 262, 18, 10, 2); ctx.fill();
+  ctx.save(); ctx.setLineDash([2, 3]); ctx.strokeStyle = 'rgba(80,160,255,.6)'; ctx.beginPath(); ctx.moveTo(1081, 272); ctx.lineTo(1081, 320 - lev); ctx.stroke(); ctx.restore();
+  tag('FIT-401 Parshall flume', 1080, 236);
+  badge((F.meas / 694.4).toFixed(2) + ' MGD', 1100, 290, false);
+  pipe([[1172, 318], [1400, 318]], 7, S.qf > 10, 'rgba(180,160,120,.95)', S.qf / 2778);
+  note('to primary clarifiers', 1290, 340);
+  // sampler
+  rr(1180, 236, 44, 76, 3); ctx.fillStyle = d ? '#c8ccd0' : '#eceef0'; ctx.fill(); ctx.strokeStyle = '#7d868e'; ctx.lineWidth = 1; ctx.stroke();
+  rr(1186, 262, 32, 44, 2); ctx.fillStyle = F.fridge > 6 ? 'rgba(220,120,80,.35)' : 'rgba(150,200,240,.35)'; ctx.fill();
+  const nb = Math.min(24, Math.floor(F.aliquots / 4));
+  for (let i = 0; i < 24; i++) { ctx.fillStyle = i < nb ? '#8a6a3a' : 'rgba(255,255,255,.7)'; ctx.fillRect(1188 + (i % 6) * 5, 266 + Math.floor(i / 6) * 10, 4, 8); }
+  ctx.fillStyle = '#c9f7d9'; ctx.fillRect(1188, 242, 28, 12); txt(F.fridge.toFixed(1) + '°', 1202, 248, { s: 9.5, c: '#123', w: 700 });
+  ctx.strokeStyle = '#2b3036'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(1180, 300); ctx.quadraticCurveTo(1160, 300, 1150, 318); ctx.stroke();
+  tag('SMP-401 sampler', 1202, 224);
+  // odor scrubber
+  pipe([[1010, 126], [1258, 126], [1258, 150]], 8, F.fanOn, 'rgba(220,220,160,.8)', F.fanSp / 60);
+  ctx.fillStyle = steel(1236, 1282, d); rr(1236, 150, 46, 140, 6); ctx.fill();
+  for (let k = 0; k < 3; k++) { ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(1240, 176 + k * 34, 38, 18); ctx.fillStyle = 'rgba(255,255,255,.18)'; for (let j = 0; j < 7; j++) ctx.fillRect(1242 + j * 5, 178 + k * 34, 2, 14); }
+  if (F.fanOn && F.chem > 0) { ctx.fillStyle = 'rgba(140,200,255,.6)'; for (let i = 0; i < 6; i++) ctx.fillRect(1242 + i * 6, 162 + ((anim.t * 30 + i * 5) % 10), 1.5, 3); }
+  tag('SCB-401 scrubber', 1259, 140);
+  // fan + stack
+  pipe([[1282, 270], [1308, 270]], 8, F.fanOn, 'rgba(220,220,220,.7)', F.fanSp / 60);
+  ctx.beginPath(); ctx.arc(1322, 270, 14, 0, 7); ctx.fillStyle = S.faults.odorFan ? '#9b3a3a' : '#4b545c'; ctx.fill();
+  ctx.save(); ctx.translate(1322, 270); ctx.rotate(F.fanOn ? anim.t * 4 * F.fanSp / 20 : 0); ctx.strokeStyle = '#eef2f5'; ctx.lineWidth = 2.5;
+  for (let k = 0; k < 4; k++) { ctx.rotate(Math.PI / 2); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(10, 0); ctx.stroke(); } ctx.restore();
+  tag('EF-401', 1322, 296);
+  ctx.fillStyle = steel(1352, 1366, d); ctx.fillRect(1352, 130, 14, 140); pipe([[1336, 270], [1352, 270]], 8, F.fanOn, 'rgba(220,220,220,.7)', 1);
+  if (F.fanOn) { ctx.fillStyle = F.stack > 1 ? 'rgba(190,200,90,.5)' : 'rgba(220,225,230,.4)'; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(1359 + Math.sin(anim.t * 2 + i) * 4, 124 - ((anim.t * 14 + i * 8) % 30), 4 + i, 0, 7); ctx.fill(); } }
+  badge('Stack ' + F.stack.toFixed(2) + ' ppm', 1318, 314, F.stack > 1);
+  // chemical tote
+  rr(1290, 196, 30, 44, 3); ctx.fillStyle = d ? '#c8ccd0' : '#f2f3f4'; ctx.fill(); ctx.fillStyle = '#e7f2b0'; const ch = 40 * F.chem / 100; ctx.fillRect(1292, 238 - ch, 26, ch);
+  note('Chem', 1295, 188);
+  // building gas detector
+  ctx.fillStyle = '#ffcc00'; rr(344, 136, 22, 16, 3); ctx.fill(); led(361, 140, F.bH2S >= 10, '#ff3b4f', 2);
+  tag('AT-501', 370, 144, 'left');
+}
+
+const DEVICES = [
+  { id: 'rtu', stage: 'lift', x: 18, y: 192, w: 56, h: 136, name: 'Remote terminal unit RTU-100 and radio', lvl: 'Level 1, remote site', addr: 'DNP3 outstation 100 over licensed radio', desc: 'Runs the wet well level loop and lead/lag logic locally, and reports to SCADA by radio. If the radio link is not authenticated, anyone with a compatible radio can talk to it.', val: () => (S.def.auth ? 'Authenticated, encrypted link' : 'Unauthenticated radio link') + (S.ww.stopCmd ? ', remote stop latched' : '') },
+  { id: 'mh', stage: 'lift', x: 80, y: 300, w: 40, h: 140, name: 'Manhole MH-1 (lowest overflow point)', lvl: 'Collection system', addr: 'SSO reporting point', desc: 'When the wet well surcharges, sewage backs up the sewer and spills from the lowest manhole. Every gallon is a reportable sanitary sewer overflow.', val: () => Math.round(S.day.sso).toLocaleString() + ' gal spilled today' },
+  { id: 'ww', stage: 'lift', x: 120, y: 330, w: 186, h: 182, name: 'Wet well WW-101', lvl: 'Level 0 process', addr: 'About 11,200 gal per foot', desc: 'Collects incoming sewage so the pumps can cycle sensibly. Level rises whenever inflow exceeds pumping.', val: () => 'Actual ' + S.ww.L.toFixed(2) + ' ft, inflow ' + Math.round(S.qin) + ' gpm' },
+  { id: 'lit', stage: 'lift', x: 252, y: 318, w: 54, h: 54, name: 'Level transmitter LIT-101', lvl: 'Level 0', addr: 'RTU-100 AI 0 (DNP3 analog input 0)', desc: 'An ultrasonic level transmitter. It is the process variable for LIC-101; if it lies, the loop does the wrong thing confidently.', val: () => 'Reads ' + S.ww.lit.toFixed(2) + ' ft' + (S.ww.useBackup ? ' (rejected; using backup bubbler)' : '') },
+  { id: 'floats', stage: 'lift', x: 130, y: 330, w: 30, h: 182, name: 'Floats LSHH and LSLL', lvl: 'Level 0, hardwired', addr: 'Wired directly to pump starters', desc: 'Simple mechanical switches. The high float forces two pumps to full speed; the low float stops all pumps to protect them from running dry.', val: () => 'LSHH ' + (S.faults.float ? 'stuck (inoperative)' : S.ww.floatHH ? 'TRIPPED' : 'normal') + ', LSLL ' + (S.ww.floatLL ? 'TRIPPED' : 'normal') },
+  { id: 'pumps', stage: 'lift', x: 158, y: 456, w: 140, h: 62, name: 'Submersible pumps P-101A, B and C', lvl: 'Level 0', addr: 'RTU-100 BO 0–2, VFD speed AO 0', desc: 'Three 4,000 gpm submersible pumps on VFDs. Below about 30% speed they cannot overcome the static head and deliver no flow.', val: () => S.ww.pumps.map((p, i) => PN[i] + ': ' + (p.trip ? 'tripped' : p.run ? Math.round(p.q) + ' gpm, ' + Math.round(p.amps) + '% amps' : 'off')).join('; ') },
+  { id: 'fit102', stage: 'lift', x: 246, y: 280, w: 30, h: 36, name: 'Force main flow meter FIT-102', lvl: 'Level 0', addr: 'RTU-100 AI 1', desc: 'A magnetic flow meter on the force main. Comparing it with the flume at the headworks is a quick check on both instruments.', val: () => Math.round(S.ww.qout) + ' gpm' },
+  { id: 'ph', stage: 'screen', x: 362, y: 176, w: 32, h: 132, name: 'Influent pH analyzer AIT-201', lvl: 'Level 0', addr: 'PLC-200 AI 30001', desc: 'Early warning of illegal industrial discharges. Its reading drives automatic diversion.', val: () => 'Reads pH ' + S.div.meas.toFixed(1) + ' (actual ' + S.ph.toFixed(1) + ')' },
+  { id: 'div', stage: 'screen', x: 356, y: 312, w: 170, h: 130, name: 'Diversion gate GV-202, basin DB-202 and return pump P-203', lvl: 'Level 0', addr: 'PLC-200 DO 00011 (gate), DO 00012 (P-203)', desc: 'Sends out-of-range influent to a 500,000 gal emergency basin. Stored flow is bled back slowly once the slug has passed.', val: () => (S.div.on ? 'Diverting' : 'Normal') + ', basin ' + Math.round(S.div.basin) + '%' + (S.div.retQ ? ', returning 400 gpm' : '') },
+  { id: 'scr', stage: 'screen', x: 540, y: 130, w: 80, h: 190, name: 'Fine screens SC-201A and SC-201B', lvl: 'Level 0', addr: 'PLC-200 DO 00021–22 (rakes), LIT-201/202 differential', desc: 'Step or climber screens with 6 mm openings. A rake lifts captured material to the conveyor on a timer or when differential level rises.', val: () => 'A ' + S.scr.ch[0].dp.toFixed(1) + ' in' + (S.scr.ch[0].rake ? ' raking' : '') + ', B ' + S.scr.ch[1].dp.toFixed(1) + ' in' + (S.scr.ch[1].rake ? ' raking' : '') },
+  { id: 'plan', stage: 'screen', x: 404, y: 126, w: 160, h: 70, name: 'Screen channels (plan view)', lvl: 'Level 0 process', addr: 'Channel gates G-201A/B', desc: 'Two screened channels and a bypass with a coarse manual bar rack. Flow only reaches the bypass if the screens are out of service or blinded.', val: () => 'Bypass ' + Math.round(S.scr.bypass) + ' gpm' },
+  { id: 'wc', stage: 'screen', x: 600, y: 140, w: 98, h: 120, name: 'Washer/compactor WC-201 and screenings dumpster', lvl: 'Level 0', addr: 'PLC-200 DO 00023, jam switch DI 10024', desc: 'Washes organics back to the flow and squeezes screenings to cut weight and odor. If it jams, both rakes are interlocked off.', val: () => (S.faults.compactor ? 'Jammed' : 'Running') + ', dumpster ' + Math.round(S.scr.dump) + '%' },
+  { id: 'gc', stage: 'grit', x: 728, y: 200, w: 124, h: 196, name: 'Vortex grit chamber GC-301 with paddle M-301', lvl: 'Level 0 process', addr: 'PLC-300 DO 00031 (paddle)', desc: 'A paddle keeps a controlled vortex; grit spirals to the center hopper while organics stay suspended.', val: () => 'Removal ' + Math.round(S.grit.eff * 100) + '%, hopper ' + Math.round(S.grit.inv) + ' lb' },
+  { id: 'gp', stage: 'grit', x: 862, y: 200, w: 36, h: 52, name: 'Grit pump P-301', lvl: 'Level 0', addr: 'PLC-300 DO 00032, flow switch DI 10033', desc: 'A recessed-impeller pump that lifts grit slurry from the hopper to the cyclone on a timer.', val: () => S.grit.pumpCmd ? (S.grit.pumpRun ? 'Pumping' : 'Running, no flow') : 'Off (timer)' },
+  { id: 'gcl', stage: 'grit', x: 900, y: 118, w: 110, h: 140, name: 'Cyclone GCY-301, classifier GCL-301 and grit dumpster', lvl: 'Level 0', addr: 'PLC-300 DO 00034 (wash water)', desc: 'The cyclone concentrates grit; the inclined screw washes and drains it before it drops into the dumpster.', val: () => 'Organics in grit ' + S.grit.org + '%, dumpster ' + Math.round(S.grit.dump) + '%' },
+  { id: 'flume', stage: 'flow', x: 1040, y: 228, w: 132, h: 100, name: 'Parshall flume with level sensor FIT-401', lvl: 'Level 0', addr: 'PLC-400 AI 30041', desc: 'A Parshall flume converts upstream depth to flow. This reading paces the sampler and goes into permit reports.', val: () => Math.round(S.flow.meas) + ' gpm' },
+  { id: 'smp', stage: 'flow', x: 1176, y: 216, w: 52, h: 98, name: 'Composite sampler SMP-401', lvl: 'Level 0', addr: 'PLC-400 DO 00042 (pace pulse), AI 30043 (fridge)', desc: 'Takes a flow-paced aliquot and holds it refrigerated for the lab. A warm sample is invalid for permit reporting.', val: () => S.flow.aliquots + ' aliquots today, ' + S.flow.fridge.toFixed(1) + ' °C' },
+  { id: 'odor', stage: 'flow', x: 1232, y: 120, w: 140, h: 190, name: 'Scrubber SCB-401, fan EF-401 and stack', lvl: 'Level 0', addr: 'PLC-400 AO 40044 (fan speed)', desc: 'Draws foul air from the headworks building through a chemical scrubber. AIC-501 trims fan speed on building H₂S.', val: () => 'Fan ' + Math.round(S.flow.fanSp) + '%, stack ' + S.flow.stack.toFixed(2) + ' ppm' },
+  { id: 'h2s', stage: 'flow', x: 340, y: 132, w: 60, h: 24, name: 'Building gas detector AT-501', lvl: 'Level 0', addr: 'PLC-400 AI 30045', desc: 'Measures H₂S in the headworks building air to protect workers and to drive the odor fan loop.', val: () => S.flow.bH2S.toFixed(1) + ' ppm' }
+];
+
+function draw() {
+  const d = isDark();
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  drawBase(d); drawNetwork(d); drawBands(d);
+  drawLift(d); drawScreens(d); drawGrit(d); drawFlow(d);
+  if (stage !== 'plant') { ctx.fillStyle = d ? 'rgba(20,26,32,.55)' : 'rgba(225,229,233,.6)'; for (const k in STAGES) if (k !== stage) { const [a, b] = STAGES[k]; ctx.fillRect(a, 110, b - a, H - 110); } }
+  for (const id of [hover, selected]) {
+    const dv = DEVICES.find(x => x.id === id); if (!dv) continue;
+    ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = id === selected ? '#00a86b' : '#0047AB'; ctx.lineWidth = 2; rr(dv.x - 3, dv.y - 3, dv.w + 6, dv.h + 6, 5); ctx.stroke(); ctx.restore();
+  }
+}
+function animate(rdt) {
+  anim.t += rdt; const go = simSpeed > 0 ? 1 : 0;
+  if (S.grit.padOn) { anim.paddle += rdt * 3 * go; anim.swirl += rdt * 2 * go; }
+  S.scr.ch.forEach((c, i) => { if (c.rake) anim.rake[i] += rdt * 0.5 * go; });
+}
+function hit(e) {
+  const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+  if (y >= 84 && y <= 106) for (const k in STAGES) if (x >= STAGES[k][0] && x <= STAGES[k][1]) return 'band-' + k;
+  const c = DEVICES.filter(dv => x >= dv.x && x <= dv.x + dv.w && y >= dv.y && y <= dv.y + dv.h).sort((a, b) => a.w * a.h - b.w * b.h);
+  return c[0] ? c[0].id : null;
+}
+cv.addEventListener('mousemove', e => { hover = hit(e); cv.style.cursor = hover ? 'pointer' : 'default'; });
+cv.addEventListener('mouseleave', () => hover = null);
+cv.addEventListener('click', e => {
+  const h = hit(e);
+  if (h && h.startsWith('band-')) { setStage(h.slice(5)); return; }
+  selected = h; renderInspector();
+  const dv = DEVICES.find(x => x.id === h); if (dv && dv.stage !== stage) setStage(dv.stage);
+});
+function renderInspector() {
+  const el = $('#inspector'), dv = DEVICES.find(x => x.id === selected);
+  if (!dv) { el.className = 'card inspector empty'; el.textContent = 'Click any pump, screen, instrument or tank in the scene to see its tag, Purdue level, address and live value.'; return; }
+  el.className = 'card inspector';
+  el.innerHTML = `<h3>${dv.name}</h3><div class="meta">${dv.lvl}. ${dv.addr}</div><p>${dv.desc}</p><div class="live" id="insLive"></div>`;
+  updInspector();
+}
+function updInspector() { const dv = DEVICES.find(x => x.id === selected), l = $('#insLive'); if (dv && l) l.textContent = 'Live: ' + dv.val(); }
+
+/* ---------- stage navigation ---------- */
+const STAGE_INFO = {
+  plant: { h: 'Whole system', hmi: ['System overview', 'SCADA HMI-1. Polls RTU-100 by radio and PLC-200 to PLC-400 over Ethernet.'], p: 'Raw sewage arrives by gravity at a remote lift station, is pumped to the headworks, checked for harmful discharges, screened, de-gritted, measured and sampled, then flows on to primary treatment. Foul air is drawn off and scrubbed.', w: ['The target bar under the scene: overflows, screen ΔP, rags and grit passed.', 'Inflow follows a strong diurnal curve, low before dawn and peaking around midday.', 'Choose an area above, or click its label in the scene, to open its controls.'], m: () => [['Inflow', S.q.toFixed(2) + ' MGD'], ['Pumps', S.ww.nRun + ' running'], ['To screens', Math.round(S.qf) + ' gpm'], ['Energy', (S.day.mg > 0.05 ? S.day.kwh / S.day.mg : 0).toFixed(0) + ' kWh/MG']] },
+  lift: { h: 'Lift station', hmi: ['Lift station', 'RTU-100 at the remote site, polled by licensed radio.'], p: 'Gravity sewers arrive deep underground. The wet well buffers inflow and VFD pumps lift it to the headworks. The RTU holds level with a PI loop and starts lag pumps as flow rises; hardwired floats back it up.', w: ['Level holding near setpoint while inflow swings through the day.', 'Lag pump starts and stops around the daily peak.', 'Pump amps creeping up as rags accumulate.'], m: () => [['Level', S.ww.L.toFixed(1) + ' ft'], ['Inflow', Math.round(S.qin) + ' gpm'], ['Pumped', Math.round(S.ww.qout) + ' gpm'], ['Power', Math.round(S.ww.kw) + ' kW']] },
+  screen: { h: 'Influent protection and screening', hmi: ['Screening', 'PLC-200: pH diversion, screens, compactor.'], p: 'First the influent pH is checked, and harmful slugs are diverted to an emergency basin. Then fine screens remove rags and debris, which are washed and compacted. Blinded screens back water up until it overtops into the bypass.', w: ['Differential level (ΔP) across each screen and when the rakes run.', 'Any flow in the bypass channel, which means rags are getting through.', 'pH at AIT-201 and the diversion basin level.'], m: () => [['pH', S.div.meas.toFixed(1)], ['ΔP A', S.scr.ch[0].dp.toFixed(1) + ' in'], ['ΔP B', S.scr.ch[1].dp.toFixed(1) + ' in'], ['Bypass', Math.round(S.scr.bypass) + ' gpm']] },
+  grit: { h: 'Grit removal', hmi: ['Grit removal', 'PLC-300: paddle, grit pump, classifier.'], p: 'A vortex chamber spins grit to its center hopper while organics stay in the flow. The grit pump lifts it to a cyclone and a washing classifier. Efficiency falls at high flow, and storms bring most of the grit.', w: ['Removal efficiency as flow changes.', 'Hopper inventory, especially during the first flush of a storm.', 'Organics in the grit: wash water keeps it clean and less odorous.'], m: () => [['Efficiency', Math.round(S.grit.eff * 100) + '%'], ['Hopper', Math.round(S.grit.inv) + ' lb'], ['Removed', Math.round(S.day.grit) + ' lb today'], ['Passed', Math.round(S.day.gritPassed) + ' lb today']] },
+  flow: { h: 'Flow, sampling and odor', hmi: ['Flow, sampling and odor', 'PLC-400: flume, sampler, odor control.'], p: 'The Parshall flume measures what the plant receives. That flow paces a refrigerated composite sampler whose results go into permit reports. Odor control pulls H₂S-laden air out of the building and scrubs it.', w: ['Flume flow compared with the lift station meter.', 'Sampler aliquots and refrigerator temperature.', 'Building H₂S and stack H₂S.'], m: () => [['Flume', (S.flow.meas / 694.4).toFixed(2) + ' MGD'], ['Aliquots', S.flow.aliquots], ['Fridge', S.flow.fridge.toFixed(1) + ' °C'], ['Building H₂S', S.flow.bH2S.toFixed(1) + ' ppm']] }
+};
+function setStage(s) {
+  stage = s;
+  $$('.stagenav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.stage === s));
+  $$('.stagepanel').forEach(p => p.hidden = p.dataset.panel !== s);
+  const I = STAGE_INFO[s];
+  $('#hmiTitle').textContent = I.hmi[0]; $('#hmiSub').textContent = I.hmi[1];
+  $('#about').innerHTML = `<h3>${I.h}</h3><p>${I.p}</p><ul>${I.w.map(x => `<li>${x}</li>`).join('')}</ul><div class="metrics" id="aboutM"></div>`;
+  updAbout();
+}
+function updAbout() { const el = $('#aboutM'); if (el) el.innerHTML = STAGE_INFO[stage].m().map(([k, v]) => `<span><i>${k}</i>${v}</span>`).join(''); }
+$$('.stagenav button').forEach(b => b.onclick = () => setStage(b.dataset.stage));
+
+/* ---------- faceplates ---------- */
+function faceplate(el, getL, title, unit, spMin, spMax, spStep, final, dp) {
+  el.innerHTML = `<div class="fp"><div class="hd"><b>${title}</b><span>${final}</span></div>
+    <div class="vals"><div><div class="k">PV</div><div class="v" data-pv></div></div><div><div class="k">SP</div><div class="v" data-sp></div></div><div><div class="k">Output</div><div class="v" data-out></div></div></div>
+    <div class="bar"><i data-bar></i></div>
+    <div class="ctl" style="margin-bottom:6px"><label>Setpoint (${unit})</label><span></span><input type="range" data-spr min="${spMin}" max="${spMax}" step="${spStep}"></div>
+    <div class="seg" data-mode><button data-v="auto" style="flex:1">Auto</button><button data-v="manual" style="flex:1">Manual</button></div>
+    <div class="ctl" style="margin:8px 0 0"><label>Manual output (%)</label><span></span><input type="range" data-man min="0" max="100" step="1"></div>
+    <div class="tune"><label>Gain Kp (% per ${unit})<input type="number" data-kp min="0.5" max="500" step="0.5"></label><label>Integral time Ti (min)<input type="number" data-ti min="0.5" max="500" step="0.5"></label></div></div>`;
+  el.querySelector('[data-spr]').oninput = e => { getL().sp = +e.target.value; };
+  el.querySelector('[data-spr]').onchange = e => logEv('op', title + ' setpoint changed to ' + e.target.value + ' ' + unit + '.');
+  el.querySelectorAll('[data-mode] button').forEach(b => b.onclick = () => { const l = getL(); if (l.mode === b.dataset.v) return; if (b.dataset.v === 'manual') l.man = Math.round(l.out); l.mode = b.dataset.v; logEv('op', title + ' switched to ' + b.dataset.v + '.'); });
+  el.querySelector('[data-man]').oninput = e => { getL().man = +e.target.value; };
+  el.querySelector('[data-kp]').onchange = e => { const l = getL(); l.kp = clamp(+e.target.value || 1, 0.5, 500); logEv('op', title + ' Kp set to ' + l.kp + '.'); };
+  el.querySelector('[data-ti]').onchange = e => { const l = getL(); l.ti = clamp(+e.target.value || 1, 0.5, 500); logEv('op', title + ' Ti set to ' + l.ti + ' min.'); };
+  el._upd = () => {
+    const l = getL();
+    el.querySelector('[data-pv]').textContent = l.pv.toFixed(dp);
+    el.querySelector('[data-sp]').textContent = l.sp.toFixed(1);
+    el.querySelector('[data-out]').textContent = Math.round(l.out) + '%';
+    el.querySelector('[data-bar]').style.width = l.out + '%';
+    const spr = el.querySelector('[data-spr]'); if (document.activeElement !== spr) spr.value = l.sp;
+    el.querySelectorAll('[data-mode] button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === l.mode));
+    const man = el.querySelector('[data-man]'); man.disabled = l.mode !== 'manual'; if (document.activeElement !== man) man.value = l.mode === 'manual' ? l.man : Math.round(l.out);
+    const kp = el.querySelector('[data-kp]'), ti = el.querySelector('[data-ti]');
+    if (document.activeElement !== kp) kp.value = l.kp; if (document.activeElement !== ti) ti.value = l.ti;
+  };
+}
+faceplate($('#fpLV'), () => S.ww.loop, 'LIC-101 wet well level', 'ft', 4, 14, 0.5, 'common VFD speed', 2);
+faceplate($('#fpH2S'), () => S.flow.loop, 'AIC-501 building H₂S', 'ppm', 1, 10, 0.5, 'fan EF-401 speed', 1);
+
+/* ---------- controls ---------- */
+const bindRange = (id, out, fn, fmt) => { const el = $(id); el.oninput = () => { fn(+el.value); $(out).textContent = fmt(+el.value); }; el.onchange = () => logEv('op', el.closest('.ctl').querySelector('label').textContent + ' set to ' + fmt(+el.value) + '.'); };
+$$('#pattern button').forEach(b => b.onclick = () => { S.inf.pattern = b.dataset.v; $$('#pattern button').forEach(x => x.setAttribute('aria-pressed', x === b)); logEv('op', 'Inflow pattern set to ' + b.dataset.v + '.'); });
+bindRange('#qavg', '#oQ', v => S.inf.qavg = v, v => v.toFixed(1) + ' MGD');
+$('#evStorm').onclick = () => { S.ev.storm = 360; logEv('sys', 'Wet weather: inflow and infiltration arriving, with a first flush of grit and debris.'); };
+$('#evWipes').onclick = () => { S.ev.wipes = 240; logEv('sys', 'A surge of non-dispersible wipes is arriving in the sewer.'); };
+$('#evAcid').onclick = () => { S.ev.acid = 60; logEv('sys', 'An illegal low-pH industrial discharge has entered the collection system.'); };
+$('#evSeptic').onclick = () => { S.ev.septic = 480; logEv('sys', 'Long force main detention and warm weather: septic sewage with high sulfide.'); };
+function buildPumpCards() {
+  $('#pumpCards').innerHTML = PN.map((n, i) => `<div class="eq"><b><span class="dot" id="pd${i}"></span>P-101${n}</b><small id="ps${i}">–</small><button class="btn" data-preset="${i}">Reset</button></div>`).join('');
+  $$('[data-preset]').forEach(b => b.onclick = () => { const i = +b.dataset.preset; if (i === 0 && S.faults.pumpA) { logEv('op', 'Reset of P-101A failed: overload still present.'); return; } S.ww.pumps[i].trip = false; logEv('op', 'P-101' + PN[i] + ' trip reset.'); });
+}
+buildPumpCards();
+$$('#leadSel button').forEach(b => b.onclick = () => { S.ww.lead = +b.dataset.v; $$('#leadSel button').forEach(x => x.setAttribute('aria-pressed', x === b)); logEv('op', 'Lead pump set to P-101' + PN[+b.dataset.v] + '.'); });
+$('#derag').onclick = () => { S.ww.pumps.forEach((p, i) => { if (!(i === 1 && S.faults.pumpRag)) p.rag = 0.02; }); logEv('op', 'De-rag cycle run on all pumps.' + (S.faults.pumpRag ? ' P-101B did not clear: the rag ball needs to be pulled by hand.' : '')); };
+$('#divAuto').onchange = e => { S.div.auto = e.target.checked; logEv('op', 'Automatic pH diversion ' + (e.target.checked ? 'enabled.' : 'disabled.')); };
+$('#retPump').onchange = e => { S.div.ret = e.target.checked; logEv('op', 'Return pump P-203 ' + (e.target.checked ? 'started.' : 'stopped.')); };
+$('#chA').onchange = e => { S.scr.ch[0].on = e.target.checked; logEv('op', 'Channel A ' + (e.target.checked ? 'returned to service.' : 'taken out of service.')); };
+$('#chB').onchange = e => { S.scr.ch[1].on = e.target.checked; logEv('op', 'Channel B ' + (e.target.checked ? 'returned to service.' : 'taken out of service.')); };
+bindRange('#dpSp', '#oDp', v => S.scr.dpSp = v, v => v + ' in');
+bindRange('#rakeT', '#oRakeT', v => S.scr.timer = v, v => v + ' min');
+const hold = (id, on, off) => { const b = $(id); b.addEventListener('pointerdown', e => { e.preventDefault(); on(); }); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, off)); };
+hold('#rakeA', () => S.scr.ch[0].man = true, () => S.scr.ch[0].man = false);
+hold('#rakeB', () => S.scr.ch[1].man = true, () => S.scr.ch[1].man = false);
+hold('#gpNow', () => S.grit.man = true, () => S.grit.man = false);
+$('#swapScr').onclick = () => { S.scr.dump = 0; logEv('op', 'Screenings dumpster swapped.'); };
+$('#swapGrit').onclick = () => { S.grit.dump = 0; logEv('op', 'Grit dumpster swapped.'); };
+$('#paddle').onchange = e => { S.grit.paddle = e.target.checked; logEv('op', 'Paddle M-301 ' + (e.target.checked ? 'started.' : 'stopped.')); };
+bindRange('#gpMin', '#oGp', v => S.grit.pumpMin = v, v => v + ' min');
+$('#wash').onchange = e => { S.grit.wash = e.target.checked; logEv('op', 'Classifier wash water ' + (e.target.checked ? 'on.' : 'off.')); };
+bindRange('#pace', '#oPace', v => S.flow.pace = v, v => v.toLocaleString() + ' gal');
+$('#refillChem').onclick = () => { S.flow.chem = 100; logEv('op', 'Scrubber chemical tote refilled.'); };
+let simSpeed = 1;
+$$('#simSpeed button').forEach(b => b.onclick = () => { simSpeed = +b.dataset.v; $$('#simSpeed button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+$('#showTags').onchange = e => showTags = e.target.checked;
+$('#showVals').onchange = e => showVals = e.target.checked;
+function syncControls() {
+  const set = (id, out, v, fmt) => { $(id).value = v; $(out).textContent = fmt(v); };
+  set('#qavg', '#oQ', S.inf.qavg, v => v.toFixed(1) + ' MGD'); set('#dpSp', '#oDp', S.scr.dpSp, v => v + ' in'); set('#rakeT', '#oRakeT', S.scr.timer, v => v + ' min');
+  set('#gpMin', '#oGp', S.grit.pumpMin, v => v + ' min'); set('#pace', '#oPace', S.flow.pace, v => v.toLocaleString() + ' gal');
+  $('#divAuto').checked = S.div.auto; $('#retPump').checked = S.div.ret; $('#chA').checked = S.scr.ch[0].on; $('#chB').checked = S.scr.ch[1].on;
+  $('#paddle').checked = S.grit.paddle; $('#wash').checked = S.grit.wash;
+  $$('#pattern button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === S.inf.pattern));
+  $$('#leadSel button').forEach(x => x.setAttribute('aria-pressed', +x.dataset.v === S.ww.lead));
+}
+
+/* ---------- tabs ---------- */
+let activeTab = 'loops';
+$$('[role=tab]').forEach(t => t.onclick = () => {
+  activeTab = t.dataset.tab;
+  $$('[role=tab]').forEach(x => x.setAttribute('aria-selected', x === t));
+  $$('[role=tabpanel]').forEach(p => p.hidden = p.id !== 'p-' + activeTab);
+  if (activeTab === 'trends') { sizeTrend(); drawTrend(); }
+  updTabs();
+});
+const blk = (t, v, cls) => `<div class="blk ${cls || ''}"><div class="t">${t}</div><div class="v">${v}</div></div>`;
+const arr = '<span class="arr"></span>';
+function updLoops() {
+  const Wl = S.ww, C = S.scr, G = S.grit, F = S.flow, D = S.div;
+  const lvl = Wl.useBackup ? Wl.L : Wl.lit;
+  $('#loopsBox').innerHTML = `
+  <div class="loop"><h4>LIC-101 wet well level with lead/lag (RTU-100)</h4><p>Direct-acting PI: when the level rises above setpoint, the VFDs speed up. A lag pump starts after 2 minutes at full output and stops after 5 minutes below half output. The lead pump rotates on operator command.</p>
+    <div class="chain">${blk('Setpoint', Wl.loop.sp.toFixed(1) + ' ft')}${arr}${blk('PI controller (' + Wl.loop.mode + ')', Math.round(Wl.loop.out) + '%', 'act')}${arr}${blk('Pumps commanded', Wl.nRun + ' of 3', Wl.stopCmd ? 'bad' : 'act')}${arr}${blk('Pumped flow', Math.round(Wl.qout) + ' gpm', Wl.qout < S.qin * 0.8 && Wl.L > 10 ? 'bad' : '')}${arr}${blk('Wet well actual', Wl.L.toFixed(2) + ' ft', Wl.L > 14 ? 'bad' : '')}${arr}${blk(Wl.useBackup ? 'Backup bubbler' : 'LIT-101 reads', lvl.toFixed(2) + ' ft', Math.abs(Wl.lit - Wl.L) > 1 ? 'bad' : '')}<div class="fbk"><span>feedback: measured level</span></div></div></div>
+  <div class="loop" style="border-color:var(--red)"><h4>Hardwired float backup (no RTU, no radio)</h4><p>LSHH at 16 ft forces two pumps to full speed through relays. LSLL at 1.5 ft stops all pumps. These still work if RTU-100 is compromised.</p>
+    <div class="steps">${[['LSHH ' + (S.faults.float ? 'inoperative' : Wl.floatHH ? 'TRIPPED' : 'armed'), Wl.floatHH || !S.faults.float], ['Pumps forced to 100%', Wl.forced], ['LSLL ' + (Wl.floatLL ? 'TRIPPED' : 'armed'), true]].map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join('')}</div></div>
+  <div class="loop"><h4>pH diversion (PLC-200)</h4><p>Divert when AIT-201 reads below 5.5 or above 10; return to normal 10 minutes after the reading recovers.</p>
+    <div class="chain">${blk('AIT-201 reads', 'pH ' + D.meas.toFixed(1), D.meas < 5.5 ? 'bad' : '')}${arr}${blk('Logic', D.auto && !D.disabled ? 'Auto' : 'Disabled', D.auto && !D.disabled ? 'act' : 'bad')}${arr}${blk('GV-202', D.on ? 'Diverting' : 'Forward', D.on ? 'act' : '')}${arr}${blk('DB-202', Math.round(D.basin) + '%', D.basin > 80 ? 'bad' : '')}</div></div>
+  <div class="loop"><h4>Screen rake control (PLC-200)</h4><p>Each rake runs 2 minutes every ${C.timer} minutes, and whenever ΔP reaches ${C.dpSp} in, until ΔP falls to ${C.dpSp - 3} in. Interlock: rakes stop if the compactor is jammed or the dumpster is full.</p>
+    <div class="steps">${C.ch.map((c, i) => [['SC-201' + 'AB'[i] + (c.on ? (c.rake ? ' raking' : ' idle') : ' out of service'), c.rake], ['ΔP ' + c.dp.toFixed(1) + ' in', c.dp >= C.dpSp]]).flat().concat([['Compactor ' + (S.faults.compactor ? 'jammed' : 'OK'), !S.faults.compactor], ['Remote off', C.remoteOff]]).map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join('')}</div></div>
+  <div class="loop"><h4>Grit pump timer (PLC-300)</h4><p>Runs the first ${G.pumpMin} minutes of each hour. Minute ${Math.floor(S.t % 60)} of this hour. Pump ${G.pumpRun ? 'running' : G.pumpCmd ? 'commanded but no flow' : 'idle'}.</p></div>
+  <div class="loop"><h4>AIC-501 odor control (PLC-400)</h4><p>Direct-acting PI: more H₂S in the building means more fan speed through the scrubber.</p>
+    <div class="chain">${blk('Setpoint', F.loop.sp.toFixed(1) + ' ppm')}${arr}${blk('PI controller (' + F.loop.mode + ')', Math.round(F.loop.out) + '%', 'act')}${arr}${blk('EF-401', F.fanOn ? Math.round(F.fanSp) + '%' : 'Stopped', F.fanOn ? 'act' : 'bad')}${arr}${blk('Building H₂S', F.bH2S.toFixed(1) + ' ppm', F.bH2S >= 10 ? 'bad' : '')}<div class="fbk"><span>feedback: AT-501</span></div></div></div>`;
+}
+function updPerf() {
+  const t = S.day, p = S.prev || {};
+  const row = (n, k, f, why) => `<tr><td>${n}</td><td class="n">${f(t[k] || 0)}</td><td class="n">${S.prev ? f(p[k] || 0) : '–'}</td><td class="d">${why}</td></tr>`;
+  const n0 = v => Math.round(v).toLocaleString(), n1 = v => v.toFixed(1);
+  $('#perfBody').innerHTML = [
+    row('Flow pumped (MG)', 'mg', v => v.toFixed(2), 'Basis for every daily load calculation.'),
+    row('Pump energy (kWh)', 'kwh', n0, 'Lift stations are often a utility’s largest energy users after aeration.'),
+    row('Sewer overflow (gal)', 'sso', n0, 'Any amount is a reportable Clean Water Act violation and a public health hazard.'),
+    row('Screenings captured (ft³)', 'screenings', n1, 'Every cubic foot caught here is a cubic foot not wrapped around a pump or mixer.'),
+    row('Rags passed downstream (ft³)', 'rags', v => v.toFixed(2), 'Fouls pumps, diffusers, mixers and digesters for months.'),
+    row('Grit removed (lb)', 'grit', n0, 'Prevents abrasion and lost volume in tanks and digesters.'),
+    row('Grit passed downstream (lb)', 'gritPassed', n0, 'Settles in channels and digesters; wears centrifuges and pumps.'),
+    row('Acid passed to biology (min)', 'acid', n1, 'Low pH can kill nitrifiers and upset the whole activated sludge process.')
+  ].join('');
+}
+
+/* ---------- trends ---------- */
+const TG = {
+  lift: [['L', '#0047AB', 0, 20, 'Wet well actual (0–20 ft)'], ['lit', '#86aef2', 0, 20, 'LIT-101 reading (0–20 ft)'], ['spd', '#00a86b', 0, 100, 'Pump speed (0–100%)'], ['qin', '#c08a00', 0, 10000, 'Inflow (0–10,000 gpm)']],
+  scr: [['dpa', '#0047AB', 0, 30, 'Screen A ΔP (0–30 in)'], ['dpb', '#00a86b', 0, 30, 'Screen B ΔP (0–30 in)'], ['byp', '#c8102e', 0, 6000, 'Bypass (0–6,000 gpm)'], ['qin', '#c08a00', 0, 10000, 'Inflow (0–10,000 gpm)']],
+  grit: [['eff', '#00a86b', 0, 100, 'Removal efficiency (0–100%)'], ['inv', '#8a5a2b', 0, 100, 'Hopper inventory (0–100%)'], ['flush', '#c8102e', 0, 10, 'Grit load factor (0–10×)'], ['qin', '#c08a00', 0, 10000, 'Inflow (0–10,000 gpm)']],
+  qual: [['pha', '#c8102e', 0, 14, 'pH actual (0–14)'], ['phm', '#f08a8a', 0, 14, 'pH AIT-201 (0–14)'], ['bh', '#c08a00', 0, 40, 'Building H₂S (0–40 ppm)'], ['fr', '#0047AB', 0, 25, 'Sampler fridge (0–25 °C)']]
+};
+let tgroup = 'lift';
+$$('#trendSel button').forEach(b => b.onclick = () => { tgroup = b.dataset.v; $$('#trendSel button').forEach(x => x.setAttribute('aria-pressed', x === b)); drawTrend(); });
+const tc = $('#trend'), tctx = tc.getContext('2d');
+function sizeTrend() { const r = tc.getBoundingClientRect(); if (!r.width) return; const dpr = Math.min(2, window.devicePixelRatio || 1); tc.width = r.width * dpr; tc.height = r.height * dpr; tctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+function drawTrend() {
+  const r = tc.getBoundingClientRect(); if (!r.width) return;
+  const w = r.width, h = r.height, d = isDark(), pl = 10, pr = 10, pt = 10, pb = 22;
+  tctx.clearRect(0, 0, w, h);
+  tctx.strokeStyle = d ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'; tctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const y = pt + (h - pt - pb) * i / 4; tctx.beginPath(); tctx.moveTo(pl, y); tctx.lineTo(w - pr, y); tctx.stroke(); }
+  for (let i = 0; i <= 6; i++) { const x = pl + (w - pl - pr) * i / 6; tctx.beginPath(); tctx.moveTo(x, pt); tctx.lineTo(x, h - pb); tctx.stroke(); }
+  const n = 720, data = S.trend;
+  for (const [k, col, mn, mx] of TG[tgroup]) {
+    tctx.strokeStyle = col; tctx.lineWidth = 2; tctx.beginPath();
+    data.forEach((p, i) => { const x = pl + (w - pl - pr) * (i + n - data.length) / (n - 1), y = pt + (h - pt - pb) * (1 - clamp((p[k] - mn) / (mx - mn), 0, 1)); i ? tctx.lineTo(x, y) : tctx.moveTo(x, y); });
+    tctx.stroke();
+  }
+  tctx.fillStyle = d ? '#9aa6b2' : '#56626e'; tctx.font = '12px Barlow, sans-serif';
+  tctx.textAlign = 'left'; tctx.fillText('−24 h', pl, h - 6); tctx.textAlign = 'right'; tctx.fillText('now ' + clockStr(S.t), w - pr, h - 6);
+  $('#tkeys').innerHTML = TG[tgroup].map(([, c, , , l]) => `<span><i style="background:${c}"></i>${l}</span>`).join('');
+}
+window.addEventListener('resize', () => { resize(); sizeTrend(); if (activeTab === 'trends') drawTrend(); });
+
+/* ---------- alarms ---------- */
+$('#ackAll').onclick = () => { let n = 0; for (const a of visibleAlarms()) if (!a.acked) { a.acked = true; n++; if (!a.active) a.done = true; } if (n) logEv('op', 'Operator acknowledged ' + n + ' alarm' + (n > 1 ? 's.' : '.')); updAlarms(); };
+function updAlarms() {
+  const list = visibleAlarms();
+  $('#alBody').innerHTML = list.length ? list.map(a => {
+    const st = a.active ? (a.acked ? 'Active, acknowledged' : 'Active, unacknowledged') : 'Cleared, unacknowledged';
+    const cls = (a.p === 'High' ? 'al-hi' : a.p === 'Medium' ? 'al-me' : 'al-lo') + (a.acked ? '' : ' al-unack') + (a.active ? ' al-act' : '');
+    return `<tr class="${cls}"><td class="c">D${Math.floor(a.t / 1440) + 1} ${clockStr(a.t)}</td><td>${a.p}</td><td>${st}</td><td style="white-space:normal">${a.txt}</td></tr>`;
+  }).join('') : '<tr><td colspan="4" class="empty-msg">No alarms.</td></tr>';
+  const ev = S.suppress ? S.events.filter(e => e.cat !== 'alarm') : S.events;
+  $('#evLog').innerHTML = ev.map(e => `<div class="${e.cat}"><span class="t">D${Math.floor(e.t / 1440) + 1} ${clockStr(e.t)}</span><span class="c">${{ op: 'Operator', alarm: 'Alarm', sec: 'Security', sys: 'System' }[e.cat]}</span><span>${e.msg}</span></div>`).join('');
+}
+
+/* ---------- I/O ---------- */
+const IO = [
+  ['RTU-100: lift station (DNP3)'],
+  ['RTU-100', 'AI 0', 'LIT_101', 'AI', () => S.ww.lit.toFixed(2), 'Wet well level (ft)'],
+  ['RTU-100', 'AI 1', 'FIT_102', 'AI', () => Math.round(S.ww.qout), 'Force main flow (gpm)'],
+  ['RTU-100', 'AO 0', 'VFD_SPD', 'AO', () => Math.round(S.ww.loop.out), 'Common VFD speed command (%)'],
+  ['RTU-100', 'AO 1', 'LIC_101_SP', 'AO', () => S.ww.loop.sp.toFixed(1), 'Level setpoint (ft)'],
+  ...PN.map((n, i) => ['RTU-100', 'BI ' + (i * 2), 'P101' + n + '_RUN', 'BI', () => S.ww.pumps[i].run, 'Pump ' + n + ' running']),
+  ...PN.map((n, i) => ['RTU-100', 'BI ' + (i * 2 + 1), 'P101' + n + '_FAULT', 'BI', () => S.ww.pumps[i].trip, 'Pump ' + n + ' overload trip']),
+  ['RTU-100', 'BI 8', 'LSHH', 'BI', () => S.ww.floatHH, 'High-level float (status only)'],
+  ['RTU-100', 'BI 9', 'LSLL', 'BI', () => S.ww.floatLL, 'Low-level float (status only)'],
+  ['RTU-100', 'BO 10', 'REMOTE_STOP', 'BO', () => S.ww.stopCmd, 'Remote all-pumps stop latch'],
+  ['PLC-200: diversion and screens (Modbus)'],
+  ['PLC-200', '30001', 'AIT_201_PH', 'AI', () => S.div.meas.toFixed(2), 'Influent pH'],
+  ['PLC-200', '00011', 'GV_202_DIV', 'DO', () => S.div.on, 'Diversion gate to DB-202'],
+  ['PLC-200', '00010', 'DIV_ENABLE', 'Coil', () => S.div.auto && !S.div.disabled, 'Automatic diversion enabled'],
+  ['PLC-200', '30003', 'LIT_203', 'AI', () => S.div.basin.toFixed(1), 'Diversion basin (%)'],
+  ['PLC-200', '30011', 'DPIT_201A', 'AI', () => S.scr.ch[0].dp.toFixed(1), 'Screen A differential (in)'],
+  ['PLC-200', '30012', 'DPIT_201B', 'AI', () => S.scr.ch[1].dp.toFixed(1), 'Screen B differential (in)'],
+  ['PLC-200', '00021', 'SC201A_RAKE', 'DO', () => S.scr.ch[0].rake, 'Screen A rake running'],
+  ['PLC-200', '00022', 'SC201B_RAKE', 'DO', () => S.scr.ch[1].rake, 'Screen B rake running'],
+  ['PLC-200', '00025', 'RAKE_REMOTE_OFF', 'Coil', () => S.scr.remoteOff, 'Rakes forced off from HMI'],
+  ['PLC-200', '40011', 'RAKE_DP_SP', 'HR', () => S.scr.dpSp, 'Rake start ΔP (in)'],
+  ['PLC-300: grit (Modbus)'],
+  ['PLC-300', '00031', 'M301_RUN', 'DO', () => S.grit.padOn, 'Vortex paddle running'],
+  ['PLC-300', '00032', 'P301_RUN', 'DO', () => S.grit.pumpCmd, 'Grit pump command'],
+  ['PLC-300', '10033', 'FS_301', 'DI', () => S.grit.pumpRun, 'Grit pump flow switch'],
+  ['PLC-300', '40031', 'P301_MIN_HR', 'HR', () => S.grit.pumpMin, 'Grit pump minutes per hour'],
+  ['PLC-400: flow, sampling, odor (Modbus)'],
+  ['PLC-400', '30041', 'FIT_401', 'AI', () => Math.round(S.flow.meas), 'Parshall flume flow (gpm)'],
+  ['PLC-400', '30043', 'TT_401', 'AI', () => S.flow.fridge.toFixed(1), 'Sampler refrigerator (°C)'],
+  ['PLC-400', '30045', 'AT_501_H2S', 'AI', () => S.flow.bH2S.toFixed(1), 'Building H₂S (ppm)'],
+  ['PLC-400', '40044', 'EF401_SPD', 'HR', () => Math.round(S.flow.fanSp), 'Odor fan speed (%)'],
+  ['SCADA-1'], ['SCADA-1', '–', 'ALARM_ENABLE', 'Tag', () => !S.suppress, 'HMI alarm annunciation enabled']
+];
+function buildIO() { $('#ioBody').innerHTML = IO.map((r, i) => r.length === 1 ? `<tr class="grp"><td colspan="6">${r[0]}</td></tr>` : `<tr><td class="c">${r[0]}</td><td class="c">${r[1]}</td><td class="c">${r[2]}</td><td>${r[3]}</td><td data-io="${i}"></td><td class="d">${r[5]}</td></tr>`).join(''); }
+function updIO() { $$('[data-io]').forEach(td => { const v = IO[+td.dataset.io][4](); td.innerHTML = typeof v === 'boolean' ? `<span class="chip${v ? ' on' : ''}">${v ? 'ON' : 'OFF'}</span>` : `<span class="c" style="font-variant-numeric:tabular-nums">${v}</span>`; }); }
+
+/* ---------- lab ---------- */
+function buildLab() {
+  $('#faultList').innerHTML = Object.entries(FAULTS).map(([k, f]) => `<label class="tog"><input type="checkbox" data-f="${k}"><span><b>${f.name}</b><small>${f.sym}</small></span></label>`).join('');
+  $$('[data-f]').forEach(c => c.onchange = () => { S.faults[c.dataset.f] = c.checked; if (!c.checked && c.dataset.f === 'pumpRag') S.ww.pumps[1].rag = 0.1; logEv('sys', 'Instructor ' + (c.checked ? 'injected' : 'cleared') + ': ' + FAULTS[c.dataset.f].name + '.'); });
+  $('#atkList').innerHTML = Object.entries(ATTACKS).map(([k, a]) => `<div class="atk"><span><b>${a.name}</b><small>${a.detail}</small></span><button class="btn warn" data-a="${k}">Launch</button></div>`).join('');
+  $$('[data-a]').forEach(b => b.onclick = () => launch(b.dataset.a));
+  $('#defList').innerHTML = Object.entries(DEFENSES).map(([k, a]) => `<label class="tog"><input type="checkbox" data-d="${k}"><span><b>${a.name}</b><small>${a.d}</small></span></label>`).join('');
+  $$('[data-d]').forEach(c => c.onchange = () => { S.def[c.dataset.d] = c.checked; logEv('sec', DEFENSES[c.dataset.d].name + (c.checked ? ' enabled.' : ' disabled.')); });
+  $('#mGuess').innerHTML = '<option value="">Choose a diagnosis…</option>' + Object.entries(FAULTS).map(([k, f]) => `<option value="f:${k}">${f.name}</option>`).join('') + Object.entries(ATTACKS).map(([k, a]) => `<option value="a:${k}">Attack: ${a.name}</option>`).join('');
+}
+function syncLab() { $$('[data-f]').forEach(c => c.checked = !!S.faults[c.dataset.f] && S.mystery !== 'f:' + c.dataset.f); $$('[data-d]').forEach(c => c.checked = !!S.def[c.dataset.d]); }
+function launch(id, silent) {
+  const a = ATTACKS[id];
+  let blocked = null, msg = '', stopAt = 1, path;
+  if (a.path === 'radio') { path = [[0, 120], [20, 160], [46, 196], [46, 270]]; if (S.def.auth) { blocked = 'auth'; stopAt = 0.6; msg = 'RTU-100 rejected unauthenticated DNP3 traffic (Secure Authentication challenge failed).'; } }
+  else { path = [[1400, 32], [1300, 32], [1300, 48], [1300, 32], [700, 32], [700, 22]]; if (S.def.mfa) { blocked = 'mfa'; stopAt = 0.4; msg = 'RA-1 denied the vendor session: MFA challenge failed and no operator approval.'; } }
+  S.packets.push({ t0: performance.now(), blocked, stopAt, path });
+  if (!silent) logEv('sec', (a.path === 'radio' ? 'Radio traffic to RTU-100: ' : 'Remote-access login: ') + a.detail);
+  setTimeout(() => {
+    if (blocked) { if (!silent) logEv('sec', msg); return; }
+    if (id === 'stop') S.ww.stopCmd = true;
+    if (id === 'spoof') S.ww.spoof = true;
+    if (id === 'remote') { S.suppress = true; S.scr.remoteOff = true; S.div.disabled = true; }
+    if (!silent) logEv('sys', { stop: 'RTU-100 accepted the commands: all pumps stopped, remote stop latched.', spoof: 'RTU-100 is now receiving a false LIT-101 value of 3.0 ft.', remote: 'Remote session active on HMI-1: rakes forced off, diversion disabled, alarms suppressed.' }[id]);
+  }, 1150);
+}
+function restoreAll() { S.ww.stopCmd = false; S.ww.spoof = false; S.suppress = false; S.scr.remoteOff = false; S.div.disabled = false; }
+$('#restore').onclick = () => { restoreAll(); if (S.mystery && S.mystery.startsWith('a:')) S.mystery = null; logEv('sec', 'Controllers restored from known-good backup: logic verified, latches cleared, alarms re-enabled.'); };
+$('#clearFaults').onclick = () => { S.faults = {}; S.ww.pumps.forEach(p => p.trip = false); S.ww.pumps[1].rag = 0.1; if (S.mystery && S.mystery.startsWith('f:')) S.mystery = null; syncLab(); logEv('sys', 'All equipment faults cleared and trips reset.'); };
+$('#resetSim').onclick = () => { newState(); warm(); syncControls(); syncLab(); $('#mBox').hidden = true; $('#mFb').textContent = ''; $('#mFb').className = 'fb'; };
+$('#mStart').onclick = () => {
+  restoreAll(); S.faults = {}; S.ww.pumps.forEach(p => p.trip = false);
+  const pool = Object.keys(FAULTS).filter(k => k !== 'float').map(k => 'f:' + k).concat(Object.keys(ATTACKS).map(k => 'a:' + k));
+  const pick = pool[Math.floor(Math.random() * pool.length)]; S.mystery = pick;
+  if (pick.startsWith('f:')) S.faults[pick.slice(2)] = true;
+  else { const save = { ...S.def }; S.def = { auth: false, mfa: false, safe: false, mon: save.mon }; launch(pick.slice(2), true); setTimeout(() => { S.def = save; }, 1300); }
+  syncLab(); $('#mBox').hidden = false; $('#mGuess').value = ''; $('#mFb').className = 'fb'; $('#mFb').textContent = '';
+  logEv('sys', 'A mystery fault is active. Investigate and submit a diagnosis.');
+};
+$('#mSubmit').onclick = () => {
+  const g = $('#mGuess').value, fb = $('#mFb');
+  if (!S.mystery) { fb.className = 'fb no'; fb.textContent = 'No mystery fault is active. Inject one first.'; return; }
+  if (!g) { fb.className = 'fb no'; fb.textContent = 'Choose a diagnosis from the list first.'; return; }
+  const [kind, k] = S.mystery.split(':'), info = kind === 'f' ? FAULTS[k] : ATTACKS[k];
+  if (g === S.mystery) {
+    fb.className = 'fb ok';
+    fb.innerHTML = `<b>Correct: ${info.name}.</b> ${kind === 'f' ? info.sym + ' Corrective action: ' + info.fix : info.detail + ' Recovery: restore from a known-good backup, then add the defense that would have stopped it.'}`;
+    if (kind === 'f') { S.faults[k] = false; if (k === 'pumpA') S.ww.pumps[0].trip = false; if (k === 'pumpRag') S.ww.pumps[1].rag = 0.1; } else restoreAll();
+    S.mystery = null; syncLab(); logEv('sys', 'Mystery fault diagnosed: ' + info.name + '.');
+  } else {
+    fb.className = 'fb no';
+    const hints = { pumpA: 'Check the pump cards and which pumps the RTU is calling.', pumpRag: 'Compare each pump’s amps with its flow.', lit: 'Is the level reading moving at all? Compare it with the wet well picture.', screenJam: 'Is screen A’s rake moving when its ΔP is high?', compactor: 'Why are both rakes idle with high ΔP?', gritPump: 'The grit pump is on its timer. Is the hopper going down?', paddle: 'Is the vortex spinning?', phProbe: 'Trigger an acid dump and compare actual and measured pH on the trend.', sampler: 'Check the sampler refrigerator.', odorFan: 'Is air moving through the scrubber?' };
+    fb.textContent = 'Not that one. ' + (kind === 'f' ? hints[k] : 'Check the event log, the I/O table and whether readings match what you see.');
+  }
+};
+
+/* ---------- glossary & quiz ---------- */
+const GLOSS = [
+  ['Headworks', 'The first treatment structure at a plant: screening, grit removal, flow measurement and sampling.'],
+  ['Wet well', 'The chamber at a lift station where sewage collects before pumping.'],
+  ['Lead/lag', 'Pump staging: the lead pump runs first; lag pumps start as demand rises. The lead rotates to share wear.'],
+  ['SSO', 'Sanitary sewer overflow: untreated sewage released from the collection system. Reportable and a health hazard.'],
+  ['RTU', 'Remote terminal unit: a rugged controller at a remote site that runs local logic and reports to SCADA.'],
+  ['DNP3', 'A SCADA protocol widely used in water and power. Secure Authentication adds challenge-response for commands.'],
+  ['Blinding', 'Debris building up on a screen face, reducing open area and raising headloss.'],
+  ['Differential level (ΔP)', 'Upstream minus downstream water level across a screen. Used to trigger raking.'],
+  ['Grit', 'Sand, gravel and other heavy inorganic particles that abrade equipment and fill tanks.'],
+  ['First flush', 'The early part of a storm that scours sewers and delivers a burst of grit and debris.'],
+  ['Composite sample', 'Many small aliquots combined over 24 hours, usually flow-paced, refrigerated at 6 °C or below.'],
+  ['Hydrogen sulfide', 'A toxic, corrosive gas from septic sewage. It smells of rotten eggs at low levels but deadens smell at high levels.']
+];
+$('#gloss').innerHTML = GLOSS.map(g => `<button class="flip" aria-pressed="false"><div class="fi"><div class="f">${g[0]}</div><div class="b">${g[1]}</div></div></button>`).join('');
+$$('.flip').forEach(b => b.onclick = () => b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'));
+const QUIZ = [
+  { q: 'Inflow rises in the afternoon and the PI output reaches 100% for two minutes. What does the RTU do?', o: ['Raises the level setpoint', 'Starts a lag pump', 'Opens the overflow', 'Trips the lead pump'], a: 1, e: 'Lead/lag logic adds a pump when one pump at full speed cannot keep up.' },
+  { q: 'An attacker stops all pumps by radio. What most directly prevents a sewer overflow?', o: ['The HMI alarm', 'The hardwired high-level float forcing pumps on', 'The composite sampler', 'The grit pump timer'], a: 1, e: 'The float is wired straight to the starters and does not depend on the RTU, radio or HMI.' },
+  { q: 'LIT-101 freezes at 8 ft. What happens without any plausibility check?', o: ['The loop holds steady while the real level drifts', 'Pumps run at full speed', 'The RTU switches to the backup sensor automatically', 'The diversion gate opens'], a: 0, e: 'The loop sees no error, so it changes nothing. Only an independent measurement reveals the problem.' },
+  { q: 'Screen differential is high and both rakes are idle. Which single fault explains both?', o: ['Grit pump plugged', 'Washer/compactor jammed', 'pH probe fouled', 'Odor fan failed'], a: 1, e: 'Rakes are interlocked off when the compactor cannot accept screenings.' },
+  { q: 'Why should grit pumping increase at the start of a storm?', o: ['Grit removal efficiency rises at high flow', 'The first flush delivers a large burst of grit', 'The paddle stops during storms', 'Sampler pacing requires it'], a: 1, e: 'Storms scour grit from sewers; the hopper fills quickly unless pumped out.' },
+  { q: 'Why is a warm composite sample a problem?', o: ['It damages the sampler', 'Samples above 6 °C are not valid for permit reporting', 'It raises H₂S', 'It stops flow pacing'], a: 1, e: 'Biological activity continues in a warm sample and changes its results; preservation rules require 6 °C or below.' },
+  { q: 'Authenticated telemetry blocks the radio attacks. Why does it not stop the remote-session attack?', o: ['It only works at night', 'The remote session uses the HMI’s legitimate path with stolen credentials', 'Remote sessions use DNP3', 'The firewall is off'], a: 1, e: 'An attacker logged into the HMI sends commands the controllers trust. MFA and approval protect that path.' },
+  { q: 'At which Purdue level is RTU-100?', o: ['Level 0', 'Level 1', 'Level 2', 'Level 3'], a: 1, e: 'Like a PLC, the RTU is a basic control device at Level 1. Its pumps, floats and sensors are Level 0.' }
+];
+function buildQuiz() { $('#quiz').innerHTML = QUIZ.map((x, i) => `<div class="q"><p>${i + 1}. ${x.q}</p>${x.o.map((o, j) => `<label><input type="radio" name="q${i}" value="${j}"><span>${o}</span></label>`).join('')}<div class="fb" id="qf${i}"></div></div>`).join(''); $('#qScore').textContent = ''; }
+$('#qGrade').onclick = () => {
+  let s = 0;
+  QUIZ.forEach((x, i) => {
+    const c = document.querySelector(`input[name=q${i}]:checked`), fb = $('#qf' + i);
+    if (!c) { fb.className = 'fb no'; fb.textContent = 'Not answered. ' + x.e; return; }
+    const ok = +c.value === x.a; if (ok) s++;
+    fb.className = 'fb ' + (ok ? 'ok' : 'no'); fb.textContent = (ok ? 'Correct. ' : 'Not quite. The answer is “' + x.o[x.a] + '.” ') + x.e;
+  });
+  $('#qScore').textContent = s + ' / ' + QUIZ.length;
+};
+$('#qReset').onclick = buildQuiz;
+
+/* ---------- periodic UI ---------- */
+function setFx(id, bad, warn, t) { const el = $('#c-' + id); el.classList.toggle('bad', bad); el.querySelector('.v').textContent = t; el.querySelector('.dot').className = 'dot ' + (bad ? 'r' : warn ? 'a' : 'g'); }
+function updTabs() { if (activeTab === 'loops') updLoops(); else if (activeTab === 'perf') updPerf(); else if (activeTab === 'alarms') updAlarms(); else if (activeTab === 'io') updIO(); }
+let trendTimer = 0;
+function updUI(rdt) {
+  const Wl = S.ww, C = S.scr, G = S.grit, F = S.flow, D = S.div;
+  $('#clk').textContent = clockStr(S.t); $('#day').textContent = 'Day ' + (Math.floor(S.t / 1440) + 1);
+  const shown = Wl.useBackup ? Wl.L : Wl.lit;
+  setFx('lvl', shown > 16, shown > 12, shown.toFixed(1) + ' ft');
+  setFx('sso', S.day.sso > 0, false, Math.round(S.day.sso).toLocaleString());
+  setFx('dp', C.maxdp > 12, C.maxdp > 8, C.maxdp.toFixed(1));
+  setFx('rag', S.day.rags > 3, S.day.rags > 1, S.day.rags.toFixed(2));
+  setFx('grit', G.eff < 0.75, G.eff < 0.85, Math.round(G.eff * 100) + '%');
+  setFx('acid', S.day.acid > 0, false, S.day.acid.toFixed(0));
+  setFx('smp', F.fridge > 6, F.fridge > 5, F.fridge.toFixed(1) + ' °C');
+  setFx('h2s', F.bH2S >= 10, F.bH2S >= 6, F.bH2S.toFixed(1));
+  const vis = visibleAlarms(); $('#alBadge').textContent = vis.filter(a => !a.acked).length || '';
+  if (stage === 'plant') {
+    $('#g1').textContent = Math.round(S.qin) + ' gpm'; $('#g2').textContent = Math.round(Wl.qout) + ' gpm'; $('#g3').textContent = Math.round(Wl.kw) + ' kW';
+    $('#g4').textContent = S.day.screenings.toFixed(1) + ' ft³'; $('#g5').textContent = Math.round(S.day.grit) + ' lb'; $('#g6').textContent = vis.filter(a => a.active).length;
+  } else if (stage === 'lift') {
+    $('#fpLV')._upd();
+    Wl.pumps.forEach((p, i) => { $('#pd' + i).className = 'dot ' + (p.trip ? 'r' : p.run ? (p.rag > 0.4 ? 'a' : 'g') : ''); $('#ps' + i).textContent = p.trip ? 'Tripped' : p.run ? Math.round(p.q) + ' gpm, ' + Math.round(p.amps) + '% A' : 'Standby'; });
+    $('#l1').textContent = S.faults.float ? 'Armed?' : Wl.floatHH ? 'TRIPPED' : 'Armed'; $('#l2').textContent = Wl.floatLL ? 'TRIPPED' : 'Armed';
+  } else if (stage === 'screen') {
+    $('#s1').textContent = D.meas.toFixed(1); $('#s2').textContent = Math.round(D.basin) + '%' + (D.on ? ', diverting' : '');
+    $('#s3').textContent = C.ch[0].on ? C.ch[0].dp.toFixed(1) + ' in' + (C.ch[0].rake ? ' ⟳' : '') : 'Out of service';
+    $('#s4').textContent = C.ch[1].on ? C.ch[1].dp.toFixed(1) + ' in' + (C.ch[1].rake ? ' ⟳' : '') : 'Out of service';
+    $('#s5').textContent = Math.round(C.bypass) + ' gpm'; $('#s6').textContent = Math.round(C.dump) + '%';
+  } else if (stage === 'grit') {
+    $('#r1').textContent = Math.round(G.eff * 100) + '%'; $('#r2').textContent = Math.round(G.inv) + ' lb'; $('#r3').textContent = G.org + '%'; $('#r4').textContent = Math.round(G.dump) + '%';
+  } else {
+    $('#f1').textContent = Math.round(F.meas) + ' gpm'; $('#f2').textContent = Math.round(Wl.qout) + ' gpm'; $('#f3').textContent = F.aliquots; $('#f4').textContent = F.fridge.toFixed(1) + ' °C';
+    $('#fpH2S')._upd(); $('#lvChem').style.width = F.chem + '%'; $('#lvChem').style.background = F.chem < 15 ? 'var(--red)' : 'var(--green)';
+    $('#f5').textContent = F.stack.toFixed(2) + ' ppm'; $('#f6').textContent = S.sulf.toFixed(1) + ' mg/L';
+  }
+  updAbout(); updInspector(); updTabs();
+  trendTimer += rdt; if (activeTab === 'trends' && trendTimer > 0.5) { trendTimer = 0; drawTrend(); }
+}
+
+/* ---------- main loop ---------- */
+let last = performance.now(), uiT = 0;
+function frame(now) {
+  const rdt = Math.min(0.1, (now - last) / 1000); last = now;
+  let simMin = rdt * simSpeed; let n = 0;
+  while (simMin > 1e-9 && n < 200) { const dt = Math.min(0.1, simMin); step(dt); simMin -= dt; n++; }
+  animate(rdt); draw();
+  uiT += rdt; if (uiT > 0.15) { updUI(uiT); uiT = 0; }
+  requestAnimationFrame(frame);
+}
+function warm() { for (let i = 0; i < 300; i++) step(0.1); }
+newState(); warm();
+buildIO(); buildLab(); buildQuiz(); syncControls(); setStage('plant');
+resize();
+requestAnimationFrame(t => { last = t; resize(); requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>
