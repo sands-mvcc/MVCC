@@ -259,6 +259,40 @@ ol.path a{color:var(--navy);font-weight:600;font-size:.9rem}
 .opts button.wrong{background:var(--bad-bg);border-color:var(--bad)}
 .opts button:disabled{cursor:default}
 .expl{font-size:.94rem;padding:.5rem .7rem;border-radius:8px;background:var(--surface-2);border-left:4px solid var(--navy)}
+/* secure access */
+.sg-alert{border-left:4px solid var(--warn);background:var(--warn-bg);padding:.6rem .9rem;border-radius:0 10px 10px 0;margin-bottom:1rem;max-width:none}
+.sg-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:1rem;align-items:start}
+@media (max-width:980px){.sg-layout{grid-template-columns:1fr}}
+.sg-status{display:flex;flex-wrap:wrap;gap:.8rem;align-items:center;margin-top:.4rem}
+.pill{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.2rem .75rem;font-weight:700;font-size:.9rem}
+.pill.lock{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad)}
+.pill.open{background:var(--good-bg);color:var(--good);border:1px solid var(--good)}
+.seq-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+svg.seq{width:100%;min-width:620px;height:auto;display:block}
+.seq .lane{stroke:var(--line);stroke-width:2;stroke-dasharray:4 5}
+.seq .lh{fill:var(--ink);font:700 13px "Barlow Condensed",sans-serif}
+.seq .lbox{fill:var(--surface);stroke:var(--line)}
+.seq .m{stroke-width:2.2;fill:none}
+.seq .m.req{stroke:var(--navy)}.seq .m.ok{stroke:var(--good)}.seq .m.deny{stroke:var(--bad)}
+.seq .ml{font:600 12px "Barlow",sans-serif;fill:var(--ink)}
+.seq .mk-req{fill:var(--navy)}.seq .mk-ok{fill:var(--good)}.seq .mk-deny{fill:var(--bad)}
+.seq .new{animation:seqIn .35s ease-out}
+@keyframes seqIn{from{opacity:0}to{opacity:1}}
+.sg-table{width:100%;border-collapse:collapse;font-size:.93rem;margin:.4rem 0}
+.sg-table th,.sg-table td{text-align:left;padding:.4rem .35rem;border-bottom:1px solid var(--line)}
+.oem-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.8rem;margin-top:.6rem}
+.oem{border:1px solid var(--line);border-radius:12px;padding:.8rem .9rem;background:var(--surface-2);display:flex;flex-direction:column;gap:.35rem}
+.oem h4{margin:0;font:700 1.15rem "Barlow Condensed",sans-serif}
+.oem .brands{color:var(--muted);font-size:.88rem;margin-top:-.2rem}
+.oem dl{margin:.2rem 0;font-size:.9rem}
+.oem dt{font-weight:700;color:var(--muted);font-size:.8rem;margin-top:.35rem}
+.oem dd{margin:0}
+.oem .foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:.4rem;gap:.4rem}
+.badge{font-size:.78rem;font-weight:700;border-radius:6px;padding:.1rem .5rem}
+.badge.est{background:var(--good-bg);color:var(--good)}
+.badge.verify{background:var(--warn-bg);color:var(--warn)}
+.oem.sel{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+@media (prefers-reduced-motion:reduce){.seq .new{animation:none}}
 footer{max-width:1280px;margin:0 auto;padding:1rem 1.2rem 2rem;color:var(--muted);font-size:.88rem}
 @media (prefers-reduced-motion:reduce){*{transition:none !important}.flip .in{transition:none}}
 </style>
@@ -402,6 +436,52 @@ footer{max-width:1280px;margin:0 auto;padding:1rem 1.2rem 2rem;color:var(--muted
   </div>
 </section>
 
+<!-- SECURE ACCESS -->
+<section class="panel" id="p-secure" role="tabpanel">
+  <div class="intro"><div><h2>Secure gateways and trust authorities</h2><p>Newer vehicles let any scan tool read codes and data, but lock write functions until the technician and the tool are authenticated. Practice an unlock, then compare how each manufacturer grants access.</p></div></div>
+  <div class="sg-alert"><b>Programs change often.</b> Brand coverage, fees, model years and approved tools are updated regularly. Confirm current requirements on the manufacturer’s service-information site and with NASTF before teaching or doing the work. Entries marked “Verify details” are the least settled.</div>
+  <div class="sg-layout">
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h3>Unlock simulator</h3><select id="sgOem" class="btn small" aria-label="Manufacturer"></select></div>
+      <div class="sg-status"><span id="sgLock" class="pill lock">Gateway locked</span><span id="sgTimer" class="muted"></span></div>
+      <div class="row" style="margin:.6rem 0"><button type="button" class="btn" id="sgRead">Read codes</button><button type="button" class="btn" id="sgClear">Clear codes</button><button type="button" class="btn primary" id="sgAuth">Sign in and authenticate</button><button type="button" class="btn small" id="sgReset">Reset</button></div>
+      <div class="seq-wrap"><svg id="sgSeq" class="seq" viewBox="0 0 800 80" role="img" aria-label="Message sequence between technician, scan tool, trust authority, OEM server, gateway and module"></svg></div>
+      <div id="sgNote" class="meaning" aria-live="polite" style="margin-top:.6rem">Start by reading codes, then try to clear them while the gateway is locked.</div>
+    </div>
+    <div class="card">
+      <h3>What the gateway allows</h3>
+      <table class="sg-table"><thead><tr><th>Function</th><th>Locked</th><th>Authenticated</th></tr></thead><tbody>
+        <tr><td>Read DTCs and freeze frame</td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+        <tr><td>Live data (PIDs)</td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+        <tr><td>Clear DTCs</td><td class="no">No</td><td class="ok">Yes</td></tr>
+        <tr><td>Bidirectional tests and actuations</td><td class="no">No</td><td class="ok">Yes</td></tr>
+        <tr><td>Module programming and configuration</td><td class="no">No</td><td class="ok">Yes</td></tr>
+        <tr><td>Calibrations and relearns</td><td class="no">No</td><td class="ok">Yes</td></tr>
+        <tr><td>Keys and immobilizer</td><td class="no">No</td><td class="warn">Often also needs NASTF VSP</td></tr>
+      </tbody></table>
+      <p class="muted" style="font-size:.88rem">Exact lists vary by manufacturer and module. Emissions-related OBD-II reads stay open by regulation.</p>
+      <h3 style="margin-top:.8rem">Before you start</h3>
+      <ul class="tight">
+        <li>An active account with the trust authority or OEM portal, in your own name. Credentials aren’t shared between technicians.</li>
+        <li>A scan tool registered to that account and running current software.</li>
+        <li>A stable internet connection: the unlock is approved online.</li>
+        <li>A battery maintainer if you’ll be programming.</li>
+        <li>Customer authorization on the repair order. Every unlock is logged to you.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:1rem">
+    <h3>Manufacturer access programs</h3>
+    <p class="muted">Select “Simulate” on any card to run the unlock with that manufacturer’s trust authority.</p>
+    <div class="oem-grid" id="oemGrid"></div>
+  </div>
+  <div class="card" style="margin-top:1rem">
+    <h3>Trust frameworks behind the gateways</h3>
+    <p class="muted">These are the industry programs, regulations and standards that decide who is trusted, and how the trust is proven.</p>
+    <div class="oem-grid" id="tfGrid"></div>
+  </div>
+</section>
+
 <!-- COMPETENCIES -->
 <section class="panel" id="p-competencies" role="tabpanel">
   <div class="intro"><div><h2>What a new technician must know and do</h2><p>Knowledge, skills and integrated competencies for entry-level network service, mapped to ASE test areas. Check items off as you master them; your progress stays in this browser.</p></div></div>
@@ -453,7 +533,7 @@ $('#themeBtn').addEventListener('click',()=>{
 applyThemeLabel();
 
 /* ---------- tabs + hash routing ---------- */
-const TABS=[['map','Network map'],['protocols','Protocols'],['dlc','OBD-II connector'],['fault-lab','Fault lab'],['decoder','Frame decoder'],['competencies','Competencies'],['quiz','Check yourself']];
+const TABS=[['map','Network map'],['protocols','Protocols'],['dlc','OBD-II connector'],['fault-lab','Fault lab'],['decoder','Frame decoder'],['secure','Secure access'],['competencies','Competencies'],['quiz','Check yourself']];
 const tabsEl=$('#tabs');
 TABS.forEach(([id,label])=>{const b=document.createElement('button');b.type='button';b.role='tab';b.id='t-'+id;b.textContent=label;b.setAttribute('aria-controls','p-'+id);b.addEventListener('click',()=>{if(location.hash!=='#'+id)location.hash=id;else show(id);});tabsEl.appendChild(b);});
 function show(id){
@@ -999,7 +1079,8 @@ const COMP={
     ['Isolate network faults','Divide the network: unplug modules or splice-pack jumpers systematically and re-measure after each change.','ASE A6, L1'],
     ['Repair network wiring','Keep twisted pairs twisted, minimize untwisted length, use OEM-approved splices and Ethernet repair kits, test terminal tension.','ASE A6'],
     ['Program and set up modules','Use J2534 or OEM tools with a battery maintainer, load software and configuration, perform initializations and ADAS calibrations.','ASE L1'],
-    ['Service wireless systems','TPMS relearn, key and fob programming with security access, telematics and update status checks.','ASE A6']]},
+    ['Service wireless systems','TPMS relearn, key and fob programming with security access, telematics and update status checks.','ASE A6'],
+    ['Authenticate through trust authorities','Maintain personal accounts with AutoAuth, OEM portals and NASTF VSP as needed; register tools; unlock secure gateways and recognize a 0x33 security access denied response.','ASE L1']]},
   C:{title:'Competencies',sub:'What they must demonstrate on the job',items:[
     ['Diagnose a no-communication concern','Go from customer concern to verified repair using a documented strategy: verify, research, test, isolate, repair, verify.','ASE A6, L1'],
     ['Separate wiring, power and module faults','Decide whether a lost-communication code is caused by power or ground, wiring, or the module itself, and justify it with measurements.','ASE A6'],
@@ -1016,7 +1097,7 @@ function buildComp(){
   cols.querySelectorAll('input[data-c]').forEach(i=>{i.addEventListener('click',e=>e.stopPropagation());i.addEventListener('change',()=>{saved[i.dataset.c]=i.checked;store('vnl-comp',JSON.stringify(saved));compProg();});});
   $('#compReset').onclick=()=>{saved={};store('vnl-comp','{}');cols.querySelectorAll('input[data-c]').forEach(i=>i.checked=false);compProg();};
   compProg();
-  const PATH=[['Electrical foundations','Ohm’s law, series and parallel, voltage drop.','dlc','Practice on the OBD-II connector'],['Network architecture','Why vehicles use several networks and a gateway.','map','Explore the network map'],['Protocols and signals','What each bus looks like electrically.','protocols','Open the protocol explorer'],['Meter checks at the DLC','Termination and bias measurements.','dlc','Complete the meter checks'],['Messages and codes','Frames, arbitration, OBD services and UDS.','decoder','Use the frame decoder'],['Fault isolation','Evidence-based HS-CAN diagnosis.','fault-lab','Work the fault lab cases'],['Programming and security','J2534, secure gateways, battery support, calibrations.','protocols','Review Ethernet and DoIP'],['Assessment','Scenario questions to check readiness.','quiz','Take the check']];
+  const PATH=[['Electrical foundations','Ohm’s law, series and parallel, voltage drop.','dlc','Practice on the OBD-II connector'],['Network architecture','Why vehicles use several networks and a gateway.','map','Explore the network map'],['Protocols and signals','What each bus looks like electrically.','protocols','Open the protocol explorer'],['Meter checks at the DLC','Termination and bias measurements.','dlc','Complete the meter checks'],['Messages and codes','Frames, arbitration, OBD services and UDS.','decoder','Use the frame decoder'],['Fault isolation','Evidence-based HS-CAN diagnosis.','fault-lab','Work the fault lab cases'],['Programming and security','J2534, secure gateways, trust authorities, battery support.','secure','Practice a secure gateway unlock'],['Assessment','Scenario questions to check readiness.','quiz','Take the check']];
   $('#path').innerHTML=PATH.map(([t,d,h,l])=>`<li><b>${t}</b><span class="muted" style="font-size:.92rem">${d}</span><br><a href="#${h}">${l}</a></li>`).join('');
   const GL=[['Dominant bit','A logic 0 on CAN. Drives CAN-H up and CAN-L down; it overrides any recessive bit sent at the same time.'],['Recessive bit','A logic 1 on CAN. Both lines rest at about 2.5 V; any node can overwrite it with a dominant bit.'],['Arbitration','How CAN decides who talks: modules compare IDs bit by bit, and the lowest ID wins without corrupting the message.'],['Terminating resistor','A 120 Ω resistor at each end of a CAN bus that stops signal reflections. Two in parallel measure 60 Ω.'],['Gateway module','Connects separate networks, translates between them and, on many newer vehicles, controls diagnostic access.'],['U-code','A network DTC. U0100-series codes mean a module lost communication with another module.'],['Bit stuffing','After five identical bits, CAN inserts one opposite bit so receivers can stay synchronized.'],['Bus-off','State a CAN module enters after too many errors; it stops transmitting to protect the network.'],['UDS','Unified Diagnostic Services (ISO 14229): the request and response language for reading data, codes and programming modules.'],['DoIP','Diagnostics over Internet Protocol (ISO 13400): UDS carried over Ethernet for much faster programming.'],['J2534 pass-thru','A standard interface that lets a PC running OEM software program modules through the DLC.'],['LIN master','The module that schedules every LIN message. Slaves only answer when the master sends their header.'],['Secure gateway','A gateway that blocks write access, such as clearing codes or programming, until the technician authenticates.'],['Ring break','A MOST fault where one failed node or fiber stops light, and so data, for the entire ring.']];
   $('#flips').innerHTML=GL.map(([t,d])=>`<button type="button" class="flip" aria-label="${t}. Select to show the definition"><div class="in"><div class="f">${t}<small>Select to flip</small></div><div class="b">${d}</div></div></button>`).join('');
@@ -1037,7 +1118,9 @@ const QZ=[
   ['Your tool reads codes but returns “security access denied” when clearing them on a 2020 vehicle. Why?',['The DLC is damaged','The secure gateway requires an authenticated tool session','The battery is low','CAN FD isn’t supported'],1,'Secure gateways allow reading but block write functions until the tool and technician are authenticated through the manufacturer’s program.'],
   ['Both CAN lines read near 0 V with the key on. Unplugging the ABS module restores normal voltages. Where is the fault?',['In the harness between PCM and IPC','Inside the ABS module or its connector','In the IPC terminating resistor','In the gateway'],1,'If removing one module clears the short, that module or its connector is pulling CAN-H to ground. This is classic isolation by unplugging.'],
   ['Which network carries camera video on most new vehicles?',['LIN','Body CAN','Automotive Ethernet','J1850 VPW'],2,'Video needs tens to hundreds of megabits per second. 100BASE-T1 and 1000BASE-T1 Ethernet carry it on a single twisted pair.'],
-  ['With key on, the DVOM reads 2.6 V on CAN-H. Why not exactly 2.5 V?',['The meter is out of calibration','The meter averages recessive 2.5 V and dominant 3.5 V bits','CAN-H is shorted to power','The terminator is open'],1,'A DVOM can’t follow fast bits, so it shows an average. Traffic pulls CAN-H a little above 2.5 V and CAN-L a little below.']
+  ['With key on, the DVOM reads 2.6 V on CAN-H. Why not exactly 2.5 V?',['The meter is out of calibration','The meter averages recessive 2.5 V and dominant 3.5 V bits','CAN-H is shorted to power','The terminator is open'],1,'A DVOM can’t follow fast bits, so it shows an average. Traffic pulls CAN-H a little above 2.5 V and CAN-L a little below.'],
+  ['An independent shop needs to clear codes on a 2019 Jeep with a secure gateway. What’s the supported way?',['Unplug the battery for 10 minutes','Sign in through AutoAuth with a registered, AutoAuth-enabled scan tool','Use any generic OBD-II code reader','Clear codes from the instrument cluster menu'],1,'Stellantis gateways accept write requests only from an authenticated session. AutoAuth verifies the technician, shop and tool and logs the unlock.'],
+  ['A customer’s keys are lost and you must program new ones on a Ford. Beyond a scan tool subscription, what does an independent technician usually need?',['Nothing else','A NASTF Vehicle Security Professional credential','A SERMI certificate','A CAN FD interface only'],1,'Security-related functions such as keys and immobilizers are released through the NASTF Secure Data Release Model to credentialed VSPs in North America. SERMI is the European equivalent.']
 ];
 let qState={};
 function buildQuiz(){
@@ -1052,9 +1135,70 @@ function buildQuiz(){
 function qScore(){const a=Object.values(qState);$('#qScore').textContent=`${a.filter(Boolean).length} / ${a.length}`;}
 $('#qReset').addEventListener('click',buildQuiz);
 
+/* ================= SECURE ACCESS ================= */
+const OEMS=[
+  {id:'stellantis',name:'Stellantis (FCA)',brands:'Chrysler, Dodge, Jeep, Ram, Fiat, Alfa Romeo',since:'Many models from model year 2018',auth:'AutoAuth',lane:'AutoAuth',how:'Register the shop, each technician and the scan tool’s serial number with AutoAuth, then sign in from an AutoAuth-enabled tool. Dealers and subscribers can also use Stellantis wiTECH with an online account.',note:'Bypass cables that connect at the gateway module are sold, but authenticated access is the supported route and leaves an audit trail.',conf:'est'},
+  {id:'nissan',name:'Nissan',brands:'Nissan, Infiniti',since:'Selected models from about model year 2020',auth:'AutoAuth (aftermarket); CONSULT (dealer)',lane:'AutoAuth',how:'Aftermarket tools unlock through AutoAuth using the same shop, technician and tool registration. Dealers use CONSULT with Nissan credentials.',note:'Model coverage has expanded over time; check which models are gated.',conf:'verify'},
+  {id:'vw',name:'Volkswagen Group',brands:'Volkswagen, Audi, Škoda, SEAT, Cupra',since:'MQB-evo and MEB platforms, from about 2020',auth:'SFD (vehicle diagnostic protection)',lane:'VW Group SFD',how:'Protected control units need a time-limited, module-specific SFD token issued online through ODIS with a registered VW Group user account. Some aftermarket tools obtain tokens through OEM-authorized services.',note:'Newer SFD versions extend protection to more modules. A token unlocks one module for a limited time, not the whole car.',conf:'est'},
+  {id:'mb',name:'Mercedes-Benz',brands:'Mercedes-Benz, Mercedes-AMG',since:'Newer model lines',auth:'Mercedes-Benz online authentication',lane:'MB online access',how:'XENTRY diagnosis with an authenticated Mercedes-Benz online account. Independent access runs through the manufacturer’s repair-information portal and authorized tool partners.',note:'Requirements differ between regions.',conf:'verify'},
+  {id:'gm',name:'General Motors',brands:'Chevrolet, GMC, Buick, Cadillac',since:'Global B electrical architecture, from about model year 2020',auth:'GM service programming credentials',lane:'GM SPS2 login',how:'Programming and configuration run through GM’s Service Programming System with an ACDelco TDS subscription and a GM-issued login, using a compatible pass-thru device.',note:'Theft-related functions require a NASTF VSP credential for independent technicians.',conf:'verify'},
+  {id:'ford',name:'Ford',brands:'Ford, Lincoln',since:'Gateway modules on many newer models',auth:'Ford FDRS account',lane:'Ford FDRS',how:'Ford Diagnosis and Repair System with a Motorcraft Service subscription and a compatible vehicle communication interface.',note:'Key and PATS programming require a NASTF VSP credential for independent technicians.',conf:'verify'},
+  {id:'hk',name:'Hyundai Motor Group',brands:'Hyundai, Kia, Genesis',since:'Security gateway on selected recent models',auth:'OEM account or authorized partner',lane:'HMG authorization',how:'Dealer diagnostic software with OEM credentials. Aftermarket tools unlock through OEM-authorized gateway services.',note:'Coverage and partner tools are still changing.',conf:'verify'},
+  {id:'toyota',name:'Toyota',brands:'Toyota, Lexus',since:'Secured functions on newer models',auth:'Toyota TIS account',lane:'Toyota TIS',how:'Techstream with a Toyota TIS subscription for programming and configuration.',note:'Immobilizer and smart-key functions require NASTF VSP credentials for independent technicians.',conf:'verify'}
+];
+const TRUST=[
+  ['AutoAuth','North America','A third-party identity service for secure gateway access. It verifies the shop, technician and tool, then logs every unlock. Tool makers build it into their software; technicians pay an annual registration. Used by Stellantis and, on many models, Nissan.'],
+  ['NASTF VSP and SDRM','US and Canada','The National Automotive Service Task Force Vehicle Security Professional registry requires a background check and insurance. Through the Secure Data Release Model, credentialed technicians and locksmiths get key codes, immobilizer PINs and security functions from manufacturers.'],
+  ['SERMI','European Union','The scheme set up under Regulation (EU) 2021/1244. Accredited conformity assessment bodies approve independent operators and their employees, who receive digital certificates so manufacturers can release security-related repair information.'],
+  ['UDS 0x29 Authentication','ISO 14229-1:2020','The standard way to prove identity to a module. The tool presents a PKI certificate and signs a challenge, replacing the older shared-secret seed-and-key exchange (service 0x27).'],
+  ['ISO/SAE 21434, UNECE R155 and R156','Global','The reason gateways exist. Manufacturers must manage cybersecurity risk and software updates for the vehicle’s whole life, and that includes controlling who can write to modules.'],
+  ['Right-to-repair agreements','United States','Industry agreements and state laws set what manufacturers must share with independent shops. This is an area of active legislation and litigation, so check the rules that apply where you work.']
+];
+const SGL=['Technician','Scan tool','Authority','OEM server','Gateway','Module'];
+const sg={oem:OEMS[0],unlocked:false,left:0,msgs:[],busy:false,timer:null};
+function sgX(i){return 70+i*132;}
+function sgDraw(){
+  const s=$('#sgSeq');const shown=sg.msgs.slice(-12);const H=62+shown.length*42+12;s.setAttribute('viewBox',`0 0 800 ${H}`);
+  let h='<defs>'+['req','ok','deny'].map(k=>`<marker id="mk-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-${k}" d="M0 0L10 5L0 10z"/></marker>`).join('')+'</defs>';
+  SGL.forEach((l,i)=>{const lab=i===2?sg.oem.lane:l;const w=Math.max(84,lab.length*7.2);h+=`<line class="lane" x1="${sgX(i)}" y1="34" x2="${sgX(i)}" y2="${H}"/><rect class="lbox" x="${sgX(i)-w/2}" y="8" width="${w}" height="26" rx="6"/><text class="lh" x="${sgX(i)}" y="26" text-anchor="middle">${lab}</text>`;});
+  shown.forEach((m,i)=>{const y=62+i*42;const x1=sgX(m[0]),x2=sgX(m[1]);const dir=x2>x1?1:-1;
+    h+=`<g class="${m[4]?'new':''}"><line class="m ${m[3]}" x1="${x1+dir*4}" y1="${y}" x2="${x2-dir*4}" y2="${y}" marker-end="url(#mk-${m[3]})"/><text class="ml" x="${(x1+x2)/2}" y="${y-7}" text-anchor="middle">${m[2]}</text></g>`;m[4]=false;});
+  s.innerHTML=h;
+}
+function sgStatus(){const L=$('#sgLock');L.className='pill '+(sg.unlocked?'open':'lock');L.textContent=sg.unlocked?'Gateway unlocked':'Gateway locked';
+  $('#sgTimer').textContent=sg.unlocked?`Session ends in ${Math.floor(sg.left/60)}:${String(sg.left%60).padStart(2,'0')} (shortened for the simulator)`:'';}
+const wait=ms=>new Promise(r=>setTimeout(r,reduced?0:ms));
+async function sgRun(steps,note){if(sg.busy)return;sg.busy=true;['#sgRead','#sgClear','#sgAuth','#sgOem'].forEach(s=>$(s).disabled=true);
+  for(const st of steps){sg.msgs.push([...st,true]);sgDraw();await wait(520);}
+  $('#sgNote').innerHTML=note;sg.busy=false;['#sgRead','#sgClear','#sgAuth','#sgOem'].forEach(s=>$(s).disabled=false);$('#sgAuth').disabled=sg.unlocked;}
+function sgLockNow(msg){sg.unlocked=false;sg.left=0;clearInterval(sg.timer);sg.timer=null;sgStatus();$('#sgAuth').disabled=false;if(msg)$('#sgNote').innerHTML=msg;}
+function buildSecure(){
+  $('#sgOem').innerHTML=OEMS.map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
+  $('#sgOem').addEventListener('change',e=>sgPick(e.target.value));
+  $('#sgRead').addEventListener('click',()=>sgRun([[1,4,'0x19 Read DTC information','req'],[4,5,'Forwarded: reads are allowed','req'],[5,4,'0x59 with 3 stored DTCs','ok'],[4,1,'Response passed back','ok']],'<b>Reading works without authentication.</b> The gateway passes diagnostic reads through so any shop can see codes and data.'));
+  $('#sgClear').addEventListener('click',()=>{
+    if(!sg.unlocked)sgRun([[1,4,'0x14 Clear DTCs','req'],[4,1,'0x7F 14 33 Security access denied','deny']],'<b>Blocked.</b> The gateway answers for the module with negative response code 0x33, security access denied. The request never reaches the module. You’ll see the same response if you try actuations or programming.');
+    else sgRun([[1,4,'0x14 Clear DTCs','req'],[4,5,'Forwarded: session authenticated','req'],[5,4,'0x54 Codes cleared','ok'],[4,1,'Positive response passed back','ok']],'<b>Codes cleared.</b> The gateway let the write through because this session is authenticated, and it recorded who did it.');
+  });
+  $('#sgAuth').addEventListener('click',async()=>{const o=sg.oem;
+    await sgRun([[0,2,'Sign in with multi-factor authentication','req'],[2,0,'Technician, shop and tool verified','ok'],[1,4,'Request challenge (0x29 or 0x27)','req'],[4,1,'Random challenge','ok'],[1,3,'Challenge + authorized session','req'],[3,1,'Signed response (OEM private key)','ok'],[1,4,'Send signed response','req'],[4,1,'Signature valid: unlocked, event logged','ok']],
+      `<b>Unlocked through ${o.auth}.</b> ${o.how} Only the manufacturer’s server can sign the challenge, so stolen passwords alone can’t unlock a vehicle, and every session is tied to a named technician.`);
+    sg.unlocked=true;sg.left=90;sgStatus();$('#sgAuth').disabled=true;clearInterval(sg.timer);
+    sg.timer=setInterval(()=>{sg.left--;sgStatus();if(sg.left<=0)sgLockNow('<b>Session expired.</b> Unlocks are time-limited. Authenticate again to continue writing to modules.');},1000);
+  });
+  $('#sgReset').addEventListener('click',()=>{sg.msgs=[];sgDraw();sgLockNow('Start by reading codes, then try to clear them while the gateway is locked.');});
+  $('#oemGrid').innerHTML=OEMS.map(o=>`<div class="oem" data-o="${o.id}"><h4>${o.name}</h4><div class="brands">${o.brands}</div><dl><dt>Where it applies</dt><dd>${o.since}</dd><dt>Trust authority</dt><dd>${o.auth}</dd><dt>How a technician gets access</dt><dd>${o.how}</dd><dt>Note</dt><dd>${o.note}</dd></dl><div class="foot"><span class="badge ${o.conf}">${o.conf==='est'?'Well established':'Verify details'}</span><button type="button" class="btn small" data-sim="${o.id}">Simulate</button></div></div>`).join('');
+  $('#oemGrid').querySelectorAll('[data-sim]').forEach(b=>b.addEventListener('click',()=>{sgPick(b.dataset.sim);$('#sgOem').value=b.dataset.sim;$('#sgSeq').scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'});}));
+  $('#tfGrid').innerHTML=TRUST.map(([t,r,d])=>`<div class="oem"><h4>${t}</h4><div class="brands">${r}</div><p style="margin:.2rem 0;font-size:.92rem">${d}</p></div>`).join('');
+  sgPick(OEMS[0].id);
+}
+function sgPick(id){if(sg.busy)return;sg.oem=OEMS.find(o=>o.id===id)||OEMS[0];sg.msgs=[];sgLockNow();sgDraw();
+  document.querySelectorAll('#oemGrid .oem').forEach(c=>c.classList.toggle('sel',c.dataset.o===sg.oem.id));
+  $('#sgNote').innerHTML=`<b>${sg.oem.name}.</b> Trust authority: ${sg.oem.auth}. Read codes first, then try to clear them while the gateway is locked.`;}
+
 /* ---------- init ---------- */
 buildMap();buildLegend();renderInfoDefault();buildEvents();
-buildProtocols();buildDLC();buildLab();buildDecoder();buildComp();buildQuiz();
+buildProtocols();buildDLC();buildLab();buildDecoder();buildSecure();buildComp();buildQuiz();
 show(location.hash.slice(1)||'map');
 })();
 </script>
