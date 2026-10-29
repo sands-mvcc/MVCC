@@ -1,12 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logic Gates — Digital Electronics Lab</title>
+<script>
+  // Apply saved theme before first paint (default: light)
+  (function () {
+    try {
+      if (localStorage.getItem('lg-theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch (e) {}
+  })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
+  /* ── THEME TOKENS ── light is the default */
   :root {
+    color-scheme: light;
+    --bg: #f3f6fa;
+    --panel: #ffffff;
+    --panel2: #eaf0f7;
+    --border: #c3d1e1;
+    --accent: #0047AB;
+    --accent2: #00a86b;
+    --accent3: #c2410c;
+    --hi: #0d1b2e;
+    --mid: #33506d;
+    --lo: #5f7590;
+    --on-color: #00a86b;
+    --off-color: #e3eaf2;
+    --wire-off: #b3c2d3;
+    --on-ink: #ffffff;
+    --accent-rgb: 0,71,171;
+    --on-rgb: 0,168,107;
+    --accent3-rgb: 194,65,12;
+    --border-rgb: 195,209,225;
+    --grid-line: rgba(0,71,171,0.05);
+    --scanline: transparent;
+    --gate-fill: rgba(0,71,171,0.06);
+    --bubble-fill: rgba(0,168,107,0.2);
+    --glow: 0 0 14px rgba(var(--accent-rgb),0.25);
+    --glow-green: 0 0 14px rgba(var(--on-rgb),0.3);
+    --glow-orange: 0 0 14px rgba(var(--accent3-rgb),0.3);
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-ui: 'Exo 2', sans-serif;
+    --font-display: 'Orbitron', sans-serif;
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
     --bg: #06090f;
     --panel: #0d1420;
     --panel2: #111c2e;
@@ -19,12 +63,19 @@
     --lo: #3a5c7a;
     --on-color: #00ff9d;
     --off-color: #1e3a5f;
+    --wire-off: #1e3a5f;
+    --on-ink: #000000;
+    --accent-rgb: 0,212,255;
+    --on-rgb: 0,255,157;
+    --accent3-rgb: 255,107,53;
+    --border-rgb: 30,58,95;
+    --grid-line: rgba(0,212,255,0.03);
+    --scanline: rgba(0,0,0,0.08);
+    --gate-fill: rgba(0,212,255,0.07);
+    --bubble-fill: rgba(0,255,157,0.2);
     --glow: 0 0 20px rgba(0,212,255,0.4);
     --glow-green: 0 0 20px rgba(0,255,157,0.5);
     --glow-orange: 0 0 20px rgba(255,107,53,0.5);
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-ui: 'Exo 2', sans-serif;
-    --font-display: 'Orbitron', sans-serif;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,6 +86,7 @@
     font-family: var(--font-ui);
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background 0.3s, color 0.3s;
   }
 
   /* Animated grid background */
@@ -43,21 +95,21 @@
     position: fixed;
     inset: 0;
     background-image:
-      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
   }
 
-  /* Scanline effect */
+  /* Scanline effect (dark mode only) */
   body::after {
     content: '';
     position: fixed;
     inset: 0;
     background: repeating-linear-gradient(
       0deg, transparent, transparent 2px,
-      rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+      var(--scanline) 2px, var(--scanline) 4px
     );
     pointer-events: none;
     z-index: 1;
@@ -89,6 +141,41 @@
     background: linear-gradient(90deg, transparent, var(--accent), transparent);
   }
 
+  /* ── THEME TOGGLE ── */
+  .theme-toggle {
+    position: absolute;
+    top: 0; right: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--hi);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .theme-toggle .theme-icon { font-size: 14px; line-height: 1; }
+
+  @media (max-width: 600px) {
+    header { padding-top: 56px; }
+  }
+
   .lab-badge {
     display: inline-block;
     font-family: var(--font-mono);
@@ -103,8 +190,8 @@
   }
 
   @keyframes pulse-border {
-    0%, 100% { box-shadow: 0 0 6px rgba(0,212,255,0.3); }
-    50% { box-shadow: 0 0 18px rgba(0,212,255,0.7); }
+    0%, 100% { box-shadow: 0 0 6px rgba(var(--accent-rgb),0.3); }
+    50% { box-shadow: 0 0 18px rgba(var(--accent-rgb),0.7); }
   }
 
   h1 {
@@ -146,6 +233,8 @@
     border-radius: 4px;
     overflow: hidden;
   }
+
+  [data-theme="light"] .panel { box-shadow: 0 1px 3px rgba(13,27,46,0.08); }
 
   .panel-header {
     background: var(--panel2);
@@ -208,14 +297,14 @@
   .gate-btn:hover {
     border-color: var(--accent);
     color: var(--accent);
-    background: rgba(0,212,255,0.05);
+    background: rgba(var(--accent-rgb),0.05);
   }
 
   .gate-btn.active {
     border-color: var(--accent);
     color: var(--hi);
-    background: rgba(0,212,255,0.12);
-    box-shadow: 0 0 16px rgba(0,212,255,0.25);
+    background: rgba(var(--accent-rgb),0.12);
+    box-shadow: 0 0 16px rgba(var(--accent-rgb),0.25);
   }
 
   .gate-btn.active::before {
@@ -306,9 +395,9 @@
   }
 
   .toggle-switch input:checked ~ .toggle-track {
-    background: rgba(0,255,157,0.15);
+    background: rgba(var(--on-rgb),0.15);
     border-color: var(--on-color);
-    box-shadow: 0 0 14px rgba(0,255,157,0.3);
+    box-shadow: 0 0 14px rgba(var(--on-rgb),0.3);
   }
 
   .toggle-switch input:checked ~ .toggle-track .t-off { color: transparent; }
@@ -317,7 +406,7 @@
   .toggle-switch input:checked ~ .toggle-thumb {
     left: 43px;
     background: var(--on-color);
-    box-shadow: 0 0 12px rgba(0,255,157,0.6);
+    box-shadow: 0 0 12px rgba(var(--on-rgb),0.6);
   }
 
   .input-bit {
@@ -338,7 +427,7 @@
     color: var(--accent3);
     text-align: center;
     padding: 8px;
-    border: 1px dashed rgba(255,107,53,0.3);
+    border: 1px dashed rgba(var(--accent3-rgb),0.3);
     border-radius: 3px;
     margin-top: 4px;
     display: none;
@@ -416,7 +505,7 @@
 
   .wire.on {
     background: var(--on-color);
-    box-shadow: 0 0 10px rgba(0,255,157,0.6);
+    box-shadow: 0 0 10px rgba(var(--on-rgb),0.6);
   }
 
   .wire.off { background: var(--lo); }
@@ -460,8 +549,8 @@
   .wire-label .bit-dot.on {
     background: var(--on-color);
     border-color: var(--on-color);
-    box-shadow: 0 0 12px rgba(0,255,157,0.7);
-    color: #000;
+    box-shadow: 0 0 12px rgba(var(--on-rgb),0.7);
+    color: var(--on-ink);
   }
 
   .wire-label .bit-dot.off { color: var(--lo); }
@@ -476,7 +565,7 @@
 
   .gate-svg-wrap svg {
     width: 110px; height: 90px;
-    filter: drop-shadow(0 0 8px rgba(0,212,255,0.3));
+    filter: drop-shadow(0 0 8px rgba(var(--accent-rgb),0.3));
     transition: all 0.3s;
   }
 
@@ -513,8 +602,8 @@
 
   .output-lamp.on {
     border-color: var(--on-color);
-    background: rgba(0,255,157,0.12);
-    box-shadow: 0 0 30px rgba(0,255,157,0.6), inset 0 0 20px rgba(0,255,157,0.1);
+    background: rgba(var(--on-rgb),0.12);
+    box-shadow: 0 0 30px rgba(var(--on-rgb),0.6), inset 0 0 20px rgba(var(--on-rgb),0.1);
     color: var(--on-color);
     text-shadow: 0 0 14px var(--on-color);
   }
@@ -578,15 +667,15 @@
   }
 
   tbody tr {
-    border-bottom: 1px solid rgba(30,58,95,0.5);
+    border-bottom: 1px solid rgba(var(--border-rgb),0.5);
     transition: background 0.2s;
     cursor: pointer;
   }
 
-  tbody tr:hover { background: rgba(0,212,255,0.04); }
+  tbody tr:hover { background: rgba(var(--accent-rgb),0.04); }
 
   tbody tr.active-row {
-    background: rgba(0,212,255,0.08);
+    background: rgba(var(--accent-rgb),0.08);
     border-bottom-color: var(--accent);
   }
 
@@ -602,7 +691,7 @@
   .cell-1 {
     color: var(--on-color);
     font-weight: 700;
-    text-shadow: 0 0 8px rgba(0,255,157,0.5);
+    text-shadow: 0 0 8px rgba(var(--on-rgb),0.5);
   }
 
   .cell-0 { color: var(--lo); }
@@ -749,8 +838,8 @@
   }
 
   .quiz-opt:hover { border-color: var(--accent); color: var(--accent); }
-  .quiz-opt.correct { border-color: var(--on-color); color: var(--on-color); background: rgba(0,255,157,0.08); }
-  .quiz-opt.wrong { border-color: var(--accent3); color: var(--accent3); background: rgba(255,107,53,0.08); }
+  .quiz-opt.correct { border-color: var(--on-color); color: var(--on-color); background: rgba(var(--on-rgb),0.08); }
+  .quiz-opt.wrong { border-color: var(--accent3); color: var(--accent3); background: rgba(var(--accent3-rgb),0.08); }
 
   .quiz-feedback {
     font-family: var(--font-mono);
@@ -781,7 +870,7 @@
   }
 
   .quiz-next-btn:hover {
-    background: rgba(0,212,255,0.1);
+    background: rgba(var(--accent-rgb),0.1);
     box-shadow: var(--glow);
   }
 
@@ -803,8 +892,8 @@
   .output-lamp.on { animation: flash-on 0.35s ease; }
 
   @keyframes row-highlight {
-    0% { background: rgba(0,212,255,0.25); }
-    100% { background: rgba(0,212,255,0.08); }
+    0% { background: rgba(var(--accent-rgb),0.25); }
+    100% { background: rgba(var(--accent-rgb),0.08); }
   }
 
   tbody tr.active-row { animation: row-highlight 0.4s ease forwards; }
@@ -817,7 +906,7 @@
     transition: all 0.3s;
     flex-shrink: 0;
   }
-  .wire-node.on { background: var(--on-color); border-color: var(--on-color); box-shadow: 0 0 10px rgba(0,255,157,0.7); }
+  .wire-node.on { background: var(--on-color); border-color: var(--on-color); box-shadow: 0 0 10px rgba(var(--on-rgb),0.7); }
   .wire-node.off { background: transparent; }
 
   .inputs-wires {
@@ -832,6 +921,13 @@
     align-items: center;
     gap: 0;
   }
+
+  /* ── LIGHT-MODE REFINEMENTS ── neon text glow reads as blur on white */
+  [data-theme="light"] .input-bit.on,
+  [data-theme="light"] .op-val.on,
+  [data-theme="light"] .output-lamp.on,
+  [data-theme="light"] .cell-1 { text-shadow: none; }
+  [data-theme="light"] .toggle-thumb { box-shadow: 0 1px 3px rgba(13,27,46,0.3); }
 </style>
 </head>
 <body>
@@ -839,6 +935,10 @@
 
   <!-- HEADER -->
   <header>
+    <button type="button" class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-pressed="false" aria-label="Switch to dark mode">
+      <span class="theme-icon" id="themeIcon" aria-hidden="true">☾</span>
+      <span id="themeLabel">Dark</span>
+    </button>
     <div class="lab-badge">⚡ Digital Electronics Laboratory</div>
     <h1>Logic <span>Gates</span></h1>
     <div class="subtitle">Interactive Simulator &amp; Learning Module &nbsp;|&nbsp; Boolean Logic Fundamentals</div>
@@ -926,6 +1026,7 @@
             <div class="kbd-row"><kbd>B</kbd> Toggle Input B</div>
             <div class="kbd-row"><kbd>1</kbd>–<kbd>7</kbd> Select Gate</div>
             <div class="kbd-row"><kbd>Space</kbd> Cycle All Inputs</div>
+            <div class="kbd-row"><kbd>T</kbd> Light / Dark Theme</div>
           </div>
         </div>
       </div>
@@ -1045,7 +1146,7 @@
     <div class="status-item"><div class="status-dot"></div><span id="statusGate">Gate: AND</span></div>
     <div class="status-item"><div class="status-dot"></div><span id="statusInputs">A=0 | B=0</span></div>
     <div class="status-item"><div class="status-dot"></div><span id="statusOutput">Output: 0 (LOW)</span></div>
-    <div class="status-item" style="margin-left:auto;"><span style="color:var(--lo);">MVCC Digital Electronics Lab &nbsp;|&nbsp; Keyboard: A B 1-7 Space</span></div>
+    <div class="status-item" style="margin-left:auto;"><span style="color:var(--lo);">MVCC Digital Electronics Lab &nbsp;|&nbsp; Keyboard: A B 1-7 Space T</span></div>
   </div>
 
 </div>
@@ -1060,6 +1161,39 @@ let inputB = false;
 let quizScore = 0;
 let quizTotal = 0;
 let quizAnswered = false;
+
+// ══════════════════════════════════════════════════
+//  THEME (light default, persisted in localStorage)
+// ══════════════════════════════════════════════════
+const THEME_KEY = 'lg-theme';
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function syncThemeButton() {
+  const dark = currentTheme() === 'dark';
+  const btn = document.getElementById('themeToggle');
+  btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+  btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  document.getElementById('themeIcon').textContent = dark ? '☀' : '☾';
+  document.getElementById('themeLabel').textContent = dark ? 'Light' : 'Dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  syncThemeButton();
+  updateGate(); // redraw SVG with the new palette
+}
+
+function toggleTheme() {
+  setTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+}
 
 // ══════════════════════════════════════════════════
 //  GATE DATA
@@ -1133,77 +1267,83 @@ const gates = {
 const gateKeys = ['AND','OR','NOT','NAND','NOR','XOR','XNOR'];
 
 // ══════════════════════════════════════════════════
-//  SVG GATE SHAPES
+//  SVG GATE SHAPES (colors pulled from the active theme)
 // ══════════════════════════════════════════════════
 function drawGateSvg(type, output) {
   const svg = document.getElementById('gateSvg');
-  const C = output ? '#00ff9d' : '#1e3a5f';
-  const S = '#00d4ff';
+  const ON = cssVar('--on-color');
+  const OFF = cssVar('--wire-off');
+  const S = cssVar('--accent');
+  const FILL = cssVar('--gate-fill');
+  const BUB = output ? cssVar('--bubble-fill') : 'transparent';
+  const C = output ? ON : OFF;
+  const WA = inputA ? ON : OFF;
+  const WB = inputB ? ON : OFF;
   let inner = '';
 
   switch(type) {
     case 'AND':
       inner = `
         <path d="M25,18 L55,18 Q82,18 82,45 Q82,72 55,72 L25,72 Z"
-          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5" />
-        <line x1="15" y1="30" x2="25" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
-        <line x1="15" y1="60" x2="25" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+          fill="${FILL}" stroke="${S}" stroke-width="2.5" />
+        <line x1="15" y1="30" x2="25" y2="30" stroke="${WA}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="15" y1="60" x2="25" y2="60" stroke="${WB}" stroke-width="3" stroke-linecap="round"/>
         <line x1="82" y1="45" x2="95" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>
         <circle cx="82" cy="45" r="3" fill="${C}"/>`;
       break;
     case 'OR':
       inner = `
         <path d="M20,18 Q38,18 55,18 Q82,18 82,45 Q82,72 55,72 Q38,72 20,72 Q32,45 20,18 Z"
-          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
-        <line x1="10" y1="30" x2="28" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
-        <line x1="10" y1="60" x2="28" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+          fill="${FILL}" stroke="${S}" stroke-width="2.5"/>
+        <line x1="10" y1="30" x2="28" y2="30" stroke="${WA}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="10" y1="60" x2="28" y2="60" stroke="${WB}" stroke-width="3" stroke-linecap="round"/>
         <line x1="82" y1="45" x2="95" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>
         <circle cx="82" cy="45" r="3" fill="${C}"/>`;
       break;
     case 'NOT':
       inner = `
         <polygon points="20,15 75,45 20,75"
-          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
-        <circle cx="79" cy="45" r="5" fill="${C === '#00ff9d' ? 'rgba(0,255,157,0.2)' : 'transparent'}" stroke="${C}" stroke-width="2.5"/>
-        <line x1="5" y1="45" x2="20" y2="45" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+          fill="${FILL}" stroke="${S}" stroke-width="2.5"/>
+        <circle cx="79" cy="45" r="5" fill="${BUB}" stroke="${C}" stroke-width="2.5"/>
+        <line x1="5" y1="45" x2="20" y2="45" stroke="${WA}" stroke-width="3" stroke-linecap="round"/>
         <line x1="84" y1="45" x2="95" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;
       break;
     case 'NAND':
       inner = `
         <path d="M20,18 L50,18 Q77,18 77,45 Q77,72 50,72 L20,72 Z"
-          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
-        <circle cx="81" cy="45" r="5" fill="${C === '#00ff9d' ? 'rgba(0,255,157,0.2)' : 'transparent'}" stroke="${C}" stroke-width="2.5"/>
-        <line x1="10" y1="30" x2="20" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
-        <line x1="10" y1="60" x2="20" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+          fill="${FILL}" stroke="${S}" stroke-width="2.5"/>
+        <circle cx="81" cy="45" r="5" fill="${BUB}" stroke="${C}" stroke-width="2.5"/>
+        <line x1="10" y1="30" x2="20" y2="30" stroke="${WA}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="10" y1="60" x2="20" y2="60" stroke="${WB}" stroke-width="3" stroke-linecap="round"/>
         <line x1="86" y1="45" x2="97" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;
       break;
     case 'NOR':
       inner = `
         <path d="M15,18 Q33,18 50,18 Q77,18 77,45 Q77,72 50,72 Q33,72 15,72 Q27,45 15,18 Z"
-          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
-        <circle cx="81" cy="45" r="5" fill="${C === '#00ff9d' ? 'rgba(0,255,157,0.2)' : 'transparent'}" stroke="${C}" stroke-width="2.5"/>
-        <line x1="5" y1="30" x2="23" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
-        <line x1="5" y1="60" x2="23" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+          fill="${FILL}" stroke="${S}" stroke-width="2.5"/>
+        <circle cx="81" cy="45" r="5" fill="${BUB}" stroke="${C}" stroke-width="2.5"/>
+        <line x1="5" y1="30" x2="23" y2="30" stroke="${WA}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="5" y1="60" x2="23" y2="60" stroke="${WB}" stroke-width="3" stroke-linecap="round"/>
         <line x1="86" y1="45" x2="97" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;
       break;
     case 'XOR':
       inner = `
         <path d="M20,18 Q38,18 55,18 Q82,18 82,45 Q82,72 55,72 Q38,72 20,72 Q32,45 20,18 Z"
-          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
+          fill="${FILL}" stroke="${S}" stroke-width="2.5"/>
         <path d="M13,18 Q25,45 13,72" fill="none" stroke="${S}" stroke-width="2" stroke-dasharray="2,2"/>
-        <line x1="5" y1="30" x2="28" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
-        <line x1="5" y1="60" x2="28" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="5" y1="30" x2="28" y2="30" stroke="${WA}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="5" y1="60" x2="28" y2="60" stroke="${WB}" stroke-width="3" stroke-linecap="round"/>
         <line x1="82" y1="45" x2="95" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>
         <circle cx="82" cy="45" r="3" fill="${C}"/>`;
       break;
     case 'XNOR':
       inner = `
         <path d="M20,18 Q38,18 55,18 Q77,18 77,45 Q77,72 55,72 Q38,72 20,72 Q32,45 20,18 Z"
-          fill="rgba(0,212,255,0.07)" stroke="${S}" stroke-width="2.5"/>
+          fill="${FILL}" stroke="${S}" stroke-width="2.5"/>
         <path d="M13,18 Q25,45 13,72" fill="none" stroke="${S}" stroke-width="2" stroke-dasharray="2,2"/>
-        <circle cx="81" cy="45" r="5" fill="${C === '#00ff9d' ? 'rgba(0,255,157,0.2)' : 'transparent'}" stroke="${C}" stroke-width="2.5"/>
-        <line x1="5" y1="30" x2="28" y2="30" stroke="${inputA?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
-        <line x1="5" y1="60" x2="28" y2="60" stroke="${inputB?'#00ff9d':'#1e3a5f'}" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="81" cy="45" r="5" fill="${BUB}" stroke="${C}" stroke-width="2.5"/>
+        <line x1="5" y1="30" x2="28" y2="30" stroke="${WA}" stroke-width="3" stroke-linecap="round"/>
+        <line x1="5" y1="60" x2="28" y2="60" stroke="${WB}" stroke-width="3" stroke-linecap="round"/>
         <line x1="86" y1="45" x2="97" y2="45" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;
       break;
   }
@@ -1480,6 +1620,9 @@ function nextQuiz() {
 document.addEventListener('keydown', (e) => {
   const tag = e.target.tagName.toLowerCase();
   if(tag === 'input' || tag === 'textarea') return;
+  // Let a focused button handle its own Space/Enter (avoids double actions)
+  if(tag === 'button' && (e.key === ' ' || e.key === 'Enter')) return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
 
   switch(e.key.toLowerCase()) {
     case 'a':
@@ -1491,6 +1634,9 @@ document.addEventListener('keydown', (e) => {
         document.getElementById('inputB').checked = !document.getElementById('inputB').checked;
         updateGate();
       }
+      break;
+    case 't':
+      toggleTheme();
       break;
     case ' ':
       e.preventDefault();
@@ -1516,6 +1662,7 @@ document.addEventListener('keydown', (e) => {
 // ══════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════
+syncThemeButton();
 shuffleQuiz();
 selectGate('AND');
 loadQuiz();
