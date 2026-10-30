@@ -1,607 +1,841 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Genetics Simulator</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        .animate-spin { animation: spin 1s linear infinite; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Punnett Square Simulator: Inheritance for Health Care</title>
+<script>
+(function(){var t="light";try{if(localStorage.getItem("punnett-theme")==="dark")t="dark";}catch(e){}document.documentElement.setAttribute("data-theme",t);})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f7fb; --surface:#ffffff; --surface-2:#eaf0f8; --ink:#13233b; --ink-2:#4a5b74; --line:#d4deec;
+  --navy:#0047AB; --on-navy:#ffffff; --green:#00a86b; --on-green:#ffffff;
+  --c-unaff:#00a86b; --c-carrier:#d99400; --c-aff:#c8102e; --c-mild:#e2620f;
+  --c-A:#1f6fd6; --c-B:#c7365a; --c-AB:#7a4cc4; --c-O:#0c9484;
+  --c-yr:#e0b000; --c-yw:#a77c00; --c-gr:#3d9a40; --c-gw:#24602a;
+  --p1:#0047AB; --p2:#00a86b;
+  --shadow:0 1px 2px rgba(19,35,59,.06),0 8px 24px rgba(19,35,59,.06);
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1424; --surface:#132037; --surface-2:#1a2a47; --ink:#e6edf8; --ink-2:#a3b2ca; --line:#2a3c5e;
+    --navy:#7aa7ff; --on-navy:#0b1424; --green:#34d39c; --on-green:#0b1424;
+    --c-unaff:#34d39c; --c-carrier:#f2bf45; --c-aff:#ff5d72; --c-mild:#ff8c42;
+    --c-A:#6aa5ff; --c-B:#ff7a99; --c-AB:#b28cff; --c-O:#3fd1bd;
+    --c-yr:#f5cc3a; --c-yw:#c99d2a; --c-gr:#6ccf6f; --c-gw:#3f9a46;
+    --p1:#7aa7ff; --p2:#34d39c; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1424; --surface:#132037; --surface-2:#1a2a47; --ink:#e6edf8; --ink-2:#a3b2ca; --line:#2a3c5e;
+  --navy:#7aa7ff; --on-navy:#0b1424; --green:#34d39c; --on-green:#0b1424;
+  --c-unaff:#34d39c; --c-carrier:#f2bf45; --c-aff:#ff5d72; --c-mild:#ff8c42;
+  --c-A:#6aa5ff; --c-B:#ff7a99; --c-AB:#b28cff; --c-O:#3fd1bd;
+  --c-yr:#f5cc3a; --c-yw:#c99d2a; --c-gr:#6ccf6f; --c-gw:#3f9a46;
+  --p1:#7aa7ff; --p2:#34d39c; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 76px)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:1.0625rem;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.15;margin:0 0 .5em;letter-spacing:-.01em}
+h2{font-size:clamp(1.6rem,3vw,2.1rem);font-weight:700}
+h3{font-size:1.2rem;font-weight:700}
+p{margin:0 0 1em;max-width:70ch}
+a{color:var(--navy)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px;border-radius:6px}
+i.al{font-style:italic;font-family:var(--body);font-weight:700}
+sup{font-size:.62em;line-height:0}
+
+/* header */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar .in{max-width:1240px;margin:0 auto;padding:.7rem 1.25rem;display:flex;align-items:center;gap:1rem}
+.mark{display:flex;align-items:center;gap:.6rem;font-family:var(--display);font-weight:700;font-size:1.05rem}
+.mark svg{flex:none}
+.topbar .sp{flex:1}
+.theme-btn{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--line);background:var(--surface-2);padding:.45rem .85rem;border-radius:999px;cursor:pointer;font-size:.92rem}
+.theme-btn:hover{border-color:var(--navy)}
+
+/* layout */
+.wrap{max-width:1240px;margin:0 auto;padding:0 1.25rem;display:grid;grid-template-columns:1fr;gap:2rem}
+@media (min-width:1040px){.wrap{grid-template-columns:210px minmax(0,1fr)}}
+.rail{display:none}
+@media (min-width:1040px){
+  .rail{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px);align-self:start;padding-top:2.5rem}
+  .rail ol{list-style:none;margin:0;padding:0;counter-reset:s;border-left:2px solid var(--line)}
+  .rail li{counter-increment:s}
+  .rail a{display:flex;gap:.6rem;padding:.42rem .8rem;color:var(--ink-2);text-decoration:none;font-size:.93rem;margin-left:-2px;border-left:2px solid transparent}
+  .rail a::before{content:counter(s);font-family:var(--display);font-weight:700;color:var(--navy);min-width:1ch}
+  .rail a:hover,.rail a.on{color:var(--ink);border-left-color:var(--navy)}
+}
+main{min-width:0;padding-bottom:4rem}
+section.blk{padding:3rem 0 1rem;border-top:1px solid var(--line)}
+section.blk:first-of-type{border-top:0}
+.step-no{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1rem;display:block;margin-bottom:.35rem}
+.lede{color:var(--ink-2);font-size:1.1rem}
+
+/* hero */
+.hero{padding:2.5rem 0 1.5rem;display:grid;gap:2rem;align-items:center}
+@media (min-width:860px){.hero{grid-template-columns:1.2fr .8fr}}
+.hero h1{font-size:clamp(2.3rem,5.4vw,3.9rem);font-weight:800;letter-spacing:-.025em;margin-bottom:.35em}
+.hero h1 span{display:block;font-weight:500;font-size:.48em;color:var(--ink-2);letter-spacing:0;margin-top:.4em}
+.facts{display:flex;flex-wrap:wrap;gap:1.4rem;margin:1.2rem 0 1.4rem;padding:0}
+.facts div{min-width:9rem}
+.facts dt{font-size:.85rem;color:var(--ink-2)}
+.facts dd{margin:0;font-weight:700}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.15rem;border-radius:10px;border:1px solid transparent;cursor:pointer;font-weight:700;text-decoration:none}
+.btn-p{background:var(--navy);color:var(--on-navy)}
+.btn-p:hover{filter:brightness(1.08)}
+.btn-g{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn-g:hover{border-color:var(--navy)}
+.btn-s{padding:.45rem .8rem;font-size:.92rem;border-radius:8px}
+
+/* hero square */
+.hero-sq{justify-self:center;display:grid;grid-template-columns:repeat(3,auto);gap:6px;font-family:var(--display)}
+.hero-sq div{width:clamp(64px,9vw,92px);height:clamp(64px,9vw,92px);display:grid;place-items:center;border-radius:14px;font-size:clamp(1.3rem,2.5vw,1.9rem);font-weight:800;font-style:italic}
+.hero-sq .h1{background:color-mix(in srgb,var(--p1) 14%,var(--surface));color:var(--p1)}
+.hero-sq .h2{background:color-mix(in srgb,var(--p2) 16%,var(--surface));color:var(--p2)}
+.hero-sq .cn{background:transparent;font-size:1.4rem;color:var(--ink-2);font-style:normal}
+.hero-sq .k{opacity:0;transform:scale(.6);animation:pop .5s cubic-bezier(.2,.9,.3,1.3) forwards}
+.hero-sq .k:nth-child(5){animation-delay:.3s}.hero-sq .k:nth-child(6){animation-delay:.45s}.hero-sq .k:nth-child(8){animation-delay:.6s}.hero-sq .k:nth-child(9){animation-delay:.75s}
+.hero-sq .u{background:color-mix(in srgb,var(--c-unaff) 18%,var(--surface));color:var(--ink)}
+.hero-sq .c{background:color-mix(in srgb,var(--c-carrier) 22%,var(--surface));color:var(--ink)}
+.hero-sq .a{background:color-mix(in srgb,var(--c-aff) 20%,var(--surface));color:var(--ink)}
+@keyframes pop{to{opacity:1;transform:none}}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:1.4rem;box-shadow:var(--shadow)}
+.grid3{display:grid;gap:1rem}
+@media (min-width:820px){.grid3{grid-template-columns:repeat(3,1fr)}}
+.ksa h3{display:flex;align-items:center;gap:.55rem}
+.ksa h3 b{display:grid;place-items:center;width:2rem;height:2rem;border-radius:8px;background:var(--navy);color:var(--on-navy);font-size:1rem}
+.ksa ul{margin:0;padding-left:1.1rem}
+.ksa li{margin:.35rem 0}
+.obj{counter-reset:o;list-style:none;padding:0;margin:0 0 1.5rem;display:grid;gap:.5rem}
+.obj li{counter-increment:o;display:flex;gap:.8rem;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.75rem 1rem}
+.obj li::before{content:counter(o);font-family:var(--display);font-weight:800;color:var(--green);font-size:1.25rem;line-height:1.3;min-width:1.2ch}
+.roles{display:flex;flex-wrap:wrap;gap:.5rem;margin:.5rem 0 0;padding:0;list-style:none}
+.roles li{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:.3rem .8rem;font-size:.92rem}
+.note{font-size:.9rem;color:var(--ink-2)}
+
+/* flip cards */
+.cards{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.flip{perspective:900px;border:0;padding:0;background:none;cursor:pointer;height:150px;text-align:left}
+.flip .fi{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.flip.on .fi{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;border-radius:14px;padding:1rem;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--line);display:flex;flex-direction:column}
+.flip .f{background:var(--surface);justify-content:space-between}
+.flip .f strong{font-family:var(--display);font-size:1.3rem}
+.flip .f small{color:var(--ink-2);font-size:.82rem}
+.flip .b{background:var(--navy);color:var(--on-navy);transform:rotateY(180deg);font-size:.93rem;line-height:1.45;justify-content:center}
+
+/* simulator */
+.sim{display:grid;gap:1.25rem}
+.traits{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.35rem;scrollbar-width:thin}
+.trait-btn{flex:none;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:.6rem .85rem;cursor:pointer;min-width:150px}
+.trait-btn strong{display:block;font-size:.98rem}
+.trait-btn span{font-size:.8rem;color:var(--ink-2)}
+.trait-btn[aria-pressed="true"]{border-color:var(--navy);background:color-mix(in srgb,var(--navy) 10%,var(--surface));box-shadow:inset 0 0 0 1px var(--navy)}
+.tinfo{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;align-items:baseline}
+.tinfo h3{margin:0;font-size:1.45rem}
+.tag{font-size:.85rem;border-radius:999px;padding:.15rem .65rem;background:var(--surface-2);border:1px solid var(--line)}
+.sim-body{display:grid;gap:1.25rem}
+@media (min-width:1100px){.sim-body{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}}
+.parents{display:grid;gap:1rem}
+@media (min-width:620px){.parents{grid-template-columns:1fr 1fr}}
+.pgroup h4{font-size:.95rem;display:flex;align-items:center;gap:.45rem;margin-bottom:.45rem}
+.pgroup h4 .dot{width:.8rem;height:.8rem;border-radius:50%}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:.35rem .65rem;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25}
+.chip .g{font-size:1.1rem}
+.chip .l{font-size:.75rem;color:var(--ink-2)}
+.chip[aria-pressed="true"]{border-color:var(--pc);background:color-mix(in srgb,var(--pc) 13%,var(--surface));box-shadow:inset 0 0 0 1px var(--pc)}
+.modes{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.modes button{border:0;background:none;padding:.5rem .9rem;cursor:pointer;font-size:.93rem}
+.modes button+button{border-left:1px solid var(--line)}
+.modes button[aria-pressed="true"]{background:var(--navy);color:var(--on-navy);font-weight:700}
+.sqwrap{overflow-x:auto}
+.sq{display:grid;gap:6px;min-width:280px}
+.sq .hd,.sq .cell,.sq .corner{border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:64px;padding:.4rem}
+.sq .corner{font-size:.78rem;color:var(--ink-2);line-height:1.25}
+.sq .hd{font-size:1.25rem;font-weight:700}
+.sq .hd.c1{background:color-mix(in srgb,var(--p1) 14%,var(--surface));color:var(--p1)}
+.sq .hd.c2{background:color-mix(in srgb,var(--p2) 16%,var(--surface));color:var(--p2)}
+.sq .cell{background:color-mix(in srgb,var(--cc) 17%,var(--surface));border:1px solid color-mix(in srgb,var(--cc) 45%,transparent);min-height:84px;animation:pop .35s ease-out backwards}
+.sq.n4 .cell{min-height:70px}
+.sq .cell .g{font-size:1.4rem;font-weight:700;line-height:1.2}
+.sq.n4 .cell .g{font-size:1.05rem}
+.sq .cell .l{font-size:.74rem;color:var(--ink-2);margin-top:.15rem}
+.sq .cell.hidden{background:var(--surface-2);border:1px dashed var(--line)}
+.sq .cell.hidden .g{color:var(--ink-2)}
+.sq .cell.prac{background:var(--surface);border:1px dashed var(--line)}
+.sq .cell.prac select{max-width:100%;padding:.25rem;border-radius:6px;border:1px solid var(--line);background:var(--surface-2)}
+.sq .cell.ok{border:2px solid var(--c-unaff)}
+.sq .cell.bad{border:2px solid var(--c-aff)}
+.sq .cell .fix{font-size:.75rem;color:var(--c-aff);margin-top:.2rem}
+.howto{margin:1rem 0 0;padding-left:1.2rem;font-size:.95rem;color:var(--ink-2)}
+.howto li{margin:.25rem 0}
+.howto b{color:var(--ink)}
+.res h4{font-size:1rem;margin:1.1rem 0 .5rem}
+.res h4:first-child{margin-top:0}
+.bar{display:flex;height:34px;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+.bar span{display:block;height:100%;transition:width .4s}
+.legend{list-style:none;padding:0;margin:.6rem 0 0;display:grid;gap:.35rem}
+.legend li{display:grid;grid-template-columns:14px 1fr auto;gap:.6rem;align-items:center;font-size:.95rem}
+.legend .sw{width:14px;height:14px;border-radius:4px}
+.legend .v{font-variant-numeric:tabular-nums;color:var(--ink-2);white-space:nowrap}
+.gts{display:flex;flex-wrap:wrap;gap:.45rem}
+.gts span{border:1px solid var(--line);border-radius:8px;padding:.25rem .6rem;background:var(--surface-2)}
+.say{background:color-mix(in srgb,var(--green) 10%,var(--surface));border-left:4px solid var(--green);border-radius:0 12px 12px 0;padding:.85rem 1rem;font-size:.97rem}
+.say p{margin:0 0 .4rem}
+.say ul{margin:0;padding-left:1.1rem}
+.predict{display:grid;gap:.7rem}
+.predict label{font-weight:700}
+.predict select{padding:.5rem;border-radius:8px;border:1px solid var(--line);background:var(--surface);max-width:16rem}
+.fb{border-radius:10px;padding:.7rem .9rem;font-size:.95rem}
+.fb.good{background:color-mix(in srgb,var(--c-unaff) 14%,var(--surface));border:1px solid var(--c-unaff)}
+.fb.bad{background:color-mix(in srgb,var(--c-aff) 10%,var(--surface));border:1px solid var(--c-aff)}
+.about{font-size:.95rem;color:var(--ink-2);margin:.3rem 0 0}
+
+/* chance */
+.chance-ctrl{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}
+.dots{display:flex;flex-wrap:wrap;gap:5px;min-height:46px;padding:.8rem;border:1px dashed var(--line);border-radius:12px;background:var(--surface-2)}
+.dots i{width:18px;height:18px;border-radius:50%;display:block;animation:pop .25s ease-out backwards}
+.dots .empty{font-size:.92rem;color:var(--ink-2);font-style:normal}
+table.cmp{border-collapse:collapse;width:100%;margin-top:1rem;font-size:.95rem}
+table.cmp th,table.cmp td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid var(--line)}
+table.cmp td.n{font-variant-numeric:tabular-nums}
+.tbl{overflow-x:auto}
+
+/* cases & quiz */
+.cases{display:grid;gap:1rem}
+@media (min-width:900px){.cases{grid-template-columns:1fr 1fr}}
+.case h3{font-size:1.12rem}
+.case .meta{font-size:.85rem;color:var(--ink-2);margin-bottom:.5rem}
+fieldset{border:0;padding:0;margin:.6rem 0}
+legend{font-weight:700;margin-bottom:.4rem;padding:0}
+.opt{display:flex;gap:.55rem;align-items:flex-start;padding:.45rem .6rem;border:1px solid var(--line);border-radius:9px;margin:.35rem 0;cursor:pointer;background:var(--surface)}
+.opt:hover{border-color:var(--navy)}
+.opt input{margin-top:.35rem;accent-color:var(--navy)}
+.opt.right{border-color:var(--c-unaff);background:color-mix(in srgb,var(--c-unaff) 10%,var(--surface))}
+.opt.wrong{border-color:var(--c-aff);background:color-mix(in srgb,var(--c-aff) 8%,var(--surface))}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.qitem{padding:1.1rem 0;border-bottom:1px solid var(--line)}
+.qitem:last-child{border-bottom:0}
+.qitem .qn{font-family:var(--display);font-weight:700;color:var(--navy)}
+.score{font-family:var(--display);font-size:1.4rem;font-weight:700}
+
+/* accordions */
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:.6rem 0}
+summary{cursor:pointer;padding:.9rem 1.1rem;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:1rem}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--display);font-size:1.3rem;line-height:1;color:var(--navy)}
+details[open] summary::after{content:"−"}
+details .dc{padding:0 1.1rem 1rem}
+details .dc ul,details .dc ol{padding-left:1.2rem;margin:.3rem 0}
+details .dc li{margin:.3rem 0}
+.plan{width:100%;border-collapse:collapse;font-size:.94rem}
+.plan th,.plan td{text-align:left;vertical-align:top;padding:.5rem .6rem;border-bottom:1px solid var(--line)}
+.plan th{font-weight:700;color:var(--ink-2)}
+footer{border-top:1px solid var(--line);padding:1.5rem 0;color:var(--ink-2);font-size:.88rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
 </head>
 <body>
-    <div id="root"></div>
+<header class="topbar">
+  <div class="in">
+    <div class="mark">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="3" fill="var(--navy)"/><rect x="15" y="1" width="12" height="12" rx="3" fill="var(--green)"/><rect x="1" y="15" width="12" height="12" rx="3" fill="var(--green)"/><rect x="15" y="15" width="12" height="12" rx="3" fill="var(--navy)"/></svg>
+      Punnett Lab
+    </div>
+    <div class="sp"></div>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch to dark mode">
+      <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+      <span id="themeTxt">Dark mode</span>
+    </button>
+  </div>
+</header>
 
-    <script type="text/babel" data-presets="react">
-        const { useState, useEffect } = React;
+<div class="wrap">
+  <nav class="rail" aria-label="Lesson sections">
+    <ol>
+      <li><a href="#why">Why it matters</a></li>
+      <li><a href="#vocab">Vocabulary</a></li>
+      <li><a href="#sim">Simulator</a></li>
+      <li><a href="#chance">Chance per pregnancy</a></li>
+      <li><a href="#cases">Clinical cases</a></li>
+      <li><a href="#quiz">Check yourself</a></li>
+      <li><a href="#beyond">Beyond the square</a></li>
+      <li><a href="#guide">Instructor guide</a></li>
+    </ol>
+  </nav>
 
-        // Define Lucide icons as SVG components since CDN version has issues
-        const Info = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <circle cx="12" cy="12" r="10"/>
-                <path d="m12 13 0-5"/>
-                <path d="m12 17 .01 0"/>
-            </svg>
-        );
+  <main>
+    <div class="hero">
+      <div>
+        <h1>Punnett Square Simulator<span>Predicting inheritance for patient care</span></h1>
+        <p class="lede">Patients ask, “Will my child have this?” This lesson teaches you to build the square that answers that question, read the probabilities correctly, and explain them in words a family can use.</p>
+        <dl class="facts">
+          <div><dt>Audience</dt><dd>Entry-level health care students</dd></div>
+          <div><dt>Time</dt><dd>75–90 minutes</dd></div>
+          <div><dt>Prerequisite</dt><dd>Basic cell biology</dd></div>
+        </dl>
+        <a class="btn btn-p" href="#sim">Open the simulator</a>
+        <a class="btn btn-g" href="#why" style="margin-left:.4rem">Start the lesson</a>
+      </div>
+      <div class="hero-sq" aria-hidden="true">
+        <div class="cn">×</div><div class="h1">C</div><div class="h1">c</div>
+        <div class="h2">C</div><div class="k u">CC</div><div class="k c">Cc</div>
+        <div class="h2">c</div><div class="k c">Cc</div><div class="k a">cc</div>
+      </div>
+    </div>
 
-        const RefreshCw = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M21 2v6h-6"/>
-                <path d="m21 13-9-9"/>
-                <path d="M8 11V7a4 4 0 0 1 8 0"/>
-                <path d="M3 21v-6h6"/>
-                <path d="m3 11 9 9"/>
-                <path d="M16 13v4a4 4 0 0 1-8 0"/>
-            </svg>
-        );
+    <!-- 1 -->
+    <section class="blk" id="why">
+      <span class="step-no">Part 1</span>
+      <h2>Why genetics belongs in your clinical toolkit</h2>
+      <p>Genetic information now shows up in newborn screening results, prenatal visits, blood bank work, family histories, and medication choices. You will not be the genetic counselor, but you will often be the first person a patient asks. By the end of this lesson you will be able to:</p>
+      <ol class="obj">
+        <li>Define core terms: gene, allele, genotype, phenotype, homozygous, heterozygous, dominant, recessive, and carrier.</li>
+        <li>Construct monohybrid, dihybrid, X-linked, and codominant Punnett squares from parent genotypes.</li>
+        <li>Calculate offspring probabilities and express them as fractions, percentages, and ratios.</li>
+        <li>Distinguish autosomal recessive, autosomal dominant, X-linked recessive, codominant, and semidominant inheritance using real conditions.</li>
+        <li>Explain recurrence risk in plain language, including that the risk applies independently to every pregnancy.</li>
+        <li>Recognize what a Punnett square cannot predict and when to refer a patient to a genetics professional.</li>
+      </ol>
 
-        const GeneticsSimulator = () => {
-            // Define traits and their dominance
-            const [eyeColorParent1, setEyeColorParent1] = useState('Bb');
-            const [eyeColorParent2, setEyeColorParent2] = useState('bb');
-            const [hairColorParent1, setHairColorParent1] = useState('Hh');
-            const [hairColorParent2, setHairColorParent2] = useState('hh');
-            const [showInfo, setShowInfo] = useState(false);
-            
-            // State for offspring results
-            const [eyeResults, setEyeResults] = useState([]);
-            const [hairResults, setHairResults] = useState([]);
-            const [combinedResults, setCombinedResults] = useState([]);
-            const [isAnimating, setIsAnimating] = useState(false);
-            
-            // Calculate Punnett square results
-            useEffect(() => {
-                calculatePunnettSquare();
-            }, [eyeColorParent1, eyeColorParent2, hairColorParent1, hairColorParent2]);
-            
-            // Helper function to properly sort alleles (dominant first)
-            const sortAlleles = (allele1, allele2) => {
-                // If one is uppercase and other is lowercase, put uppercase first
-                if (allele1 === allele1.toUpperCase() && allele2 === allele2.toLowerCase()) {
-                    return allele1 + allele2;
-                } else if (allele2 === allele2.toUpperCase() && allele1 === allele1.toLowerCase()) {
-                    return allele2 + allele1;
-                } else {
-                    // If both are same case, sort alphabetically
-                    return [allele1, allele2].sort().join('');
-                }
-            };
-            
-            const calculatePunnettSquare = () => {
-                // Extract alleles
-                const eyeAlleles1 = eyeColorParent1.split('');
-                const eyeAlleles2 = eyeColorParent2.split('');
-                const hairAlleles1 = hairColorParent1.split('');
-                const hairAlleles2 = hairColorParent2.split('');
-                
-                // Eye color Punnett square
-                const eyeGenotypes = [];
-                for (let i = 0; i < eyeAlleles1.length; i++) {
-                    for (let j = 0; j < eyeAlleles2.length; j++) {
-                        const genotype = sortAlleles(eyeAlleles1[i], eyeAlleles2[j]);
-                        eyeGenotypes.push(genotype);
-                    }
-                }
-                
-                // Hair color Punnett square
-                const hairGenotypes = [];
-                for (let i = 0; i < hairAlleles1.length; i++) {
-                    for (let j = 0; j < hairAlleles2.length; j++) {
-                        const genotype = sortAlleles(hairAlleles1[i], hairAlleles2[j]);
-                        hairGenotypes.push(genotype);
-                    }
-                }
-                
-                // Process results
-                setEyeResults(processResults(eyeGenotypes, 'eye'));
-                setHairResults(processResults(hairGenotypes, 'hair'));
-                
-                // Calculate combined results (should only be 4 combinations for single trait crosses)
-                const combined = [];
-                for (let i = 0; i < eyeGenotypes.length; i++) {
-                    combined.push({
-                        eyeGenotype: eyeGenotypes[i],
-                        eyePhenotype: getEyePhenotype(eyeGenotypes[i]),
-                        hairGenotype: hairGenotypes[i], // Use same index, not nested loop
-                        hairPhenotype: getHairPhenotype(hairGenotypes[i])
-                    });
-                }
-                setCombinedResults(combined);
-            };
-            
-            const processResults = (genotypes, trait) => {
-                // Count occurrences of each genotype
-                const counts = {};
-                genotypes.forEach(genotype => {
-                    counts[genotype] = (counts[genotype] || 0) + 1;
-                });
-                
-                // Calculate percentages and determine phenotypes
-                const total = genotypes.length;
-                return Object.keys(counts).map(genotype => {
-                    const percentage = (counts[genotype] / total) * 100;
-                    const phenotype = trait === 'eye' ? getEyePhenotype(genotype) : getHairPhenotype(genotype);
-                    
-                    return {
-                        genotype,
-                        phenotype,
-                        count: counts[genotype],
-                        percentage: percentage.toFixed(1)
-                    };
-                });
-            };
-            
-            const getEyePhenotype = (genotype) => {
-                return genotype.includes('B') ? 'Brown' : 'Blue';
-            };
-            
-            const getHairPhenotype = (genotype) => {
-                return genotype.includes('H') ? 'Dark' : 'Blonde';
-            };
-            
-            const getResultSummary = (results) => {
-                // Group by phenotype
-                const phenotypeCounts = {};
-                results.forEach(result => {
-                    phenotypeCounts[result.phenotype] = (phenotypeCounts[result.phenotype] || 0) + parseFloat(result.percentage);
-                });
-                
-                return Object.keys(phenotypeCounts).map(phenotype => ({
-                    phenotype,
-                    percentage: phenotypeCounts[phenotype].toFixed(1)
-                }));
-            };
-            
-            const getEyeColor = (phenotype) => {
-                return phenotype === 'Brown' ? '#6B4423' : '#4B86DB';
-            };
-            
-            const getHairColor = (phenotype) => {
-                return phenotype === 'Dark' ? '#3A2718' : '#E6C27A';
-            };
-            
-            // Calculate phenotype combinations
-            const combinedPhenotypes = combinedResults.reduce((acc, result) => {
-                const combination = `${result.eyePhenotype} eyes, ${result.hairPhenotype} hair`;
-                acc[combination] = (acc[combination] || 0) + 1;
-                return acc;
-            }, {});
-            
-            const phenotypePercentages = Object.keys(combinedPhenotypes).map(combo => ({
-                combination: combo,
-                percentage: ((combinedPhenotypes[combo] / combinedResults.length) * 100).toFixed(1)
-            }));
+      <h3>Knowledge, skills, and abilities for health care entry</h3>
+      <div class="grid3 ksa">
+        <div class="panel">
+          <h3><b>K</b>Knowledge</h3>
+          <ul>
+            <li>Mendel’s laws of segregation and independent assortment</li>
+            <li>Chromosomes, genes, alleles, and autosomes versus sex chromosomes</li>
+            <li>Major inheritance patterns and how each looks in a family</li>
+            <li>Common single-gene conditions: cystic fibrosis, sickle cell disease, Huntington disease, hemophilia A, familial hypercholesterolemia</li>
+            <li>ABO blood group inheritance for lab and transfusion work</li>
+            <li>Purpose of newborn, carrier, and prenatal screening</li>
+            <li>Protections under HIPAA and the Genetic Information Nondiscrimination Act (GINA)</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3><b>S</b>Skills</h3>
+          <ul>
+            <li>Build a Punnett square accurately from stated genotypes</li>
+            <li>Convert results among fractions, ratios, and percentages</li>
+            <li>Collect a three-generation family history and read a basic pedigree</li>
+            <li>Translate risk into plain language and confirm understanding with teach-back</li>
+            <li>Document genetic information accurately in the health record</li>
+            <li>Spot red flags that call for referral</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3><b>A</b>Abilities</h3>
+          <ul>
+            <li>Reason about probability and uncertainty without overstating certainty</li>
+            <li>Communicate sensitive results with empathy and cultural humility</li>
+            <li>Stay nondirective: support the patient’s own decisions</li>
+            <li>Protect confidentiality of family genetic information</li>
+            <li>Know the limits of your scope of practice</li>
+            <li>Connect genetic findings to the care plan and patient education</li>
+          </ul>
+        </div>
+      </div>
+      <h3 style="margin-top:1.5rem">Where you will use this</h3>
+      <ul class="roles">
+        <li>Nursing</li><li>Medical laboratory technology</li><li>Phlebotomy</li><li>Diagnostic medical sonography</li><li>Respiratory therapy</li><li>Pharmacy technology</li><li>Medical assisting</li><li>Health information management</li>
+      </ul>
+      <p class="note" style="margin-top:1rem">The KSAs are aligned with widely used frameworks such as the <em>Essentials of Genetic and Genomic Nursing</em> competencies and the NCHPEG core competencies for health professionals. Confirm the current editions before citing them in a syllabus.</p>
+    </section>
 
-            const triggerAnimation = () => {
-                setIsAnimating(true);
-                setTimeout(() => {
-                    setIsAnimating(false);
-                }, 800);
-            };
+    <!-- 2 -->
+    <section class="blk" id="vocab">
+      <span class="step-no">Part 2</span>
+      <h2>Vocabulary you will use in the simulator</h2>
+      <p>Select a card to flip it. Try to say the definition out loud before you flip.</p>
+      <div class="cards" id="cards"></div>
+    </section>
 
-            // Character components
-            const ParentIcon = ({ eyeColor, hairColor, gender }) => (
-                <div className="flex flex-col items-center">
-                    <div className="relative w-16 h-16 mb-1">
-                        {/* Head */}
-                        <div 
-                            className="absolute top-2 w-12 h-14 rounded-full left-2"
-                            style={{backgroundColor: '#FFE0C2'}}
-                        />
-                        
-                        {/* Hair */}
-                        <div 
-                            className={`absolute top-0 w-14 h-6 left-1 ${gender === 'female' ? 'rounded-t-full' : ''}`}
-                            style={{backgroundColor: hairColor}}
-                        />
-                        
-                        {/* Eyes */}
-                        <div 
-                            className="absolute top-6 left-4 w-3 h-2 rounded-full"
-                            style={{backgroundColor: eyeColor}}
-                        />
-                        <div 
-                            className="absolute top-6 right-4 w-3 h-2 rounded-full"
-                            style={{backgroundColor: eyeColor}}
-                        />
-                        
-                        {/* Mouth */}
-                        <div className="absolute top-10 left-6 w-4 h-1 rounded-full bg-red-400" />
-                    </div>
-                    <div className="text-sm font-medium">Parent {gender === 'male' ? '1' : '2'}</div>
-                </div>
-            );
+    <!-- 3 -->
+    <section class="blk" id="sim">
+      <span class="step-no">Part 3</span>
+      <h2>Punnett square simulator</h2>
+      <p>Pick a condition, set each parent’s genotype, and watch the square fill in. Use <strong>Predict first</strong> to commit to an answer before you see it, or <strong>Build it myself</strong> to fill in each box and check your work.</p>
+      <div class="sim">
+        <div class="traits" id="traits" role="group" aria-label="Choose a trait"></div>
+        <div class="panel">
+          <div class="tinfo"><h3 id="tName"></h3><span class="tag" id="tPattern"></span><span class="tag" id="tGene"></span></div>
+          <p class="about" id="tAbout"></p>
+        </div>
+        <div class="sim-body">
+          <div class="panel">
+            <div class="parents" id="parents"></div>
+            <div class="row" style="margin:1.2rem 0 1rem;justify-content:space-between">
+              <div class="modes" role="group" aria-label="Simulator mode" id="modes">
+                <button type="button" data-m="explore" aria-pressed="true">Explore</button>
+                <button type="button" data-m="predict" aria-pressed="false">Predict first</button>
+                <button type="button" data-m="build" aria-pressed="false">Build it myself</button>
+              </div>
+            </div>
+            <div class="sqwrap"><div class="sq" id="sq" aria-live="polite"></div></div>
+            <div id="buildCtl" class="row" style="margin-top:.9rem" hidden>
+              <button class="btn btn-p btn-s" type="button" id="checkBuild">Check my square</button>
+              <button class="btn btn-g btn-s" type="button" id="resetBuild">Clear boxes</button>
+              <span id="buildMsg" class="note" role="status"></span>
+            </div>
+            <h4 style="margin-top:1.3rem;font-size:1rem">How this square was built</h4>
+            <ol class="howto" id="howto"></ol>
+          </div>
+          <div class="panel res" id="resPanel">
+            <div id="predictBox" class="predict" hidden></div>
+            <div id="results"></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-            const ChildIcon = ({ eyeColor, hairColor }) => (
-                <div className="flex flex-col items-center">
-                    <div className="relative w-12 h-12 mb-1">
-                        {/* Head */}
-                        <div 
-                            className="absolute top-1 w-10 h-10 rounded-full left-1"
-                            style={{backgroundColor: '#FFE0C2'}}
-                        />
-                        
-                        {/* Hair */}
-                        <div 
-                            className="absolute top-0 w-10 h-4 left-1 rounded-t-full"
-                            style={{backgroundColor: hairColor}}
-                        />
-                        
-                        {/* Eyes */}
-                        <div 
-                            className="absolute top-4 left-3 w-2 h-1 rounded-full"
-                            style={{backgroundColor: eyeColor}}
-                        />
-                        <div 
-                            className="absolute top-4 right-3 w-2 h-1 rounded-full"
-                            style={{backgroundColor: eyeColor}}
-                        />
-                        
-                        {/* Mouth */}
-                        <div className="absolute top-7 left-5 w-2 h-0.5 rounded-full bg-red-400" />
-                    </div>
-                </div>
-            );
+    <!-- 4 -->
+    <section class="blk" id="chance">
+      <span class="step-no">Part 4</span>
+      <h2>Chance applies to every pregnancy</h2>
+      <p>A Punnett square gives the probability for <em>each</em> child. It does not promise that one in four children in a real family will be affected. Simulate families using the cross currently set in the simulator and compare what happens with what the square predicts.</p>
+      <div class="panel">
+        <p style="margin-bottom:.3rem"><strong>Current cross:</strong> <span id="chCross"></span></p>
+        <div class="chance-ctrl">
+          <button class="btn btn-p btn-s" type="button" data-n="1">Add 1 child</button>
+          <button class="btn btn-g btn-s" type="button" data-n="4">Add 4</button>
+          <button class="btn btn-g btn-s" type="button" data-n="20">Add 20</button>
+          <button class="btn btn-g btn-s" type="button" data-n="200">Add 200</button>
+          <button class="btn btn-g btn-s" type="button" id="chClear">Clear</button>
+        </div>
+        <div class="dots" id="dots" aria-live="polite"></div>
+        <div class="tbl"><table class="cmp" id="chTable"></table></div>
+        <p class="note" style="margin-top:1rem">Notice how small families often look nothing like the square, while hundreds of children drift toward the expected percentages. That is why “We already have one affected child, so the next three will be fine” is a misconception worth correcting gently.</p>
+      </div>
+    </section>
 
-            // Punnett Square component
-            const PunnettSquare = ({ parent1Alleles, parent2Alleles, traitType }) => {
-                const alleles1 = parent1Alleles.split('');
-                const alleles2 = parent2Alleles.split('');
-                
-                return (
-                    <div className="border-2 border-gray-300 rounded-md overflow-hidden">
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr>
-                                    <th className="border-2 border-gray-300 p-2 bg-gray-100"></th>
-                                    {alleles2.map((allele, i) => (
-                                        <th key={i} className={`border-2 border-gray-300 p-2 ${allele === allele.toUpperCase() ? 'bg-yellow-100' : 'bg-blue-100'}`}>
-                                            <div className="text-lg font-bold">{allele}</div>
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {alleles1.map((allele1, i) => (
-                                    <tr key={i}>
-                                        <th className={`border-2 border-gray-300 p-2 ${allele1 === allele1.toUpperCase() ? 'bg-yellow-100' : 'bg-blue-100'}`}>
-                                            <div className="text-lg font-bold">{allele1}</div>
-                                        </th>
-                                        {alleles2.map((allele2, j) => {
-                                            const genotype = sortAlleles(allele1, allele2);
-                                            const phenotype = traitType === 'eye' ? getEyePhenotype(genotype) : getHairPhenotype(genotype);
-                                            const color = traitType === 'eye' ? getEyeColor(phenotype) : getHairColor(phenotype);
-                                            
-                                            // Determine background color based on genotype
-                                            let bgColor = 'bg-gray-50';
-                                            if (genotype.charAt(0) === genotype.charAt(0).toUpperCase() && 
-                                                genotype.charAt(1) === genotype.charAt(1).toUpperCase()) {
-                                                bgColor = 'bg-yellow-50'; // Homozygous dominant
-                                            } else if (genotype.charAt(0) === genotype.charAt(0).toLowerCase() && 
-                                                       genotype.charAt(1) === genotype.charAt(1).toLowerCase()) {
-                                                bgColor = 'bg-blue-50'; // Homozygous recessive
-                                            } else {
-                                                bgColor = 'bg-green-50'; // Heterozygous
-                                            }
-                                            
-                                            return (
-                                                <td key={j} className={`border-2 border-gray-300 p-3 text-center ${bgColor}`}>
-                                                    <div className="text-lg font-bold mb-1">{genotype}</div>
-                                                    <div className="flex justify-center">
-                                                        <div 
-                                                            className={`w-5 h-3 ${traitType === 'eye' ? 'rounded-full' : 'rounded-md'}`}
-                                                            style={{backgroundColor: color}}
-                                                        />
-                                                    </div>
-                                                    <div className="text-xs mt-1">{phenotype}</div>
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                );
-            };
+    <!-- 5 -->
+    <section class="blk" id="cases">
+      <span class="step-no">Part 5</span>
+      <h2>Clinical cases</h2>
+      <p>Each case loads its family into the simulator so you can check your reasoning. Answer the question, then read the explanation and practice saying the answer to the patient.</p>
+      <div class="cases" id="caseList"></div>
+    </section>
 
-            const ResultsChart = ({ results, traitType }) => {
-                const summary = getResultSummary(results);
-                
-                return (
-                    <div className="mt-4">
-                        <h5 className="font-semibold mb-2">Possible Outcomes:</h5>
-                        <div className="space-y-2">
-                            {summary.map((result, i) => (
-                                <div key={i} className="relative pt-1">
-                                    <div className="flex items-center mb-1">
-                                        <div 
-                                            className={`w-4 h-4 ${traitType === 'eye' ? 'rounded-full' : 'rounded-md'} mr-2`}
-                                            style={{
-                                                backgroundColor: traitType === 'eye' 
-                                                    ? getEyeColor(result.phenotype) 
-                                                    : getHairColor(result.phenotype)
-                                            }}
-                                        />
-                                        <span className="font-medium">{result.phenotype} {traitType === 'eye' ? 'eyes' : 'hair'}: {result.percentage}%</span>
-                                    </div>
-                                    <div className="overflow-hidden h-4 mb-4 text-xs flex rounded-full bg-gray-200">
-                                        <div 
-                                            style={{ width: `${result.percentage}%` }}
-                                            className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                                                traitType === 'eye'
-                                                    ? (result.phenotype === 'Brown' ? 'bg-amber-600' : 'bg-blue-500')
-                                                    : (result.phenotype === 'Dark' ? 'bg-amber-800' : 'bg-yellow-400')
-                                            } transition-all duration-500 ease-in-out`}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            };
+    <!-- 6 -->
+    <section class="blk" id="quiz">
+      <span class="step-no">Part 6</span>
+      <h2>Check your understanding</h2>
+      <p>Ten questions with feedback. Use the simulator if you need to.</p>
+      <div class="panel">
+        <form id="quizForm" onsubmit="return false"></form>
+        <div class="row" style="margin-top:1rem">
+          <button class="btn btn-p" type="button" id="quizSubmit">Submit answers</button>
+          <button class="btn btn-g" type="button" id="quizReset">Try again</button>
+          <span class="score" id="quizScore" role="status"></span>
+        </div>
+      </div>
+    </section>
 
-            return (
-                <div className="p-6 max-w-4xl mx-auto bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow-lg">
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold mb-2 text-indigo-800">Human Genetics Simulator</h1>
-                        <div className="w-24 h-1 bg-indigo-500 mx-auto rounded-full"></div>
-                        <p className="mt-2 text-gray-600">Explore inheritance patterns with Punnett squares</p>
-                    </div>
-                    
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold text-indigo-700">Genetic Traits Inheritance</h2>
-                        <button 
-                            onClick={() => setShowInfo(!showInfo)}
-                            className="flex items-center bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded-full transition-colors"
-                        >
-                            <Info size={18} className="mr-1" />
-                            {showInfo ? 'Hide Info' : 'Show Info'}
-                        </button>
-                    </div>
-                    
-                    {showInfo && (
-                        <div className="bg-indigo-50 p-5 rounded-lg mb-6 border-l-4 border-indigo-400 shadow-sm">
-                            <h3 className="font-semibold text-lg mb-3 text-indigo-800">Understanding Genetics:</h3>
-                            
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div>
-                                    <h4 className="font-semibold mb-2 text-indigo-700">Key Concepts:</h4>
-                                    <ul className="space-y-2">
-                                        <li className="flex items-start">
-                                            <span><strong>Genotype:</strong> The genetic makeup (allele combination)</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span><strong>Phenotype:</strong> The observable trait expression</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span><strong>Dominant:</strong> Trait expressed when at least one dominant allele is present</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span><strong>Recessive:</strong> Trait only expressed when two recessive alleles are present</span>
-                                        </li>
-                                    </ul>
-                                </div>
-                                
-                                <div>
-                                    <h4 className="font-semibold mb-2 text-indigo-700">Allele Representations:</h4>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <div className="font-medium mb-1">Eye Color:</div>
-                                            <div className="flex items-center mb-1">
-                                                <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#6B4423'}}></div>
-                                                <span><strong>B</strong> (Dominant): Brown eyes</span>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#4B86DB'}}></div>
-                                                <span><strong>b</strong> (Recessive): Blue eyes</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div>
-                                            <div className="font-medium mb-1">Hair Color:</div>
-                                            <div className="flex items-center mb-1">
-                                                <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#3A2718'}}></div>
-                                                <span><strong>H</strong> (Dominant): Dark hair</span>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <div className="w-5 h-5 rounded-full mr-2" style={{backgroundColor: '#E6C27A'}}></div>
-                                                <span><strong>h</strong> (Recessive): Blonde hair</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                            <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-6 mb-4 md:mb-0">
-                                <div className="bg-blue-50 p-4 rounded-lg">
-                                    <ParentIcon 
-                                        eyeColor={getEyeColor(getEyePhenotype(eyeColorParent1))}
-                                        hairColor={getHairColor(getHairPhenotype(hairColorParent1))}
-                                        gender="male"
-                                    />
-                                </div>
-                                
-                                <div className={`text-4xl font-bold text-indigo-600 ${isAnimating ? 'animate-pulse' : ''}`}>+</div>
-                                
-                                <div className="bg-pink-50 p-4 rounded-lg">
-                                    <ParentIcon 
-                                        eyeColor={getEyeColor(getEyePhenotype(eyeColorParent2))}
-                                        hairColor={getHairColor(getHairPhenotype(hairColorParent2))}
-                                        gender="female"
-                                    />
-                                </div>
-                            </div>
-                            
-                            <button
-                                onClick={triggerAnimation}
-                                className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors"
-                            >
-                                <RefreshCw size={18} className={`mr-2 ${isAnimating ? 'animate-spin' : ''}`} />
-                                Calculate Inheritance
-                            </button>
-                        </div>
-                        
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <h3 className="font-bold mb-4 text-lg text-indigo-700">Parent 1 Genotype</h3>
-                                
-                                <div className="mb-5 bg-gray-50 p-4 rounded-lg">
-                                    <label className="block mb-2 font-medium">Eye Color:</label>
-                                    <select 
-                                        value={eyeColorParent1}
-                                        onChange={e => setEyeColorParent1(e.target.value)}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    >
-                                        <option value="BB">BB (Homozygous Brown)</option>
-                                        <option value="Bb">Bb (Heterozygous Brown)</option>
-                                        <option value="bb">bb (Homozygous Blue)</option>
-                                    </select>
-                                    <div className="mt-3 flex items-center">
-                                        <div 
-                                            className="w-6 h-6 rounded-full mr-2 shadow-inner" 
-                                            style={{backgroundColor: getEyeColor(getEyePhenotype(eyeColorParent1))}}
-                                        />
-                                        <span>Phenotype: {getEyePhenotype(eyeColorParent1)} eyes</span>
-                                    </div>
-                                </div>
-                                
-                                <div className="bg-gray-50 p-4 rounded-lg">
-                                    <label className="block mb-2 font-medium">Hair Color:</label>
-                                    <select 
-                                        value={hairColorParent1}
-                                        onChange={e => setHairColorParent1(e.target.value)}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    >
-                                        <option value="HH">HH (Homozygous Dark)</option>
-                                        <option value="Hh">Hh (Heterozygous Dark)</option>
-                                        <option value="hh">hh (Homozygous Blonde)</option>
-                                    </select>
-                                    <div className="mt-3 flex items-center">
-                                        <div 
-                                            className="w-6 h-6 rounded-full mr-2 shadow-inner" 
-                                            style={{backgroundColor: getHairColor(getHairPhenotype(hairColorParent1))}}
-                                        />
-                                        <span>Phenotype: {getHairPhenotype(hairColorParent1)} hair</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <h3 className="font-bold mb-4 text-lg text-indigo-700">Parent 2 Genotype</h3>
-                                
-                                <div className="mb-5 bg-gray-50 p-4 rounded-lg">
-                                    <label className="block mb-2 font-medium">Eye Color:</label>
-                                    <select 
-                                        value={eyeColorParent2}
-                                        onChange={e => setEyeColorParent2(e.target.value)}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    >
-                                        <option value="BB">BB (Homozygous Brown)</option>
-                                        <option value="Bb">Bb (Heterozygous Brown)</option>
-                                        <option value="bb">bb (Homozygous Blue)</option>
-                                    </select>
-                                    <div className="mt-3 flex items-center">
-                                        <div 
-                                            className="w-6 h-6 rounded-full mr-2 shadow-inner" 
-                                            style={{backgroundColor: getEyeColor(getEyePhenotype(eyeColorParent2))}}
-                                        />
-                                        <span>Phenotype: {getEyePhenotype(eyeColorParent2)} eyes</span>
-                                    </div>
-                                </div>
-                                
-                                <div className="bg-gray-50 p-4 rounded-lg">
-                                    <label className="block mb-2 font-medium">Hair Color:</label>
-                                    <select 
-                                        value={hairColorParent2}
-                                        onChange={e => setHairColorParent2(e.target.value)}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    >
-                                        <option value="HH">HH (Homozygous Dark)</option>
-                                        <option value="Hh">Hh (Heterozygous Dark)</option>
-                                        <option value="hh">hh (Homozygous Blonde)</option>
-                                    </select>
-                                    <div className="mt-3 flex items-center">
-                                        <div 
-                                            className="w-6 h-6 rounded-full mr-2 shadow-inner" 
-                                            style={{backgroundColor: getHairColor(getHairPhenotype(hairColorParent2))}}
-                                        />
-                                        <span>Phenotype: {getHairPhenotype(hairColorParent2)} hair</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="mb-6">
-                        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                            <div className="mb-4">
-                                <h3 className="text-xl font-semibold text-indigo-700 pb-2 border-b border-gray-200 mb-4">Punnett Squares</h3>
-                                
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h4 className="font-bold mb-3 text-indigo-700">Eye Color Inheritance</h4>
-                                        <PunnettSquare parent1Alleles={eyeColorParent1} parent2Alleles={eyeColorParent2} traitType="eye" />
-                                        <ResultsChart results={eyeResults} traitType="eye" />
-                                    </div>
-                                    
-                                    <div>
-                                        <h4 className="font-bold mb-3 text-indigo-700">Hair Color Inheritance</h4>
-                                        <PunnettSquare parent1Alleles={hairColorParent1} parent2Alleles={hairColorParent2} traitType="hair" />
-                                        <ResultsChart results={hairResults} traitType="hair" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h3 className="text-xl font-semibold text-indigo-700 pb-2 border-b border-gray-200 mb-4">Combined Traits Inheritance</h3>
-                            
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {phenotypePercentages.map((combo, i) => {
-                                    const isBlueEyes = combo.combination.includes('Blue');
-                                    const isBlondeHair = combo.combination.includes('Blonde');
-                                    const eyeColor = isBlueEyes ? '#4B86DB' : '#6B4423';
-                                    const hairColor = isBlondeHair ? '#E6C27A' : '#3A2718';
-                                    
-                                    return (
-                                        <div key={i} className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col items-center">
-                                            <div className="text-2xl font-bold mb-1">{combo.percentage}%</div>
-                                            <ChildIcon eyeColor={eyeColor} hairColor={hairColor} />
-                                            <div className="mt-2 text-center text-sm">
-                                                <div className="font-medium">{combo.combination}</div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            
-                            <div className="mt-6 bg-yellow-50 p-4 rounded-lg">
-                                <p className="text-sm text-gray-700">
-                                    This simulator demonstrates basic Mendelian inheritance for two traits. In reality, human genetics is more complex with multiple genes influencing traits like eye and hair color. This model simplifies eye color to a single gene with brown dominant over blue, and hair color to dark being dominant over blonde.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
+    <!-- 7 -->
+    <section class="blk" id="beyond">
+      <span class="step-no">Part 7</span>
+      <h2>What a Punnett square cannot tell you</h2>
+      <p>The square assumes one gene, two alleles per person, and predictable dominance. Real patients are messier. Open each item to see where the model breaks down.</p>
+      <details><summary>Reduced penetrance and variable expressivity</summary><div class="dc"><p>Some people who inherit a disease-causing variant never show symptoms (reduced penetrance), and people with the same variant can have mild or severe disease (variable expressivity). BRCA1 variants raise cancer risk substantially but do not guarantee cancer. The square predicts genotype, not destiny.</p></div></details>
+      <details><summary>New (de novo) variants</summary><div class="dc"><p>A child can have a dominant condition even when neither parent does, because the variant arose new in an egg or sperm. Achondroplasia is the classic example: most cases occur in children of average-stature parents. A square built from the parents’ genotypes would predict 0%.</p></div></details>
+      <details><summary>Polygenic and multifactorial traits</summary><div class="dc"><p>Height, type 2 diabetes, most heart disease, and many birth defects result from many genes plus environment. These cannot be modeled with a single square. Family history still matters, but risk is estimated from population data rather than Mendelian ratios.</p></div></details>
+      <details><summary>Linked genes and mitochondrial inheritance</summary><div class="dc"><p>Genes close together on a chromosome tend to be inherited together, so the 9:3:3:1 dihybrid ratio does not hold. Mitochondrial DNA passes from the mother to all of her children, a pattern no Punnett square shows.</p></div></details>
+      <details><summary>Communicating risk responsibly</summary><div class="dc"><ul>
+        <li>Give risk two ways: “1 in 4, which is 25%.” Add the reverse: “3 in 4 chance the child will not have it.”</li>
+        <li>Stress that chance resets with each pregnancy.</li>
+        <li>Stay nondirective. Offer information and support; do not tell families what to decide.</li>
+        <li>Use teach-back: “To make sure I explained it clearly, how would you describe the risk to your partner?”</li>
+      </ul></div></details>
+      <details><summary>Ethics, privacy, and referral</summary><div class="dc"><ul>
+        <li>Genetic results are protected health information under HIPAA. A result can reveal information about relatives who did not consent to testing.</li>
+        <li>GINA (2008) restricts the use of genetic information by health insurers and employers, but does not cover life, disability, or long-term care insurance.</li>
+        <li>Predictive testing of minors for adult-onset conditions such as Huntington disease is generally discouraged by professional guidelines.</li>
+        <li>Refer to a genetic counselor when there is a known familial variant, multiple affected relatives, early onset of common disease, consanguinity, pregnancy planning concerns, or an abnormal screening result.</li>
+      </ul></div></details>
+    </section>
 
-        ReactDOM.render(<GeneticsSimulator />, document.getElementById('root'));
+    <!-- 8 -->
+    <section class="blk" id="guide">
+      <span class="step-no">Part 8</span>
+      <h2>Instructor guide</h2>
+      <details open><summary>Suggested 90-minute session plan</summary><div class="dc">
+        <div class="tbl"><table class="plan">
+          <tr><th>Time</th><th>Activity</th><th>Purpose</th></tr>
+          <tr><td>5 min</td><td>Hook: read the first clinical case aloud and poll the room for the answer.</td><td>Surface prior knowledge and the gambler’s-fallacy misconception.</td></tr>
+          <tr><td>10 min</td><td>Vocabulary flip cards in pairs; partners quiz each other.</td><td>Retrieval practice on terms.</td></tr>
+          <tr><td>15 min</td><td>Guided demo in Explore mode: cystic fibrosis, then Huntington disease, then hemophilia A.</td><td>Contrast recessive, dominant, and X-linked patterns.</td></tr>
+          <tr><td>10 min</td><td>Predict first: students commit to a probability for three crosses before revealing.</td><td>Prediction plus feedback improves retention.</td></tr>
+          <tr><td>10 min</td><td>Build it myself with the dihybrid pea cross and ABO blood types.</td><td>Procedural fluency with larger squares and multiple alleles.</td></tr>
+          <tr><td>10 min</td><td>Chance per pregnancy: each student simulates 4 children, then the class pools results.</td><td>Make independence of events concrete.</td></tr>
+          <tr><td>15 min</td><td>Clinical cases in small groups, ending with a teach-back role play.</td><td>Apply knowledge and practice patient communication.</td></tr>
+          <tr><td>10 min</td><td>Quiz and debrief on “What a Punnett square cannot tell you.”</td><td>Assess objectives and set limits of the model.</td></tr>
+        </table></div>
+      </div></details>
+      <details><summary>Objective and Bloom’s alignment</summary><div class="dc"><ul>
+        <li>Objective 1 (Remember): flip cards; quiz items 1–2.</li>
+        <li>Objective 2 (Apply): Build it myself mode; quiz items 3, 6, 8.</li>
+        <li>Objective 3 (Apply): Predict first mode; quiz items 4, 5.</li>
+        <li>Objective 4 (Analyze): trait comparison in Explore mode; quiz items 7, 9.</li>
+        <li>Objective 5 (Evaluate/communicate): plain-language panel, cases, teach-back role play; quiz item 4.</li>
+        <li>Objective 6 (Evaluate): Part 7 discussion; quiz item 10.</li>
+      </ul></div></details>
+      <details><summary>Assessment ideas</summary><div class="dc"><ul>
+        <li>Exit ticket: write a two-sentence explanation of a 1 in 4 risk for a family whose first child has cystic fibrosis.</li>
+        <li>Lab practical: give each student a family scenario; they build the square in Build mode and submit a screenshot plus a plain-language summary.</li>
+        <li>Rubric dimensions: accuracy of the square, correct probability conversion, plain-language clarity, nondirective tone, appropriate referral.</li>
+      </ul></div></details>
+      <details><summary>Accessibility and adaptation</summary><div class="dc"><ul>
+        <li>Every result is labeled in text, not just color, and the page works fully with a keyboard.</li>
+        <li>The typeface, Atkinson Hyperlegible, was designed for readers with low vision.</li>
+        <li>For nursing programs, add pharmacogenomics (CYP2C19, warfarin sensitivity) as an extension; for lab programs, extend ABO with Rh factor and transfusion compatibility.</li>
+      </ul></div></details>
+    </section>
+
+    <footer>Educational simulation for health care students. Examples are simplified for teaching and are not medical or genetic counseling advice.</footer>
+  </main>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- theme ---------- */
+const root=document.documentElement, tBtn=document.getElementById("themeBtn"), tIcon=document.getElementById("themeIcon"), tTxt=document.getElementById("themeTxt");
+const SUN='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+const MOON='<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+function paintTheme(){const d=root.getAttribute("data-theme")==="dark";tIcon.innerHTML=d?SUN:MOON;tTxt.textContent=d?"Light mode":"Dark mode";tBtn.setAttribute("aria-label",d?"Switch to light mode":"Switch to dark mode");}
+tBtn.addEventListener("click",()=>{const n=root.getAttribute("data-theme")==="dark"?"light":"dark";root.setAttribute("data-theme",n);try{localStorage.setItem("punnett-theme",n);}catch(e){}paintTheme();});
+paintTheme();
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const frac=(n,d)=>{if(n===0)return "0";const g=gcd(n,d);return (n/g)+" in "+(d/g);};
+const pct=(n,d)=>{const p=Math.round(n/d*1000)/10;return p+"%";};
+const chunk=g=>{const o=[];for(let i=0;i<g.length;i+=2)o.push([g[i],g[i+1]]);return o;};
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+/* ---------- traits ---------- */
+const DIS=(aff,carrier,unaff,shorts)=>[
+  {id:"unaff",label:unaff,s:shorts[0],phrase:"be unaffected and not a carrier"},
+  {id:"carrier",label:carrier,s:shorts[1],phrase:"be an unaffected carrier"},
+  {id:"aff",label:aff,s:shorts[2],phrase:null}];
+const peaOpts=[];["YY","Yy","yy"].forEach(a=>["RR","Rr","rr"].forEach(b=>peaOpts.push([a[0],a[1],b[0],b[1]])));
+
+const TR={
+ cf:{name:"Cystic fibrosis",tab:"Recessive",pattern:"Autosomal recessive",gene:"CFTR gene, chromosome 7",
+  about:"Two copies of a disease-causing CFTR variant cause thick mucus that damages the lungs and pancreas. People with one copy are healthy carriers. About 1 in 25 to 30 people of Northern European ancestry carry a variant. C is the typical allele and c is the CF allele.",
+  alleles:{C:{h:"C",t:"C",o:0},c:{h:"c",t:"c",o:1}},
+  p1:{label:"Parent 1",opts:[["C","C"],["C","c"],["c","c"]]},p2:{label:"Parent 2",opts:[["C","C"],["C","c"],["c","c"]]},def:[1,1],
+  cats:(()=>{const c=DIS("Has cystic fibrosis","Unaffected carrier","Unaffected, not a carrier",["unaffected","carrier","affected"]);c[2].phrase="have cystic fibrosis";return c;})(),
+  pheno:p=>{const n=p[0].filter(x=>x==="c").length;return n===2?"aff":n?"carrier":"unaff";},
+  target:"aff",targetText:"have cystic fibrosis"},
+ sickle:{name:"Sickle cell disease",tab:"Recessive",pattern:"Autosomal recessive",gene:"HBB gene, chromosome 11",
+  about:"A and S stand for the hemoglobin alleles HbA and HbS. HbSS causes sickle cell disease. HbAS, sickle cell trait, is usually without symptoms but matters for family planning and extreme exertion. US newborn screening tests for both.",
+  alleles:{A:{h:"A",t:"A",o:0},S:{h:"S",t:"S",o:1}},
+  p1:{label:"Parent 1",opts:[["A","A"],["A","S"],["S","S"]]},p2:{label:"Parent 2",opts:[["A","A"],["A","S"],["S","S"]]},def:[1,1],
+  cats:[{id:"unaff",label:"HbAA, typical hemoglobin",s:"typical",phrase:"have typical hemoglobin (HbAA)"},{id:"carrier",label:"HbAS, sickle cell trait",s:"trait",phrase:"have sickle cell trait (HbAS)"},{id:"aff",label:"HbSS, sickle cell disease",s:"disease",phrase:"have sickle cell disease (HbSS)"}],
+  pheno:p=>{const n=p[0].filter(x=>x==="S").length;return n===2?"aff":n?"carrier":"unaff";},
+  target:"aff",targetText:"have sickle cell disease"},
+ hd:{name:"Huntington disease",tab:"Dominant",pattern:"Autosomal dominant",gene:"HTT gene, chromosome 4",
+  about:"One copy of an expanded HTT allele is enough to cause this progressive brain disorder, usually starting in mid-adulthood. There are no unaffected carriers. H is the disease allele and h is the typical allele.",
+  alleles:{H:{h:"H",t:"H",o:0},h:{h:"h",t:"h",o:1}},
+  p1:{label:"Parent 1",opts:[["h","h"],["H","h"],["H","H"]]},p2:{label:"Parent 2",opts:[["h","h"],["H","h"],["H","H"]]},def:[1,0],
+  cats:[{id:"unaff",label:"Unaffected",s:"unaffected",phrase:"not inherit the HD allele"},{id:"aff",label:"Inherits Huntington disease allele",s:"affected",phrase:"inherit the HD allele"}],
+  pheno:p=>p[0].includes("H")?"aff":"unaff",
+  target:"aff",targetText:"inherit the Huntington disease allele"},
+ fh:{name:"Familial hypercholesterolemia",tab:"Semidominant",pattern:"Incomplete (semi) dominance",gene:"LDLR gene, chromosome 19",
+  about:"One FH variant (NF) causes high LDL cholesterol and early heart disease. Two variants (FF) cause much more severe disease, sometimes in childhood. The heterozygote is in between, which is the hallmark of incomplete dominance. N is the typical allele and F is the FH variant.",
+  alleles:{N:{h:"N",t:"N",o:0},F:{h:"F",t:"F",o:1}},
+  p1:{label:"Parent 1",opts:[["N","N"],["N","F"],["F","F"]]},p2:{label:"Parent 2",opts:[["N","N"],["N","F"],["F","F"]]},def:[1,1],
+  cats:[{id:"unaff",label:"Typical LDL cholesterol",s:"typical",phrase:"have typical cholesterol genetics"},{id:"mild",label:"Heterozygous FH, high LDL",s:"heterozygous FH",phrase:"have heterozygous FH"},{id:"aff",label:"Homozygous FH, very high LDL",s:"homozygous FH",phrase:"have homozygous FH, the severe form"}],
+  pheno:p=>{const n=p[0].filter(x=>x==="F").length;return n===2?"aff":n?"mild":"unaff";},
+  target:"mild",targetText:"have heterozygous FH"},
+ hemo:{name:"Hemophilia A",tab:"X-linked",pattern:"X-linked recessive",gene:"F8 gene, X chromosome",
+  about:"The F8 gene sits on the X chromosome, so males with one variant X are affected and females with one are usually carriers. Affected fathers pass the variant to every daughter and to no sons. Xᴴ is the typical allele and Xʰ carries the hemophilia variant.",
+  alleles:{XH:{h:"X<sup>H</sup>",t:"Xᴴ",o:0},Xh:{h:"X<sup>h</sup>",t:"Xʰ",o:1},Y:{h:"Y",t:"Y",o:2}},
+  p1:{label:"Mother",opts:[["XH","XH"],["XH","Xh"],["Xh","Xh"]]},p2:{label:"Father",opts:[["XH","Y"],["Xh","Y"]]},def:[1,0],xl:true,
+  cats:[{id:"unaff",label:"Unaffected",s:"unaffected",phrase:"be unaffected and not a carrier"},{id:"carrier",label:"Carrier daughter",s:"carrier",phrase:"be a carrier daughter"},{id:"aff",label:"Has hemophilia A",s:"affected",phrase:"have hemophilia A"}],
+  pheno:p=>{const g=p[0],n=g.filter(x=>x==="Xh").length;if(g.includes("Y"))return n?"aff":"unaff";return n===2?"aff":n?"carrier":"unaff";},
+  target:"aff",targetText:"have hemophilia A"},
+ abo:{name:"ABO blood type",tab:"Codominant",pattern:"Codominance, multiple alleles",gene:"ABO gene, chromosome 9",
+  about:"Three alleles: Iᴬ and Iᴮ are codominant, so a person with both is type AB. The i allele is recessive, so type O requires ii. This explains why two parents with types A and B can have a child of any type.",
+  alleles:{A:{h:"I<sup>A</sup>",t:"Iᴬ",o:0},B:{h:"I<sup>B</sup>",t:"Iᴮ",o:1},O:{h:"i",t:"i",o:2}},
+  p1:{label:"Parent 1",opts:[["A","A"],["A","O"],["B","B"],["B","O"],["A","B"],["O","O"]]},p2:{label:"Parent 2",opts:[["A","A"],["A","O"],["B","B"],["B","O"],["A","B"],["O","O"]]},def:[1,3],
+  cats:[{id:"A",label:"Type A",s:"type A",phrase:"have type A blood"},{id:"B",label:"Type B",s:"type B",phrase:"have type B blood"},{id:"AB",label:"Type AB",s:"type AB",phrase:"have type AB blood"},{id:"O",label:"Type O",s:"type O",phrase:"have type O blood"}],
+  pheno:p=>{const g=p[0],a=g.includes("A"),b=g.includes("B");return a&&b?"AB":a?"A":b?"B":"O";},
+  target:"O",targetText:"have type O blood"},
+ pea:{name:"Mendel’s peas (dihybrid)",tab:"Two genes",pattern:"Dihybrid, independent assortment",gene:"Seed color Y/y and seed shape R/r",
+  about:"Mendel’s classic two-gene cross. Yellow (Y) is dominant to green (y), and round (R) is dominant to wrinkled (r). Each gamete gets one allele of each gene, giving four gamete types and a 4 by 4 square. A YyRr × YyRr cross gives the famous 9:3:3:1 ratio.",
+  alleles:{Y:{h:"Y",t:"Y",o:0},y:{h:"y",t:"y",o:1},R:{h:"R",t:"R",o:0},r:{h:"r",t:"r",o:1}},
+  p1:{label:"Parent 1",opts:peaOpts},p2:{label:"Parent 2",opts:peaOpts},def:[4,4],
+  cats:[{id:"yr",label:"Yellow, round",s:"yellow round",phrase:"be yellow and round"},{id:"yw",label:"Yellow, wrinkled",s:"yellow wrinkled",phrase:"be yellow and wrinkled"},{id:"gr",label:"Green, round",s:"green round",phrase:"be green and round"},{id:"gw",label:"Green, wrinkled",s:"green wrinkled",phrase:"be green and wrinkled"}],
+  pheno:p=>{const y=p[0].includes("Y"),r=p[1].includes("R");return y?(r?"yr":"yw"):(r?"gr":"gw");},
+  target:"gw",targetText:"be green and wrinkled",plant:true}
+};
+
+const state={trait:"cf",p1:1,p2:1,mode:"explore",revealed:false,checked:false,family:[]};
+
+function T(){return TR[state.trait];}
+function sortPair(t,p){return p.slice().sort((a,b)=>t.alleles[a].o-t.alleles[b].o);}
+function gHTML(t,arr){return arr.map(k=>'<i class="al">'+t.alleles[k].h+'</i>').join("");}
+function gTXT(t,arr){return arr.map(k=>t.alleles[k].t).join("");}
+function pairsHTML(t,pairs){return pairs.map(p=>gHTML(t,p)).join("");}
+function pairsTXT(t,pairs){return pairs.map(p=>gTXT(t,p)).join("");}
+function gametes(g){return chunk(g).reduce((acc,p)=>acc.flatMap(a=>p.map(x=>a.concat([x]))),[[]]);}
+function cat(t,id){return t.cats.find(c=>c.id===id);}
+function parentPairs(t,g){return chunk(g).map(p=>sortPair(t,p));}
+
+function cross(){
+  const t=T(),g1=t.p1.opts[state.p1],g2=t.p2.opts[state.p2];
+  const ga=gametes(g1),gb=gametes(g2),cells=[];
+  gb.forEach((b,r)=>ga.forEach((a,c)=>{
+    const pairs=a.map((x,i)=>sortPair(t,[x,b[i]]));
+    cells.push({r,c,pairs,key:pairsTXT(t,pairs),html:pairsHTML(t,pairs),cat:t.pheno(pairs),male:pairs[0].includes("Y")});
+  }));
+  return {t,g1,g2,ga,gb,cells};
+}
+
+/* ---------- trait + parent UI ---------- */
+function renderTraits(){
+  $("#traits").innerHTML=Object.entries(TR).map(([k,t])=>`<button type="button" class="trait-btn" data-k="${k}" aria-pressed="${k===state.trait}"><strong>${t.name}</strong><span>${t.tab}</span></button>`).join("");
+}
+$("#traits").addEventListener("click",e=>{const b=e.target.closest(".trait-btn");if(!b)return;setTrait(b.dataset.k);});
+function setTrait(k,p1,p2){
+  state.trait=k;const t=TR[k];state.p1=p1!==undefined?p1:t.def[0];state.p2=p2!==undefined?p2:t.def[1];
+  state.revealed=false;state.checked=false;state.family=[];renderAll();
+}
+function renderParents(){
+  const t=T();
+  const grp=(which,pc)=>{
+    const P=t[which];
+    return `<div class="pgroup"><h4><span class="dot" style="background:var(${pc})"></span>${P.label} genotype</h4><div class="chips" role="group" aria-label="${P.label} genotype">`+
+      P.opts.map((g,i)=>{const pp=parentPairs(t,g),c=cat(t,t.pheno(pp));const lab=(t.xl&&which==="p2")?(c.id==="aff"?"affected":"unaffected"):c.s;
+        return `<button type="button" class="chip" style="--pc:var(${pc})" data-p="${which}" data-i="${i}" aria-pressed="${state[which]===i}"><span class="g">${pairsHTML(t,pp)}</span><span class="l">${lab}</span></button>`;}).join("")+
+      `</div></div>`;
+  };
+  $("#parents").innerHTML=grp("p1","--p1")+grp("p2","--p2");
+}
+$("#parents").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;state[b.dataset.p]=+b.dataset.i;state.revealed=false;state.checked=false;state.family=[];renderSim();renderChance();
+  const nb=document.querySelector(`.chip[data-p="${b.dataset.p}"][data-i="${b.dataset.i}"]`);if(nb)nb.focus();});
+$("#modes").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.mode=b.dataset.m;state.revealed=false;state.checked=false;
+  [...$("#modes").children].forEach(x=>x.setAttribute("aria-pressed",x===b));renderSquare();renderResults();});
+
+/* ---------- square ---------- */
+function renderSquare(){
+  const X=cross(),{t,ga,gb,cells}=X,n=ga.length;
+  const sq=$("#sq");sq.className="sq n"+n;sq.style.gridTemplateColumns=`minmax(64px,auto) repeat(${n},minmax(60px,1fr))`;
+  const p1L=t.p1.label,p2L=t.p2.label;
+  let h=`<div class="corner">${p1L} gametes →<br>${p2L} gametes ↓</div>`;
+  ga.forEach(g=>h+=`<div class="hd c1" aria-label="${p1L} gamete ${gTXT(t,g)}">${gHTML(t,g)}</div>`);
+  const hide=state.mode==="predict"&&!state.revealed, build=state.mode==="build";
+  let opts=[];
+  if(build){const set=new Map();cells.forEach(c=>set.set(c.key,c.html));[X.g1,X.g2].forEach(g=>{const pp=parentPairs(t,g);set.set(pairsTXT(t,pp),pairsHTML(t,pp));});opts=shuffle([...set.keys()]);}
+  gb.forEach((g,r)=>{
+    h+=`<div class="hd c2" aria-label="${p2L} gamete ${gTXT(t,g)}">${gHTML(t,g)}</div>`;
+    for(let c=0;c<n;c++){
+      const cell=cells[r*n+c],ct=cat(t,cell.cat),d=(r*n+c)*35;
+      if(hide)h+=`<div class="cell hidden" style="animation-delay:${d}ms"><span class="g">?</span></div>`;
+      else if(build)h+=`<div class="cell prac" data-i="${r*n+c}"><select aria-label="Row ${r+1}, column ${c+1} offspring genotype"><option value="">Choose</option>${opts.map(o=>`<option value="${o}">${o}</option>`).join("")}</select></div>`;
+      else{const sex=t.xl?(cell.male?"son, ":"daughter, "):"";
+        h+=`<div class="cell" style="--cc:var(--c-${cell.cat});animation-delay:${d}ms"><span class="g">${cell.html}</span><span class="l">${sex}${ct.s}</span></div>`;}
+    }
+  });
+  sq.innerHTML=h;
+  $("#buildCtl").hidden=!build;$("#buildMsg").textContent="";
+  // how-to steps
+  const pp1=parentPairs(t,X.g1),pp2=parentPairs(t,X.g2);
+  const uniq=a=>[...new Set(a.map(g=>gHTML(t,g)))].join(", ");
+  $("#howto").innerHTML=
+   `<li><b>Write the parents.</b> ${p1L} is ${pairsHTML(t,pp1)} and ${p2L} is ${pairsHTML(t,pp2)}.</li>`+
+   `<li><b>Separate alleles into gametes.</b> Each egg or sperm gets one allele ${n===4?"of each gene":"per gene"}: ${p1L} makes ${uniq(ga)}; ${p2L} makes ${uniq(gb)}.</li>`+
+   `<li><b>Combine.</b> Each box joins the gamete above it with the gamete to its left, giving ${n*n} equally likely outcomes.</li>`+
+   `<li><b>Count and convert.</b> Divide each outcome’s box count by ${n*n} to get its probability per child.</li>`;
+}
+$("#checkBuild").addEventListener("click",()=>{
+  const X=cross();let ok=0;
+  document.querySelectorAll("#sq .cell.prac").forEach(el=>{
+    const c=X.cells[+el.dataset.i],v=el.querySelector("select").value;el.classList.remove("ok","bad");const f=el.querySelector(".fix");if(f)f.remove();
+    if(v===c.key){ok++;el.classList.add("ok");}else{el.classList.add("bad");el.insertAdjacentHTML("beforeend",`<span class="fix">Answer: ${c.html}</span>`);}
+  });
+  const tot=X.cells.length;$("#buildMsg").textContent=`${ok} of ${tot} correct.`+(ok===tot?" Well done, results are now shown.":" Compare the gametes on each edge of a missed box.");
+  state.checked=true;renderResults();
+});
+$("#resetBuild").addEventListener("click",()=>{state.checked=false;renderSquare();renderResults();});
+
+/* ---------- results ---------- */
+const FR=[[0,1],[1,16],[1,8],[3,16],[1,4],[3,8],[1,2],[9,16],[5,8],[3,4],[7,8],[1,1]];
+function renderResults(){
+  const X=cross(),{t,cells}=X,tot=cells.length,pb=$("#predictBox"),rs=$("#results");
+  if(state.mode==="predict"&&!state.revealed){
+    pb.hidden=false;
+    pb.innerHTML=`<h4 style="margin:0">Make your prediction</h4><label for="predSel">What is the probability a child will ${t.targetText}?</label>
+      <select id="predSel"><option value="">Choose a probability</option>${FR.map(([a,b])=>`<option value="${a}/${b}">${a===0?"0 (no chance)":a===b?"1 (certain)":a+"/"+b} — ${Math.round(a/b*1000)/10}%</option>`).join("")}</select>
+      <div><button class="btn btn-p btn-s" type="button" id="predGo">Reveal the square</button></div><div id="predFb" role="status"></div>`;
+    rs.innerHTML=`<p class="note">Results stay hidden until you predict. Use the gametes on the edges of the square to reason it out.</p>`;
+    $("#predGo").addEventListener("click",()=>{
+      const v=$("#predSel").value;if(!v){$("#predFb").innerHTML=`<div class="fb bad">Choose a probability first, then reveal.</div>`;return;}
+      const [a,b]=v.split("/").map(Number),n=cells.filter(c=>c.cat===t.target).length;
+      const right=a*tot===n*b;state.revealed=true;state.lastPred={right,n,tot,a,b};renderSquare();renderResults();
+    });
+    return;
+  }
+  pb.hidden=true;pb.innerHTML="";
+  if(state.mode==="build"&&!state.checked){rs.innerHTML=`<p class="note">Fill in every box using the dropdowns, then select <strong>Check my square</strong> to see the results.</p>`;return;}
+  let h="";
+  if(state.mode==="predict"&&state.lastPred){const p=state.lastPred;
+    h+=`<div class="fb ${p.right?"good":"bad"}" style="margin-bottom:1rem">${p.right?"Correct.":"Not quite."} The answer is ${frac(p.n,p.tot)} (${pct(p.n,p.tot)}). ${p.right?"":"Count the boxes that match, then divide by "+p.tot+"."}</div>`;}
+  const counts=t.cats.map(c=>({c,n:cells.filter(x=>x.cat===c.id).length}));
+  h+=`<h4>Phenotype probabilities per child</h4><div class="bar" role="img" aria-label="${counts.filter(x=>x.n).map(x=>x.c.label+" "+pct(x.n,tot)).join(", ")}">${counts.filter(x=>x.n).map(x=>`<span style="width:${x.n/tot*100}%;background:var(--c-${x.c.id})"></span>`).join("")}</div>`;
+  h+=`<ul class="legend">${counts.map(x=>`<li><span class="sw" style="background:var(--c-${x.c.id})"></span><span>${x.c.label}</span><span class="v">${x.n}/${tot} · ${pct(x.n,tot)}</span></li>`).join("")}</ul>`;
+  const gmap=new Map();cells.forEach(c=>{const g=gmap.get(c.key)||{h:c.html,n:0,o:c.pairs.map(p=>p.map(k=>t.alleles[k].o).join("")).join("")};g.n++;gmap.set(c.key,g);});
+  const gl=[...gmap.values()].sort((a,b)=>a.o<b.o?-1:1);
+  h+=`<h4>Genotype ratio</h4><div class="gts">${gl.map(g=>`<span>${g.h} &nbsp;${g.n}</span>`).join("")}</div><p class="note" style="margin:.4rem 0 0">${gl.map(g=>g.n).join(" : ")}</p>`;
+  if(t.xl){const sons=cells.filter(c=>c.male),dau=cells.filter(c=>!c.male);
+    const sa=sons.filter(c=>c.cat==="aff").length,dc=dau.filter(c=>c.cat==="carrier").length,da=dau.filter(c=>c.cat==="aff").length;
+    h+=`<h4>By sex of the child</h4><ul class="legend"><li><span class="sw" style="background:var(--p1)"></span><span>Sons affected</span><span class="v">${frac(sa,sons.length)} · ${pct(sa,sons.length)}</span></li><li><span class="sw" style="background:var(--c-carrier)"></span><span>Daughters who are carriers</span><span class="v">${frac(dc,dau.length)} · ${pct(dc,dau.length)}</span></li><li><span class="sw" style="background:var(--c-aff)"></span><span>Daughters affected</span><span class="v">${frac(da,dau.length)} · ${pct(da,dau.length)}</span></li></ul>`;}
+  const lines=counts.filter(x=>x.n).map(x=>`<li>a ${frac(x.n,tot)} (${pct(x.n,tot)}) chance ${t.plant?"each seed will":"the child will"} ${x.c.phrase}</li>`).join("");
+  h+=`<h4>Say it to ${t.plant?"a learner":"a patient"}</h4><div class="say"><p>${t.plant?"For each seed produced by this cross, there is:":"For each pregnancy, regardless of any children you already have, there is:"}</p><ul>${lines}</ul></div>`;
+  rs.innerHTML=h;
+}
+
+function renderSim(){
+  const t=T();$("#tName").textContent=t.name;$("#tPattern").textContent=t.pattern;$("#tGene").textContent=t.gene;$("#tAbout").textContent=t.about;
+  renderParents();renderSquare();renderResults();
+}
+
+/* ---------- chance ---------- */
+function renderChance(){
+  const X=cross(),{t,cells}=X,f=state.family;
+  $("#chCross").innerHTML=`${t.name}: ${pairsHTML(t,parentPairs(t,X.g1))} × ${pairsHTML(t,parentPairs(t,X.g2))}`;
+  $("#dots").innerHTML=f.length?f.slice(-400).map((id,i)=>`<i style="background:var(--c-${id});animation-delay:${Math.min(i,40)*8}ms" title="${cat(t,id).label}"></i>`).join(""):`<span class="empty">No children yet. Add some to start.</span>`;
+  const tot=cells.length;
+  $("#chTable").innerHTML=`<tr><th>Outcome</th><th>Observed</th><th>Observed %</th><th>Expected %</th></tr>`+
+    t.cats.map(c=>{const o=f.filter(x=>x===c.id).length,e=cells.filter(x=>x.cat===c.id).length;
+      return `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c-${c.id});margin-right:.4rem"></span>${c.label}</td><td class="n">${o}</td><td class="n">${f.length?pct(o,f.length):"—"}</td><td class="n">${pct(e,tot)}</td></tr>`;}).join("")+
+    `<tr><td><strong>Total children</strong></td><td class="n"><strong>${f.length}</strong></td><td></td><td></td></tr>`;
+}
+document.querySelectorAll("#chance [data-n]").forEach(b=>b.addEventListener("click",()=>{
+  const {cells}=cross();for(let i=0;i<+b.dataset.n;i++)state.family.push(cells[Math.floor(Math.random()*cells.length)].cat);renderChance();}));
+$("#chClear").addEventListener("click",()=>{state.family=[];renderChance();});
+
+/* ---------- vocabulary ---------- */
+const VOC=[
+ ["Gene","A segment of DNA that carries instructions for a protein or function, found at a specific locus on a chromosome."],
+ ["Allele","One version of a gene. You inherit one allele of each autosomal gene from each parent."],
+ ["Genotype","The pair of alleles a person has, such as Cc."],
+ ["Phenotype","The observable trait or health status that results, such as having cystic fibrosis."],
+ ["Homozygous","Two identical alleles, such as CC or cc."],
+ ["Heterozygous","Two different alleles, such as Cc."],
+ ["Dominant","An allele that shows its effect with only one copy."],
+ ["Recessive","An allele that shows its effect only when two copies are present."],
+ ["Carrier","A person with one recessive disease allele who is usually healthy but can pass it on."],
+ ["Gamete","An egg or sperm cell. Each carries one allele of every gene."],
+ ["Codominance","Both alleles are fully expressed, as in type AB blood."],
+ ["Incomplete dominance","The heterozygote shows an intermediate phenotype, as in heterozygous familial hypercholesterolemia."],
+ ["X-linked","A gene on the X chromosome. Males have one X, so one variant allele can cause disease."],
+ ["Penetrance","The share of people with a genotype who actually show the phenotype."]
+];
+$("#cards").innerHTML=VOC.map(([w,d])=>`<button type="button" class="flip" aria-pressed="false" aria-label="${w}. Select to show definition"><span class="fi"><span class="f"><strong>${w}</strong><small>Select to flip</small></span><span class="b">${d}</span></span></button>`).join("");
+$("#cards").addEventListener("click",e=>{const c=e.target.closest(".flip");if(!c)return;const on=c.classList.toggle("on");c.setAttribute("aria-pressed",on);});
+
+/* ---------- cases ---------- */
+const CASES=[
+ {title:"A second pregnancy after a cystic fibrosis diagnosis",trait:"cf",p:[1,1],meta:"Autosomal recessive",
+  story:"Maria and Daniel’s first child was diagnosed with cystic fibrosis after newborn screening. Neither parent has symptoms. Maria is now pregnant again and asks, “Since our first baby has CF, the odds are better this time, right?”",
+  q:"What is the chance this baby will have cystic fibrosis?",o:["0%, because the 1 in 4 already happened","25%","50%","Cannot be estimated"],a:1,
+  why:"Both parents must be carriers (Cc). Each pregnancy has an independent 1 in 4 (25%) chance of cc. Previous children do not change the odds. A respectful reply: “Each pregnancy has the same 1 in 4 chance, no matter what happened before.”"},
+ {title:"A father with Huntington disease",trait:"hd",p:[1,0],meta:"Autosomal dominant",
+  story:"James, 42, was recently diagnosed with Huntington disease. His wife has no family history. Their adult son asks what his chance is of having inherited the HD allele.",
+  q:"What was the son’s chance at conception of inheriting the HD allele?",o:["25%","50%","75%","100%"],a:1,
+  why:"Hh × hh gives Hh in 2 of 4 boxes, so 50%. Because HD is adult-onset and has no cure, predictive testing is a personal decision that should include genetic counseling. Testing minors for HD is generally discouraged."},
+ {title:"A mother who carries hemophilia A",trait:"hemo",p:[1,0],meta:"X-linked recessive",
+  story:"Aisha’s brother has hemophilia A, and testing shows she is a carrier. Her husband is unaffected. They are expecting a boy.",
+  q:"What is the chance their son will have hemophilia A?",o:["25%","50%","100%","0%, because the father is unaffected"],a:1,
+  why:"Sons get their X from their mother. Half of her X chromosomes carry the variant, so each son has a 50% chance. Across all children the chance is 25%, which is why the sex of the child matters in X-linked counseling."},
+ {title:"A type O baby from type A and type B parents",trait:"abo",p:[1,3],meta:"Codominance",
+  story:"In the lab, a new father notices his newborn is type O. He is type B and the mother is type A. He asks whether the result could be a mistake.",
+  q:"Is a type O child possible, and if so, how likely?",o:["Impossible, retest the sample","Possible, 25% if both parents carry i","Possible, 50%","Only possible with a new mutation"],a:1,
+  why:"If the parents are Iᴬi and Iᴮi, one in four children will be ii (type O). The child could also be type A, B, or AB. Stick to the science and avoid speculation about parentage, which is outside your role."},
+ {title:"Both parents have sickle cell trait",trait:"sickle",p:[1,1],meta:"Autosomal recessive",
+  story:"A couple learns during prenatal care that both have sickle cell trait (HbAS). They want to know what that means for their baby.",
+  q:"What is the chance the baby will have sickle cell trait, like the parents?",o:["25%","50%","75%","100%"],a:1,
+  why:"AS × AS gives AS in 2 of 4 boxes (50%), SS in 1 of 4 (25%), and AA in 1 of 4 (25%). Newborn screening will confirm the baby’s hemoglobin type after birth."},
+ {title:"Cascade screening for high cholesterol",trait:"fh",p:[1,0],meta:"Incomplete dominance",
+  story:"Robert, 38, had a heart attack and genetic testing showed heterozygous familial hypercholesterolemia. His wife does not have FH. Their two children are 8 and 11.",
+  q:"What is each child’s chance of having heterozygous FH?",o:["0%","25%","50%","100%"],a:2,
+  why:"NF × NN gives NF in half the boxes. Testing first-degree relatives of someone with FH, called cascade screening, is recommended because early treatment lowers lifetime heart disease risk."}
+];
+$("#caseList").innerHTML=CASES.map((c,i)=>`<article class="panel case"><h3>${c.title}</h3><div class="meta">${c.meta}</div><p>${c.story}</p>
+  <button class="btn btn-g btn-s" type="button" data-load="${i}">Load this family into the simulator</button>
+  <fieldset><legend>${c.q}</legend>${c.o.map((o,j)=>`<label class="opt"><input type="radio" name="case${i}" value="${j}"><span>${o}</span></label>`).join("")}</fieldset>
+  <button class="btn btn-p btn-s" type="button" data-check="${i}">Check answer</button><div class="cfb" id="cfb${i}" role="status" style="margin-top:.7rem"></div></article>`).join("");
+$("#caseList").addEventListener("click",e=>{
+  const l=e.target.closest("[data-load]"),k=e.target.closest("[data-check]");
+  if(l){const c=CASES[+l.dataset.load];state.mode="explore";[...$("#modes").children].forEach(x=>x.setAttribute("aria-pressed",x.dataset.m==="explore"));setTrait(c.trait,c.p[0],c.p[1]);document.getElementById("sim").scrollIntoView();}
+  if(k){const i=+k.dataset.check,c=CASES[i],sel=document.querySelector(`input[name="case${i}"]:checked`),fb=document.getElementById("cfb"+i);
+    if(!sel){fb.innerHTML=`<div class="fb bad">Choose an answer, then check it.</div>`;return;}
+    document.querySelectorAll(`input[name="case${i}"]`).forEach(r=>{r.parentElement.classList.remove("right","wrong");if(+r.value===c.a)r.parentElement.classList.add("right");else if(r.checked)r.parentElement.classList.add("wrong");});
+    const ok=+sel.value===c.a;fb.innerHTML=`<div class="fb ${ok?"good":"bad"}"><strong>${ok?"Correct.":"Not quite."}</strong> ${c.why}</div>`;}
+});
+
+/* ---------- quiz ---------- */
+const QZ=[
+ {q:"A person with genotype Bb is described as:",o:["Homozygous dominant","Heterozygous","Homozygous recessive","Hemizygous"],a:1,w:"Two different alleles make the genotype heterozygous."},
+ {q:"Which term describes an observable characteristic, such as blood type?",o:["Genotype","Allele","Phenotype","Locus"],a:2,w:"Phenotype is what is observed or measured; genotype is the allele pair underneath it."},
+ {q:"Two carriers of an autosomal recessive condition have a child. What fraction of their children are expected to be carriers?",o:["1/4","1/2","3/4","All of them"],a:1,w:"Aa × Aa gives AA, Aa, Aa, aa. Two of four boxes are carriers, so 1/2."},
+ {q:"A couple’s first two children have cystic fibrosis. What is the chance their third child will?",o:["0%","25%","50%","100%"],a:1,w:"Each pregnancy is independent. The risk stays 1 in 4, no matter what happened before."},
+ {q:"In a YyRr × YyRr cross, what fraction of offspring are green and wrinkled (yyrr)?",o:["1/16","3/16","9/16","1/4"],a:0,w:"Only one of the 16 boxes is yyrr, giving the 1 in the 9:3:3:1 ratio."},
+ {q:"A man with hemophilia A (XʰY) and a non-carrier woman (XᴴXᴴ) have children. Which is true?",o:["All sons are affected","All daughters are carriers","Half of sons are affected","No children carry the variant"],a:1,w:"Fathers pass their X to every daughter and their Y to every son. All daughters are carriers; no sons are affected."},
+ {q:"A parent with type AB blood has a child with a type O parent. Which blood types are possible for the child?",o:["A or B only","AB or O only","A, B, or O","Only O"],a:0,w:"Iᴬ Iᴮ × ii gives Iᴬi (type A) or Iᴮi (type B). Neither AB nor O is possible."},
+ {q:"A parent who is heterozygous for an autosomal dominant condition has a child with an unaffected partner. What is the chance the child inherits the condition?",o:["25%","50%","75%","100%"],a:1,w:"Aa × aa gives Aa in two of four boxes, 50%."},
+ {q:"Heterozygous familial hypercholesterolemia causes a milder phenotype than homozygous FH. This is an example of:",o:["Codominance","Incomplete (semi) dominance","X-linked inheritance","Reduced penetrance"],a:1,w:"An intermediate heterozygote phenotype is the hallmark of incomplete dominance."},
+ {q:"Two parents without achondroplasia have a child with achondroplasia, a dominant condition. The best explanation is:",o:["Both parents are carriers","A new (de novo) variant","The square was built incorrectly","It is X-linked"],a:1,w:"Most achondroplasia arises from new variants. Punnett squares built from parental genotypes cannot predict de novo events."}
+];
+function renderQuiz(){
+  $("#quizForm").innerHTML=QZ.map((x,i)=>`<div class="qitem"><fieldset><legend><span class="qn">${i+1}.</span> ${x.q}</legend>${x.o.map((o,j)=>`<label class="opt"><input type="radio" name="q${i}" value="${j}"><span>${o}</span></label>`).join("")}</fieldset><div id="qf${i}" role="status"></div></div>`).join("");
+  $("#quizScore").textContent="";
+}
+$("#quizSubmit").addEventListener("click",()=>{
+  let s=0,ans=0;
+  QZ.forEach((x,i)=>{const sel=document.querySelector(`input[name="q${i}"]:checked`),fb=document.getElementById("qf"+i);
+    document.querySelectorAll(`input[name="q${i}"]`).forEach(r=>{r.parentElement.classList.remove("right","wrong");if(sel&&+r.value===x.a)r.parentElement.classList.add("right");if(r.checked&&+r.value!==x.a)r.parentElement.classList.add("wrong");});
+    if(!sel){fb.innerHTML=`<div class="fb bad">No answer selected.</div>`;return;}
+    ans++;const ok=+sel.value===x.a;if(ok)s++;
+    fb.innerHTML=`<div class="fb ${ok?"good":"bad"}"><strong>${ok?"Correct.":"Not quite."}</strong> ${x.w}</div>`;});
+  $("#quizScore").textContent=`Score: ${s} / ${QZ.length}`+(ans<QZ.length?` (${QZ.length-ans} unanswered)`:"");
+});
+$("#quizReset").addEventListener("click",renderQuiz);
+
+/* ---------- rail highlight ---------- */
+const links=[...document.querySelectorAll(".rail a")];
+if("IntersectionObserver" in window){
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+e.target.id));}}),{rootMargin:"-40% 0px -55% 0px"});
+  document.querySelectorAll("section.blk").forEach(s=>io.observe(s));
+}
+
+function renderAll(){renderTraits();renderSim();renderChance();}
+renderAll();renderQuiz();
+})();
+</script>
+</body>
+</html>
