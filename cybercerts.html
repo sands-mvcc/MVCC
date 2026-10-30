@@ -1,12 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cybersecurity Certification Explorer</title>
+<script>
+  // Apply saved theme before first paint (default: light)
+  (function () {
+    try {
+      if (localStorage.getItem('cert-explorer-theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch (e) {}
+  })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* ── THEME TOKENS ── light is the default */
   :root {
+    color-scheme: light;
+    --bg-deep: #f4f7fb;
+    --bg-panel: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f0f5fc;
+    --accent-cyan: #0047AB;
+    --accent-blue: #1a5fd0;
+    --accent-green: #00875a;
+    --accent-amber: #b45309;
+    --accent-red: #c8102e;
+    --accent-purple: #7e22ce;
+    --text-bright: #0d1b2e;
+    --text-mid: #34506b;
+    --text-dim: #5f7590;
+    --cyan-rgb: 0,71,171;
+    --blue-rgb: 26,95,208;
+    --green-rgb: 0,135,90;
+    --amber-rgb: 180,83,9;
+    --red-rgb: 200,16,46;
+    --purple-rgb: 126,34,206;
+    --border-glow: rgba(0,71,171,0.2);
+    --grid-line: rgba(0,71,171,0.045);
+    --controls-bg: rgba(244,247,251,0.95);
+    --overlay-bg: rgba(13,27,46,0.55);
+    --hairline: rgba(13,27,46,0.18);
+    --tag-vendor-text: #1a5fd0;
+    --tag-green-text: #00875a;
+    --tag-amber-text: #b45309;
+    --tag-red-text: #c8102e;
+    --tag-purple-text: #7e22ce;
+    --card-shadow: 0 1px 3px rgba(13,27,46,0.08);
+    --scanline-color: transparent;
+    /* per-cert brand colors are darkened in light mode for readable text */
+    --accent-strength: 72%;
+    --title-gradient: linear-gradient(135deg, #0047AB 0%, #1a5fd0 50%, #00875a 100%);
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
     --bg-deep: #030b14;
     --bg-panel: #071520;
     --bg-card: #0a1e30;
@@ -20,8 +70,26 @@
     --text-bright: #e0f4ff;
     --text-mid: #7eb8d4;
     --text-dim: #3a6a82;
+    --cyan-rgb: 0,229,255;
+    --blue-rgb: 26,120,255;
+    --green-rgb: 0,255,157;
+    --amber-rgb: 255,179,0;
+    --red-rgb: 255,61,90;
+    --purple-rgb: 168,85,247;
     --border-glow: rgba(0,229,255,0.25);
     --grid-line: rgba(0,229,255,0.05);
+    --controls-bg: rgba(3,11,20,0.95);
+    --overlay-bg: rgba(3,11,20,0.92);
+    --hairline: rgba(255,255,255,0.15);
+    --tag-vendor-text: #64b3ff;
+    --tag-green-text: #00ff9d;
+    --tag-amber-text: #ffb300;
+    --tag-red-text: #ff3d5a;
+    --tag-purple-text: #c084fc;
+    --card-shadow: none;
+    --scanline-color: rgba(0,229,255,0.15);
+    --accent-strength: 100%;
+    --title-gradient: linear-gradient(135deg, #00e5ff 0%, #1a78ff 50%, #00ff9d 100%);
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,6 +104,7 @@
       linear-gradient(var(--grid-line) 1px, transparent 1px),
       linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: 50px 50px;
+    transition: background-color 0.3s, color 0.3s;
   }
 
   /* ── HEADER ── */
@@ -44,23 +113,56 @@
     padding: 48px 40px 36px;
     text-align: center;
     border-bottom: 1px solid var(--border-glow);
-    background: linear-gradient(180deg, rgba(0,229,255,0.06) 0%, transparent 100%);
+    background: linear-gradient(180deg, rgba(var(--cyan-rgb),0.06) 0%, transparent 100%);
     overflow: hidden;
   }
   header::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,229,255,0.08) 0%, transparent 70%);
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(var(--cyan-rgb),0.08) 0%, transparent 70%);
     pointer-events: none;
   }
+
+  /* ── THEME TOGGLE ── */
+  .theme-toggle {
+    position: absolute;
+    top: 16px; right: 16px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    color: var(--text-bright);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .theme-toggle:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+  .theme-toggle .theme-icon { font-size: 14px; line-height: 1; }
+
+  /* Visible keyboard focus everywhere */
+  .theme-toggle:focus-visible,
+  .cert-card:focus-visible,
+  .reset-btn:focus-visible,
+  .nav-btn:focus-visible,
+  .close-btn:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+  }
+
   .header-badge {
     display: inline-block;
     font-family: 'Share Tech Mono', monospace;
     font-size: 11px;
     color: var(--accent-cyan);
-    background: rgba(0,229,255,0.08);
-    border: 1px solid rgba(0,229,255,0.3);
+    background: rgba(var(--cyan-rgb),0.08);
+    border: 1px solid rgba(var(--cyan-rgb),0.3);
     padding: 4px 14px;
     border-radius: 2px;
     letter-spacing: 3px;
@@ -73,7 +175,7 @@
     font-weight: 700;
     letter-spacing: 3px;
     text-transform: uppercase;
-    background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 50%, var(--accent-green) 100%);
+    background: var(--title-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -88,6 +190,7 @@
     max-width: 600px;
     margin: 0 auto;
   }
+  [data-theme="light"] .subtitle { font-weight: 400; }
   .stats-bar {
     display: flex;
     justify-content: center;
@@ -118,7 +221,7 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(3,11,20,0.95);
+    background: var(--controls-bg);
     backdrop-filter: blur(12px);
     padding: 16px 40px;
     border-bottom: 1px solid var(--border-glow);
@@ -144,7 +247,7 @@
   }
   select, input[type="text"] {
     background: var(--bg-card);
-    border: 1px solid rgba(0,229,255,0.2);
+    border: 1px solid rgba(var(--cyan-rgb),0.2);
     color: var(--text-bright);
     padding: 8px 14px;
     border-radius: 3px;
@@ -156,15 +259,19 @@
     appearance: none;
     cursor: pointer;
   }
+  input[type="text"] { cursor: text; }
   select:focus, input[type="text"]:focus {
     outline: none;
     border-color: var(--accent-cyan);
-    box-shadow: 0 0 10px rgba(0,229,255,0.15);
+    box-shadow: 0 0 10px rgba(var(--cyan-rgb),0.15);
   }
-  select option { background: #0a1e30; }
+  select:focus-visible, input[type="text"]:focus-visible {
+    box-shadow: 0 0 0 2px rgba(var(--cyan-rgb),0.35);
+  }
+  select option { background: var(--bg-card); color: var(--text-bright); }
   .reset-btn {
     background: transparent;
-    border: 1px solid rgba(255,61,90,0.4);
+    border: 1px solid rgba(var(--red-rgb),0.4);
     color: var(--accent-red);
     padding: 8px 18px;
     border-radius: 3px;
@@ -176,7 +283,7 @@
     white-space: nowrap;
   }
   .reset-btn:hover {
-    background: rgba(255,61,90,0.1);
+    background: rgba(var(--red-rgb),0.1);
     border-color: var(--accent-red);
   }
   .count-display {
@@ -199,14 +306,17 @@
 
   /* ── CARD ── */
   .cert-card {
+    --acc-text: var(--accent-color, var(--accent-cyan));
+    --acc-text: color-mix(in srgb, var(--accent-color, var(--accent-cyan)) var(--accent-strength), #000);
     background: var(--bg-card);
-    border: 1px solid rgba(0,229,255,0.12);
+    border: 1px solid rgba(var(--cyan-rgb),0.12);
     border-radius: 6px;
     padding: 20px;
     cursor: pointer;
     transition: all 0.25s ease;
     position: relative;
     overflow: hidden;
+    box-shadow: var(--card-shadow);
   }
   .cert-card::before {
     content: '';
@@ -219,9 +329,9 @@
   }
   .cert-card:hover {
     background: var(--bg-card-hover);
-    border-color: rgba(0,229,255,0.4);
+    border-color: rgba(var(--cyan-rgb),0.4);
     transform: translateY(-3px);
-    box-shadow: 0 8px 32px rgba(0,229,255,0.1), 0 0 0 1px rgba(0,229,255,0.1);
+    box-shadow: 0 8px 32px rgba(var(--cyan-rgb),0.1), 0 0 0 1px rgba(var(--cyan-rgb),0.1);
   }
   .cert-card:hover::before { opacity: 1; }
   .cert-card.hidden { display: none; }
@@ -244,7 +354,7 @@
   .card-acronym {
     font-family: 'Share Tech Mono', monospace;
     font-size: 0.9rem;
-    color: var(--accent-color, var(--accent-cyan));
+    color: var(--acc-text);
     margin-bottom: 12px;
     font-weight: 700;
   }
@@ -262,15 +372,15 @@
     letter-spacing: 0.5px;
     text-transform: uppercase;
   }
-  .tag-vendor { background: rgba(26,120,255,0.15); color: #64b3ff; border: 1px solid rgba(26,120,255,0.25); }
-  .tag-domain { background: rgba(0,255,157,0.1); color: #00ff9d; border: 1px solid rgba(0,255,157,0.2); }
+  .tag-vendor { background: rgba(var(--blue-rgb),0.12); color: var(--tag-vendor-text); border: 1px solid rgba(var(--blue-rgb),0.25); }
+  .tag-domain { background: rgba(var(--green-rgb),0.1); color: var(--tag-green-text); border: 1px solid rgba(var(--green-rgb),0.2); }
   .tag-difficulty {
     border: 1px solid;
   }
-  .tag-difficulty.beginner { background: rgba(0,255,157,0.08); color: #00ff9d; border-color: rgba(0,255,157,0.25); }
-  .tag-difficulty.intermediate { background: rgba(255,179,0,0.08); color: #ffb300; border-color: rgba(255,179,0,0.25); }
-  .tag-difficulty.advanced { background: rgba(255,61,90,0.08); color: #ff3d5a; border-color: rgba(255,61,90,0.25); }
-  .tag-difficulty.expert { background: rgba(168,85,247,0.08); color: #c084fc; border-color: rgba(168,85,247,0.25); }
+  .tag-difficulty.beginner { background: rgba(var(--green-rgb),0.08); color: var(--tag-green-text); border-color: rgba(var(--green-rgb),0.25); }
+  .tag-difficulty.intermediate { background: rgba(var(--amber-rgb),0.08); color: var(--tag-amber-text); border-color: rgba(var(--amber-rgb),0.25); }
+  .tag-difficulty.advanced { background: rgba(var(--red-rgb),0.08); color: var(--tag-red-text); border-color: rgba(var(--red-rgb),0.25); }
+  .tag-difficulty.expert { background: rgba(var(--purple-rgb),0.08); color: var(--tag-purple-text); border-color: rgba(var(--purple-rgb),0.25); }
 
   .card-cost {
     font-family: 'Share Tech Mono', monospace;
@@ -284,7 +394,7 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(3,11,20,0.92);
+    background: var(--overlay-bg);
     backdrop-filter: blur(6px);
     z-index: 1000;
     overflow-y: auto;
@@ -293,13 +403,15 @@
   .modal-overlay.active { display: flex; align-items: flex-start; justify-content: center; }
 
   .modal {
+    --acc-text: var(--modal-accent, var(--accent-cyan));
+    --acc-text: color-mix(in srgb, var(--modal-accent, var(--accent-cyan)) var(--accent-strength), #000);
     background: var(--bg-panel);
-    border: 1px solid rgba(0,229,255,0.3);
+    border: 1px solid rgba(var(--cyan-rgb),0.3);
     border-radius: 8px;
     max-width: 820px;
     width: 100%;
     position: relative;
-    box-shadow: 0 0 80px rgba(0,229,255,0.08), 0 0 0 1px rgba(0,229,255,0.05);
+    box-shadow: 0 0 80px rgba(var(--cyan-rgb),0.08), 0 0 0 1px rgba(var(--cyan-rgb),0.05);
     overflow: hidden;
     animation: modalIn 0.3s ease;
   }
@@ -310,9 +422,9 @@
 
   .modal-header {
     padding: 28px 32px 20px;
-    border-bottom: 1px solid rgba(0,229,255,0.1);
+    border-bottom: 1px solid rgba(var(--cyan-rgb),0.1);
     position: relative;
-    background: linear-gradient(135deg, rgba(0,229,255,0.04) 0%, transparent 50%);
+    background: linear-gradient(135deg, rgba(var(--cyan-rgb),0.04) 0%, transparent 50%);
   }
   .modal-header::before {
     content: '';
@@ -335,11 +447,12 @@
     letter-spacing: 1px;
     color: var(--text-bright);
     margin-bottom: 4px;
+    padding-right: 40px;
   }
   .modal-acronym {
     font-family: 'Share Tech Mono', monospace;
     font-size: 1.1rem;
-    color: var(--modal-accent, var(--accent-cyan));
+    color: var(--acc-text);
     margin-bottom: 14px;
   }
   .modal-meta-row {
@@ -351,7 +464,7 @@
     position: absolute;
     top: 20px; right: 20px;
     background: transparent;
-    border: 1px solid rgba(255,255,255,0.15);
+    border: 1px solid var(--hairline);
     color: var(--text-mid);
     width: 32px; height: 32px;
     border-radius: 50%;
@@ -361,7 +474,7 @@
     transition: all 0.2s;
     line-height: 1;
   }
-  .close-btn:hover { background: rgba(255,61,90,0.1); border-color: var(--accent-red); color: var(--accent-red); }
+  .close-btn:hover { background: rgba(var(--red-rgb),0.1); border-color: var(--accent-red); color: var(--accent-red); }
 
   .modal-body {
     padding: 28px 32px;
@@ -373,11 +486,13 @@
     margin-bottom: 24px;
   }
   .info-block {
-    background: rgba(0,229,255,0.03);
-    border: 1px solid rgba(0,229,255,0.08);
+    background: rgba(var(--cyan-rgb),0.03);
+    border: 1px solid rgba(var(--cyan-rgb),0.1);
     border-radius: 5px;
     padding: 14px 16px;
   }
+  /* full-row block: spans however many columns exist (was "span 2", which overflowed on phones) */
+  .info-block.wide { grid-column: 1 / -1; }
   .info-block-label {
     font-family: 'Share Tech Mono', monospace;
     font-size: 9px;
@@ -393,10 +508,11 @@
     font-weight: 500;
   }
   .info-block-value.highlight {
-    color: var(--modal-accent, var(--accent-cyan));
+    color: var(--acc-text);
     font-family: 'Share Tech Mono', monospace;
     font-size: 1rem;
   }
+  .info-block-value.cost { color: var(--accent-amber); }
 
   .section-title {
     font-family: 'Rajdhani', sans-serif;
@@ -404,7 +520,7 @@
     letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--text-dim);
-    border-bottom: 1px solid rgba(0,229,255,0.08);
+    border-bottom: 1px solid rgba(var(--cyan-rgb),0.1);
     padding-bottom: 8px;
     margin-bottom: 14px;
     margin-top: 24px;
@@ -431,8 +547,8 @@
   }
 
   .prereq-box {
-    background: rgba(255,179,0,0.04);
-    border: 1px solid rgba(255,179,0,0.15);
+    background: rgba(var(--amber-rgb),0.05);
+    border: 1px solid rgba(var(--amber-rgb),0.2);
     border-radius: 5px;
     padding: 14px 16px;
     font-size: 0.88rem;
@@ -450,8 +566,8 @@
   }
 
   .renewal-box {
-    background: rgba(0,255,157,0.04);
-    border: 1px solid rgba(0,255,157,0.12);
+    background: rgba(var(--green-rgb),0.05);
+    border: 1px solid rgba(var(--green-rgb),0.15);
     border-radius: 5px;
     padding: 14px 16px;
     font-size: 0.88rem;
@@ -473,11 +589,11 @@
     display: flex;
     justify-content: space-between;
     padding: 16px 32px 24px;
-    border-top: 1px solid rgba(0,229,255,0.08);
+    border-top: 1px solid rgba(var(--cyan-rgb),0.1);
   }
   .nav-btn {
     background: transparent;
-    border: 1px solid rgba(0,229,255,0.2);
+    border: 1px solid rgba(var(--cyan-rgb),0.2);
     color: var(--text-mid);
     padding: 8px 20px;
     border-radius: 3px;
@@ -488,9 +604,9 @@
     transition: all 0.2s;
     display: flex; align-items: center; gap: 8px;
   }
-  .nav-btn:hover { background: rgba(0,229,255,0.06); border-color: var(--accent-cyan); color: var(--accent-cyan); }
+  .nav-btn:hover { background: rgba(var(--cyan-rgb),0.06); border-color: var(--accent-cyan); color: var(--accent-cyan); }
   .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-  .nav-btn:disabled:hover { background: transparent; border-color: rgba(0,229,255,0.2); color: var(--text-mid); }
+  .nav-btn:disabled:hover { background: transparent; border-color: rgba(var(--cyan-rgb),0.2); color: var(--text-mid); }
 
   /* no-results */
   .no-results {
@@ -512,7 +628,7 @@
     letter-spacing: 1px;
   }
 
-  /* scan line animation */
+  /* scan line animation (dark mode only — color is transparent in light) */
   @keyframes scanline {
     0% { transform: translateY(-100%); }
     100% { transform: translateY(100vh); }
@@ -521,24 +637,31 @@
     position: fixed;
     top: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.15), transparent);
+    background: linear-gradient(90deg, transparent, var(--scanline-color), transparent);
     animation: scanline 8s linear infinite;
     pointer-events: none;
     z-index: 9999;
   }
+  [data-theme="light"] .scanline { display: none; }
 
   footer {
     text-align: center;
     padding: 24px;
-    border-top: 1px solid rgba(0,229,255,0.06);
+    border-top: 1px solid rgba(var(--cyan-rgb),0.08);
     font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
     color: var(--text-dim);
     letter-spacing: 2px;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .scanline { display: none; }
+    .modal { animation: none; }
+    .cert-card:hover { transform: none; }
+  }
+
   @media (max-width: 600px) {
-    header { padding: 28px 20px 20px; }
+    header { padding: 64px 20px 20px; }
     .controls { padding: 12px 20px; }
     .cert-grid { padding: 20px 16px; }
     .modal-header, .modal-body, .modal-nav { padding-left: 20px; padding-right: 20px; }
@@ -549,23 +672,27 @@
 </head>
 <body>
 
-<div class="scanline"></div>
+<div class="scanline" aria-hidden="true"></div>
 
 <header>
+  <button type="button" class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-pressed="false" aria-label="Switch to dark mode">
+    <span class="theme-icon" id="themeIcon" aria-hidden="true">☾</span>
+    <span id="themeLabel">DARK</span>
+  </button>
   <div class="header-badge">// MORAINE VALLEY CC — CYBERSECURITY PROGRAM //</div>
   <h1>Certification Explorer</h1>
   <p class="subtitle">Your interactive guide to planning the cybersecurity certification journey. Click any card to explore full exam details.</p>
   <div class="stats-bar">
-    <div class="stat-item"><span class="stat-num">34</span><div class="stat-label">Certifications</div></div>
-    <div class="stat-item"><span class="stat-num">12</span><div class="stat-label">Vendors</div></div>
-    <div class="stat-item"><span class="stat-num">4</span><div class="stat-label">Difficulty Levels</div></div>
-    <div class="stat-item"><span class="stat-num">8</span><div class="stat-label">Knowledge Domains</div></div>
+    <div class="stat-item"><span class="stat-num" id="statCerts">34</span><div class="stat-label">Certifications</div></div>
+    <div class="stat-item"><span class="stat-num" id="statVendors">15</span><div class="stat-label">Vendors</div></div>
+    <div class="stat-item"><span class="stat-num" id="statLevels">4</span><div class="stat-label">Difficulty Levels</div></div>
+    <div class="stat-item"><span class="stat-num" id="statDomains">8</span><div class="stat-label">Knowledge Domains</div></div>
   </div>
 </header>
 
 <div class="controls">
   <div class="control-group">
-    <span class="control-label">Difficulty</span>
+    <label class="control-label" for="filterDifficulty">Difficulty</label>
     <select id="filterDifficulty">
       <option value="">All Levels</option>
       <option value="Beginner">Beginner</option>
@@ -575,7 +702,7 @@
     </select>
   </div>
   <div class="control-group">
-    <span class="control-label">Domain</span>
+    <label class="control-label" for="filterDomain">Domain</label>
     <select id="filterDomain">
       <option value="">All Domains</option>
       <option value="IT Fundamentals">IT Fundamentals</option>
@@ -589,7 +716,7 @@
     </select>
   </div>
   <div class="control-group">
-    <span class="control-label">Vendor</span>
+    <label class="control-label" for="filterVendor">Vendor</label>
     <select id="filterVendor">
       <option value="">All Vendors</option>
       <option value="CompTIA">CompTIA</option>
@@ -603,16 +730,18 @@
       <option value="Check Point">Check Point</option>
       <option value="Microsoft">Microsoft</option>
       <option value="Certiport/Pearson">Certiport / Pearson</option>
+      <option value="CWNP">CWNP</option>
+      <option value="NICCS / GIAC">NICCS / GIAC</option>
       <option value="SUSE">SUSE</option>
       <option value="Wireshark">Wireshark / Riverbed</option>
     </select>
   </div>
   <div class="control-group" style="max-width:220px">
-    <span class="control-label">Search</span>
+    <label class="control-label" for="searchInput">Search</label>
     <input type="text" id="searchInput" placeholder="e.g. Security+">
   </div>
   <button class="reset-btn" onclick="resetFilters()">↺ RESET</button>
-  <div class="count-display">Showing <span id="countDisplay">34</span> / 34</div>
+  <div class="count-display" aria-live="polite">Showing <span id="countDisplay">34</span> / <span id="totalDisplay">34</span></div>
 </div>
 
 <div class="cert-grid" id="certGrid">
@@ -627,13 +756,13 @@
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
-  <div class="modal" id="modalBox">
+  <div class="modal" id="modalBox" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-header" id="modalHeader">
       <div class="modal-num" id="modalNum"></div>
-      <div class="modal-title" id="modalTitle"></div>
+      <h2 class="modal-title" id="modalTitle"></h2>
       <div class="modal-acronym" id="modalAcronym"></div>
       <div class="modal-meta-row" id="modalMetaTags"></div>
-      <button class="close-btn" onclick="closeModal()">✕</button>
+      <button class="close-btn" id="closeBtn" onclick="closeModal()" aria-label="Close details">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
     <div class="modal-nav">
@@ -1495,16 +1624,46 @@ const certifications = [
   }
 ];
 
-// Color mappings
-const difficultyColors = {
-  "Beginner": "#00ff9d",
-  "Intermediate": "#ffb300",
-  "Advanced": "#ff6b35",
-  "Expert": "#ff3d5a"
-};
+// ══════════════════════════════════════════════════
+//  THEME (light default, persisted in localStorage)
+// ══════════════════════════════════════════════════
+const THEME_KEY = 'cert-explorer-theme';
+
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+function syncThemeButton() {
+  const dark = currentTheme() === 'dark';
+  const btn = document.getElementById('themeToggle');
+  btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+  btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  document.getElementById('themeIcon').textContent = dark ? '☀' : '☾';
+  document.getElementById('themeLabel').textContent = dark ? 'LIGHT' : 'DARK';
+}
+
+function toggleTheme() {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  syncThemeButton();
+}
+
+// ══════════════════════════════════════════════════
+//  HEADER STATS (computed from the data so they never drift)
+// ══════════════════════════════════════════════════
+function updateStats() {
+  const uniq = key => new Set(certifications.map(c => c[key])).size;
+  document.getElementById('statCerts').textContent = certifications.length;
+  document.getElementById('statVendors').textContent = uniq('vendor');
+  document.getElementById('statLevels').textContent = uniq('difficulty');
+  document.getElementById('statDomains').textContent = uniq('domain');
+  document.getElementById('totalDisplay').textContent = certifications.length;
+}
 
 let currentModalIndex = -1;
 let visibleIndices = certifications.map((_, i) => i);
+let lastFocused = null;
 
 function buildCards() {
   const grid = document.getElementById('certGrid');
@@ -1521,6 +1680,10 @@ function buildCards() {
     card.dataset.domain = cert.domain;
     card.dataset.vendor = cert.vendor;
     card.style.setProperty('--accent-color', cert.accentColor);
+    // Keyboard accessible: focusable and activates with Enter/Space
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `${cert.name} (${cert.acronym}) — view details`);
 
     const diffClass = cert.difficulty.toLowerCase();
 
@@ -1537,6 +1700,12 @@ function buildCards() {
     `;
 
     card.addEventListener('click', () => openModal(index));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openModal(index);
+      }
+    });
     grid.insertBefore(card, noResults);
   });
 }
@@ -1545,7 +1714,7 @@ function applyFilters() {
   const difficulty = document.getElementById('filterDifficulty').value;
   const domain = document.getElementById('filterDomain').value;
   const vendor = document.getElementById('filterVendor').value;
-  const search = document.getElementById('searchInput').value.toLowerCase();
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
 
   let count = 0;
   visibleIndices = [];
@@ -1583,15 +1752,18 @@ function resetFilters() {
 }
 
 function openModal(index) {
+  lastFocused = document.activeElement;
   currentModalIndex = index;
   renderModal(index);
   document.getElementById('modalOverlay').classList.add('active');
   document.body.style.overflow = 'hidden';
+  document.getElementById('closeBtn').focus();
 }
 
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('active');
   document.body.style.overflow = '';
+  if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
 }
 
 function handleOverlayClick(e) {
@@ -1610,8 +1782,7 @@ function navigateModal(dir) {
 function renderModal(index) {
   const cert = certifications[index];
 
-  document.getElementById('modalHeader').style.setProperty('--modal-accent', cert.accentColor);
-  document.querySelector('.modal').style.setProperty('--modal-accent', cert.accentColor);
+  document.getElementById('modalBox').style.setProperty('--modal-accent', cert.accentColor);
 
   document.getElementById('modalNum').textContent = `CERT #${String(cert.id).padStart(2,'0')} · ${cert.vendor}`;
   document.getElementById('modalTitle').textContent = cert.name;
@@ -1650,13 +1821,13 @@ function renderModal(index) {
       </div>
       <div class="info-block">
         <div class="info-block-label">💰 Cost (2025)</div>
-        <div class="info-block-value highlight" style="color:#ffb300">${cert.cost}</div>
+        <div class="info-block-value highlight cost">${cert.cost}</div>
       </div>
       <div class="info-block">
         <div class="info-block-label">📅 Validity Period</div>
         <div class="info-block-value">${cert.validity}</div>
       </div>
-      <div class="info-block" style="grid-column: span 2">
+      <div class="info-block wide">
         <div class="info-block-label">🖥 Testing Options</div>
         <div class="info-block-value">${cert.testing}</div>
       </div>
@@ -1684,19 +1855,39 @@ function renderModal(index) {
 
 // Keyboard nav
 document.addEventListener('keydown', e => {
-  if (!document.getElementById('modalOverlay').classList.contains('active')) return;
-  if (e.key === 'Escape') closeModal();
-  if (e.key === 'ArrowLeft') navigateModal(-1);
-  if (e.key === 'ArrowRight') navigateModal(1);
+  const modalOpen = document.getElementById('modalOverlay').classList.contains('active');
+
+  if (modalOpen) {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowLeft') navigateModal(-1);
+    if (e.key === 'ArrowRight') navigateModal(1);
+    // Keep Tab focus inside the dialog
+    if (e.key === 'Tab') {
+      const focusables = [...document.querySelectorAll('#modalBox button:not([disabled])')];
+      if (!focusables.length) return;
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    return;
+  }
+
+  // "T" toggles theme, unless the user is typing in a field
+  const tag = e.target.tagName.toLowerCase();
+  if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 't' || e.key === 'T') toggleTheme();
 });
 
-// Event listeners for filters
-['filterDifficulty','filterDomain','filterVendor','searchInput'].forEach(id => {
+// Event listeners for filters ("input" covers typing; "change" covers selects)
+['filterDifficulty','filterDomain','filterVendor'].forEach(id => {
   document.getElementById(id).addEventListener('change', applyFilters);
-  document.getElementById(id).addEventListener('input', applyFilters);
 });
+document.getElementById('searchInput').addEventListener('input', applyFilters);
 
 // Init
+syncThemeButton();
+updateStats();
 buildCards();
 applyFilters();
 </script>
