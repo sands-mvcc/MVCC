@@ -1,673 +1,1139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Cracking Educational Demonstration Tool</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Password Cracking Lab: Strength, Storage, and Attacks</title>
+<script>
+(function(){var t="light";try{if(localStorage.getItem("pwlab-theme")==="dark")t="dark";}catch(e){}document.documentElement.setAttribute("data-theme",t);})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible+Mono:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f7fb; --surface:#ffffff; --surface-2:#eaf0f8; --ink:#13233b; --ink-2:#4a5b74; --line:#d4deec;
+  --navy:#0047AB; --on-navy:#ffffff; --green:#00a86b; --on-green:#ffffff;
+  --s-common:#c8102e; --s-word:#0047AB; --s-ctx:#8a3ffc; --s-year:#b57600; --s-seq:#7a4cc4; --s-kbd:#0c8a7d; --s-rep:#e2620f; --s-rand:#00a86b;
+  --st0:#c8102e; --st1:#e2620f; --st2:#b88400; --st3:#2f9a5a; --st4:#00a86b;
+  --q1:#c8102e; --q2:#e2620f; --q3:#b88400; --q4:#00a86b; --unc:#8a99ad;
+  --shadow:0 1px 2px rgba(19,35,59,.06),0 8px 24px rgba(19,35,59,.06);
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"Atkinson Hyperlegible Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1424; --surface:#132037; --surface-2:#1a2a47; --ink:#e6edf8; --ink-2:#a3b2ca; --line:#2a3c5e;
+    --navy:#7aa7ff; --on-navy:#0b1424; --green:#34d39c; --on-green:#0b1424;
+    --s-common:#ff5d72; --s-word:#7aa7ff; --s-ctx:#b28cff; --s-year:#f2bf45; --s-seq:#c9a3ff; --s-kbd:#3fd1bd; --s-rep:#ff8c42; --s-rand:#34d39c;
+    --st0:#ff5d72; --st1:#ff8c42; --st2:#f2bf45; --st3:#7fdc9f; --st4:#34d39c;
+    --q1:#ff5d72; --q2:#ff8c42; --q3:#f2bf45; --q4:#34d39c; --unc:#6f7f99;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1424; --surface:#132037; --surface-2:#1a2a47; --ink:#e6edf8; --ink-2:#a3b2ca; --line:#2a3c5e;
+  --navy:#7aa7ff; --on-navy:#0b1424; --green:#34d39c; --on-green:#0b1424;
+  --s-common:#ff5d72; --s-word:#7aa7ff; --s-ctx:#b28cff; --s-year:#f2bf45; --s-seq:#c9a3ff; --s-kbd:#3fd1bd; --s-rep:#ff8c42; --s-rand:#34d39c;
+  --st0:#ff5d72; --st1:#ff8c42; --st2:#f2bf45; --st3:#7fdc9f; --st4:#34d39c;
+  --q1:#ff5d72; --q2:#ff8c42; --q3:#f2bf45; --q4:#34d39c; --unc:#6f7f99;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 76px)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:1.0625rem;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.15;margin:0 0 .5em;letter-spacing:-.01em}
+h2{font-size:clamp(1.6rem,3vw,2.1rem);font-weight:700}
+h3{font-size:1.2rem;font-weight:700}
+p{margin:0 0 1em;max-width:70ch}
+a{color:var(--navy)}
+code,.mono{font-family:var(--mono);font-size:.92em}
+code{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:.05rem .35rem;overflow-wrap:anywhere}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px;border-radius:6px}
+sup{font-size:.62em;line-height:0}
 
-        body {
-            font-family: 'Courier New', monospace;
-            background-color: white;
-            color: black;
-            height: 100vh;
-            overflow: hidden;
-        }
+/* header */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar .in{max-width:1240px;margin:0 auto;padding:.7rem 1.25rem;display:flex;align-items:center;gap:1rem}
+.mark{display:flex;align-items:center;gap:.6rem;font-family:var(--display);font-weight:700;font-size:1.05rem}
+.mark svg{flex:none}
+.topbar .sp{flex:1}
+.theme-btn{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--line);background:var(--surface-2);padding:.45rem .85rem;border-radius:999px;cursor:pointer;font-size:.92rem}
+.theme-btn:hover{border-color:var(--navy)}
 
-        .container {
-            display: flex;
-            height: 100vh;
-        }
+/* layout */
+.wrap{max-width:1240px;margin:0 auto;padding:0 1.25rem;display:grid;grid-template-columns:1fr;gap:2rem}
+@media (min-width:1040px){.wrap{grid-template-columns:210px minmax(0,1fr)}}
+.rail{display:none}
+@media (min-width:1040px){
+  .rail{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px);align-self:start;padding-top:2.5rem}
+  .rail ol{list-style:none;margin:0;padding:0;counter-reset:s;border-left:2px solid var(--line)}
+  .rail li{counter-increment:s}
+  .rail a{display:flex;gap:.6rem;padding:.38rem .8rem;color:var(--ink-2);text-decoration:none;font-size:.93rem;margin-left:-2px;border-left:2px solid transparent}
+  .rail a::before{content:counter(s);font-family:var(--display);font-weight:700;color:var(--navy);min-width:1.4ch}
+  .rail a:hover,.rail a.on{color:var(--ink);border-left-color:var(--navy)}
+}
+main{min-width:0;padding-bottom:4rem}
+section.blk{padding:3rem 0 1rem;border-top:1px solid var(--line)}
+.step-no{font-family:var(--display);font-weight:800;color:var(--navy);font-size:1rem;display:block;margin-bottom:.35rem}
+.lede{color:var(--ink-2);font-size:1.1rem}
 
-        .navigation {
-            width: 250px;
-            background-color: #1a1a1a;
-            color: white;
-            padding: 20px;
-            border-right: 3px solid #00ff00;
-        }
+/* hero */
+.hero{padding:2.5rem 0 2rem;display:grid;gap:2rem;align-items:center}
+@media (min-width:900px){.hero{grid-template-columns:1fr 1fr}}
+.hero h1{font-size:clamp(2.3rem,5.2vw,3.7rem);font-weight:800;letter-spacing:-.025em;margin-bottom:.35em}
+.hero h1 span{display:block;font-weight:500;font-size:.46em;color:var(--ink-2);letter-spacing:0;margin-top:.4em}
+.facts{display:flex;flex-wrap:wrap;gap:1.4rem;margin:1.2rem 0 1.4rem;padding:0}
+.facts div{min-width:9rem}
+.facts dt{font-size:.85rem;color:var(--ink-2)}
+.facts dd{margin:0;font-weight:700}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.15rem;border-radius:10px;border:1px solid transparent;cursor:pointer;font-weight:700;text-decoration:none}
+.btn-p{background:var(--navy);color:var(--on-navy)}
+.btn-p:hover{filter:brightness(1.08)}
+.btn-g{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn-g:hover{border-color:var(--navy)}
+.btn-s{padding:.45rem .8rem;font-size:.92rem;border-radius:8px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
 
-        .nav-title {
-            color: #00ff00;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #00ff00;
-            padding-bottom: 10px;
-        }
+/* hero specimen: the one orchestrated moment */
+.spec{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1.6rem 1.5rem 1.3rem;box-shadow:var(--shadow)}
+.spec-cap{font-size:.9rem;color:var(--ink-2);margin:0 0 .8rem}
+.spec-row{display:flex;flex-wrap:wrap;gap:.15rem;align-items:flex-start}
+.spec .sg{display:flex;flex-direction:column}
+.spec .sg b{font-family:var(--mono);font-weight:700;font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;color:var(--ink);padding:0 .05em}
+.spec .sg i{display:block;height:6px;border-radius:3px;background:var(--c);transform-origin:left;transform:scaleX(0);animation:grow .5s cubic-bezier(.2,.8,.2,1) forwards}
+.spec .sg small{font-size:.8rem;color:var(--ink-2);margin-top:.35rem;opacity:0;animation:fade .4s ease-out forwards;max-width:11ch;line-height:1.25}
+.spec .sg:nth-child(1) i{animation-delay:.3s}.spec .sg:nth-child(1) small{animation-delay:.45s}
+.spec .sg:nth-child(2) i{animation-delay:.7s}.spec .sg:nth-child(2) small{animation-delay:.85s}
+.spec .sg:nth-child(3) i{animation-delay:1.1s}.spec .sg:nth-child(3) small{animation-delay:1.25s}
+.spec-res{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.3rem 0 .5rem;padding-top:1rem;border-top:1px solid var(--line)}
+.spec-res dt{font-size:.88rem;color:var(--ink-2)}
+.spec-res dd{margin:0;font-family:var(--display);font-weight:800;font-size:clamp(1.15rem,2.4vw,1.55rem);line-height:1.2}
+.spec-res div:last-child dd{color:var(--st0);opacity:0;animation:fade .5s ease-out 1.7s forwards}
+@keyframes grow{to{transform:none}}
+@keyframes fade{to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
 
-        .nav-item {
-            background-color: #2a2a2a;
-            color: white;
-            padding: 12px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            border: 1px solid #444;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:1.4rem;box-shadow:var(--shadow)}
+.grid3{display:grid;gap:1rem}
+@media (min-width:820px){.grid3{grid-template-columns:repeat(3,1fr)}}
+.ksa h3{display:flex;align-items:center;gap:.55rem}
+.ksa h3 b{display:grid;place-items:center;width:2rem;height:2rem;border-radius:8px;background:var(--navy);color:var(--on-navy);font-size:1rem}
+.ksa ul{margin:0;padding-left:1.1rem}
+.ksa li{margin:.35rem 0}
+.obj{counter-reset:o;list-style:none;padding:0;margin:0 0 1.5rem;display:grid;gap:.5rem}
+.obj li{counter-increment:o;display:flex;gap:.8rem;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.75rem 1rem}
+.obj li::before{content:counter(o);font-family:var(--display);font-weight:800;color:var(--green);font-size:1.25rem;line-height:1.3;min-width:1.2ch}
+.roles{display:flex;flex-wrap:wrap;gap:.5rem;margin:.5rem 0 0;padding:0;list-style:none}
+.roles li{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:.3rem .8rem;font-size:.92rem}
+.note{font-size:.9rem;color:var(--ink-2)}
+.warn{display:flex;gap:.6rem;align-items:flex-start;font-size:.92rem;background:color-mix(in srgb,var(--st2) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--st2) 50%,transparent);border-radius:10px;padding:.6rem .8rem;margin:0 0 1rem}
 
-        .nav-item:hover, .nav-item.active {
-            background-color: #00ff00;
-            color: black;
-            border-color: #00ff00;
-        }
+/* flip cards */
+.cards{display:grid;gap:.9rem;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.flip{perspective:900px;border:0;padding:0;background:none;cursor:pointer;height:160px;text-align:left}
+.flip .fi{position:relative;display:block;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.flip.on .fi{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;border-radius:14px;padding:1rem;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid var(--line);display:flex;flex-direction:column}
+.flip .f{background:var(--surface);justify-content:space-between}
+.flip .f strong{font-family:var(--display);font-size:1.25rem;line-height:1.2}
+.flip .f small{color:var(--ink-2);font-size:.82rem}
+.flip .b{background:var(--navy);color:var(--on-navy);transform:rotateY(180deg);font-size:.9rem;line-height:1.42;justify-content:center}
 
-        .main-content {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
-            background-color: white;
-        }
+/* simulator */
+.sim{display:grid;gap:1.25rem}
+.scen{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.35rem;scrollbar-width:thin}
+.scen-btn{flex:none;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:.6rem .85rem;cursor:pointer;min-width:160px}
+.scen-btn strong{display:block;font-size:.96rem}
+.scen-btn span{font-size:.8rem;color:var(--ink-2)}
+.scen-btn[aria-pressed="true"]{border-color:var(--navy);background:color-mix(in srgb,var(--navy) 10%,var(--surface));box-shadow:inset 0 0 0 1px var(--navy)}
+.tinfo{display:flex;flex-wrap:wrap;gap:.4rem 1rem;align-items:baseline}
+.tinfo h3{margin:0;font-size:1.45rem}
+.tag{font-size:.85rem;border-radius:999px;padding:.15rem .65rem;background:var(--surface-2);border:1px solid var(--line)}
+.about{font-size:.95rem;color:var(--ink-2);margin:.3rem 0 0}
+.sim-body{display:grid;gap:1.25rem}
+@media (min-width:1100px){.sim-body{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)}}
+.field{display:grid;gap:.35rem;margin-bottom:1rem}
+.field>label,.flabel{font-weight:700;font-size:.95rem}
+.pwrow{display:flex;gap:.5rem}
+.pwrow input{flex:1;min-width:0}
+input.txt{border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:.6rem .75rem}
+input.pw{font-family:var(--mono);font-size:1.2rem;letter-spacing:.02em}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:.35rem .65rem;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;line-height:1.25}
+.chip .g{font-family:var(--mono);font-size:.98rem}
+.chip .l{font-size:.75rem;color:var(--ink-2)}
+.chip[aria-pressed="true"]{border-color:var(--navy);background:color-mix(in srgb,var(--navy) 12%,var(--surface));box-shadow:inset 0 0 0 1px var(--navy)}
+.chip[disabled]{opacity:.45;cursor:not-allowed}
+.modes{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.modes button{border:0;background:none;padding:.5rem .9rem;cursor:pointer;font-size:.93rem}
+.modes button+button{border-left:1px solid var(--line)}
+.modes button[aria-pressed="true"]{background:var(--navy);color:var(--on-navy);font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+.anat{display:flex;flex-wrap:wrap;gap:6px;min-height:92px;align-items:stretch}
+.seg{display:flex;flex-direction:column;justify-content:space-between;border-radius:12px;padding:.55rem .7rem;background:color-mix(in srgb,var(--c) 15%,var(--surface));border:1px solid color-mix(in srgb,var(--c) 50%,transparent);border-bottom:5px solid var(--c);animation:pop .3s ease-out backwards;min-width:3.2rem}
+.seg .t{font-family:var(--mono);font-weight:700;font-size:1.35rem;white-space:pre-wrap;word-break:break-all}
+.seg .l{font-size:.76rem;color:var(--ink-2);line-height:1.3;margin-top:.2rem}
+.seg.hid{--c:var(--line);background:var(--surface-2);border-style:dashed}
+.empty{font-size:.92rem;color:var(--ink-2);margin:0;align-self:center}
+.howto{margin:.6rem 0 0;padding-left:1.2rem;font-size:.95rem;color:var(--ink-2)}
+.howto li{margin:.3rem 0}
+.howto b{color:var(--ink)}
+.build{display:grid;gap:.7rem;margin-top:1rem;padding:1rem;border:1px dashed var(--line);border-radius:12px;background:var(--surface-2)}
+.build .bf{display:grid;grid-template-columns:1fr 8rem;gap:.6rem;align-items:center}
+.build input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:.4rem .5rem;width:100%}
+.build input.ok{border:2px solid var(--st4)}
+.build input.bad{border:2px solid var(--st0)}
+.res h4{font-size:1rem;margin:1.2rem 0 .5rem}
+.res h4:first-child{margin-top:0}
+.verdict{display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap}
+.verdict strong{font-family:var(--display);font-size:1.7rem;color:var(--vc)}
+.meter{position:relative;height:16px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin:.5rem 0 .3rem}
+.meter span{position:absolute;inset:0 auto 0 0;background:var(--vc);border-radius:999px;transition:width .4s}
+.ticks{display:flex;justify-content:space-between;font-size:.74rem;color:var(--ink-2)}
+.bits{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.8rem}
+.bits div{border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem}
+.bits dt{font-size:.82rem;color:var(--ink-2)}
+.bits dd{margin:0;font-family:var(--display);font-weight:800;font-size:1.35rem}
+.tbl{overflow-x:auto}
+table.ct{border-collapse:collapse;width:100%;font-size:.92rem}
+table.ct th,table.ct td{text-align:left;padding:.42rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}
+table.ct th{color:var(--ink-2);font-weight:700}
+table.ct tr.cur td{background:color-mix(in srgb,var(--navy) 9%,var(--surface));font-weight:700}
+table.ct td.n{font-variant-numeric:tabular-nums}
+.check{list-style:none;padding:0;margin:0;display:grid;gap:.35rem}
+.check li{display:grid;grid-template-columns:3.4rem 1fr;gap:.6rem;align-items:start;font-size:.94rem}
+.pf{font-size:.78rem;font-weight:700;border-radius:6px;padding:.08rem .4rem;text-align:center}
+.pf.y{background:color-mix(in srgb,var(--st4) 18%,var(--surface));color:var(--ink);border:1px solid var(--st4)}
+.pf.n{background:color-mix(in srgb,var(--st0) 14%,var(--surface));color:var(--ink);border:1px solid var(--st0)}
+.check small{color:var(--ink-2)}
+.say{background:color-mix(in srgb,var(--green) 10%,var(--surface));border-left:4px solid var(--green);border-radius:0 12px 12px 0;padding:.85rem 1rem;font-size:.97rem}
+.say p{margin:0 0 .4rem}
+.say ul{margin:0;padding-left:1.1rem}
+.say li{margin:.25rem 0}
+.predict{display:grid;gap:.7rem}
+.predict label{font-weight:700}
+.predict select{padding:.5rem;border-radius:8px;border:1px solid var(--line);background:var(--surface);max-width:22rem}
+.fb{border-radius:10px;padding:.7rem .9rem;font-size:.95rem}
+.fb.good{background:color-mix(in srgb,var(--st4) 14%,var(--surface));border:1px solid var(--st4)}
+.fb.bad{background:color-mix(in srgb,var(--st0) 10%,var(--surface));border:1px solid var(--st0)}
 
-        .content-section {
-            display: none;
-        }
+/* odds + crack dots */
+.dots{display:flex;flex-wrap:wrap;gap:5px;min-height:46px;padding:.8rem;border:1px dashed var(--line);border-radius:12px;background:var(--surface-2);align-items:center}
+.dots i{width:18px;height:18px;border-radius:50%;display:block;animation:pop .25s ease-out backwards}
+.legend{list-style:none;padding:0;margin:.6rem 0 0;display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.88rem}
+.legend li{display:flex;align-items:center;gap:.4rem}
+.legend .sw{width:12px;height:12px;border-radius:50%}
+.two{display:grid;gap:1rem}
+@media (min-width:760px){.two{grid-template-columns:1fr 1fr}}
 
-        .content-section.active {
-            display: block;
-        }
+/* hash lab */
+.hash{font-family:var(--mono);font-size:.95rem;word-break:break-all;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:.55rem .7rem;line-height:1.5}
+.hash .d{background:color-mix(in srgb,var(--st1) 30%,transparent);border-radius:3px}
+.hash.match{border-color:var(--st0);box-shadow:inset 0 0 0 1px var(--st0)}
+.kv{display:grid;grid-template-columns:7.5rem 1fr;gap:.5rem .8rem;align-items:start;margin:.6rem 0}
+.kv dt{font-size:.88rem;color:var(--ink-2);padding-top:.55rem}
+.kv dd{margin:0;min-width:0}
+.stat{font-family:var(--display);font-weight:800;font-size:1.4rem}
+select.sel{padding:.45rem .6rem;border-radius:8px;border:1px solid var(--line);background:var(--surface)}
 
-        .section-title {
-            color: #00ff00;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            background-color: black;
-            padding: 15px;
-            border-radius: 5px;
-        }
+/* crack lab */
+.prog{height:12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin:.7rem 0 .3rem}
+.prog span{display:block;height:100%;width:0;background:var(--navy);transition:width .15s}
+.atk{display:grid;gap:.6rem;margin:1rem 0}
+.cmd{font-family:var(--mono);font-size:.86rem;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.45rem .6rem;overflow-x:auto;white-space:pre}
+.badge{display:inline-block;font-size:.78rem;font-weight:700;border-radius:6px;padding:.05rem .45rem;border:1px solid var(--bc);background:color-mix(in srgb,var(--bc) 15%,var(--surface))}
 
-        .tool-container {
-            background-color: #f8f8f8;
-            border: 2px solid #00ff00;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
+/* cases & quiz */
+.cases{display:grid;gap:1rem}
+@media (min-width:900px){.cases{grid-template-columns:1fr 1fr}}
+.case h3{font-size:1.12rem}
+.case .meta{font-size:.85rem;color:var(--ink-2);margin-bottom:.5rem}
+fieldset{border:0;padding:0;margin:.6rem 0}
+legend{font-weight:700;margin-bottom:.4rem;padding:0}
+.opt{display:flex;gap:.55rem;align-items:flex-start;padding:.45rem .6rem;border:1px solid var(--line);border-radius:9px;margin:.35rem 0;cursor:pointer;background:var(--surface)}
+.opt:hover{border-color:var(--navy)}
+.opt input{margin-top:.35rem;accent-color:var(--navy)}
+.opt.right{border-color:var(--st4);background:color-mix(in srgb,var(--st4) 10%,var(--surface))}
+.opt.wrong{border-color:var(--st0);background:color-mix(in srgb,var(--st0) 8%,var(--surface))}
+.qitem{padding:1.1rem 0;border-bottom:1px solid var(--line)}
+.qitem:last-child{border-bottom:0}
+.qitem .qn{font-family:var(--display);font-weight:700;color:var(--navy)}
+.score{font-family:var(--display);font-size:1.4rem;font-weight:700}
 
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-group label {
-            display: block;
-            color: black;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .input-group input, .input-group select {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #00ff00;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-        }
-
-        .crack-button {
-            background-color: #00ff00;
-            color: black;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            font-size: 16px;
-            margin: 10px 5px;
-            transition: all 0.3s ease;
-        }
-
-        .crack-button:hover {
-            background-color: #00cc00;
-            transform: translateY(-2px);
-        }
-
-        .crack-button:disabled {
-            background-color: #ccc;
-            color: #666;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .output-terminal {
-            background-color: black;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            min-height: 200px;
-            white-space: pre-wrap;
-            overflow-y: auto;
-            border: 2px solid #00ff00;
-            margin-top: 15px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background-color: #333;
-            border-radius: 10px;
-            margin: 10px 0;
-            overflow: hidden;
-            border: 1px solid #00ff00;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background-color: #00ff00;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .educational-note {
-            background-color: #fff3cd;
-            border: 2px solid #ffc107;
-            color: #856404;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .hash-display {
-            background-color: #000;
-            color: #00ff00;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            word-break: break-all;
-            margin: 10px 0;
-            border: 1px solid #00ff00;
-        }
-
-        .method-explanation {
-            background-color: #e7f3ff;
-            border-left: 4px solid #2196F3;
-            padding: 15px;
-            margin: 15px 0;
-        }
-
-        .attack-methods {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .method-card {
-            border: 2px solid #00ff00;
-            border-radius: 8px;
-            padding: 15px;
-            background-color: #f9f9f9;
-        }
-
-        .method-card h3 {
-            color: #00ff00;
-            background-color: black;
-            padding: 8px;
-            margin: -15px -15px 10px -15px;
-            border-radius: 6px 6px 0 0;
-        }
-
-        .stats-display {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat-box {
-            background-color: black;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 5px;
-            text-align: center;
-            border: 2px solid #00ff00;
-        }
-
-        .warning {
-            background-color: #f8d7da;
-            border: 2px solid #dc3545;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
-        .cursor::after {
-            content: '_';
-            animation: blink 1s infinite;
-        }
-    </style>
+/* accordions */
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:.6rem 0}
+summary{cursor:pointer;padding:.9rem 1.1rem;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:1rem}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--display);font-size:1.3rem;line-height:1;color:var(--navy)}
+details[open] summary::after{content:"−"}
+details .dc{padding:0 1.1rem 1rem}
+details .dc ul,details .dc ol{padding-left:1.2rem;margin:.3rem 0}
+details .dc li{margin:.3rem 0}
+.plan{width:100%;border-collapse:collapse;font-size:.94rem}
+.plan th,.plan td{text-align:left;vertical-align:top;padding:.5rem .6rem;border-bottom:1px solid var(--line)}
+.plan th{font-weight:700;color:var(--ink-2)}
+footer{border-top:1px solid var(--line);padding:1.5rem 0;color:var(--ink-2);font-size:.88rem}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="navigation">
-            <div class="nav-title">CYBERSECURITY LAB</div>
-            <div class="nav-item active" onclick="showSection('overview')">Overview</div>
-            <div class="nav-item" onclick="showSection('linux-cracking')">Linux Password Cracking</div>
-            <div class="nav-item" onclick="showSection('windows-cracking')">Windows Password Cracking</div>
-            <div class="nav-item" onclick="showSection('methods')">Attack Methods</div>
-            <div class="nav-item" onclick="showSection('defense')">Defense Strategies</div>
+<header class="topbar">
+  <div class="in">
+    <div class="mark">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="1" y="6" width="26" height="16" rx="5" fill="var(--navy)"/><circle cx="8" cy="14" r="2.2" fill="var(--on-navy)"/><circle cx="14" cy="14" r="2.2" fill="var(--on-navy)"/><rect x="18.5" y="11.5" width="5.5" height="5" rx="1.5" fill="var(--green)"/></svg>
+      Password Lab
+    </div>
+    <div class="sp"></div>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch to dark mode">
+      <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+      <span id="themeTxt">Dark mode</span>
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="rail" aria-label="Lesson sections">
+    <ol>
+      <li><a href="#why">Why it matters</a></li>
+      <li><a href="#vocab">Vocabulary</a></li>
+      <li><a href="#sim">Strength lab</a></li>
+      <li><a href="#odds">Guessing odds</a></li>
+      <li><a href="#hash">Hashing and salt</a></li>
+      <li><a href="#crack">Crack the dump</a></li>
+      <li><a href="#cases">Scenarios</a></li>
+      <li><a href="#quiz">Check yourself</a></li>
+      <li><a href="#beyond">Beyond the meter</a></li>
+      <li><a href="#guide">Instructor guide</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div>
+        <h1>Password Cracking Lab<span>How attackers guess passwords, and how defenders make guessing fail</span></h1>
+        <p class="lede">A password can look complex and still fall in seconds. In this lab you will measure strength the way an attacker does, store passwords the way a defender should, run real cracking attacks against a practice database, and explain what you find in plain language.</p>
+        <dl class="facts">
+          <div><dt>Audience</dt><dd>Cybersecurity students</dd></div>
+          <div><dt>Time</dt><dd>90–120 minutes</dd></div>
+          <div><dt>Prerequisite</dt><dd>Intro security concepts</dd></div>
+        </dl>
+        <a class="btn btn-p" href="#sim">Open the strength lab</a>
+        <a class="btn btn-g" href="#why" style="margin-left:.4rem">Start the lesson</a>
+      </div>
+      <div class="spec" role="img" aria-label="The password Summer2026! split into a capitalized dictionary word, a year, and a common symbol.">
+        <p class="spec-cap">Meets most complexity rules. Watch how an attacker reads it.</p>
+        <div class="spec-row" aria-hidden="true">
+          <div class="sg" style="--c:var(--s-word)"><b>Summer</b><i></i><small>dictionary word, capitalized</small></div>
+          <div class="sg" style="--c:var(--s-year)"><b>2026</b><i></i><small>a recent year</small></div>
+          <div class="sg" style="--c:var(--s-rand)"><b>!</b><i></i><small>most common symbol</small></div>
         </div>
-
-        <div class="main-content">
-            <div id="overview" class="content-section active">
-                <div class="section-title">Password Cracking Educational Laboratory</div>
-                
-                <div class="educational-note">
-                    <strong>EDUCATIONAL PURPOSE ONLY:</strong> This tool is designed for cybersecurity education and demonstration purposes. It shows how passwords can be vulnerable to various attack methods. All simulations are limited to 4-character passwords for educational efficiency.
-                </div>
-
-                <div class="warning">
-                    <strong>ETHICAL USE DISCLAIMER:</strong> This tool should only be used for educational purposes, authorized penetration testing, and security research. Unauthorized password cracking is illegal and unethical.
-                </div>
-
-                <h3>Learning Objectives:</h3>
-                <ul style="margin: 20px 0; line-height: 1.6;">
-                    <li>Understand how Linux and Windows store password hashes</li>
-                    <li>Learn about different password cracking attack methods</li>
-                    <li>Recognize the importance of strong password policies</li>
-                    <li>Explore defense mechanisms against password attacks</li>
-                </ul>
-
-                <div class="method-explanation">
-                    <h4>How Password Cracking Works:</h4>
-                    <p>Password cracking involves recovering plaintext passwords from their hashed counterparts. Operating systems don't store passwords in plain text but instead store cryptographic hashes. Attackers try to reverse this process through various methods.</p>
-                </div>
-            </div>
-
-            <div id="linux-cracking" class="content-section">
-                <div class="section-title">Linux Password Cracking Simulation</div>
-                
-                <div class="educational-note">
-                    Linux systems store password hashes in /etc/shadow using algorithms like MD5, SHA-256, SHA-512, or yescrypt. The format is typically $algorithm$salt$hash.
-                </div>
-
-                <div class="tool-container">
-                    <h3>Linux Hash Generator & Cracker</h3>
-                    
-                    <div class="input-group">
-                        <label for="linux-password">Enter Password (max 4 characters):</label>
-                        <input type="password" id="linux-password" maxlength="4" placeholder="e.g., abc1">
-                    </div>
-
-                    <div class="input-group">
-                        <label for="linux-algorithm">Hash Algorithm:</label>
-                        <select id="linux-algorithm">
-                            <option value="md5">MD5 ($1$)</option>
-                            <option value="sha256">SHA-256 ($5$)</option>
-                            <option value="sha512" selected>SHA-512 ($6$)</option>
-                        </select>
-                    </div>
-
-                    <button class="crack-button" onclick="generateLinuxHash()">Generate Hash</button>
-                    <button class="crack-button" onclick="crackLinuxPassword()" id="linux-crack-btn" disabled>Start Cracking</button>
-
-                    <div id="linux-hash-display" class="hash-display" style="display: none;"></div>
-                    
-                    <div id="linux-progress" class="progress-bar" style="display: none;">
-                        <div id="linux-progress-fill" class="progress-fill"></div>
-                    </div>
-
-                    <div id="linux-output" class="output-terminal"></div>
-                </div>
-
-                <div class="method-explanation">
-                    <h4>Linux Password Storage:</h4>
-                    <p>Linux stores password hashes in /etc/shadow with salt to prevent rainbow table attacks. The hash format includes the algorithm identifier, salt, and the actual hash value.</p>
-                </div>
-            </div>
-
-            <div id="windows-cracking" class="content-section">
-                <div class="section-title">Windows Password Cracking Simulation</div>
-                
-                <div class="educational-note">
-                    Windows systems store password hashes in the SAM database using NTLM (NT) hashing. These hashes are typically extracted using tools like Mimikatz or pwdump.
-                </div>
-
-                <div class="tool-container">
-                    <h3>Windows NTLM Hash Generator & Cracker</h3>
-                    
-                    <div class="input-group">
-                        <label for="windows-password">Enter Password (max 4 characters):</label>
-                        <input type="password" id="windows-password" maxlength="4" placeholder="e.g., pass">
-                    </div>
-
-                    <div class="input-group">
-                        <label for="windows-algorithm">Hash Type:</label>
-                        <select id="windows-algorithm">
-                            <option value="ntlm" selected>NTLM (NT Hash)</option>
-                            <option value="lm">LM Hash (Legacy)</option>
-                        </select>
-                    </div>
-
-                    <button class="crack-button" onclick="generateWindowsHash()">Generate Hash</button>
-                    <button class="crack-button" onclick="crackWindowsPassword()" id="windows-crack-btn" disabled>Start Cracking</button>
-
-                    <div id="windows-hash-display" class="hash-display" style="display: none;"></div>
-                    
-                    <div id="windows-progress" class="progress-bar" style="display: none;">
-                        <div id="windows-progress-fill" class="progress-fill"></div>
-                    </div>
-
-                    <div id="windows-output" class="output-terminal"></div>
-                </div>
-
-                <div class="method-explanation">
-                    <h4>Windows Password Storage:</h4>
-                    <p>Windows stores NTLM hashes in the SAM database. Unlike Linux, Windows NTLM hashes are not salted, making them more vulnerable to rainbow table attacks.</p>
-                </div>
-            </div>
-
-            <div id="methods" class="content-section">
-                <div class="section-title">Password Cracking Attack Methods</div>
-
-                <div class="attack-methods">
-                    <div class="method-card">
-                        <h3>Dictionary Attack</h3>
-                        <p>Uses a predefined list of common passwords and words. Fast but limited to known passwords.</p>
-                        <br>
-                        <strong>Effectiveness:</strong> High for weak passwords<br>
-                        <strong>Speed:</strong> Very Fast<br>
-                        <strong>Resource Usage:</strong> Low
-                    </div>
-
-                    <div class="method-card">
-                        <h3>Brute Force Attack</h3>
-                        <p>Tries every possible combination of characters systematically. Guaranteed to work but can be extremely slow.</p>
-                        <br>
-                        <strong>Effectiveness:</strong> 100% (given time)<br>
-                        <strong>Speed:</strong> Very Slow<br>
-                        <strong>Resource Usage:</strong> High
-                    </div>
-
-                    <div class="method-card">
-                        <h3>Hybrid Attack</h3>
-                        <p>Combines dictionary words with common variations (numbers, symbols). Balances speed and coverage.</p>
-                        <br>
-                        <strong>Effectiveness:</strong> High<br>
-                        <strong>Speed:</strong> Moderate<br>
-                        <strong>Resource Usage:</strong> Moderate
-                    </div>
-
-                    <div class="method-card">
-                        <h3>Rainbow Table Attack</h3>
-                        <p>Uses precomputed hash tables to instantly look up password hashes. Fast but requires storage space.</p>
-                        <br>
-                        <strong>Effectiveness:</strong> High for unsalted hashes<br>
-                        <strong>Speed:</strong> Very Fast<br>
-                        <strong>Resource Usage:</strong> High Storage
-                    </div>
-                </div>
-
-                <div class="educational-note">
-                    <strong>Performance Note:</strong> This simulation demonstrates these methods on 4-character passwords. Real-world attacks on longer passwords can take exponentially longer times.
-                </div>
-            </div>
-
-            <div id="defense" class="content-section">
-                <div class="section-title">Defense Strategies</div>
-
-                <div class="method-explanation">
-                    <h4>Password Policy Recommendations:</h4>
-                    <ul style="line-height: 1.8; margin: 15px 0;">
-                        <li><strong>Length:</strong> Minimum 12-14 characters</li>
-                        <li><strong>Complexity:</strong> Mix of uppercase, lowercase, numbers, and symbols</li>
-                        <li><strong>Uniqueness:</strong> Different passwords for different systems</li>
-                        <li><strong>Expiration:</strong> Regular password changes for sensitive accounts</li>
-                    </ul>
-                </div>
-
-                <div class="attack-methods">
-                    <div class="method-card">
-                        <h3>Strong Hashing Algorithms</h3>
-                        <p>Use modern algorithms like bcrypt, scrypt, or Argon2 that are designed to be slow and memory-intensive.</p>
-                    </div>
-
-                    <div class="method-card">
-                        <h3>Salt Implementation</h3>
-                        <p>Always use unique salts for each password to prevent rainbow table attacks.</p>
-                    </div>
-
-                    <div class="method-card">
-                        <h3>Multi-Factor Authentication</h3>
-                        <p>Implement 2FA/MFA to add additional security layers beyond passwords.</p>
-                    </div>
-
-                    <div class="method-card">
-                        <h3>Account Lockout Policies</h3>
-                        <p>Implement lockout mechanisms after failed login attempts to prevent brute force attacks.</p>
-                    </div>
-                </div>
-
-                <div class="warning">
-                    <strong>Key Takeaway:</strong> The best defense against password cracking is a combination of strong passwords, proper hashing algorithms, and additional security measures like multi-factor authentication.
-                </div>
-            </div>
-        </div>
+        <dl class="spec-res">
+          <div><dt>Brute-force math says</dt><dd id="heroNaive"></dd></div>
+          <div><dt>A rule-based attack says</dt><dd id="heroEff"></dd></div>
+        </dl>
+        <p class="note" style="margin:0">Stolen salted SHA-256 hashes, one high-end GPU.</p>
+      </div>
     </div>
 
-    <script>
-        // Simple hash functions for demonstration
-        function simpleHash(str, algorithm) {
-            let hash = 0;
-            if (str.length === 0) return hash;
-            
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32-bit integer
-            }
-            
-            // Make it appear more realistic based on algorithm
-            let result = Math.abs(hash).toString(16);
-            
-            switch(algorithm) {
-                case 'md5':
-                    return result.padStart(32, '0').substring(0, 32);
-                case 'sha256':
-                    return result.padStart(64, '0').substring(0, 64);
-                case 'sha512':
-                    return result.padStart(128, '0').substring(0, 128);
-                case 'ntlm':
-                    return result.padStart(32, '0').substring(0, 32).toUpperCase();
-                case 'lm':
-                    return result.padStart(32, '0').substring(0, 32).toUpperCase();
-                default:
-                    return result;
-            }
-        }
+    <!-- 1 -->
+    <section class="blk" id="why">
+      <span class="step-no">Part 1</span>
+      <h2>Why password security still matters</h2>
+      <p>Stolen and guessed credentials remain one of the most common ways attackers get in. As a security professional you will audit password hashes, write and enforce password policy, investigate login attacks, and help users choose better. By the end of this lesson you will be able to:</p>
+      <ol class="obj">
+        <li>Define core terms: entropy, keyspace, hash, salt, pepper, key stretching, and the major password attack types.</li>
+        <li>Calculate keyspace, entropy, and estimated crack time for a password under different storage and attack conditions.</li>
+        <li>Explain how systems store passwords and why unique salts and slow, memory-hard hashing defeat offline attacks.</li>
+        <li>Demonstrate dictionary, rule-based, mask, and brute-force attacks in an authorized lab and interpret the results.</li>
+        <li>Evaluate passwords and password policies against NIST SP 800-63B and recommend improvements, including MFA, password managers, and passkeys.</li>
+        <li>Identify password spraying and credential stuffing from indicators and choose countermeasures.</li>
+        <li>Apply legal and ethical boundaries to password auditing and the handling of cracked credentials.</li>
+      </ol>
 
-        function generateSalt() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789./';
-            let salt = '';
-            for (let i = 0; i < 8; i++) {
-                salt += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return salt;
-        }
+      <h3>Knowledge, skills, and abilities for the workforce</h3>
+      <div class="grid3 ksa">
+        <div class="panel">
+          <h3><b>K</b>Knowledge</h3>
+          <ul>
+            <li>How systems store passwords: hashing, salting, peppering, and key stretching</li>
+            <li>Hash and KDF speed differences: NTLM, MD5, SHA-2, PBKDF2, bcrypt, scrypt, Argon2id</li>
+            <li>Entropy, keyspace, and why human-chosen passwords are not random</li>
+            <li>Attack types: brute force, dictionary, rule-based, mask, rainbow table, credential stuffing, password spraying</li>
+            <li>NIST SP 800-63B guidance on length, blocklists, composition rules, and rotation</li>
+            <li>Authentication factors, MFA, passkeys (FIDO2/WebAuthn), and password managers</li>
+            <li>Legal and ethical limits on testing: CFAA, written authorization, rules of engagement</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3><b>S</b>Skills</h3>
+          <ul>
+            <li>Calculate keyspace, entropy, and crack-time estimates</li>
+            <li>Identify hash types and choose matching cracking modes in hashcat or John the Ripper</li>
+            <li>Run dictionary, rule-based, mask, and brute-force audits against authorized hashes</li>
+            <li>Configure and audit password policy in Active Directory, Entra ID, or Linux PAM</li>
+            <li>Spot spraying and stuffing in authentication logs, such as Windows Event IDs 4625 and 4771</li>
+            <li>Implement secure storage with a modern KDF and unique salts</li>
+            <li>Explain password risk to non-technical users and leaders</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3><b>A</b>Abilities</h3>
+          <ul>
+            <li>Think like an attacker while acting as a defender</li>
+            <li>Weigh security against usability, cost, and user behavior</li>
+            <li>Exercise sound ethical judgment with sensitive credentials</li>
+            <li>Reason quantitatively about probability and uncertainty</li>
+            <li>Communicate findings clearly without blaming users</li>
+            <li>Adapt as hardware, tools, and standards change</li>
+          </ul>
+        </div>
+      </div>
+      <h3 style="margin-top:1.5rem">Where you will use this</h3>
+      <ul class="roles">
+        <li>SOC analyst</li><li>Penetration tester</li><li>Identity and access administrator</li><li>Systems administrator</li><li>Security engineer</li><li>Incident responder</li><li>Application developer</li><li>GRC analyst</li>
+      </ul>
+      <p class="note" style="margin-top:1rem">The KSAs align with NIST SP 800-63B (Digital Identity Guidelines, Revision 4), CompTIA Security+ SY0-701 objectives 1.4, 2.4, and 4.6, and Task, Knowledge, and Skill statements in the NICE Workforce Framework for Cybersecurity. Confirm current editions before citing them in a syllabus.</p>
+    </section>
 
-        let currentLinuxPassword = '';
-        let currentWindowsPassword = '';
-        let currentLinuxHash = '';
-        let currentWindowsHash = '';
+    <!-- 2 -->
+    <section class="blk" id="vocab">
+      <span class="step-no">Part 2</span>
+      <h2>Vocabulary you will use in the lab</h2>
+      <p>Select a card to flip it. Say the definition out loud before you flip.</p>
+      <div class="cards" id="cards"></div>
+    </section>
 
-        function showSection(sectionId) {
-            // Hide all sections
-            const sections = document.querySelectorAll('.content-section');
-            sections.forEach(section => section.classList.remove('active'));
-            
-            // Show selected section
-            document.getElementById(sectionId).classList.add('active');
-            
-            // Update navigation
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => item.classList.remove('active'));
-            event.target.classList.add('active');
-        }
+    <!-- 3 -->
+    <section class="blk" id="sim">
+      <span class="step-no">Part 3</span>
+      <h2>Password strength lab</h2>
+      <p>Choose where the attack happens, then test a password. The lab compares two estimates: <strong>brute-force math</strong>, which assumes every character was picked at random, and a <strong>pattern-aware estimate</strong>, which guesses the way cracking tools really do. Use <strong>Predict first</strong> to commit to an answer, or <strong>Build it myself</strong> to do the math by hand.</p>
+      <div class="sim">
+        <div class="scen" id="scen" role="group" aria-label="Choose an attack scenario"></div>
+        <div class="panel">
+          <div class="tinfo"><h3 id="sName"></h3><span class="tag" id="sKind"></span><span class="tag" id="sRate"></span></div>
+          <p class="about" id="sAbout"></p>
+        </div>
+        <div class="sim-body">
+          <div class="panel">
+            <div class="warn" role="note"><span aria-hidden="true">⚠</span><span>Everything runs in your browser and nothing is sent anywhere. Even so, never type a password you actually use.</span></div>
+            <div class="field">
+              <label for="pwIn">Password to test</label>
+              <div class="pwrow">
+                <input id="pwIn" class="txt pw" type="password" maxlength="128" autocomplete="off" autocapitalize="off" spellcheck="false">
+                <button class="btn btn-g btn-s" type="button" id="pwShow" aria-pressed="false">Show</button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="flabel" id="chalLbl">Challenge passwords</span>
+              <div class="chips" id="chal" role="group" aria-labelledby="chalLbl"></div>
+            </div>
+            <div class="field">
+              <label for="ctxIn">Username or organization (optional, for the context check)</label>
+              <input id="ctxIn" class="txt" type="text" placeholder="e.g. jsmith, Moraine Valley" autocomplete="off">
+            </div>
+            <div class="row" style="margin-bottom:1rem">
+              <button class="btn btn-g btn-s" type="button" id="genRand">Generate random 16</button>
+              <button class="btn btn-g btn-s" type="button" id="genPhrase">Generate 5-word passphrase</button>
+            </div>
+            <div class="field">
+              <span class="flabel" id="hwLbl">Attacker hardware (offline attacks)</span>
+              <div class="chips" id="hw" role="group" aria-labelledby="hwLbl"></div>
+            </div>
+            <div class="modes" role="group" aria-label="Lab mode" id="modes" style="margin:.4rem 0 1.1rem">
+              <button type="button" data-m="explore" aria-pressed="true">Explore</button>
+              <button type="button" data-m="predict" aria-pressed="false">Predict first</button>
+              <button type="button" data-m="build" aria-pressed="false">Build it myself</button>
+            </div>
+            <h4 style="font-size:1rem;margin-bottom:.5rem">Password anatomy</h4>
+            <div class="anat" id="anat" aria-live="polite"></div>
+            <div id="buildBox" class="build" hidden></div>
+            <h4 style="margin-top:1.3rem;font-size:1rem">How this estimate was calculated</h4>
+            <ol class="howto" id="howto"></ol>
+          </div>
+          <div class="panel res" id="resPanel" aria-live="polite">
+            <div id="predictBox" class="predict" hidden></div>
+            <div id="results"></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-        function generateLinuxHash() {
-            const password = document.getElementById('linux-password').value;
-            const algorithm = document.getElementById('linux-algorithm').value;
-            
-            if (password.length === 0) {
-                alert('Please enter a password');
-                return;
-            }
-            
-            if (password.length > 4) {
-                alert('Password must be 4 characters or less for this demonstration');
-                return;
-            }
-            
-            currentLinuxPassword = password;
-            const salt = generateSalt();
-            const hash = simpleHash(password + salt, algorithm);
-            
-            let algorithmId;
-            switch(algorithm) {
-                case 'md5': algorithmId = '1'; break;
-                case 'sha256': algorithmId = '5'; break;
-                case 'sha512': algorithmId = '6'; break;
-            }
-            
-            currentLinuxHash = `$${algorithmId}$${salt}$${hash}`;
-            
-            document.getElementById('linux-hash-display').textContent = `Generated Linux Hash:\n${currentLinuxHash}`;
-            document.getElementById('linux-hash-display').style.display = 'block';
-            document.getElementById('linux-crack-btn').disabled = false;
-            
-            document.getElementById('linux-output').textContent = `[INFO] Linux ${algorithm.toUpperCase()} hash generated successfully\n[INFO] Salt: ${salt}\n[INFO] Ready for cracking simulation\n`;
-        }
+    <!-- 4 -->
+    <section class="blk" id="odds">
+      <span class="step-no">Part 4</span>
+      <h2>Guessing odds: average case versus human nature</h2>
+      <p>Keyspace math gives an <em>average</em>. A brute-force attacker finds a truly random secret, on average, halfway through the keyspace. But people do not choose randomly, and attackers order their guesses to exploit that. Simulate attacks on 4-digit PINs and compare what happens with what the math predicts.</p>
+      <div class="panel">
+        <div class="two">
+          <div class="field" style="margin:0"><span class="flabel" id="oSrcL">Who chose the PIN?</span>
+            <div class="modes" role="group" aria-labelledby="oSrcL" id="oSrc"><button type="button" data-v="random" aria-pressed="true">A random generator</button><button type="button" data-v="human" aria-pressed="false">People</button></div></div>
+          <div class="field" style="margin:0"><span class="flabel" id="oOrdL">Attacker’s guessing order</span>
+            <div class="modes" role="group" aria-labelledby="oOrdL" id="oOrd"><button type="button" data-v="seq" aria-pressed="true">0000 to 9999</button><button type="button" data-v="pop" aria-pressed="false">Most popular first</button></div></div>
+        </div>
+        <div class="row" style="margin:1rem 0">
+          <button class="btn btn-p btn-s" type="button" data-n="1">Run 1 attack</button>
+          <button class="btn btn-g btn-s" type="button" data-n="20">Run 20</button>
+          <button class="btn btn-g btn-s" type="button" data-n="200">Run 200</button>
+          <button class="btn btn-g btn-s" type="button" id="oClear">Clear</button>
+        </div>
+        <div class="dots" id="oDots" aria-live="polite"></div>
+        <ul class="legend">
+          <li><span class="sw" style="background:var(--q1)"></span>Found in the first 25% of guesses</li>
+          <li><span class="sw" style="background:var(--q2)"></span>25–50%</li>
+          <li><span class="sw" style="background:var(--q3)"></span>50–75%</li>
+          <li><span class="sw" style="background:var(--q4)"></span>Last 25%</li>
+        </ul>
+        <div class="tbl"><table class="ct" id="oTable" style="margin-top:1rem"></table></div>
+        <p class="note" style="margin-top:1rem">The “People” setting uses an approximate PIN popularity model based on published analyses of leaked PIN data: a handful of choices like 1234, 1111, and 0000, plus birth years, account for a large share of real PINs. Try “People” with “Most popular first” and look at the 10-guess column. That is why online lockouts and throttling matter so much.</p>
+      </div>
+    </section>
 
-        function generateWindowsHash() {
-            const password = document.getElementById('windows-password').value;
-            const algorithm = document.getElementById('windows-algorithm').value;
-            
-            if (password.length === 0) {
-                alert('Please enter a password');
-                return;
-            }
-            
-            if (password.length > 4) {
-                alert('Password must be 4 characters or less for this demonstration');
-                return;
-            }
-            
-            currentWindowsPassword = password;
-            const hash = simpleHash(password, algorithm);
-            currentWindowsHash = hash;
-            
-            document.getElementById('windows-hash-display').textContent = `Generated Windows ${algorithm.toUpperCase()} Hash:\n${hash}`;
-            document.getElementById('windows-hash-display').style.display = 'block';
-            document.getElementById('windows-crack-btn').disabled = false;
-            
-            document.getElementById('windows-output').textContent = `[INFO] Windows ${algorithm.toUpperCase()} hash generated successfully\n[INFO] Hash: ${hash}\n[INFO] Ready for cracking simulation\n`;
-        }
+    <!-- 5 -->
+    <section class="blk" id="hash">
+      <span class="step-no">Part 5</span>
+      <h2>Hashing, salting, and key stretching</h2>
+      <p>Systems should never store your password. They store a <strong>hash</strong>: a one-way fingerprint. At login, the system hashes what you type and compares fingerprints. These tools compute real SHA-256 hashes in your browser.</p>
+      <div class="two">
+        <div class="panel">
+          <h3>One-way and avalanche</h3>
+          <div class="field"><label for="hIn">Text to hash</label><input id="hIn" class="txt pw" type="text" value="Summer2026!" maxlength="64" autocomplete="off" spellcheck="false"></div>
+          <dl class="kv">
+            <dt>SHA-256</dt><dd><div class="hash" id="hOut"></div></dd>
+            <dt id="hAltL"></dt><dd><div class="hash" id="hAlt"></div></dd>
+          </dl>
+          <p class="note" id="hDiff"></p>
+        </div>
+        <div class="panel">
+          <h3>Two users, one password</h3>
+          <p class="note">Alice and Bob both chose the text on the left. Compare how a database stores them with and without a unique salt per user.</p>
+          <div class="row" style="margin-bottom:.6rem">
+            <div class="modes" role="group" aria-label="Storage method" id="saltMode"><button type="button" data-v="0" aria-pressed="true">Unsalted</button><button type="button" data-v="1" aria-pressed="false">Salted</button></div>
+            <button class="btn btn-g btn-s" type="button" id="newSalt">New salts</button>
+          </div>
+          <dl class="kv" id="saltRows"></dl>
+          <p class="note" id="saltMsg" role="status"></p>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:1rem">
+        <h3>Key stretching: make every guess expensive</h3>
+        <p>Fast hashes are great for files and terrible for passwords. Key stretching repeats the work thousands of times. You pay the cost once per login; the attacker pays it for every guess. Time it in your own browser.</p>
+        <div class="row">
+          <label for="itSel" class="flabel">Iterations of SHA-256</label>
+          <select id="itSel" class="sel"><option value="1">1</option><option value="1000">1,000</option><option value="10000" selected>10,000</option><option value="100000">100,000</option><option value="600000">600,000</option></select>
+          <button class="btn btn-p btn-s" type="button" id="itGo">Time one login</button>
+        </div>
+        <div class="two" style="margin-top:1rem" id="itOut" aria-live="polite"></div>
+        <p class="note" style="margin-top:.8rem">Simple iteration demonstrates the idea. Production systems use purpose-built functions: Argon2id (memory-hard, OWASP’s first choice), scrypt, bcrypt, or PBKDF2-HMAC-SHA256 at roughly 600,000 iterations. A <strong>pepper</strong> is a secret added to every password and stored apart from the database, such as in a hardware security module, so a stolen database alone is not enough to start cracking.</p>
+      </div>
+    </section>
 
-        function simulateCracking(password, outputElementId, progressElementId, progressFillId, hashType) {
-            const outputElement = document.getElementById(outputElementId);
-            const progressElement = document.getElementById(progressElementId);
-            const progressFill = document.getElementById(progressFillId);
-            
-            outputElement.textContent = '';
-            progressElement.style.display = 'block';
-            progressFill.style.width = '0%';
-            
-            // Simulate different attack methods
-            const attacks = ['Dictionary Attack', 'Brute Force Attack', 'Hybrid Attack'];
-            let currentAttack = 0;
-            let progress = 0;
-            
-            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*';
-            let attempts = 0;
-            const maxAttempts = Math.pow(chars.length, password.length);
-            
-            function updateProgress() {
-                attempts++;
-                progress = (attempts / Math.min(maxAttempts, 1000)) * 100;
-                progressFill.style.width = Math.min(progress, 100) + '%';
-                
-                if (attempts % 50 === 0) {
-                    const randomAttempt = generateRandomString(password.length);
-                    outputElement.textContent += `[${attacks[currentAttack]}] Trying: ${randomAttempt}\n`;
-                    outputElement.scrollTop = outputElement.scrollHeight;
-                }
-                
-                // Simulate finding the password
-                if (attempts >= Math.random() * 500 + 200 || progress >= 100) {
-                    progressFill.style.width = '100%';
-                    outputElement.textContent += `\n[SUCCESS] Password cracked: ${password}\n`;
-                    outputElement.textContent += `[INFO] Attack method: ${attacks[currentAttack]}\n`;
-                    outputElement.textContent += `[INFO] Attempts made: ${attempts}\n`;
-                    outputElement.textContent += `[INFO] Hash type: ${hashType}\n`;
-                    outputElement.textContent += `[WARNING] This demonstrates why strong passwords are essential!\n`;
-                    return;
-                }
-                
-                if (attempts % 200 === 0 && currentAttack < attacks.length - 1) {
-                    currentAttack++;
-                    outputElement.textContent += `\n[INFO] Switching to ${attacks[currentAttack]}...\n`;
-                }
-                
-                setTimeout(updateProgress, 20);
-            }
-            
-            outputElement.textContent += `[INFO] Starting password cracking simulation...\n`;
-            outputElement.textContent += `[INFO] Target hash type: ${hashType}\n`;
-            outputElement.textContent += `[INFO] Beginning with ${attacks[currentAttack]}...\n\n`;
-            
-            setTimeout(updateProgress, 100);
-        }
+    <!-- 6 -->
+    <section class="blk" id="crack">
+      <span class="step-no">Part 6</span>
+      <h2>Crack the dump</h2>
+      <p>A fictional company, Lakeshore Clinic Supply, has authorized you to audit a copy of its password database as part of a scoped engagement. Run each attack and watch which accounts fall. Your browser really computes every SHA-256 hash, so you will feel the cost of salting and the difference between your laptop and a GPU.</p>
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <div class="modes" role="group" aria-label="How the database stores passwords" id="dumpMode"><button type="button" data-v="0" aria-pressed="true">Unsalted SHA-256</button><button type="button" data-v="1" aria-pressed="false">Salted SHA-256</button></div>
+          <span class="note" id="bench">Measuring your browser…</span>
+        </div>
+        <div class="atk">
+          <div class="modes" role="group" aria-label="Choose an attack" id="atkSel"></div>
+          <p id="atkAbout" style="margin:0"></p>
+          <div class="cmd" id="atkCmd" aria-label="Equivalent hashcat command"></div>
+          <p class="note" id="atkEst" style="margin:0"></p>
+          <div class="row">
+            <button class="btn btn-p btn-s" type="button" id="atkGo">Run attack</button>
+            <button class="btn btn-g btn-s" type="button" id="atkStop" disabled>Stop</button>
+            <button class="btn btn-g btn-s" type="button" id="dumpReset">Reset database</button>
+          </div>
+          <div class="prog" aria-hidden="true"><span id="atkProg"></span></div>
+          <p class="note" id="atkStatus" role="status" style="margin:0"></p>
+        </div>
+        <div class="dots" id="dumpDots" aria-hidden="true"></div>
+        <ul class="legend" id="dumpLegend"></ul>
+        <div class="tbl"><table class="ct" id="dumpTable" style="margin-top:1rem"></table></div>
+        <p class="note" style="margin-top:1rem">Debrief: which attack cracked the most accounts for the least work? What do the three survivors have in common? In salted mode, notice that the work multiplies by the number of accounts and the duplicate 123456 hashes disappear.</p>
+      </div>
+    </section>
 
-        function generateRandomString(length) {
-            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-            let result = '';
-            for (let i = 0; i < length; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return result;
-        }
+    <!-- 7 -->
+    <section class="blk" id="cases">
+      <span class="step-no">Part 7</span>
+      <h2>Workplace scenarios</h2>
+      <p>Each scenario is something you could face in your first year on the job. Answer the question, then read the explanation. Some scenarios load their password into the strength lab so you can check your reasoning.</p>
+      <div class="cases" id="caseList"></div>
+    </section>
 
-        function crackLinuxPassword() {
-            if (!currentLinuxPassword) {
-                alert('Please generate a hash first');
-                return;
-            }
-            
-            const algorithm = document.getElementById('linux-algorithm').value;
-            simulateCracking(currentLinuxPassword, 'linux-output', 'linux-progress', 'linux-progress-fill', `Linux ${algorithm.toUpperCase()}`);
-        }
+    <!-- 8 -->
+    <section class="blk" id="quiz">
+      <span class="step-no">Part 8</span>
+      <h2>Check your understanding</h2>
+      <p>Ten questions with feedback. Use the labs if you need to.</p>
+      <div class="panel">
+        <form id="quizForm" onsubmit="return false"></form>
+        <div class="row" style="margin-top:1rem">
+          <button class="btn btn-p" type="button" id="quizSubmit">Submit answers</button>
+          <button class="btn btn-g" type="button" id="quizReset">Try again</button>
+          <span class="score" id="quizScore" role="status"></span>
+        </div>
+      </div>
+    </section>
 
-        function crackWindowsPassword() {
-            if (!currentWindowsPassword) {
-                alert('Please generate a hash first');
-                return;
-            }
-            
-            const algorithm = document.getElementById('windows-algorithm').value;
-            simulateCracking(currentWindowsPassword, 'windows-output', 'windows-progress', 'windows-progress-fill', `Windows ${algorithm.toUpperCase()}`);
-        }
+    <!-- 9 -->
+    <section class="blk" id="beyond">
+      <span class="step-no">Part 9</span>
+      <h2>What a strength meter cannot tell you</h2>
+      <p>Every number in this lab assumes the attacker has to guess. Many real attacks never guess at all. Open each item to see where strength estimates break down.</p>
+      <details><summary>Entropy formulas assume randomness</summary><div class="dc"><p>L × log₂(N) is only true when every character is chosen at random. People pick words, names, years, and keyboard patterns, so real entropy is far lower. That is why the lab’s pattern-aware estimate is often millions of times smaller than the brute-force math. Estimators like zxcvbn model these patterns; the one in this lab is a simplified teaching version.</p></div></details>
+      <details><summary>Reuse and credential stuffing</summary><div class="dc"><p>A perfect password reused on two sites is only as safe as the weaker site’s storage. When one site is breached, attackers replay the username and password pairs everywhere else. Uniqueness matters as much as strength, and password managers make uniqueness practical.</p></div></details>
+      <details><summary>Phishing, keyloggers, and MFA fatigue</summary><div class="dc"><p>A phishing page or keylogger captures the password itself, so strength is irrelevant. Push-notification MFA can be defeated by bombarding users with prompts. Phishing-resistant methods such as FIDO2 security keys and passkeys bind the login to the real site and do not hand over a reusable secret.</p></div></details>
+      <details><summary>Passkeys and passwordless authentication</summary><div class="dc"><p>A passkey replaces the password with a public-private key pair. The server stores only the public key, so a database breach yields nothing to crack, and the private key never leaves the user’s device. Expect to support both passwords and passkeys for years.</p></div></details>
+      <details><summary>Screening against breached passwords</summary><div class="dc"><p>NIST SP 800-63B requires checking new passwords against a blocklist of commonly used, expected, or compromised values. Services such as Have I Been Pwned’s Pwned Passwords use k-anonymity: the system sends only the first five characters of the password’s SHA-1 hash and checks the returned list locally, so the password is never revealed. The lab’s blocklist has only a few hundred entries; real lists hold hundreds of millions.</p></div></details>
+      <details><summary>Speeds change, so estimates age</summary><div class="dc"><p>The speeds in this lab are approximate single-GPU figures in the range of published hashcat benchmarks for a current high-end consumer card. Each hardware generation is faster, and attackers rent GPUs by the hour. Treat crack times as orders of magnitude, re-check benchmarks when you teach, and choose storage settings with headroom.</p></div></details>
+      <details><summary>Law, ethics, and handling cracked credentials</summary><div class="dc"><ul>
+        <li>Crack only hashes you are explicitly authorized in writing to test. Unauthorized access can violate the Computer Fraud and Abuse Act and state laws, even with good intentions.</li>
+        <li>Follow the rules of engagement: scope, dates, systems, and what to do with sensitive findings.</li>
+        <li>Never use recovered passwords to log in to anything outside scope, including users’ personal accounts.</li>
+        <li>Report results in aggregate where possible, store evidence encrypted, and destroy cracked credentials when the engagement ends.</li>
+        <li>Recommend fixes for the system, not punishment for users.</li>
+      </ul></div></details>
+    </section>
 
-        // Initialize the tool
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('linux-output').textContent = '[INFO] Linux Password Cracking Tool Ready\n[INFO] Generate a hash to begin simulation\n';
-            document.getElementById('windows-output').textContent = '[INFO] Windows Password Cracking Tool Ready\n[INFO] Generate a hash to begin simulation\n';
-        });
-    </script>
+    <!-- 10 -->
+    <section class="blk" id="guide">
+      <span class="step-no">Part 10</span>
+      <h2>Instructor guide</h2>
+      <details open><summary>Suggested 100-minute session plan</summary><div class="dc">
+        <div class="tbl"><table class="plan">
+          <tr><th>Time</th><th>Activity</th><th>Purpose</th></tr>
+          <tr><td>5 min</td><td>Hook: show the hero and poll the room on how long <code>Summer2026!</code> would last.</td><td>Surface the “complex equals strong” misconception.</td></tr>
+          <tr><td>10 min</td><td>Vocabulary flip cards in pairs; partners quiz each other.</td><td>Retrieval practice on terms.</td></tr>
+          <tr><td>15 min</td><td>Guided demo in Explore mode: compare <code>Summer2026!</code>, <code>Tr0ub4dor&amp;3</code>, and a passphrase under MD5, then bcrypt.</td><td>Contrast pattern versus length, and fast versus slow hashing.</td></tr>
+          <tr><td>10 min</td><td>Predict first: students commit to a crack time for three challenge passwords before revealing.</td><td>Prediction plus feedback improves retention.</td></tr>
+          <tr><td>10 min</td><td>Build it myself: students calculate pool size, length, and entropy by hand.</td><td>Procedural fluency with the formula.</td></tr>
+          <tr><td>10 min</td><td>Guessing odds: each student runs 20 attacks in each setting; the class pools averages.</td><td>Make average-case math and human bias concrete.</td></tr>
+          <tr><td>10 min</td><td>Hashing lab: avalanche, salts, and timing one login at 600,000 iterations.</td><td>Connect storage choices to attacker cost.</td></tr>
+          <tr><td>15 min</td><td>Crack the dump in teams, unsalted then salted; teams report accounts cracked per attack.</td><td>Apply attack methods and interpret results.</td></tr>
+          <tr><td>10 min</td><td>Workplace scenarios in small groups, ending with a help-desk role play.</td><td>Apply policy knowledge and practice communication.</td></tr>
+          <tr><td>5 min</td><td>Quiz and debrief on “What a strength meter cannot tell you.”</td><td>Assess objectives and set limits of the model.</td></tr>
+        </table></div>
+      </div></details>
+      <details><summary>Objective and Bloom’s alignment</summary><div class="dc"><ul>
+        <li>Objective 1 (Remember): flip cards; quiz items 2 and 8.</li>
+        <li>Objective 2 (Apply): Build it myself mode, guessing odds; quiz items 1 and 6.</li>
+        <li>Objective 3 (Understand/Apply): hashing lab, salted crack mode; quiz items 2 and 3.</li>
+        <li>Objective 4 (Apply/Analyze): Crack the dump, Predict first mode; quiz items 7 and 8.</li>
+        <li>Objective 5 (Evaluate): NIST checklist, scenarios 1, 3, and 6; quiz item 5.</li>
+        <li>Objective 6 (Analyze): scenarios 2 and 4; quiz items 4 and 10.</li>
+        <li>Objective 7 (Evaluate): scenario 5, Part 9 ethics discussion; quiz item 9.</li>
+      </ul></div></details>
+      <details><summary>Security+ SY0-701 mapping</summary><div class="dc"><ul>
+        <li>1.4 Cryptographic solutions: hashing, salting, key stretching (Parts 5 and 6).</li>
+        <li>2.4 Indicators of malicious activity: password spraying and brute force (Parts 6 and 7).</li>
+        <li>4.6 Identity and access management: password best practices, password managers, passwordless, MFA (Parts 3, 7, and 9).</li>
+      </ul><p class="note">Objective numbers reflect the SY0-701 exam objectives; verify against CompTIA’s current document.</p></div></details>
+      <details><summary>Assessment ideas</summary><div class="dc"><ul>
+        <li>Exit ticket: in two sentences without jargon, explain to a coworker why <code>Summer2026!</code> is weak and what to do instead.</li>
+        <li>Lab practical: in an isolated virtual lab, crack an instructor-provided hash file with hashcat or John the Ripper. Submit the percentage cracked by each attack type, the hash mode used, and three prioritized recommendations.</li>
+        <li>Policy memo: rewrite a provided legacy password policy (8 characters, complexity, 90-day rotation) to align with NIST SP 800-63B, with a one-paragraph rationale for leadership.</li>
+        <li>Rubric dimensions: calculation accuracy, correct attack and hash-mode selection, interpretation of results, standards alignment, plain-language clarity, ethical handling of credentials.</li>
+      </ul></div></details>
+      <details><summary>Extending into a hands-on cracking lab</summary><div class="dc"><ul>
+        <li>Use an isolated network or offline VMs and instructor-generated hashes only. Never use real user data.</li>
+        <li>Progress students from <code>-a 0</code> (wordlist) to <code>-r</code> rules to <code>-a 3</code> masks, mirroring Part 6.</li>
+        <li>Have students identify hash formats by structure, for example <code>$2b$12$</code> for bcrypt, before choosing a mode.</li>
+        <li>Pair with a defensive task: enable a banned-password list and smart lockout, then review Windows Event ID 4625 and 4771 logs after a simulated spray.</li>
+      </ul></div></details>
+      <details><summary>Accessibility and adaptation</summary><div class="dc"><ul>
+        <li>Every result is labeled in text, not just color, and the page works fully with a keyboard.</li>
+        <li>Atkinson Hyperlegible and its mono variant clearly distinguish look-alike characters such as 0/O and 1/l/I, which matters when reading passwords and hashes.</li>
+        <li>Animations respect the reduced-motion setting. Long-running attacks can be stopped at any time.</li>
+        <li>For networking programs, extend with RADIUS and 802.1X credential handling; for programming students, have them implement Argon2id storage in their language of choice.</li>
+      </ul></div></details>
+    </section>
+
+    <footer>Educational simulation for cybersecurity students. Speeds are approximate single-GPU estimates based on published hashcat benchmarks and change as hardware improves. The practice database is fictional. Test password security only on systems and data you are authorized in writing to assess.</footer>
+  </main>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- theme ---------- */
+const root=document.documentElement,tBtn=document.getElementById("themeBtn"),tIcon=document.getElementById("themeIcon"),tTxt=document.getElementById("themeTxt");
+const SUN='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+const MOON='<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+function paintTheme(){const d=root.getAttribute("data-theme")==="dark";tIcon.innerHTML=d?SUN:MOON;tTxt.textContent=d?"Light mode":"Dark mode";tBtn.setAttribute("aria-label",d?"Switch to light mode":"Switch to dark mode");}
+tBtn.addEventListener("click",()=>{const n=root.getAttribute("data-theme")==="dark"?"light":"dark";root.setAttribute("data-theme",n);try{localStorage.setItem("pwlab-theme",n);}catch(e){}paintTheme();});
+paintTheme();
+
+/*CORE-START*/
+/* ---------- SHA-256 (synchronous, for the labs) ---------- */
+const K=new Int32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+const W=new Int32Array(64),HB=new Uint8Array(2048),HEX=[];for(let i=0;i<256;i++)HEX[i]=(i<16?"0":"")+i.toString(16);
+const hx=x=>HEX[(x>>>24)&255]+HEX[(x>>>16)&255]+HEX[(x>>>8)&255]+HEX[x&255];
+const ENC=new TextEncoder();
+function sha256(str){
+  let l=0;
+  if(str.length<500){for(let i=0;i<str.length;i++){const c=str.charCodeAt(i);if(c>127){l=-1;break;}HB[l++]=c;}}else l=-1;
+  if(l<0){const b=ENC.encode(str);return shaBytes(b,b.length);}
+  return shaBytes(HB,l);
+}
+function shaBytes(B,l){
+  const nb=(l+72)>>>6,end=nb*64,bl=l*8;
+  let h0=0x6a09e667|0,h1=0xbb67ae85|0,h2=0x3c6ef372|0,h3=0xa54ff53a|0,h4=0x510e527f|0,h5=0x9b05688c|0,h6=0x1f83d9ab|0,h7=0x5be0cd19|0;
+  for(let b=0;b<nb;b++){
+    for(let t=0;t<16;t++){let w=0;for(let k=0;k<4;k++){const i=b*64+t*4+k;let v;if(i<l)v=B[i];else if(i===l)v=0x80;else if(i>=end-4)v=(bl>>>((end-1-i)*8))&255;else v=0;w=(w<<8)|v;}W[t]=w;}
+    for(let t=16;t<64;t++){const a=W[t-15],c=W[t-2];const s0=((a>>>7)|(a<<25))^((a>>>18)|(a<<14))^(a>>>3);const s1=((c>>>17)|(c<<15))^((c>>>19)|(c<<13))^(c>>>10);W[t]=(W[t-16]+s0+W[t-7]+s1)|0;}
+    let a=h0,bb=h1,c=h2,d=h3,e=h4,f=h5,g=h6,h=h7;
+    for(let t=0;t<64;t++){
+      const S1=((e>>>6)|(e<<26))^((e>>>11)|(e<<21))^((e>>>25)|(e<<7));
+      const t1=(h+S1+((e&f)^(~e&g))+K[t]+W[t])|0;
+      const S0=((a>>>2)|(a<<30))^((a>>>13)|(a<<19))^((a>>>22)|(a<<10));
+      const t2=(S0+((a&bb)^(a&c)^(bb&c)))|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=bb;bb=a;a=(t1+t2)|0;
+    }
+    h0=(h0+a)|0;h1=(h1+bb)|0;h2=(h2+c)|0;h3=(h3+d)|0;h4=(h4+e)|0;h5=(h5+f)|0;h6=(h6+g)|0;h7=(h7+h)|0;
+  }
+  return hx(h0)+hx(h1)+hx(h2)+hx(h3)+hx(h4)+hx(h5)+hx(h6)+hx(h7);
+}
+
+/* ---------- word lists (teaching-size) ---------- */
+const COMMON=[...new Set(("123456 password 123456789 12345678 12345 qwerty 123123 111111 abc123 1234567 password1 1234567890 iloveyou 000000 qwerty123 1q2w3e4r admin letmein welcome monkey dragon football baseball sunshine princess master shadow superman michael jordan trustno1 hello freedom whatever starwars passw0rd p@ssw0rd welcome1 password123 qwertyuiop login charlie batman access flower loveme zaq1zaq1 654321 ninja mustang 121212 asdfgh asdfghjkl 1qaz2wsx pokemon computer michelle jessica pepper killer summer winter spring autumn soccer hockey ranger thomas tigger robert daniel hunter buster harley ginger cookie chicken maggie secret orange banana purple matrix test guest default changeme qazwsx 696969 987654321 7777777 666666 123qwe zxcvbnm zxcvbn 1234 0000 1111 mypass cheese coffee love angel family friends google internet samsung apple london chelsea liverpool arsenal america canada chicago texas jesus blessed butterfly lovely beautiful forever nicole ashley andrew joshua taylor matthew anthony william jennifer amanda melissa hannah welcome123 admin123 root toor p@ssword letmein1 princess1 sunshine1 iloveyou1 football1 baseball1 monkey1 dragon1 qwerty1 abc1234 azerty 112233 159753 aaaaaa").split(" "))];
+const WORDS=[...new Set(("able acid acorn actor adapt agent alarm album alert alien alpha amber anchor angle ankle apple april arch arena armor arrow atlas attic audio autumn avocado bacon badge bagel baker bamboo banjo barn basil basket battery beach beacon bear beaver bell berry bicycle bingo birch biscuit bison blade blanket blaze bloom blue bolt bonus border bottle boulder bracket brave bread breeze brick bridge bronze brush bubble bucket buffalo bundle butter cabin cactus camel camera canal candle canoe canyon captain carbon cargo carpet castle cattle cedar cello chalk channel charm cherry chess chicago chimney cider cinema circus citrus clover cobalt cocoa comet copper coral correct cosmic cotton cougar coyote crane crater crayon cricket crystal cubic cupcake dagger daisy dance delta desert diesel dinner dolphin donkey dragon dream drift eagle echo eclipse elbow ember emerald engine falcon fall fancy feather fern festival fiddle finch flame flannel flute forest fossil fox frost galaxy garden garlic gecko giant ginger glacier globe goblin gold gopher granite grape gravel harbor harvest hazel helmet hero hockey honey horizon horse humble igloo indigo iris island ivory jacket jaguar jasmine jelly jungle kayak kernel kettle kiwi koala ladder lagoon lantern laser lemon lilac lime linen lizard lobster lotus lunar magnet mango maple marble meadow melon meteor mint mirror monkey moose mosaic motor mountain muffin nectar needle nickel noodle nova oasis ocean olive onyx orbit orchid otter oyster paddle panda panther paper parrot pasta peach pebble pelican pencil pepper piano pickle pilot pine pirate pixel planet plaza plum polar pony popcorn prairie prism puzzle quartz quiet quill rabbit radar radio rain raven reef ribbon ripple river robin rocket ruby saddle saffron salmon sapphire satin school season shadow shark shell silver sketch sleet slope smoke snow solar sonic spark spice spring spruce squash staple star stone storm sugar summer sunset swift table taco temple thunder tiger timber toast tomato topaz torch tractor trail troubador tulip tundra turtle umbrella valley vapor velvet violet viper volcano wafer walnut walrus water whale wheat whisper willow window winter wizard wolf yacht yellow yoga zebra zephyr").split(" "))];
+const RANK=new Map(COMMON.map((w,i)=>[w,i+1]));
+const WORDSET=new Set(WORDS);
+const WORD_GUESSES=5000;
+const KB=["qwertyuiop","asdfghjkl","zxcvbnm","1234567890","1qaz2wsx3edc4rfv5tgb6yhn7ujm8ik9ol0p","1q2w3e4r5t6y7u8i9o0p","qazwsxedcrfvtgbyhnujmikolp","!@#$%^&*()"];
+const KBALL=KB.concat(KB.map(s=>[...s].reverse().join("")));
+const LEET={"@":"a","4":"a","3":"e","1":"i","!":"i","0":"o","$":"s","5":"s","7":"t","+":"t","8":"b","9":"g"};
+const L2=Math.log2;
+
+function classPool(s){let lo=0,up=0,dg=0,sy=0,ot=0;for(const ch of s){const c=ch.charCodeAt(0);if(c>=97&&c<=122)lo=1;else if(c>=65&&c<=90)up=1;else if(c>=48&&c<=57)dg=1;else if(c>=32&&c<=126)sy=1;else ot=1;}return {lo,up,dg,sy,ot,N:lo*26+up*26+dg*10+sy*33+ot*100};}
+function capBits(sub,lo){if(sub===lo)return 0;const up=[...sub].filter(c=>c>="A"&&c<="Z").length;if(sub===sub.toUpperCase())return 1;if(up===1&&sub[0]!==lo[0])return 1;return Math.min(up,sub.length);}
+function deleet(lo){let n="",c=0;for(const ch of lo){if(LEET[ch]){n+=LEET[ch];c++;}else n+=ch;}const out=[];if(c){out.push([n,c]);if(lo.includes("1"))out.push([n.replace(/i/g,(m,i)=>lo[i]==="1"?"l":"i"),c]);}return out;}
+function isSeq(lo){if(lo.length<3)return false;if(!/^[a-z]+$/.test(lo)&&!/^[0-9]+$/.test(lo))return false;const d=lo.charCodeAt(1)-lo.charCodeAt(0);if(d!==1&&d!==-1)return false;for(let k=2;k<lo.length;k++)if(lo.charCodeAt(k)-lo.charCodeAt(k-1)!==d)return false;return true;}
+
+function matchesAt(pw,i,ctx){
+  const out=[{j:i+1,type:"rand",bits:L2(95)}],n=pw.length;
+  for(let j=i+3;j<=Math.min(n,i+32);j++){
+    const sub=pw.slice(i,j),lo=sub.toLowerCase(),cb=capBits(sub,lo);
+    if(ctx.includes(lo))out.push({j,type:"ctx",bits:1+cb,norm:lo,cap:cb>0});
+    if(RANK.has(lo))out.push({j,type:"common",bits:L2(RANK.get(lo))+cb,norm:lo,cap:cb>0});
+    else if(WORDSET.has(lo))out.push({j,type:"word",bits:L2(WORD_GUESSES)+cb,norm:lo,cap:cb>0});
+    else for(const [nm,c] of deleet(lo)){
+      if(RANK.has(nm)){out.push({j,type:"common",bits:L2(RANK.get(nm))+cb+c,norm:nm,cap:cb>0,leet:c});break;}
+      if(WORDSET.has(nm)){out.push({j,type:"word",bits:L2(WORD_GUESSES)+cb+c,norm:nm,cap:cb>0,leet:c});break;}
+      if(ctx.includes(nm)){out.push({j,type:"ctx",bits:1+cb+c,norm:nm,cap:cb>0,leet:c});break;}
+    }
+    if(j-i===4&&/^(19|20)\d\d$/.test(sub)&&+sub<=2039)out.push({j,type:"year",bits:L2(140)});
+    if(isSeq(lo))out.push({j,type:"seq",bits:L2(52*lo.length)});
+    if(lo.length>=4&&KBALL.some(r=>r.includes(lo)))out.push({j,type:"kbd",bits:L2(48*lo.length)});
+    if(/^(.)\1+$/.test(sub))out.push({j,type:"rep",bits:L2(95*sub.length)});
+  }
+  return out;
+}
+function analyze(pw,ctxStr){
+  const n=pw.length;if(!n)return null;
+  const ctx=(ctxStr||"").toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>=3);
+  const best=new Array(n+1).fill(Infinity),back=new Array(n+1);best[0]=0;
+  for(let i=0;i<n;i++){if(best[i]===Infinity)continue;for(const m of matchesAt(pw,i,ctx)){const b=best[i]+m.bits;if(b<best[m.j]-1e-9){best[m.j]=b;back[m.j]=Object.assign({i},m);}}}
+  let raw=[],j=n;while(j>0){const m=back[j];raw.unshift(Object.assign({},m,{text:pw.slice(m.i,j)}));j=m.i;}
+  const segs=[];
+  raw.forEach(s=>{const last=segs[segs.length-1];if(s.type==="rand"&&last&&last.type==="rand"){last.text+=s.text;}else segs.push(Object.assign({},s));});
+  segs.forEach(s=>{if(s.type==="rand"){const P=classPool(s.text).N;s.bits=[...s.text].length*L2(P);}});
+  let total=segs.reduce((a,s)=>a+s.bits,0);
+  for(let k=2;k<=segs.length;k++)total+=L2(k);
+  const P=classPool(pw),len=[...pw].length,naive=len*L2(P.N);
+  return {pw,len,pool:P,naive,eff:Math.min(total,naive),segs,ctx};
+}
+
+/* ---------- attack scenarios ---------- */
+const SC=[
+ {id:"onlineT",name:"Online, rate-limited",kind:"Online",rate:100/3600,hw:false,about:"The attacker guesses at a real login page that throttles or locks accounts after repeated failures, roughly 100 guesses per hour. Hardware does not help."},
+ {id:"online",name:"Online, no limits",kind:"Online",rate:10,hw:false,about:"A login page with no throttling or lockout, about 10 guesses per second. This is why rate limiting and lockout policies matter."},
+ {id:"ntlm",name:"NTLM hashes",kind:"Offline",rate:288e9,hw:true,about:"Windows stores local and domain password hashes as NTLM: one fast MD4 hash with no salt. Hashes dumped from a domain controller can be attacked at extreme speed."},
+ {id:"md5",name:"MD5, unsalted",kind:"Offline",rate:164e9,hw:true,about:"Legacy web applications often stored plain MD5. It is fast and unsalted, so identical passwords produce identical hashes and precomputed tables work."},
+ {id:"sha256",name:"SHA-256, salted",kind:"Offline",rate:22e9,hw:true,about:"A unique salt per user stops precomputed tables and forces per-account work, but SHA-256 is still a fast general-purpose hash and is not designed for password storage."},
+ {id:"pbkdf2",name:"PBKDF2, 600k iterations",kind:"Offline",rate:18e3,hw:true,about:"PBKDF2-HMAC-SHA256 at the iteration count OWASP recommends repeats the hash hundreds of thousands of times, slowing every guess by about a million times compared with SHA-256."},
+ {id:"bcrypt",name:"bcrypt, cost 12",kind:"Offline",rate:1.4e3,hw:true,about:"bcrypt is deliberately slow and adjustable. Each increase in the cost factor doubles the work. Cost 12 allows only about 1,400 guesses per second per GPU."},
+ {id:"argon",name:"Argon2id, 64 MiB",kind:"Offline",rate:500,hw:true,about:"Argon2id is memory-hard: each guess needs a large block of memory, which blunts the advantage of GPUs and custom hardware. It is the first choice in current OWASP guidance."}
+];
+const HW=[{name:"1 GPU",l:"single high-end card",m:1},{name:"8-GPU rig",l:"serious hobbyist",m:8},{name:"1,000 GPUs",l:"rented cloud cluster",m:1000}];
+const LOG2_10=Math.log10(2);
+function rateOf(sc,hw){return sc.hw?sc.rate*HW[hw].m:sc.rate;}
+function tLog(bits,rate,avg){return bits*LOG2_10-(avg?LOG2_10:0)-Math.log10(rate);}
+const YEAR=31557600;
+function fmtTime(l10){
+  if(l10<0)return "instantly";
+  const s=Math.pow(10,l10);
+  if(s<60){const v=Math.max(1,Math.round(s));return v+" second"+(v===1?"":"s");}
+  if(s<3600){const v=Math.round(s/60);return v+" minute"+(v===1?"":"s");}
+  if(s<86400){const v=Math.round(s/3600);return v+" hour"+(v===1?"":"s");}
+  if(s<YEAR){const v=Math.round(s/86400);return v+" day"+(v===1?"":"s");}
+  const y=l10-Math.log10(YEAR);
+  if(y<3){const v=Math.round(Math.pow(10,y));return v.toLocaleString()+" year"+(v===1?"":"s");}
+  if(y<6)return Math.round(Math.pow(10,y-3)).toLocaleString()+" thousand years";
+  if(y<9)return Math.round(Math.pow(10,y-6)).toLocaleString()+" million years";
+  if(y<10.14)return Math.round(Math.pow(10,y-9)).toLocaleString()+" billion years";
+  return "longer than the age of the universe";
+}
+function bucket(l10){return l10<0?0:l10<Math.log10(3600)?1:l10<Math.log10(YEAR)?2:l10<Math.log10(1000*YEAR)?3:4;}
+const BUCKETS=["Under 1 second","1 second to 1 hour","1 hour to 1 year","1 year to 1,000 years","More than 1,000 years"];
+/*CORE-END*/
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fix=(x,d)=>Number(x.toFixed(d)).toLocaleString(undefined,{maximumFractionDigits:d});
+function sciLog(l10){if(l10<6)return Math.round(Math.pow(10,l10)).toLocaleString();const e=Math.floor(l10);let m=Math.pow(10,l10-e);if(m>=9.995){m=1;}return m.toFixed(2)+" × 10<sup>"+(m===1&&Math.pow(10,l10-e)>=9.995?e+1:e)+"</sup>";}
+function fmtRate(r){if(r<1)return Math.round(r*3600)+" guesses/hour";if(r<1e3)return fix(r,0)+" guesses/sec";if(r<1e6)return fix(r/1e3,1)+" thousand/sec";if(r<1e9)return fix(r/1e6,1)+" million/sec";if(r<1e12)return fix(r/1e9,1)+" billion/sec";return fix(r/1e12,1)+" trillion/sec";}
+function rnd(n){const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;let x;do{crypto.getRandomValues(a);x=a[0];}while(x>=lim);return x%n;}
+function randHex(bytes){const a=new Uint8Array(bytes);crypto.getRandomValues(a);return [...a].map(b=>HEX[b]).join("");}
+const SEGINFO={common:["Common password","--s-common"],word:["Dictionary word","--s-word"],ctx:["Personal or context word","--s-ctx"],year:["Year","--s-year"],seq:["Sequence","--s-seq"],kbd:["Keyboard pattern","--s-kbd"],rep:["Repeated characters","--s-rep"],rand:["Random-looking characters","--s-rand"]};
+function segLabel(s){let l=SEGINFO[s.type][0];const extra=[];if(s.cap)extra.push("capitalized");if(s.leet)extra.push("symbol swaps");if(extra.length)l+=", "+extra.join(" and ");return l;}
+const RATINGS=[["Very weak","--st0"],["Weak","--st1"],["Fair","--st2"],["Strong","--st3"],["Very strong","--st4"]];
+function rating(bits){return bits<28?0:bits<36?1:bits<60?2:bits<80?3:4;}
+
+/* ---------- hero ---------- */
+(function(){const A=analyze("Summer2026!",""),r=SC[4].rate;$("#heroNaive").textContent=fmtTime(tLog(A.naive,r,true));const e=fmtTime(tLog(A.eff,r,true));$("#heroEff").textContent=e==="instantly"?"under a second":e;})();
+
+/* ---------- vocabulary ---------- */
+const VOC=[
+ ["Authentication factor","A category of proof: something you know (password), have (security key), or are (fingerprint)."],
+ ["Entropy","A measure of unpredictability in bits. Each added bit doubles the number of guesses needed."],
+ ["Keyspace","Every possible password for a given length and character set: N to the power L."],
+ ["Hash function","A one-way function that turns input into a fixed-length fingerprint. The same input always gives the same hash."],
+ ["Salt","A unique random value stored with each password hash so identical passwords hash differently and precomputed tables fail."],
+ ["Pepper","A secret value added to every password before hashing, stored separately from the database."],
+ ["Key stretching","Deliberately repeating or slowing the hash (PBKDF2, bcrypt, scrypt, Argon2id) so each guess costs more."],
+ ["Rainbow table","A precomputed table that maps hashes back to passwords. Defeated by salting."],
+ ["Brute-force attack","Trying every combination in a keyspace, shortest first."],
+ ["Dictionary attack","Trying passwords from a list of words and previously leaked passwords."],
+ ["Rule-based attack","Applying predictable changes to wordlist entries: capitals, years, symbols, letter swaps."],
+ ["Mask attack","Brute force limited to a pattern, such as one capital, five lowercase letters, then two digits."],
+ ["Credential stuffing","Replaying username and password pairs leaked from one site against other sites."],
+ ["Password spraying","Trying a few common passwords against many accounts to stay under lockout thresholds."],
+ ["Blocklist","A list of common, expected, or breached passwords that a system refuses to accept."],
+ ["Passkey","A FIDO2/WebAuthn credential that replaces the password with a phishing-resistant key pair."],
+ ["MFA","Multifactor authentication: requiring two or more different factor types to log in."]
+];
+$("#cards").innerHTML=VOC.map(([w,d])=>`<button type="button" class="flip" aria-pressed="false" aria-label="${w}. Select to show definition"><span class="fi"><span class="f"><strong>${w}</strong><small>Select to flip</small></span><span class="b">${d}</span></span></button>`).join("");
+$("#cards").addEventListener("click",e=>{const c=e.target.closest(".flip");if(!c)return;const on=c.classList.toggle("on");c.setAttribute("aria-pressed",on);c.setAttribute("aria-label",c.querySelector("strong").textContent+(on?". "+c.querySelector(".b").textContent:". Select to show definition"));});
+
+/* ---------- strength lab ---------- */
+const CHAL=[["password","top of every list"],["Summer2026!","season + year + symbol"],["P@ssw0rd123","symbol swaps"],["qwerty123","keyboard walk"],["Tr0ub4dor&3","the classic comic"],["iloveyou2","common phrase"],["aaaaaaaaaaaaaaa","15 characters, one key"],["kX7!pQ","short but random"],["maple-orbit-tundra-velvet","random passphrase"],["7Gv#q2Lp!Rz9wMx4","password manager"]];
+const state={sc:4,hw:0,pw:"Summer2026!",ctx:"",mode:"explore",revealed:false,checked:false,lastPred:null,show:false};
+const pwIn=$("#pwIn");pwIn.value=state.pw;
+
+function renderScen(){$("#scen").innerHTML=SC.map((s,i)=>`<button type="button" class="scen-btn" data-i="${i}" aria-pressed="${i===state.sc}"><strong>${s.name}</strong><span>${s.kind}, ${fmtRate(s.rate)}${s.hw?" per GPU":""}</span></button>`).join("");}
+function renderInfo(){const s=SC[state.sc];$("#sName").textContent=s.name;$("#sKind").textContent=s.kind+" attack";$("#sRate").textContent=fmtRate(rateOf(s,state.hw))+(s.hw?" with "+HW[state.hw].name:"");$("#sAbout").textContent=s.about;}
+function renderHW(){const s=SC[state.sc];$("#hw").innerHTML=HW.map((h,i)=>`<button type="button" class="chip" data-i="${i}" aria-pressed="${i===state.hw}" ${s.hw?"":"disabled"}><span class="g">${h.name}</span><span class="l">${s.hw?h.l:"not used online"}</span></button>`).join("");}
+function renderChal(){$("#chal").innerHTML=CHAL.map(([p,l])=>`<button type="button" class="chip" data-p="${esc(p)}" aria-pressed="${p===state.pw}"><span class="g">${esc(p)}</span><span class="l">${l}</span></button>`).join("");}
+function resetRun(){state.revealed=false;state.checked=false;state.lastPred=null;}
+function refresh(){renderInfo();renderAnatomy();renderBuild();renderHowto();renderResults();}
+
+$("#scen").addEventListener("click",e=>{const b=e.target.closest(".scen-btn");if(!b)return;state.sc=+b.dataset.i;resetRun();renderScen();renderHW();refresh();$(`.scen-btn[data-i="${b.dataset.i}"]`).focus();});
+$("#hw").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b||b.disabled)return;state.hw=+b.dataset.i;resetRun();renderHW();refresh();$(`#hw .chip[data-i="${b.dataset.i}"]`).focus();});
+$("#chal").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;setPw(b.dataset.p);const nb=[...$$("#chal .chip")].find(x=>x.dataset.p===b.dataset.p);if(nb)nb.focus();});
+function setPw(p){state.pw=p;pwIn.value=p;resetRun();renderChal();refresh();}
+pwIn.addEventListener("input",()=>{state.pw=pwIn.value;resetRun();$$("#chal .chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.p===state.pw));refresh();});
+$("#ctxIn").addEventListener("input",e=>{state.ctx=e.target.value;renderAnatomy();renderHowto();renderResults();});
+$("#pwShow").addEventListener("click",e=>{state.show=!state.show;pwIn.type=state.show?"text":"password";e.currentTarget.textContent=state.show?"Hide":"Show";e.currentTarget.setAttribute("aria-pressed",state.show);});
+$("#genRand").addEventListener("click",()=>{const cs="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*-_=+?";let p="";for(let i=0;i<16;i++)p+=cs[rnd(cs.length)];setPw(p);});
+$("#genPhrase").addEventListener("click",()=>{const w=[];for(let i=0;i<5;i++)w.push(WORDS[rnd(WORDS.length)]);setPw(w.join("-"));});
+$("#modes").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.mode=b.dataset.m;resetRun();$$("#modes button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderAnatomy();renderBuild();renderResults();});
+
+function renderAnatomy(){
+  const A=analyze(state.pw,state.ctx),el=$("#anat");
+  if(!A){el.innerHTML='<p class="empty">Type a password or choose a challenge to see how an attacker reads it.</p>';return;}
+  if((state.mode==="predict"&&!state.revealed)||(state.mode==="build"&&!state.checked)){
+    el.innerHTML=`<div class="seg hid"><span class="t">${esc(A.pw)}</span><span class="l">${state.mode==="predict"?"Patterns hidden until you predict":"Patterns hidden until you check your math"}</span></div>`;return;}
+  el.innerHTML=A.segs.map((s,i)=>`<div class="seg" style="--c:var(${SEGINFO[s.type][1]});animation-delay:${i*60}ms"><span class="t">${esc(s.text)}</span><span class="l">${segLabel(s)}<br>≈ 2<sup>${fix(s.bits,1)}</sup> guesses</span></div>`).join("");
+}
+function renderBuild(){
+  const box=$("#buildBox");if(state.mode!=="build"){box.hidden=true;box.innerHTML="";return;}
+  box.hidden=false;
+  box.innerHTML=`<p style="margin:0"><strong>Your turn.</strong> Use brute-force math. Lowercase = 26, uppercase = 26, digits = 10, printable symbols and space = 33.</p>
+   <div class="bf"><label for="bN">Character pool size (N)</label><input id="bN" type="number" inputmode="numeric"></div>
+   <div class="bf"><label for="bL">Length (L)</label><input id="bL" type="number" inputmode="numeric"></div>
+   <div class="bf"><label for="bB">Entropy in bits, L × log₂N (one decimal)</label><input id="bB" type="number" step="0.1" inputmode="decimal"></div>
+   <div class="row"><button class="btn btn-p btn-s" type="button" id="bCheck">Check my math</button><span class="note" id="bMsg" role="status"></span></div>`;
+  $("#bCheck").addEventListener("click",()=>{
+    const A=analyze(state.pw,state.ctx);if(!A){$("#bMsg").textContent="Enter a password first.";return;}
+    const N=+$("#bN").value,L=+$("#bL").value,B=+$("#bB").value;let ok=0;const msgs=[];
+    const mark=(el,good,want)=>{el.classList.toggle("ok",good);el.classList.toggle("bad",!good);if(good)ok++;else msgs.push(want);};
+    mark($("#bN"),N===A.pool.N,"N = "+A.pool.N);mark($("#bL"),L===A.len,"L = "+A.len);mark($("#bB"),Math.abs(B-A.naive)<=0.15,"bits = "+fix(A.naive,1));
+    $("#bMsg").textContent=ok===3?"All three correct. Results are now shown.":`${ok} of 3 correct. Answers: ${msgs.join(", ")}.`;
+    state.checked=true;renderAnatomy();renderResults();
+  });
+}
+function renderHowto(){
+  const A=analyze(state.pw,state.ctx),s=SC[state.sc],r=rateOf(s,state.hw);
+  if(!A){$("#howto").innerHTML="";return;}
+  const cls=[];if(A.pool.lo)cls.push("lowercase (26)");if(A.pool.up)cls.push("uppercase (26)");if(A.pool.dg)cls.push("digits (10)");if(A.pool.sy)cls.push("symbols (33)");if(A.pool.ot)cls.push("other (~100)");
+  $("#howto").innerHTML=
+   `<li><b>Count the characters.</b> Length L = ${A.len}. Classes used: ${cls.join(", ")}, so the pool N = ${A.pool.N}.</li>`+
+   `<li><b>Brute-force keyspace.</b> N<sup>L</sup> = ${A.pool.N}<sup>${A.len}</sup> ≈ ${sciLog(A.naive*LOG2_10)} combinations, or L × log₂N = ${fix(A.naive,1)} bits. On average the attacker searches half.</li>`+
+   `<li><b>Find patterns.</b> Split the password into the cheapest pieces an attacker would guess (see the anatomy). Add each piece’s bits, plus a little for the order of pieces: about ${fix(A.eff,1)} bits.</li>`+
+   `<li><b>Divide by speed.</b> ${s.name}${s.hw?" with "+HW[state.hw].name:""}: ${fmtRate(r)}. Time = guesses ÷ guesses per second.</li>`;
+}
+function renderResults(){
+  const A=analyze(state.pw,state.ctx),s=SC[state.sc],r=rateOf(s,state.hw),pb=$("#predictBox"),rs=$("#results");
+  if(!A){pb.hidden=true;rs.innerHTML='<p class="note">Results appear here once you enter a password.</p>';return;}
+  const effL=tLog(A.eff,r,true),naiveL=tLog(A.naive,r,true);
+  if(state.mode==="predict"&&!state.revealed){
+    pb.hidden=false;
+    pb.innerHTML=`<h4 style="margin:0">Make your prediction</h4><label for="predSel">How long would a pattern-aware attacker need to crack this password? (${esc(s.name)}${s.hw?", "+HW[state.hw].name:""})</label>
+      <select id="predSel"><option value="">Choose a time range</option>${BUCKETS.map((b,i)=>`<option value="${i}">${b}</option>`).join("")}</select>
+      <div><button class="btn btn-p btn-s" type="button" id="predGo">Reveal the analysis</button></div><div id="predFb" role="status"></div>`;
+    rs.innerHTML='<p class="note">Results stay hidden until you predict. Look for words, years, keyboard runs, and repeats, then think about the attack speed.</p>';
+    $("#predGo").addEventListener("click",()=>{const v=$("#predSel").value;if(v===""){$("#predFb").innerHTML='<div class="fb bad">Choose a time range first, then reveal.</div>';return;}
+      const ans=bucket(effL);state.lastPred={right:+v===ans,ans};state.revealed=true;renderAnatomy();renderResults();});
+    return;
+  }
+  pb.hidden=true;pb.innerHTML="";
+  if(state.mode==="build"&&!state.checked){rs.innerHTML='<p class="note">Fill in N, L, and the entropy, then select <strong>Check my math</strong> to see the results.</p>';return;}
+  let h="";
+  if(state.mode==="predict"&&state.lastPred){const p=state.lastPred;h+=`<div class="fb ${p.right?"good":"bad"}" style="margin-bottom:1rem"><strong>${p.right?"Correct.":"Not quite."}</strong> The estimate is ${fmtTime(effL)}, in the range “${BUCKETS[p.ans]}.” ${p.right?"":"Check the anatomy: each recognized pattern removes most of the guessing."}</div>`;}
+  const rt=rating(A.eff),[rl,rc]=RATINGS[rt];
+  h+=`<h4>Verdict</h4><div class="verdict" style="--vc:var(${rc})"><strong>${rl}</strong><span class="note">${fix(A.eff,1)} bits of pattern-aware entropy</span></div>
+    <div class="meter" style="--vc:var(${rc})" role="img" aria-label="${rl}, ${fix(A.eff,0)} of 128 bits"><span style="width:${Math.min(100,A.eff/128*100)}%"></span></div>
+    <div class="ticks" aria-hidden="true"><span>0</span><span>28</span><span>60</span><span>80</span><span>128 bits</span></div>
+    <dl class="bits"><div><dt>Brute-force math</dt><dd>${fix(A.naive,1)} bits</dd><dt>${esc(fmtTime(naiveL))}</dt></div><div><dt>Pattern-aware estimate</dt><dd style="color:var(${rc})">${fix(A.eff,1)} bits</dd><dt>${esc(fmtTime(effL))}</dt></div></dl>`;
+  h+=`<h4>Time to crack in every scenario${state.hw?" ("+HW[state.hw].name+" for offline)":""}</h4><div class="tbl"><table class="ct"><tr><th scope="col">Scenario</th><th scope="col">Brute-force average</th><th scope="col">Pattern-aware</th></tr>`+
+    SC.map((x,i)=>{const rr=rateOf(x,state.hw);return `<tr class="${i===state.sc?"cur":""}"${i===state.sc?' aria-current="true"':""}><td>${x.name}</td><td class="n">${fmtTime(tLog(A.naive,rr,true))}</td><td class="n">${fmtTime(tLog(A.eff,rr,true))}</td></tr>`;}).join("")+`</table></div>`;
+  const lo=A.pw.toLowerCase(),inList=RANK.has(lo)||deleet(lo).some(([n])=>RANK.has(n));
+  const wordChars=A.segs.filter(x=>x.type==="word"||x.type==="common").reduce((a,x)=>a+x.text.length,0);
+  const predictable=wordChars/A.pw.length>=.5&&A.eff<40;
+  const hasPat=A.segs.some(x=>["seq","kbd","rep"].includes(x.type)),hasCtx=A.segs.some(x=>x.type==="ctx");
+  const ck=[[A.len>=15,"At least 15 characters","NIST minimum when a password is the only factor"],[A.len>=8,"At least 8 characters","NIST minimum when the password is part of MFA"],[!inList,"Not on a common or breached password list","NIST blocklist requirement (this lab’s list is small)"],[!predictable,"Not a dictionary word with predictable changes","NIST blocklist requirement"],[!hasCtx,"No username, service, or organization name","NIST context-specific words"],[!hasPat,"No sequences, keyboard walks, or repeats","Common best practice"]];
+  h+=`<h4>Policy check</h4><ul class="check">${ck.map(([ok,t,n])=>`<li><span class="pf ${ok?"y":"n"}">${ok?"Pass":"Fix"}</span><span>${t}<br><small>${n}</small></span></li>`).join("")}</ul>
+    <p class="note" style="margin-top:.5rem">NIST SP 800-63B also says not to require composition rules (such as “one symbol”) or periodic changes without evidence of compromise, and to allow paste and password managers.</p>`;
+  h+=`<h4>Explain it to the user</h4><div class="say"><p>Plain language you could use at the help desk:</p><ul>${sayLines(A,s,effL).map(x=>`<li>${x}</li>`).join("")}</ul></div>`;
+  rs.innerHTML=h;
+}
+function sayLines(A,s,effL){
+  const L=[],seen=new Set();
+  if(A.segs.some(x=>x.type==="common"))L.push("Part of this password appears on lists of the most common passwords, so attack tools try it in the first few seconds.");
+  A.segs.filter(x=>x.type==="word").forEach(x=>{if(seen.has(x.norm))return;seen.add(x.norm);L.push(`It is built on the word “${esc(x.norm)}.” Attack tools try every common word${x.cap||x.leet?", including capitals and look-alike symbol swaps":""}.`);});
+  if(A.segs.some(x=>x.type==="year"))L.push("Adding a year is one of the first changes attack rules try.");
+  if(A.segs.some(x=>x.type==="ctx"))L.push("It includes a name connected to you or your organization, which a targeted attacker would guess.");
+  if(A.segs.some(x=>["seq","kbd","rep"].includes(x.type)))L.push("Patterns like 1234, qwerty, or repeated keys are guessed early.");
+  L.push(A.len<15?`At ${A.len} characters, it is shorter than the 15 characters NIST recommends when a password is the only protection.`:"Its length is one of its best features: every added character multiplies the work.");
+  const t=fmtTime(effL);
+  L.push(s.hw?`If an attacker stole the password database (${esc(s.name)}, ${HW[state.hw].name}), we estimate it would hold out ${t==="instantly"?"less than a second":"about "+t}.`:`Against a login page (${esc(s.name.toLowerCase())}), we estimate it would hold out ${t==="instantly"?"less than a second":"about "+t}.`);
+  L.push("Use a different password for every account, let a password manager remember them, and turn on MFA or a passkey wherever you can.");
+  return L;
+}
+
+/* ---------- guessing odds ---------- */
+const POP=[["1234",10.7],["1111",6],["0000",1.9],["1212",1.2],["7777",.75],["1004",.62],["2000",.61],["4444",.53],["2222",.52],["6969",.51],["9999",.45],["3333",.42],["5555",.4],["6666",.39],["1122",.37],["1313",.3],["8888",.3],["4321",.29],["2001",.29],["1010",.28]];
+const POPSUM=POP.reduce((a,x)=>a+x[1],0)/100;
+const YEARS=[];for(let y=2010;y>=1950;y--)YEARS.push(String(y));
+const POPORDER=(()=>{const s=new Set(POP.map(x=>x[0]));YEARS.forEach(y=>s.add(y));for(let i=0;i<10000;i++)s.add(String(i).padStart(4,"0"));return [...s];})();
+const POPIDX=new Map(POPORDER.map((p,i)=>[p,i+1]));
+const odds={src:"random",ord:"seq",runs:[]};
+function pickPin(){
+  if(odds.src==="random")return String(rnd(10000)).padStart(4,"0");
+  const u=rnd(1e6)/1e6;
+  if(u<POPSUM){let t=u*100;for(const [p,w] of POP){if(t<w)return p;t-=w;}return "1234";}
+  if(u<POPSUM+.15)return YEARS[rnd(YEARS.length)];
+  return String(rnd(10000)).padStart(4,"0");
+}
+function guessesFor(pin){return odds.ord==="seq"?(+pin)+1:POPIDX.get(pin);}
+function renderOdds(){
+  const r=odds.runs,n=r.length;
+  $("#oDots").innerHTML=n?r.slice(-400).map((g,i)=>{const q=g<=2500?1:g<=5000?2:g<=7500?3:4;return `<i style="background:var(--q${q});animation-delay:${Math.min(i,40)*8}ms" title="${g.toLocaleString()} guesses"></i>`;}).join(""):'<span class="empty">No attacks yet. Run some to start.</span>';
+  const avg=n?r.reduce((a,b)=>a+b,0)/n:0,in10=n?r.filter(g=>g<=10).length:0;
+  const row=(k,v,e)=>`<tr><td>${k}</td><td class="n">${v}</td><td class="n">${e}</td></tr>`;
+  $("#oTable").innerHTML=`<tr><th scope="col">Measure</th><th scope="col">Observed</th><th scope="col">Expected if PINs were random</th></tr>`+
+    row("Attacks run",n.toLocaleString(),"—")+
+    row("Average guesses needed",n?fix(avg,0):"—","5,000.5")+
+    row("Fewest guesses",n?Math.min(...r).toLocaleString():"—","1")+
+    row("Most guesses",n?Math.max(...r).toLocaleString():"—","10,000")+
+    row("Cracked within 10 guesses (before a typical lockout)",n?in10+" ("+fix(in10/n*100,1)+"%)":"—","0.1%");
+}
+$$("#odds [data-n]").forEach(b=>b.addEventListener("click",()=>{for(let i=0;i<+b.dataset.n;i++)odds.runs.push(guessesFor(pickPin()));renderOdds();}));
+$("#oClear").addEventListener("click",()=>{odds.runs=[];renderOdds();});
+function seg(id,key){$(id).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;odds[key]=b.dataset.v;$$(id+" button").forEach(x=>x.setAttribute("aria-pressed",x===b));odds.runs=[];renderOdds();});}
+seg("#oSrc","src");seg("#oOrd","ord");
+
+/* ---------- hash lab ---------- */
+const hl={salted:false,salts:[randHex(8),randHex(8)]};
+function diffHex(a,b){let bits=0,ha="",hb="";for(let i=0;i<a.length;i++){const x=parseInt(a[i],16)^parseInt(b[i],16);bits+=((x>>3)&1)+((x>>2)&1)+((x>>1)&1)+(x&1);ha+=x?`<span class="d">${a[i]}</span>`:a[i];hb+=x?`<span class="d">${b[i]}</span>`:b[i];}return {bits,ha,hb};}
+function renderHash(){
+  const p=$("#hIn").value;
+  const alt=p?p.slice(0,-1)+String.fromCharCode(p.charCodeAt(p.length-1)+1):"a";
+  const a=sha256(p),b=sha256(alt),d=diffHex(a,b);
+  $("#hOut").innerHTML=d.ha;$("#hAlt").innerHTML=d.hb;$("#hAltL").innerHTML=`<span class="mono">${esc(alt||" ")}</span>`;
+  $("#hDiff").innerHTML=`Changing one character flipped <strong>${d.bits} of 256 bits</strong> (about ${Math.round(d.bits/2.56)}%). Highlighted digits differ. You cannot work backward from a hash, and similar passwords give unrelated hashes, which is the avalanche effect.`;
+  const rows=["Alice","Bob"].map((n,i)=>({n,salt:hl.salts[i],h:hl.salted?sha256(hl.salts[i]+p):a}));
+  const same=rows[0].h===rows[1].h;
+  $("#saltRows").innerHTML=rows.map(r=>`<dt>${r.n}${hl.salted?`<br><span class="note">salt <span class="mono">${r.salt}</span></span>`:""}</dt><dd><div class="hash ${same?"match":""}">${r.h}</div></dd>`).join("");
+  $("#saltMsg").textContent=same?"Identical hashes: anyone with the database can see Alice and Bob share a password, and one precomputed lookup cracks both.":"Different hashes for the same password. The attacker must crack each account separately, and precomputed tables are useless. Salts are not secret; they are stored next to the hash.";
+}
+$("#hIn").addEventListener("input",renderHash);
+$("#saltMode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;hl.salted=b.dataset.v==="1";$$("#saltMode button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderHash();});
+$("#newSalt").addEventListener("click",()=>{hl.salts=[randHex(8),randHex(8)];renderHash();});
+$("#itGo").addEventListener("click",()=>{
+  const it=+$("#itSel").value,btn=$("#itGo");btn.disabled=true;$("#itOut").innerHTML='<p class="note">Timing…</p>';
+  setTimeout(()=>{const t0=performance.now();let h=sha256($("#hIn").value);for(let i=1;i<it;i++)h=sha256(h);const ms=Math.max(.01,performance.now()-t0);
+    const gpu=22e9/it;
+    $("#itOut").innerHTML=`<div><span class="note">One login on your device</span><div class="stat">${ms<1?fix(ms,2):fix(ms,0)} ms</div><p class="note" style="margin:0">Unnoticeable for a user logging in once.</p></div>
+      <div><span class="note">Attacker speed on one GPU</span><div class="stat">${fmtRate(gpu)}</div><p class="note" style="margin:0">${it===1?"Plain SHA-256 at full speed.":"Every guess now costs "+it.toLocaleString()+" hashes, so the attacker is "+it.toLocaleString()+" times slower."}</p></div>`;
+    btn.disabled=false;},30);
+});
+
+/* ---------- crack the dump ---------- */
+const DUMP=[["aisha","123456"],["ben","123456"],["carlos","Summer2026!"],["dana","P@ssw0rd"],["eli","dragon"],["fatima","Welcome1"],["george","letmein"],["hana","iloveyou2"],["ivan","482915"],["jin","2580"],["kai","vqrt"],["lena","Monkey2024"],["marco","maple-orbit-tundra-velvet"],["nadia","Tm9#vLq2!xR7pZ4w"],["omar","kX7!pQ"],["priya","Qwerty123"]];
+const DICT=[...new Set(COMMON.concat(WORDS))];
+const SUFFIX=(()=>{const s=["","!","1","12","123","1234","1!","123!","!!","@","#","$"];for(let i=0;i<100;i++)s.push(String(i));for(let i=0;i<10;i++)s.push("0"+i);for(let y=1990;y<=2026;y++){s.push(String(y));s.push(y+"!");}return [...new Set(s)];})();
+const LM=[{a:"@",o:"0"},{a:"4",e:"3",i:"1",o:"0",s:"5"},{a:"@",e:"3",i:"1",o:"0",s:"$"}];
+const cap=w=>w.charAt(0).toUpperCase()+w.slice(1);
+const lsub=(w,m)=>[...w].map(c=>m[c]||c).join("");
+function variants(w){const l1=lsub(w,LM[0]),l3=lsub(w,LM[2]);return [...new Set([w,cap(w),w.toUpperCase(),l1,cap(l1),lsub(w,LM[1]),l3,cap(l3)])];}
+const RULECOUNT=DICT.reduce((a,w)=>a+variants(w).length,0)*SUFFIX.length;
+const ATK={
+  dict:{name:"Dictionary",about:"Try every entry in a wordlist of common passwords and words, exactly as written.",cmd:"hashcat -m 1400 -a 0 hashes.txt wordlist.txt",count:DICT.length,gen:function*(){yield* DICT;},c:"--s-common"},
+  rules:{name:"Dictionary + rules",about:"Mangle each word the way people do: capitalize, swap letters for symbols, and append digits, years, and “!”.",cmd:"hashcat -m 1400 -a 0 hashes.txt wordlist.txt -r best64.rule",count:RULECOUNT,gen:function*(){for(const w of DICT)for(const v of variants(w))for(const s of SUFFIX)yield v+s;},c:"--s-word"},
+  mask:{name:"Mask: 4–6 digits",about:"Brute force limited to a pattern. Here, every PIN-style number from 4 to 6 digits long.",cmd:"hashcat -m 1400 -a 3 hashes.txt ?d?d?d?d?d?d --increment --increment-min 4",count:1110000,gen:function*(){for(let L=4;L<=6;L++){const m=10**L;for(let i=0;i<m;i++)yield String(i).padStart(L,"0");}},c:"--s-year"},
+  brute:{name:"Brute force: a–z, 1–4",about:"Every lowercase combination from 1 to 4 characters. Small keyspace, guaranteed results within it.",cmd:"hashcat -m 1400 -a 3 hashes.txt ?l?l?l?l --increment",count:26+676+17576+456976,gen:function*(){const a="abcdefghijklmnopqrstuvwxyz";for(let L=1;L<=4;L++){const idx=new Array(L).fill(0);while(true){let s="";for(const k of idx)s+=a[k];yield s;let p=L-1;while(p>=0&&++idx[p]===26){idx[p]=0;p--;}if(p<0)break;}}},c:"--s-seq"}
+};
+const dump={salted:false,users:[],sel:"dict",job:null,rate:0};
+function buildDump(){dump.users=DUMP.map(([n,p])=>{const salt=randHex(8);return {n,p,salt,hash:dump.salted?sha256(salt+p):sha256(p),cracked:null,by:null};});dump.index=new Map();if(!dump.salted)dump.users.forEach(u=>{const a=dump.index.get(u.hash)||[];a.push(u);dump.index.set(u.hash,a);});}
+function renderAtk(){
+  $("#atkSel").innerHTML=Object.entries(ATK).map(([k,a])=>`<button type="button" data-k="${k}" aria-pressed="${k===dump.sel}">${a.name}</button>`).join("");
+  const a=ATK[dump.sel],open=dump.users.filter(u=>!u.cracked).length,hashes=dump.salted?a.count*open:a.count;
+  $("#atkAbout").textContent=a.about;
+  $("#atkCmd").textContent=dump.salted?a.cmd.replace("-m 1400","-m 1420"):a.cmd;
+  $("#atkEst").innerHTML=`${a.count.toLocaleString()} candidates × ${dump.salted?open+" uncracked accounts (salted: each needs its own hash)":"1 (unsalted: one hash checks every account)"} = <strong>${hashes.toLocaleString()} hashes</strong>. Your browser: about ${dump.rate?fmtTime(Math.log10(hashes/dump.rate)):"…"}. One GPU at 22 billion/sec: ${fmtTime(Math.log10(hashes/22e9))}.`;
+}
+$("#atkSel").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||dump.job)return;dump.sel=b.dataset.k;renderAtk();});
+function renderDump(){
+  const u=dump.users;
+  $("#dumpDots").innerHTML=u.map(x=>`<i style="background:var(${x.cracked?ATK[x.by].c:"--unc"})" title="${x.n}"></i>`).join("");
+  $("#dumpLegend").innerHTML=Object.values(ATK).map(a=>`<li><span class="sw" style="background:var(${a.c})"></span>${a.name}</li>`).join("")+'<li><span class="sw" style="background:var(--unc)"></span>Not cracked</li>';
+  const n=u.filter(x=>x.cracked).length;
+  $("#dumpTable").innerHTML=`<tr><th scope="col">Account</th><th scope="col">Stored hash</th><th scope="col">Status</th><th scope="col">Recovered password</th></tr>`+
+   u.map(x=>`<tr><td>${x.n}</td><td class="mono" title="${x.hash}">${dump.salted?`<span class="note">${x.salt.slice(0,6)}…</span> `:""}${x.hash.slice(0,14)}…</td><td>${x.cracked?`<span class="badge" style="--bc:var(${ATK[x.by].c})">${ATK[x.by].name}</span>`:'<span class="badge" style="--bc:var(--unc)">Not cracked</span>'}</td><td class="mono">${x.cracked?esc(x.cracked):"—"}</td></tr>`).join("")+
+   `<tr><td colspan="4"><strong>${n} of ${u.length} accounts cracked (${Math.round(n/u.length*100)}%)</strong></td></tr>`;
+}
+function setRunning(on){$("#atkGo").disabled=on;$("#atkStop").disabled=!on;$("#dumpReset").disabled=on;$$("#dumpMode button,#atkSel button").forEach(b=>b.disabled=on);}
+$("#atkGo").addEventListener("click",()=>{
+  if(dump.job)return;const k=dump.sel,a=ATK[k],gen=a.gen(),t0=performance.now();let tried=0,hashes=0,found=0;
+  const job={stop:false};dump.job=job;setRunning(true);
+  const crack=(u,c)=>{u.cracked=c;u.by=k;found++;};
+  function finish(stopped){dump.job=null;setRunning(false);const s=(performance.now()-t0)/1000;
+    $("#atkStatus").textContent=`${stopped?"Stopped":"Finished"}: ${tried.toLocaleString()} candidates, ${hashes.toLocaleString()} hashes in ${fix(s,1)} s (${fmtRate(hashes/Math.max(s,.001))}). ${found} new account${found===1?"":"s"} cracked.`;
+    $("#atkProg").style.width=stopped?$("#atkProg").style.width:"100%";renderDump();renderAtk();}
+  function slice(){
+    const s0=performance.now();
+    while(performance.now()-s0<30){
+      for(let q=0;q<400;q++){
+        const r=gen.next();if(r.done){finish(false);return;}const c=r.value;tried++;
+        if(!dump.salted){const h=sha256(c);hashes++;const us=dump.index.get(h);if(us)us.forEach(u=>{if(!u.cracked)crack(u,c);});}
+        else{for(const u of dump.users){if(u.cracked)continue;hashes++;if(sha256(u.salt+c)===u.hash)crack(u,c);}}
+      }
+    }
+    $("#atkProg").style.width=Math.min(100,tried/a.count*100)+"%";
+    $("#atkStatus").textContent=`Running ${a.name}: ${tried.toLocaleString()} of ${a.count.toLocaleString()} candidates, ${found} cracked so far…`;
+    if(found)renderDump();
+    if(job.stop){finish(true);return;}
+    setTimeout(slice,0);
+  }
+  $("#atkProg").style.width="0";setTimeout(slice,0);
+});
+$("#atkStop").addEventListener("click",()=>{if(dump.job)dump.job.stop=true;});
+$("#dumpReset").addEventListener("click",()=>{buildDump();$("#atkStatus").textContent="Database reset. All accounts are uncracked.";$("#atkProg").style.width="0";renderDump();renderAtk();});
+$("#dumpMode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||dump.job)return;dump.salted=b.dataset.v==="1";$$("#dumpMode button").forEach(x=>x.setAttribute("aria-pressed",x===b));buildDump();$("#atkStatus").textContent=dump.salted?"Salted database loaded. Every account has its own salt.":"Unsalted database loaded.";$("#atkProg").style.width="0";renderDump();renderAtk();});
+setTimeout(()=>{const t0=performance.now();let n=0;while(performance.now()-t0<150){for(let i=0;i<500;i++)sha256("bench"+i);n+=500;}dump.rate=n/((performance.now()-t0)/1000);$("#bench").textContent="Your browser: about "+fmtRate(dump.rate).replace("/sec"," hashes/sec")+". One GPU: about 22 billion/sec.";renderAtk();},400);
+
+/* ---------- scenarios ---------- */
+const CASES=[
+ {title:"The help desk and Summer2026!",meta:"Password policy, user communication",load:{pw:"Summer2026!",sc:1},
+  story:"A user calls the help desk. Their new password, Summer2026!, passed the company’s rule of 8 characters with upper, lower, digit, and symbol. They ask, “It passed, so it’s strong, right?”",
+  q:"What is the best response?",o:["Yes. It meets every complexity rule.","No. Season plus year plus ! is one of the first patterns cracking rules try. Suggest a long passphrase or a password manager.","It is fine if they change it every 90 days.","Add a second symbol to make it strong."],a:1,
+  why:"Complexity rules push users toward predictable patterns. Rule-based attacks crack this in seconds offline. Length and randomness matter far more, and NIST advises against forced periodic changes, which encourage Summer2026! becoming Fall2026!."},
+ {title:"A breached MD5 table",meta:"Hashing, incident analysis",load:{pw:"123456",sc:3},
+  story:"During an incident you find a leaked database of 50,000 accounts stored as unsalted MD5. One hash value appears 1,200 times.",
+  q:"What does the repeated hash tell you?",o:["Nothing; hashes are random.","1,200 users share the same password, likely a very common one, and cracking that one hash exposes all of them.","The database was encrypted correctly.","Those accounts used MFA."],a:1,
+  why:"Without salt, identical passwords produce identical hashes. Duplicates reveal common passwords, and precomputed tables or a single crack expose every matching account. Unique salts and a slow KDF would prevent both problems."},
+ {title:"Rewriting a legacy policy",meta:"NIST SP 800-63B",
+  story:"Your manager wants to keep the current policy: minimum 8 characters, required complexity, mandatory change every 90 days, and paste disabled on the login form.",
+  q:"Which recommendation best aligns with NIST SP 800-63B?",o:["Keep everything and add a 12-month password history.","Require a longer minimum (15 for password-only accounts), screen against a breached-password blocklist, drop composition rules and scheduled rotation, and allow paste for password managers.","Require 4 symbol types and 30-day rotation.","Switch to 6-digit numeric PINs."],a:1,
+  why:"Current NIST guidance favors length, blocklist screening, and usability features like paste and password managers. It says not to impose composition rules or periodic changes; force a change only on evidence of compromise."},
+ {title:"Strange failures in the SIEM",meta:"Detection, Windows logs",
+  story:"Your SIEM shows one failed logon (Event ID 4625) for each of 3,000 different accounts within 20 minutes, all from the same external IP. The pattern repeats each hour with a different password.",
+  q:"What attack is this, and what helps most?",o:["Brute force on one account; increase lockout to 3 attempts.","Password spraying; enforce MFA, block common passwords, use smart lockout, and alert on many-account failures from one source.","Credential stuffing; rotate every password.","A rainbow table attack; add salt."],a:1,
+  why:"Spraying tries one likely password against many accounts to stay below per-account lockout thresholds. Per-account lockout alone misses it; correlation across accounts, banned-password lists, and MFA stop it."},
+ {title:"Something outside scope",meta:"Ethics, rules of engagement",
+  story:"During an authorized internal test you crack a domain administrator’s hash. On a file share you also find a text file containing the CFO’s personal webmail password.",
+  q:"What should you do with the webmail password?",o:["Log in to confirm it works, then report it.","Do not use it. Document the exposure, report it promptly through the agreed channel, and keep the evidence protected.","Ignore it because it is personal.","Share it with the IT team on the chat channel so they can fix it."],a:1,
+  why:"Your authorization covers defined systems only. Logging in to a personal account is outside scope and may be illegal. Report the sensitive finding securely so the organization can act, and handle the credential as protected data."},
+ {title:"A developer’s storage question",meta:"Secure storage, KDFs",load:{pw:"Monkey2024",sc:4},
+  story:"A developer says, “We hash passwords with SHA-256 and a random salt per user. That’s secure, right?”",
+  q:"What is the best advice?",o:["Yes, salted SHA-256 is best practice.","Salting is good, but SHA-256 is too fast. Use a password-hashing function such as Argon2id, scrypt, bcrypt, or PBKDF2 with strong parameters.","Encrypt passwords with AES instead so they can be recovered.","Use MD5 because it is faster for users."],a:1,
+  why:"A GPU can try billions of salted SHA-256 guesses per second. Password-hashing functions are designed to be slow and, for Argon2id and scrypt, memory-hard. Load the case and compare the SHA-256 and Argon2id rows."}
+];
+$("#caseList").innerHTML=CASES.map((c,i)=>`<article class="panel case"><h3>${c.title}</h3><div class="meta">${c.meta}</div><p>${esc(c.story)}</p>
+  ${c.load?`<button class="btn btn-g btn-s" type="button" data-load="${i}">Load into the strength lab</button>`:""}
+  <fieldset><legend>${c.q}</legend>${c.o.map((o,j)=>`<label class="opt"><input type="radio" name="case${i}" value="${j}"><span>${esc(o)}</span></label>`).join("")}</fieldset>
+  <button class="btn btn-p btn-s" type="button" data-check="${i}">Check answer</button><div id="cfb${i}" role="status" style="margin-top:.7rem"></div></article>`).join("");
+$("#caseList").addEventListener("click",e=>{
+  const l=e.target.closest("[data-load]"),k=e.target.closest("[data-check]");
+  if(l){const c=CASES[+l.dataset.load];state.mode="explore";$$("#modes button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.m==="explore"));state.sc=c.load.sc;renderScen();renderHW();setPw(c.load.pw);document.getElementById("sim").scrollIntoView();}
+  if(k){const i=+k.dataset.check,c=CASES[i],sel=document.querySelector(`input[name="case${i}"]:checked`),fb=document.getElementById("cfb"+i);
+    if(!sel){fb.innerHTML='<div class="fb bad">Choose an answer, then check it.</div>';return;}
+    $$(`input[name="case${i}"]`).forEach(r=>{r.parentElement.classList.remove("right","wrong");if(+r.value===c.a)r.parentElement.classList.add("right");else if(r.checked)r.parentElement.classList.add("wrong");});
+    const ok=+sel.value===c.a;fb.innerHTML=`<div class="fb ${ok?"good":"bad"}"><strong>${ok?"Correct.":"Not quite."}</strong> ${esc(c.why)}</div>`;}
+});
+
+/* ---------- quiz ---------- */
+const QZ=[
+ {q:"What is the entropy of a password made of 8 randomly chosen lowercase letters?",o:["About 26 bits","About 37.6 bits","64 bits","208 bits"],a:1,w:"L × log₂N = 8 × log₂26 = 8 × 4.7 ≈ 37.6 bits."},
+ {q:"What is the main purpose of a salt?",o:["To encrypt the password so it can be recovered","To make identical passwords hash differently and defeat precomputed tables","To make hashing faster","To replace MFA"],a:1,w:"A unique salt per account stops rainbow tables and hides shared passwords. It is not secret and does not slow a single guess."},
+ {q:"Which is designed specifically for password storage?",o:["MD5","SHA-256","Argon2id","AES-256"],a:2,w:"Argon2id is a memory-hard password-hashing function. MD5 and SHA-256 are fast general hashes, and AES is reversible encryption."},
+ {q:"An attacker tries “Winter2026!” against thousands of accounts, once each. This is:",o:["Brute force","Credential stuffing","Password spraying","A rainbow table attack"],a:2,w:"Spraying uses a few likely passwords across many accounts to avoid per-account lockouts."},
+ {q:"Under NIST SP 800-63B, when should users be required to change passwords?",o:["Every 90 days","Every 30 days","Only when there is evidence of compromise","Never, under any circumstances"],a:2,w:"Verifiers should not require periodic changes, but must force a change when there is evidence the password was compromised."},
+ {q:"Brute-forcing a random 4-digit PIN in order, how many guesses does the attacker need on average?",o:["About 100","About 2,500","About 5,000","10,000"],a:2,w:"The keyspace is 10,000, and on average the secret is found halfway through: (10,000 + 1) ÷ 2."},
+ {q:"A user capitalizes the first letter of a 12-letter lowercase password. Roughly how much does this slow a rule-based attacker?",o:["About 2 times","About 4,096 times","About 26 times","It makes the password uncrackable"],a:0,w:"Cracking rules try “capitalize first letter” almost immediately, so it adds about one bit. Brute-force math would wrongly suggest a much bigger gain."},
+ {q:"The hashcat mask ?u?l?l?l?l?d?d describes:",o:["Two uppercase letters and five digits","One uppercase letter, four lowercase letters, then two digits","Any 7 characters","A dictionary attack"],a:1,w:"?u is uppercase, ?l lowercase, and ?d a digit, so the mask matches patterns like Hello42."},
+ {q:"Before cracking an organization’s password hashes, a security tester must have:",o:["A fast GPU","Written authorization that defines scope and rules of engagement","The CEO’s verbal approval in the hallway","A copy of rockyou.txt"],a:1,w:"Written, scoped authorization is the legal and ethical foundation of any password audit."},
+ {q:"Which control best reduces the impact of credential stuffing?",o:["Requiring one symbol","MFA plus screening passwords against breach lists","Shorter session timeouts","Hiding the login page URL"],a:1,w:"Stuffing replays valid leaked pairs. MFA blocks reuse of the password alone, and breach screening keeps known-leaked passwords out."}
+];
+function renderQuiz(){$("#quizForm").innerHTML=QZ.map((x,i)=>`<div class="qitem"><fieldset><legend><span class="qn">${i+1}.</span> ${esc(x.q)}</legend>${x.o.map((o,j)=>`<label class="opt"><input type="radio" name="q${i}" value="${j}"><span>${esc(o)}</span></label>`).join("")}</fieldset><div id="qf${i}" role="status"></div></div>`).join("");$("#quizScore").textContent="";}
+$("#quizSubmit").addEventListener("click",()=>{
+  let s=0,ans=0;
+  QZ.forEach((x,i)=>{const sel=document.querySelector(`input[name="q${i}"]:checked`),fb=document.getElementById("qf"+i);
+    $$(`input[name="q${i}"]`).forEach(r=>{r.parentElement.classList.remove("right","wrong");if(sel&&+r.value===x.a)r.parentElement.classList.add("right");if(r.checked&&+r.value!==x.a)r.parentElement.classList.add("wrong");});
+    if(!sel){fb.innerHTML='<div class="fb bad">No answer selected.</div>';return;}
+    ans++;const ok=+sel.value===x.a;if(ok)s++;
+    fb.innerHTML=`<div class="fb ${ok?"good":"bad"}"><strong>${ok?"Correct.":"Not quite."}</strong> ${esc(x.w)}</div>`;});
+  $("#quizScore").textContent=`Score: ${s} / ${QZ.length}`+(ans<QZ.length?` (${QZ.length-ans} unanswered)`:"");
+});
+$("#quizReset").addEventListener("click",renderQuiz);
+
+/* ---------- rail ---------- */
+const links=$$(".rail a");
+if("IntersectionObserver" in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)links.forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+e.target.id));}),{rootMargin:"-40% 0px -55% 0px"});$$("section.blk").forEach(s=>io.observe(s));}
+
+/* ---------- init ---------- */
+renderScen();renderHW();renderChal();refresh();renderOdds();renderHash();buildDump();renderDump();renderAtk();renderQuiz();
+})();
+</script>
 </body>
 </html>
