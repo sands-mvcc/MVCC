@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELT 102 Lesson 6: Latches &amp; Flip-Flops</title>
+<style>
+:root{
+  --navy:#0047AB; --navy-dark:#003580; --navy-darker:#002a66;
+  --green:#00a86b; --green-dark:#00875a;
+  --amber:#e8a020; --red:#c0392b;
+  --bg:#f5f7fa; --card:#ffffff; --card-alt:#eef2f8;
+  --text:#1c2733; --text-muted:#5a6b7d;
+  --border:#d7dfe9; --shadow:0 2px 10px rgba(0,40,90,.10);
+  --code-bg:#eef2f8;
+}
+[data-theme="dark"]{
+  --navy:#4d8cff; --navy-dark:#3a6fd0; --navy-darker:#0d1b2e;
+  --green:#2ecc8f; --green-dark:#22b07a;
+  --amber:#f0b545; --red:#e06050;
+  --bg:#0f1620; --card:#18222f; --card-alt:#1f2c3c;
+  --text:#e8eef5; --text-muted:#9fb0c2;
+  --border:#2c3a4c; --shadow:0 2px 12px rgba(0,0,0,.45);
+  --code-bg:#111a26;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.65;transition:background .3s,color .3s;}
+
+/* ============ HEADER ============ */
+.topbar{background:linear-gradient(135deg,#0047AB,#002a66);color:#fff;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+[data-theme="dark"] .topbar{background:linear-gradient(135deg,#0d1b2e,#001a40);}
+.topbar .brand{font-family:'Arial Narrow',Arial,sans-serif;font-weight:bold;font-size:1.05rem;letter-spacing:.05em;}
+.topbar .lesson-badge{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:3px 14px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.85rem;}
+.theme-btn{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:20px;padding:5px 16px;cursor:pointer;font-family:'Arial Narrow',Arial,sans-serif;font-size:.85rem;transition:background .2s;}
+.theme-btn:hover{background:rgba(255,255,255,.3);}
+.crumbs{background:var(--card);border-bottom:1px solid var(--border);padding:8px 24px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.85rem;color:var(--text-muted);}
+.crumbs a{color:var(--navy);text-decoration:none;}
+.crumbs a:hover{text-decoration:underline;}
+
+/* ============ HERO ============ */
+.hero{background:linear-gradient(135deg,#0047AB 0%,#003580 55%,#00875a 130%);color:#fff;text-align:center;padding:52px 24px 44px;}
+[data-theme="dark"] .hero{background:linear-gradient(135deg,#123a75 0%,#0d1b2e 55%,#0e4a36 130%);}
+.hero .kicker{display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:4px 18px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;}
+.hero h1{font-size:2.4rem;margin-bottom:12px;line-height:1.2;}
+.hero .sub{max-width:760px;margin:0 auto 22px;font-size:1.1rem;opacity:.92;font-style:italic;}
+.meta-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+.meta-chips span{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 16px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.88rem;}
+
+/* ============ LAYOUT ============ */
+.wrap{max-width:1080px;margin:0 auto;padding:34px 22px 60px;}
+section{margin-bottom:44px;}
+h2.sec-title{font-size:1.7rem;color:var(--navy);border-bottom:3px solid var(--green);padding-bottom:8px;margin-bottom:20px;}
+h3{color:var(--navy);margin:26px 0 10px;font-size:1.25rem;}
+h4{color:var(--green-dark);margin:20px 0 8px;font-size:1.05rem;}
+p{margin-bottom:14px;}
+ul.styled,ol.styled{margin:0 0 16px 26px;}
+ul.styled li,ol.styled li{margin-bottom:9px;}
+strong{color:var(--navy);}
+[data-theme="dark"] strong{color:#8ab6ff;}
+
+/* ============ OBJECTIVES ============ */
+.objectives{background:var(--card);border-left:6px solid var(--green);border-radius:0 10px 10px 0;box-shadow:var(--shadow);padding:24px 28px;}
+.objectives li{margin-bottom:10px;}
+.objectives li::marker{color:var(--green);}
+
+/* ============ ACCORDION ============ */
+.acc{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden;}
+.acc-head{width:100%;background:linear-gradient(135deg,var(--navy-dark),var(--navy-darker));color:#fff;border:none;padding:15px 22px;font-family:Georgia,serif;font-size:1.25rem;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+[data-theme="dark"] .acc-head{background:linear-gradient(135deg,#1a3a68,#0d1b2e);}
+.acc-head .plus{font-size:1.3rem;transition:transform .3s;}
+.acc.open .acc-head .plus{transform:rotate(45deg);}
+.acc-body{display:none;padding:22px;}
+.acc.open .acc-body{display:block;}
+
+/* ============ FLIP CARDS ============ */
+.cat-label{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;letter-spacing:.1em;color:var(--green-dark);font-size:.95rem;font-weight:bold;margin:22px 0 12px;border-bottom:1px dashed var(--border);padding-bottom:4px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+.flip{perspective:900px;height:190px;cursor:pointer;}
+.flip-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s;}
+.flip.flipped .flip-inner{transform:rotateY(180deg);}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:10px;padding:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;}
+.face.front{background:var(--card);border:2px solid var(--navy);box-shadow:var(--shadow);}
+.face.front .term{font-weight:bold;color:var(--navy);font-size:1.02rem;margin-bottom:8px;}
+.face.front .cat{font-family:'Arial Narrow',Arial,sans-serif;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);}
+.face.front .hint{font-family:'Arial Narrow',Arial,sans-serif;font-size:.78rem;color:var(--green-dark);margin-top:10px;}
+.face.back{background:linear-gradient(135deg,var(--navy-dark),var(--navy-darker));color:#fff;transform:rotateY(180deg);font-size:.86rem;line-height:1.45;overflow-y:auto;justify-content:flex-start;padding-top:14px;}
+[data-theme="dark"] .face.back{background:linear-gradient(135deg,#1a3a68,#0d1b2e);}
+.face.back .def-label{font-family:'Arial Narrow',Arial,sans-serif;text-transform:uppercase;font-size:.7rem;letter-spacing:.1em;color:var(--amber);margin-bottom:6px;}
+
+/* ============ CALLOUTS ============ */
+.callout{border-radius:10px;padding:16px 20px;margin:18px 0;border-left:6px solid;}
+.callout .co-title{font-family:'Arial Narrow',Arial,sans-serif;font-weight:bold;text-transform:uppercase;letter-spacing:.05em;font-size:.9rem;margin-bottom:6px;}
+.co-tip{background:rgba(0,168,107,.09);border-color:var(--green);}
+.co-tip .co-title{color:var(--green-dark);}
+.co-pro{background:rgba(0,71,171,.08);border-color:var(--navy);}
+.co-pro .co-title{color:var(--navy);}
+.co-warn{background:rgba(232,160,32,.12);border-color:var(--amber);}
+.co-warn .co-title{color:#a86e00;}
+[data-theme="dark"] .co-warn .co-title{color:var(--amber);}
+.formula{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;font-family:'Courier New',monospace;font-size:.98rem;margin:14px 0;overflow-x:auto;}
+
+/* ============ TABS ============ */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0;border-bottom:3px solid var(--navy);padding-bottom:0;}
+.tab-btn{font-family:'Arial Narrow',Arial,sans-serif;background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;padding:9px 15px;cursor:pointer;font-size:.9rem;transition:all .2s;}
+.tab-btn:hover{background:var(--card);color:var(--navy);}
+.tab-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:bold;}
+.tab-pane{display:none;background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;box-shadow:var(--shadow);padding:28px 30px;}
+.tab-pane.show{display:block;}
+
+/* ============ TABLES ============ */
+.tbl-wrap{overflow-x:auto;margin:16px 0;}
+table.data{width:100%;border-collapse:collapse;font-size:.93rem;}
+table.data th{background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-family:'Arial Narrow',Arial,sans-serif;letter-spacing:.03em;}
+[data-theme="dark"] table.data th{background:#1a3a68;}
+table.data td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+table.data tr:nth-child(even) td{background:var(--card-alt);}
+table.data td.mono, table.data th.mono{font-family:'Courier New',monospace;}
+table.data td.inv{color:var(--red);font-weight:bold;}
+
+/* ============ SIM LINK CHIPS ============ */
+.sim-links{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;}
+.sim-chip{display:inline-flex;align-items:center;gap:7px;background:var(--green);color:#fff;text-decoration:none;border-radius:22px;padding:8px 18px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.9rem;box-shadow:var(--shadow);transition:transform .15s,background .2s;}
+.sim-chip:hover{background:var(--green-dark);transform:translateY(-2px);}
+.sim-chip.alt{background:var(--navy);}
+.sim-chip.alt:hover{background:var(--navy-dark);}
+
+/* ============ SYMBOL LIBRARY ============ */
+.symgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+.symcard{background:var(--card);border:2px solid var(--navy);border-radius:12px;box-shadow:var(--shadow);padding:14px;text-align:center;}
+.symcard svg{width:100%;max-width:190px;height:120px;stroke:var(--text);fill:none;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;}
+.symcard svg .lead{stroke:var(--navy);}
+.symcard svg .bub{fill:var(--card);}
+.symcard svg text{stroke:none;fill:var(--text);font-family:'Courier New',monospace;font-size:14px;font-weight:bold;}
+.symcard svg text.pin{fill:var(--green-dark);font-family:'Arial Narrow',Arial,sans-serif;font-size:12px;}
+.symcard .sname{font-weight:bold;color:var(--navy);margin-top:4px;}
+[data-theme="dark"] .symcard .sname{color:#8ab6ff;}
+.symcard .suse{font-family:'Arial Narrow',Arial,sans-serif;font-size:.78rem;color:var(--text-muted);line-height:1.4;margin-top:4px;}
+.symcard table.tt{margin:8px auto 0;border-collapse:collapse;font-family:'Courier New',monospace;font-size:.72rem;}
+.symcard table.tt th{background:var(--navy);color:#fff;padding:2px 8px;font-weight:normal;}
+[data-theme="dark"] .symcard table.tt th{background:#1a3a68;}
+.symcard table.tt td{border:1px solid var(--border);padding:2px 8px;}
+.symcard table.tt td.one{color:var(--green-dark);font-weight:bold;}
+.symcard table.tt td.bad{color:var(--red);font-weight:bold;}
+
+/* ============ LAB ============ */
+.grapher{background:var(--card);border:2px solid var(--navy);border-radius:12px;box-shadow:var(--shadow);padding:22px;margin:20px 0;}
+.grapher-grid{display:grid;grid-template-columns:1fr 300px;gap:22px;align-items:start;}
+@media(max-width:820px){.grapher-grid{grid-template-columns:1fr;}}
+canvas.scope{width:100%;height:auto;background:var(--card);border:1px solid var(--border);border-radius:8px;display:block;cursor:pointer;}
+.ctrl{margin-bottom:15px;}
+.ctrl label{display:flex;justify-content:space-between;font-family:'Arial Narrow',Arial,sans-serif;font-size:.9rem;font-weight:bold;color:var(--navy);margin-bottom:4px;}
+.seg{display:flex;flex-wrap:wrap;gap:6px;}
+.seg button{flex:1;min-width:58px;font-family:'Arial Narrow',Arial,sans-serif;background:var(--card-alt);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;padding:8px 6px;cursor:pointer;font-size:.85rem;transition:all .2s;}
+.seg button:hover{color:var(--navy);border-color:var(--navy);}
+.seg button.active{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:bold;}
+.readout{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:'Courier New',monospace;font-size:.84rem;line-height:1.75;}
+.readout .r-on{color:var(--green-dark);font-weight:bold;}
+.readout .r-off{color:var(--red);font-weight:bold;}
+.readout .r-bd{color:#a86e00;font-weight:bold;}
+[data-theme="dark"] .readout .r-bd{color:var(--amber);}
+.g-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;margin-bottom:12px;}
+.g-btn{flex:1;min-width:64px;background:var(--navy);color:#fff;border:none;border-radius:6px;padding:8px 6px;cursor:pointer;font-family:'Arial Narrow',Arial,sans-serif;font-size:.82rem;transition:background .2s;}
+.g-btn:hover{background:var(--navy-dark);}
+.g-btn.g-green{background:var(--green);}
+.g-btn.g-green:hover{background:var(--green-dark);}
+.g-btn.on{background:var(--green);font-weight:bold;}
+.toggle-row{display:flex;align-items:center;gap:10px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.92rem;font-weight:bold;color:var(--navy);margin-bottom:12px;}
+.toggle-row input{accent-color:var(--green);width:18px;height:18px;cursor:pointer;}
+
+/* ============ FACTS BOX ============ */
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;}
+.fact{background:var(--card-alt);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+.fact .f-label{font-family:'Arial Narrow',Arial,sans-serif;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:4px;}
+.fact .f-val{font-weight:bold;color:var(--navy);font-size:.95rem;}
+[data-theme="dark"] .fact .f-val{color:#8ab6ff;}
+
+/* ============ QUIZ ============ */
+.quiz-q{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:20px 22px;margin-bottom:18px;}
+.quiz-q .q-text{font-weight:bold;margin-bottom:12px;}
+.quiz-q .opt{display:block;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all .15s;font-size:.95rem;}
+.quiz-q .opt:hover{border-color:var(--navy);background:var(--card-alt);}
+.quiz-q .opt input{margin-right:9px;accent-color:var(--navy);}
+.quiz-q .opt.correct{border-color:var(--green);background:rgba(0,168,107,.12);}
+.quiz-q .opt.incorrect{border-color:var(--red);background:rgba(192,57,43,.10);}
+.quiz-q .explain{display:none;margin-top:10px;padding:12px 14px;border-radius:8px;background:rgba(0,71,171,.07);border-left:4px solid var(--navy);font-size:.9rem;}
+.quiz-q .explain.show{display:block;}
+.submit-btn{background:var(--green);color:#fff;border:none;border-radius:26px;padding:13px 42px;font-size:1.05rem;font-family:Georgia,serif;cursor:pointer;display:block;margin:22px auto 8px;box-shadow:var(--shadow);transition:background .2s,transform .15s;}
+.submit-btn:hover{background:var(--green-dark);transform:translateY(-2px);}
+.score-box{text-align:center;background:var(--card);border:2px solid var(--navy);border-radius:12px;padding:20px;margin-top:14px;}
+.score-box .big{font-size:1.9rem;font-weight:bold;color:var(--navy);}
+
+/* ============ FOOT NAV ============ */
+.foot-nav{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:48px;}
+.foot-nav a{background:var(--navy);color:#fff;text-decoration:none;border-radius:26px;padding:11px 26px;font-family:'Arial Narrow',Arial,sans-serif;box-shadow:var(--shadow);transition:background .2s,transform .15s;}
+.foot-nav a:hover{background:var(--navy-dark);transform:translateY(-2px);}
+.foot-nav a.home{background:var(--green);}
+.foot-nav a.home:hover{background:var(--green-dark);}
+footer{background:var(--navy-darker);color:rgba(255,255,255,.75);text-align:center;padding:26px 20px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.83rem;line-height:1.7;}
+[data-theme="dark"] footer{background:#0a1420;}
+@media(max-width:640px){.hero h1{font-size:1.8rem;} .tab-pane{padding:20px 16px;}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important;} .flip-inner{transition:none;}}
+
+/* ============ ANALOGIES & APPLICATIONS (added) ============ */
+.analogy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin:18px 0;}
+.an-card{background:var(--card);border:2px solid var(--navy);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;}
+.an-card.edge{border-color:var(--green);}
+.an-head{background:linear-gradient(135deg,var(--navy-dark),var(--navy-darker));color:#fff;padding:14px 18px;}
+[data-theme="dark"] .an-head{background:linear-gradient(135deg,#1a3a68,#0d1b2e);}
+.an-card.edge .an-head{background:linear-gradient(135deg,var(--green-dark),#005c3d);}
+[data-theme="dark"] .an-card.edge .an-head{background:linear-gradient(135deg,#136b4a,#0b3a2a);}
+.an-head .an-tag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:2px 12px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.78rem;margin-bottom:6px;}
+.an-head h3{color:#fff;margin:0;font-size:1.3rem;}
+.an-body{padding:16px 18px 18px;}
+.an-body p{font-size:.96rem;}
+.an-rule{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Courier New',monospace;font-size:.88rem;margin-top:8px;}
+.ill{background:var(--card-alt);border:1px solid var(--border);border-radius:10px;padding:8px;margin:4px 0 14px;}
+.ill svg{width:100%;height:auto;display:block;}
+.ill .s{stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.ill .sl{stroke:var(--text-muted);fill:none;stroke-width:1;stroke-dasharray:3 4;}
+.ill .sn{stroke:var(--navy);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.ill .sbus{stroke:var(--navy);fill:none;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;opacity:.85;}
+.ill .sg{stroke:var(--green);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;}
+.ill .sa{stroke:var(--amber);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.ill .sr{stroke:var(--red);fill:none;stroke-width:2.2;stroke-linecap:round;}
+.ill .sw{stroke:rgba(255,255,255,.55);stroke-width:1.2;}
+.ill .dash{stroke-dasharray:5 4;}
+.ill .fc{fill:var(--card);stroke:var(--text);stroke-width:2;}
+.ill .fin{fill:var(--card-alt);stroke:var(--border);stroke-width:1.5;}
+.ill .fnv{fill:var(--navy);stroke:var(--text);stroke-width:1.6;}
+.ill .fg{fill:var(--green);stroke:var(--text);stroke-width:1.4;}
+.ill .fam{fill:var(--amber);stroke:var(--text);stroke-width:1.4;}
+.ill .frd{fill:var(--red);stroke:var(--text);stroke-width:1.4;}
+.ill .fk{fill:var(--text);}
+.ill .foff{fill:var(--card);stroke:var(--text-muted);stroke-width:1.6;}
+.ill .zone{fill:rgba(0,168,107,.10);stroke:var(--green);stroke-width:1.6;stroke-dasharray:6 4;}
+.ill .win{fill:rgba(0,168,107,.12);}
+.ill .fdark{fill:#0b1a2a;stroke:var(--text);stroke-width:2;}
+.ill .ghost{opacity:.5;}
+.ill text{font-family:'Arial Narrow',Arial,sans-serif;font-size:12px;fill:var(--text);stroke:none;}
+.ill text.b{font-weight:bold;}
+.ill text.m{fill:var(--text-muted);}
+.ill text.sm{font-size:10.5px;}
+.ill text.mono{font-family:'Courier New',monospace;font-weight:bold;font-size:13px;}
+.ill text.tg{fill:var(--green-dark);font-weight:bold;}
+.ill text.tr{fill:var(--red);font-weight:bold;}
+.ill text.tn{fill:var(--navy);font-weight:bold;}
+.ill text.ta{fill:#a86e00;font-weight:bold;}
+[data-theme="dark"] .ill text.ta{fill:var(--amber);}
+.ill text.seg7{fill:#2ecc8f;font-family:'Courier New',monospace;font-weight:bold;font-size:20px;}
+.ill text.wh{fill:#fff;font-weight:bold;}
+.cmp-ctrls{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+.cmp-ctrls .g-btn{flex:0 1 auto;padding:8px 16px;}
+.cmp-legend{font-family:'Arial Narrow',Arial,sans-serif;font-size:.85rem;color:var(--text-muted);}
+.sorter{display:grid;gap:10px;margin-top:12px;}
+.sort-item{background:var(--card);border:1px solid var(--border);border-left:6px solid var(--border);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow);}
+.sort-item.ok{border-left-color:var(--green);}
+.sort-item.no{border-left-color:var(--red);}
+.sort-item .si-q{margin-bottom:8px;font-size:.95rem;}
+.sort-item .si-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.sort-item .si-btns button{font-family:'Arial Narrow',Arial,sans-serif;background:var(--card-alt);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:6px 16px;cursor:pointer;font-size:.86rem;}
+.sort-item .si-btns button:hover{border-color:var(--navy);color:var(--navy);}
+.sort-item .si-btns button.pick{background:var(--navy);color:#fff;border-color:var(--navy);}
+.sort-item .si-fb{display:none;margin-top:8px;font-size:.88rem;color:var(--text-muted);}
+.sort-item.ok .si-fb,.sort-item.no .si-fb{display:block;}
+.sort-score{font-family:'Arial Narrow',Arial,sans-serif;font-weight:bold;color:var(--navy);margin-top:10px;}
+.appgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:20px;margin-top:10px;}
+.appcard{background:var(--card);border:1px solid var(--border);border-top:6px solid var(--navy);border-radius:12px;box-shadow:var(--shadow);padding:16px 18px 18px;display:flex;flex-direction:column;}
+.appcard.ff{border-top-color:var(--green);}
+.appcard .app-dev{display:inline-block;align-self:flex-start;background:var(--navy);color:#fff;border-radius:20px;padding:2px 12px;font-family:'Arial Narrow',Arial,sans-serif;font-size:.78rem;margin-bottom:6px;}
+.appcard.ff .app-dev{background:var(--green-dark);}
+.appcard h3{margin:2px 0 10px;font-size:1.18rem;}
+.appcard .app-row{font-size:.92rem;margin-bottom:9px;}
+.appcard .app-row b{font-family:'Arial Narrow',Arial,sans-serif;color:var(--green-dark);letter-spacing:.02em;}
+.appcard .app-part{font-family:'Courier New',monospace;font-size:.8rem;color:var(--text-muted);margin-top:auto;padding-top:6px;border-top:1px dashed var(--border);}
+.appcard .sim-links{margin:10px 0 0;}
+.appcard .sim-chip{font-size:.82rem;padding:6px 14px;}
+.fam-key{display:flex;gap:16px;flex-wrap:wrap;font-family:'Arial Narrow',Arial,sans-serif;font-size:.86rem;margin:6px 0 4px;}
+.fam-key span::before{content:"";display:inline-block;width:22px;height:6px;border-radius:3px;margin-right:6px;vertical-align:middle;}
+.fam-key .k-l::before{background:var(--navy);}
+.fam-key .k-f::before{background:var(--green);}
+</style>
+</head>
+<body>
+
+<!-- ================= TOP BAR ================= -->
+<div class="topbar">
+  <span class="brand">⚡ ELT 102 · Digital Logic &amp; Solid State Devices</span>
+  <span class="lesson-badge">Lesson 6 of 8</span>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌓 Mode</button>
+</div>
+<nav class="crumbs">
+  <a href="https://sands-mvcc.github.io/elt/index.html">Home</a> &nbsp;›&nbsp;
+  <a href="lesson06.html">Lesson 6</a> &nbsp;›&nbsp;
+  Latches &amp; Flip-Flops
+</nav>
+
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <span class="kicker">Unit 3 · Digital Foundations</span>
+  <h1>Latches &amp; Flip-Flops</h1>
+  <p class="sub">Bistable storage elements that remember one bit: level-sensitive latches whose outputs follow inputs while enabled, and edge-triggered flip-flops that capture data at a precise clock instant — the foundation of every register, counter, and state machine.</p>
+  <div class="meta-chips">
+    <span>⏱ 3 Hours Study</span>
+    <span>📋 9 Core Topics</span>
+    <span>📐 Symbol Library (8 devices)</span>
+    <span>📈 Sequential Logic Lab + Timing Diagram</span>
+    <span>🚗 Two Paired Analogies</span>
+    <span>🏭 8 Real-World Applications</span>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ================= OBJECTIVES ================= -->
+<section id="objectives">
+  <h2 class="sec-title">Learning Objectives</h2>
+  <div class="objectives">
+    <p><em>By the end of this lesson, you will be able to:</em></p>
+    <ul class="styled">
+      <li><strong>Explain</strong> bistability — how a circuit with two stable states stores one bit — and why sequential logic needs it.</li>
+      <li><strong>Distinguish</strong> level-sensitive latches from edge-triggered flip-flops, and predict <em>when</em> each device's output is allowed to change.</li>
+      <li><strong>Describe</strong> SR latch operation (Set, Reset, Hold), identify the invalid S=R=1 condition, and explain the resulting race/metastability hazard.</li>
+      <li><strong>Analyze</strong> gated SR and D latches, including transparent operation while enable is active and hold behavior when it is not.</li>
+      <li><strong>Interpret</strong> characteristic tables and timing diagrams for SR, D, JK, and T flip-flops, including clock-enable variants.</li>
+      <li><strong>Explain</strong> why the JK flip-flop resolves the SR invalid state as toggle, and why it is called the universal flip-flop.</li>
+      <li><strong>Apply</strong> the T flip-flop's toggle mode to divide-by-2 frequency division and binary counting.</li>
+      <li><strong>Identify</strong> the IEEE/ANSI block symbols for all eight devices, including the clock-edge triangle and inversion bubble conventions.</li>
+      <li><strong>Relate</strong> level-sensitive and edge-triggered behavior to two paired everyday analogies, and explain where each analogy stops being accurate.</li>
+      <li><strong>Match</strong> each device to its common applications — flags, registers, shift registers, counters, synchronizers, and state machines — and verify every behavior in the Sequential Logic Lab.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= KEY TERMS (collapsed) ================= -->
+<section id="keyterms">
+  <h2 class="sec-title">Key Terms &amp; Concepts</h2>
+  <div class="acc" id="termsAcc">
+    <button class="acc-head" onclick="toggleAcc('termsAcc')">Key Terms &amp; Concepts <span class="plus">➕</span></button>
+    <div class="acc-body">
+      <p style="font-style:italic;color:var(--text-muted);">Click any card to reveal its definition.</p>
+
+      <div class="cat-label">Bistable Fundamentals</div>
+      <div class="cards">
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Bistable Element</div><div class="cat">Bistable Fundamentals</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>A circuit with exactly two stable states — it rests happily at Q=0 or Q=1 and stays there until commanded to change. Two states = one bit of memory. Every latch and flip-flop is a bistable at heart.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Sequential Logic</div><div class="cat">Bistable Fundamentals</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>Logic whose output depends on inputs <em>and on stored history</em>. Lesson 5's gates were combinational (output = f(inputs), no memory); adding bistables gives circuits a past — and makes counters, registers, and computers possible.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Q and Q&#773; Outputs</div><div class="cat">Bistable Fundamentals</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The complementary output pair every storage element provides: Q is the stored bit, Q&#773; is always its inverse. If both ever agree, something is wrong — see the invalid SR condition.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Feedback (Cross-Coupling)</div><div class="cat">Bistable Fundamentals</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The construction trick behind memory: two gates (NOR or NAND) with each output wired to the other's input. Each gate holds its partner in place — the loop "remembers" with no moving parts and no capacitor.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Level-Sensitive</div><div class="cat">Bistable Fundamentals</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>Responding to a control signal's <em>level</em>: a latch obeys its inputs the entire time enable is HIGH. Output can change continuously during that window — flexible, but harder to time precisely.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Edge-Triggered</div><div class="cat">Bistable Fundamentals</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>Responding only to a clock <em>transition</em> (rising or falling edge). A flip-flop samples its inputs at that one instant and holds the result until the next edge — the discipline that makes large synchronous systems possible.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Metastability</div><div class="cat">Bistable Fundamentals</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The unstable in-between: a bistable balanced momentarily between its two states (like a coin on edge), outputting an invalid level until it randomly falls one way. Provoked by the SR invalid state or by violating setup/hold timing.</div>
+        </div></div>
+      </div>
+
+      <div class="cat-label">Latches</div>
+      <div class="cards">
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">SR Latch</div><div class="cat">Latches</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The simplest bistable: Set forces Q=1, Reset forces Q=0, both inactive holds the previous state. Built from two cross-coupled NOR (or NAND) gates. Its flaw: S=R=1 simultaneously is invalid.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Invalid (Forbidden) State</div><div class="cat">Latches</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>Asserting Set and Reset together: both outputs are forced to the same level (Q = Q&#773; — a contradiction), and releasing both inputs at once triggers a race whose winner is unpredictable. Designs must prevent this input combination.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Gated (Enabled) SR Latch</div><div class="cat">Latches</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>An SR latch behind two AND gates controlled by an enable line: when EN=1 the latch listens to S and R; when EN=0 it ignores them and holds. The first step from "always listening" toward controlled, timed storage.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">D (Transparent) Latch</div><div class="cat">Latches</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The SR fix: one Data input drives S directly and R through an inverter, making S=R=1 impossible. While EN=1, Q follows D "transparently"; when EN drops, Q freezes at the last value. One input, no forbidden state.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Transparent Operation</div><div class="cat">Latches</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The defining latch behavior: while enable is active, the output is a live window onto the input — wiggle D and Q wiggles with it. Watch it happen in the Lab, then drop EN and watch the window freeze.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Enable (EN) Input</div><div class="cat">Latches</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The level-sensitive control that opens or closes a latch: EN=1 → latch responds; EN=0 → latch holds. Used for write control on registers, gating data into subsystems, and bus interfacing.</div>
+        </div></div>
+      </div>
+
+      <div class="cat-label">Flip-Flops</div>
+      <div class="cards">
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Clock (CLK)</div><div class="cat">Flip-Flops</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The system heartbeat: a square wave whose edges tell every flip-flop <em>now</em>. On the schematic symbol, the small triangle (▷) on the clock pin marks edge triggering; a bubble before it means falling-edge.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">SR Flip-Flop</div><div class="cat">Flip-Flops</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The SR latch's edge-triggered counterpart: on the active clock edge, S=1 sets, R=1 resets, both 0 holds. Inherits the same invalid S=R=1 case — the flaw the JK was invented to fix.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">D Flip-Flop</div><div class="cat">Flip-Flops</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The workhorse one-bit memory: at the active edge, Q takes whatever D holds at that instant, then ignores D completely until the next edge. Characteristic equation: Q<sub>next</sub> = D. The cell inside registers, pipelines, and counters.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Clock Enable (CE)</div><div class="cat">Flip-Flops</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>A conditional-load input on a flip-flop: EN=1 → load new data on the edge; EN=0 → keep the old value even though the clock keeps ticking. Storage becomes conditional without touching the clock wiring — the clean way to gate updates.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">JK Flip-Flop</div><div class="cat">Flip-Flops</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The SR improved: J=1,K=0 sets; J=0,K=1 resets; both 0 holds; and both 1 — the formerly forbidden case — <strong>toggles</strong>. Called the universal flip-flop because it can emulate D (K=J&#773;) and T (J=K) behavior.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">T (Toggle) Flip-Flop</div><div class="cat">Flip-Flops</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>One input: T=1 → Q inverts on every active edge; T=0 → Q holds. Toggling halves the clock frequency at Q, making the T flip-flop the natural divide-by-2 stage and the building block of ripple counters.</div>
+        </div></div>
+      </div>
+
+      <div class="cat-label">Timing &amp; Operations</div>
+      <div class="cards">
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Set · Reset · Hold · Toggle</div><div class="cat">Timing &amp; Operations</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The four verbs of sequential logic. Set: force Q=1. Reset (Clear): force Q=0. Hold: keep the stored value. Toggle: invert the stored value on the next active clock event.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Timing Diagram</div><div class="cat">Timing &amp; Operations</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>Waveforms stacked against a shared time axis — the native language of sequential logic. Reading one means tracking each input lane and asking, at every enable window or clock edge, "what does Q do now?" The Lab draws yours live.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Setup &amp; Hold Time</div><div class="cat">Timing &amp; Operations</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>The small windows around a clock edge when a flip-flop's data input must be stable — settled <em>before</em> the edge (setup) and unchanged briefly <em>after</em> it (hold). Violating them invites metastability.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Characteristic Table</div><div class="cat">Timing &amp; Operations</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>A truth table for memory: inputs plus the present state Q determine the next state Q<sub>next</sub>. The extra "present state" column is exactly what separates sequential devices from Lesson 5's combinational gates.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Frequency Division</div><div class="cat">Timing &amp; Operations</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>A toggling flip-flop's Q completes one full cycle for every <em>two</em> clock cycles — output frequency = clock ÷ 2. Chain n toggle stages for ÷2ⁿ: the principle inside counters, clock prescalers, and digital watches.</div>
+        </div></div>
+        <div class="flip" onclick="this.classList.toggle('flipped')"><div class="flip-inner">
+          <div class="face front"><div class="term">Register</div><div class="cat">Timing &amp; Operations</div><div class="hint">🔄 Click to reveal definition</div></div>
+          <div class="face back"><div class="def-label">Definition</div>A row of D flip-flops sharing one clock — n flip-flops store an n-bit word in a single edge. Wire each Q to the next D and it becomes a shift register, marching bits sideways one position per clock.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SYMBOL LIBRARY ================= -->
+<section id="symbols">
+  <h2 class="sec-title">📐 Latch &amp; Flip-Flop Symbol Library</h2>
+  <p>Eight devices, one reading system. Latch symbols show only data and enable pins; flip-flop symbols add a clock pin marked with the <strong>edge triangle (▷)</strong> — the single visual cue that says "this device listens only at the clock transition." A bubble before the triangle would mean falling-edge triggering. Each card carries the device's characteristic table; <span style="color:var(--red);font-weight:bold;">red rows are forbidden</span>.</p>
+  <div class="symgrid">
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="Cross-coupled NOR gate construction of an SR latch">
+        <path d="M38,18 q10,17 0,34 q30,-3 50,-17 q-20,-14 -50,-17 z"/>
+        <circle class="bub" cx="92" cy="35" r="5"/>
+        <path d="M38,68 q10,17 0,34 q30,-3 50,-17 q-20,-14 -50,-17 z"/>
+        <circle class="bub" cx="92" cy="85" r="5"/>
+        <line class="lead" x1="10" y1="26" x2="40" y2="26"/>
+        <line class="lead" x1="10" y1="94" x2="40" y2="94"/>
+        <line class="lead" x1="97" y1="35" x2="150" y2="35"/>
+        <line class="lead" x1="97" y1="85" x2="150" y2="85"/>
+        <line class="lead" x1="120" y1="35" x2="120" y2="62"/>
+        <line class="lead" x1="120" y1="62" x2="44" y2="76"/>
+        <line class="lead" x1="112" y1="85" x2="112" y2="58"/>
+        <line class="lead" x1="112" y1="58" x2="44" y2="44"/>
+        <text class="pin" x="8" y="20">R</text>
+        <text class="pin" x="8" y="112">S</text>
+        <text x="156" y="40">Q</text>
+        <text x="156" y="90">Q&#773;</text>
+      </svg>
+      <div class="sname">The Bistable Core</div>
+      <div class="suse">Two cross-coupled NOR gates — each output holds the other's input. This feedback loop <em>is</em> the memory.</div>
+    </div>
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="SR latch block symbol">
+        <rect x="60" y="20" width="70" height="80" rx="4"/>
+        <line class="lead" x1="20" y1="40" x2="60" y2="40"/>
+        <line class="lead" x1="20" y1="80" x2="60" y2="80"/>
+        <line class="lead" x1="130" y1="40" x2="170" y2="40"/>
+        <line class="lead" x1="130" y1="80" x2="170" y2="80"/>
+        <text x="68" y="45">S</text><text x="68" y="85">R</text>
+        <text x="106" y="45">Q</text><text x="104" y="85">Q&#773;</text>
+      </svg>
+      <div class="sname">SR Latch</div>
+      <div class="suse">Set/Reset flag storage · remembers that a condition occurred</div>
+      <table class="tt"><tr><th>S</th><th>R</th><th>Q</th></tr>
+      <tr><td>0</td><td>0</td><td>hold</td></tr><tr><td>1</td><td>0</td><td class="one">1</td></tr>
+      <tr><td>0</td><td>1</td><td>0</td></tr><tr><td class="bad">1</td><td class="bad">1</td><td class="bad">invalid</td></tr></table>
+    </div>
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="Gated SR latch block symbol">
+        <rect x="60" y="15" width="70" height="90" rx="4"/>
+        <line class="lead" x1="20" y1="33" x2="60" y2="33"/>
+        <line class="lead" x1="20" y1="60" x2="60" y2="60"/>
+        <line class="lead" x1="20" y1="87" x2="60" y2="87"/>
+        <line class="lead" x1="130" y1="40" x2="170" y2="40"/>
+        <line class="lead" x1="130" y1="80" x2="170" y2="80"/>
+        <text x="68" y="38">S</text><text x="68" y="65">EN</text><text x="68" y="92">R</text>
+        <text x="106" y="45">Q</text><text x="104" y="85">Q&#773;</text>
+      </svg>
+      <div class="sname">Gated SR Latch</div>
+      <div class="suse">EN=1: responds to S/R · EN=0: ignores inputs, holds</div>
+      <table class="tt"><tr><th>EN</th><th>S</th><th>R</th><th>Q</th></tr>
+      <tr><td>0</td><td>x</td><td>x</td><td>hold</td></tr><tr><td>1</td><td>1</td><td>0</td><td class="one">1</td></tr>
+      <tr><td>1</td><td>0</td><td>1</td><td>0</td></tr><tr><td class="bad">1</td><td class="bad">1</td><td class="bad">1</td><td class="bad">invalid</td></tr></table>
+    </div>
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="D latch block symbol">
+        <rect x="60" y="20" width="70" height="80" rx="4"/>
+        <line class="lead" x1="20" y1="40" x2="60" y2="40"/>
+        <line class="lead" x1="20" y1="80" x2="60" y2="80"/>
+        <line class="lead" x1="130" y1="40" x2="170" y2="40"/>
+        <line class="lead" x1="130" y1="80" x2="170" y2="80"/>
+        <text x="68" y="45">D</text><text x="68" y="85">EN</text>
+        <text x="106" y="45">Q</text><text x="104" y="85">Q&#773;</text>
+      </svg>
+      <div class="sname">D (Transparent) Latch</div>
+      <div class="suse">EN=1: Q follows D live · EN=0: Q freezes · no invalid state</div>
+      <table class="tt"><tr><th>EN</th><th>D</th><th>Q</th></tr>
+      <tr><td>0</td><td>x</td><td>hold</td></tr><tr><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td>1</td><td>1</td><td class="one">1</td></tr></table>
+    </div>
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="SR flip-flop block symbol with clock edge triangle">
+        <rect x="60" y="15" width="70" height="90" rx="4"/>
+        <line class="lead" x1="20" y1="33" x2="60" y2="33"/>
+        <line class="lead" x1="20" y1="60" x2="60" y2="60"/>
+        <line class="lead" x1="20" y1="87" x2="60" y2="87"/>
+        <polyline points="60,52 72,60 60,68"/>
+        <line class="lead" x1="130" y1="40" x2="170" y2="40"/>
+        <line class="lead" x1="130" y1="80" x2="170" y2="80"/>
+        <text x="68" y="38">S</text><text x="78" y="65" class="pin">CLK</text><text x="68" y="92">R</text>
+        <text x="106" y="45">Q</text><text x="104" y="85">Q&#773;</text>
+      </svg>
+      <div class="sname">SR Flip-Flop</div>
+      <div class="suse">SR behavior, but only at the clock edge ▷ · same invalid case</div>
+      <table class="tt"><tr><th>S</th><th>R</th><th>Q next</th></tr>
+      <tr><td>0</td><td>0</td><td>hold</td></tr><tr><td>1</td><td>0</td><td class="one">1</td></tr>
+      <tr><td>0</td><td>1</td><td>0</td></tr><tr><td class="bad">1</td><td class="bad">1</td><td class="bad">invalid</td></tr></table>
+    </div>
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="D flip-flop block symbol with clock edge triangle">
+        <rect x="60" y="20" width="70" height="80" rx="4"/>
+        <line class="lead" x1="20" y1="40" x2="60" y2="40"/>
+        <line class="lead" x1="20" y1="80" x2="60" y2="80"/>
+        <polyline points="60,72 72,80 60,88"/>
+        <line class="lead" x1="130" y1="40" x2="170" y2="40"/>
+        <line class="lead" x1="130" y1="80" x2="170" y2="80"/>
+        <text x="68" y="45">D</text><text x="78" y="85" class="pin">CLK</text>
+        <text x="106" y="45">Q</text><text x="104" y="85">Q&#773;</text>
+      </svg>
+      <div class="sname">D Flip-Flop</div>
+      <div class="suse">Q captures D at the edge, then ignores D · Q<sub>next</sub> = D</div>
+      <table class="tt"><tr><th>D</th><th>Q next</th></tr>
+      <tr><td>0</td><td>0</td></tr><tr><td>1</td><td class="one">1</td></tr></table>
+    </div>
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="D flip-flop with clock enable block symbol">
+        <rect x="60" y="15" width="70" height="90" rx="4"/>
+        <line class="lead" x1="20" y1="33" x2="60" y2="33"/>
+        <line class="lead" x1="20" y1="60" x2="60" y2="60"/>
+        <line class="lead" x1="20" y1="87" x2="60" y2="87"/>
+        <polyline points="60,79 72,87 60,95"/>
+        <line class="lead" x1="130" y1="40" x2="170" y2="40"/>
+        <line class="lead" x1="130" y1="80" x2="170" y2="80"/>
+        <text x="68" y="38">D</text><text x="68" y="65">EN</text><text x="78" y="92" class="pin">CLK</text>
+        <text x="106" y="45">Q</text><text x="104" y="85">Q&#773;</text>
+      </svg>
+      <div class="sname">D Flip-Flop + Enable</div>
+      <div class="suse">Loads at the edge only if EN=1 · conditional storage, same clock</div>
+      <table class="tt"><tr><th>EN</th><th>D</th><th>Q next</th></tr>
+      <tr><td>0</td><td>x</td><td>hold</td></tr><tr><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td>1</td><td>1</td><td class="one">1</td></tr></table>
+    </div>
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="JK flip-flop block symbol">
+        <rect x="60" y="15" width="70" height="90" rx="4"/>
+        <line class="lead" x1="20" y1="33" x2="60" y2="33"/>
+        <line class="lead" x1="20" y1="60" x2="60" y2="60"/>
+        <line class="lead" x1="20" y1="87" x2="60" y2="87"/>
+        <polyline points="60,52 72,60 60,68"/>
+        <line class="lead" x1="130" y1="40" x2="170" y2="40"/>
+        <line class="lead" x1="130" y1="80" x2="170" y2="80"/>
+        <text x="68" y="38">J</text><text x="78" y="65" class="pin">CLK</text><text x="68" y="92">K</text>
+        <text x="106" y="45">Q</text><text x="104" y="85">Q&#773;</text>
+      </svg>
+      <div class="sname">JK Flip-Flop · universal</div>
+      <div class="suse">The SR fix: J=K=1 toggles instead of being forbidden</div>
+      <table class="tt"><tr><th>J</th><th>K</th><th>Q next</th></tr>
+      <tr><td>0</td><td>0</td><td>hold</td></tr><tr><td>1</td><td>0</td><td class="one">1</td></tr>
+      <tr><td>0</td><td>1</td><td>0</td></tr><tr><td>1</td><td>1</td><td class="one">toggle</td></tr></table>
+    </div>
+
+    <div class="symcard">
+      <svg viewBox="0 0 190 120" role="img" aria-label="T flip-flop block symbol">
+        <rect x="60" y="20" width="70" height="80" rx="4"/>
+        <line class="lead" x1="20" y1="40" x2="60" y2="40"/>
+        <line class="lead" x1="20" y1="80" x2="60" y2="80"/>
+        <polyline points="60,72 72,80 60,88"/>
+        <line class="lead" x1="130" y1="40" x2="170" y2="40"/>
+        <line class="lead" x1="130" y1="80" x2="170" y2="80"/>
+        <text x="68" y="45">T</text><text x="78" y="85" class="pin">CLK</text>
+        <text x="106" y="45">Q</text><text x="104" y="85">Q&#773;</text>
+      </svg>
+      <div class="sname">T (Toggle) Flip-Flop</div>
+      <div class="suse">T=1: Q inverts every edge · the divide-by-2 stage</div>
+      <table class="tt"><tr><th>T</th><th>Q next</th></tr>
+      <tr><td>0</td><td>hold</td></tr><tr><td>1</td><td class="one">toggle</td></tr></table>
+    </div>
+
+  </div>
+  <div class="sim-links" style="margin-top:18px;">
+    <a class="sim-chip" href="#seqlab">📈 Operate all eight devices in the Sequential Logic Lab</a>
+    <a class="sim-chip alt" href="https://sands-mvcc.github.io/elt102/gates.html" target="_blank" rel="noopener">↩ Review: Logic Gates Simulator</a>
+  </div>
+</section>
+
+<!-- ================= CORE CONTENT ================= -->
+<section id="content">
+  <h2 class="sec-title">Core Lesson Content</h2>
+  <div class="tabs" id="tabBar">
+    <button class="tab-btn active" onclick="showTab(0,this)">1. The Core Idea</button>
+    <button class="tab-btn" onclick="showTab(1,this)">2. SR Latch</button>
+    <button class="tab-btn" onclick="showTab(2,this)">3. Gated SR Latch</button>
+    <button class="tab-btn" onclick="showTab(3,this)">4. D Latch</button>
+    <button class="tab-btn" onclick="showTab(4,this)">5. Latch vs Flip-Flop</button>
+    <button class="tab-btn" onclick="showTab(5,this)">6. SR &amp; D Flip-Flops</button>
+    <button class="tab-btn" onclick="showTab(6,this)">7. JK Flip-Flop</button>
+    <button class="tab-btn" onclick="showTab(7,this)">8. T Flip-Flop</button>
+    <button class="tab-btn" onclick="showTab(8,this)">9. Operations &amp; Applications</button>
+  </div>
+
+  <!-- TAB 1 -->
+  <div class="tab-pane show">
+    <h3>The Core Idea: A Circuit With Two Stable States</h3>
+    <p>Every circuit in Lesson 5 was <strong>combinational</strong> — its output was a pure function of its present inputs, with no memory of the past. Remove the inputs and the answer vanishes. Digital systems need more than that: a counter must remember its count, a register must hold its word, a state machine must know where it is. They need <strong>memory</strong>, and the smallest unit of memory is the <strong>bistable element</strong>:</p>
+    <ul class="styled">
+      <li>A bistable has exactly <strong>two stable states</strong> and can rest indefinitely in either — Q=0 or Q=1. Two states store exactly <strong>one bit</strong>.</li>
+      <li>It's built from pure feedback: two cross-coupled gates (see the first symbol card above), each output holding the other's input in place. No capacitor, no moving parts — the loop simply keeps agreeing with itself.</li>
+      <li>Every device in this lesson — every latch and every flip-flop — is this same bistable core wearing different <em>control logic</em> that decides <strong>when</strong> it's allowed to change.</li>
+    </ul>
+    <h4>The One Distinction That Organizes Everything</h4>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th></th><th>Latch</th><th>Flip-Flop</th></tr>
+      <tr><td><strong>Sensitivity</strong></td><td>Level-sensitive</td><td>Edge-triggered</td></tr>
+      <tr><td><strong>Output changes</strong></td><td>Continuously, the whole time enable is active</td><td>At one instant — the clock edge — then holds until the next edge</td></tr>
+    </table></div>
+    <p>Keep that pair of sentences in mind through all nine tabs: a latch's output can <em>follow</em> its inputs during an interval; a flip-flop's output <em>updates at an instant</em> and stays fixed. Everything else is detail.</p>
+    <div class="callout co-pro">
+      <div class="co-title">💡 Why This Is the Big Leap</div>
+      With memory, output depends on inputs <em>and history</em> — the definition of <strong>sequential logic</strong>. This is the tab where digital electronics stops being a calculator and starts being a machine that can count, store, sequence, and eventually compute. Cross-coupled bistables scaled up are literally the SRAM cache inside every processor.
+    </div>
+    <div class="sim-links">
+      <a class="sim-chip" href="#seqlab">📈 Sequential Logic Lab (below)</a>
+      <a class="sim-chip alt" href="#analogies">🚗 Two analogies: the garage door &amp; the red-light camera</a>
+      <a class="sim-chip alt" href="lesson05.html">↩ Lesson 5: Gates &amp; Boolean Algebra</a>
+    </div>
+  </div>
+
+  <!-- TAB 2 -->
+  <div class="tab-pane">
+    <h3>The SR Latch</h3>
+    <p>The simplest usable bistable adds two control inputs to the cross-coupled core: <strong>S</strong>et and <strong>R</strong>eset, with complementary outputs <strong>Q</strong> and <strong>Q&#773;</strong>.</p>
+    <h4>Operation</h4>
+    <ul class="styled">
+      <li><strong>Set (S=1, R=0):</strong> forces Q = 1. The latch now "remembers" being set even after S returns to 0.</li>
+      <li><strong>Reset (R=1, S=0):</strong> forces Q = 0.</li>
+      <li><strong>Hold (S=0, R=0):</strong> neither input asserted — the feedback loop preserves whatever state was last written. <em>This</em> is the memory in action.</li>
+    </ul>
+    <div class="formula">S=1 → Q=1 (set)&nbsp;&nbsp;|&nbsp;&nbsp;R=1 → Q=0 (reset)&nbsp;&nbsp;|&nbsp;&nbsp;S=R=0 → Q holds&nbsp;&nbsp;|&nbsp;&nbsp;<span style="color:var(--red);">S=R=1 → INVALID</span></div>
+    <div class="callout co-warn">
+      <div class="co-title">⚠️ The Invalid State: S = R = 1</div>
+      Assert Set and Reset together and both outputs are forced to the same level — Q = Q&#773;, a logical contradiction. Worse: when both inputs release at once, the two gates <strong>race</strong>, and which one wins is decided by nanosecond-scale manufacturing differences. The result is unpredictable and can even hang momentarily between states (<strong>metastability</strong> — a coin landing on its edge). Every SR-based design must guarantee this input combination never occurs; the D latch (Tab 4) and JK flip-flop (Tab 7) are two different engineering answers to this exact flaw.
+    </div>
+    <h4>Applications</h4>
+    <p>Simple <strong>control flags</strong> and basic state storage — any circuit that must remember whether a condition has occurred: an over-temperature event latched until an operator clears it, an alarm that stays on after a momentary trigger, or the classic <strong>switch debouncer</strong> that turns a bouncing mechanical contact into one clean transition.</p>
+    <div class="sim-links"><a class="sim-chip" href="#seqlab">📈 Lab: select SR Latch, then try S=R=1 and watch the INVALID warning</a></div>
+  </div>
+
+  <!-- TAB 3 -->
+  <div class="tab-pane">
+    <h3>The Gated SR Latch</h3>
+    <p>A bare SR latch listens to its inputs <em>all the time</em> — any glitch on S or R instantly corrupts the stored bit. The gated (enabled) SR latch fixes that by putting the latch behind a gate: an <strong>enable input</strong> that opens or closes the door.</p>
+    <h4>Operation</h4>
+    <ul class="styled">
+      <li><strong>EN = 1 (door open):</strong> the latch responds normally to Set and Reset.</li>
+      <li><strong>EN = 0 (door closed):</strong> S and R are completely ignored; the latch holds its state no matter what the inputs do.</li>
+    </ul>
+    <p>Construction is two AND gates in front of the SR core: S and R each get ANDed with EN, so with EN=0 the core sees 0,0 — the hold condition — regardless of the actual inputs. Note the invalid state survives: EN=1 with S=R=1 is still forbidden.</p>
+    <h4>Why Gating Matters</h4>
+    <p>This is the first appearance of an idea that dominates the rest of the lesson: <strong>controlled updating rather than continuous response</strong>. You choose <em>when</em> the storage element is writable. In timing-sensitive control logic, the enable window is opened only when the inputs are known to be valid and quiet.</p>
+    <h4>Applications</h4>
+    <p>Gated storage in timing-sensitive control logic and simple memory gating — e.g., latching a sensor reading only during the interval it's guaranteed stable, or write-protecting a stored flag while other circuitry is switching.</p>
+    <div class="callout co-tip">
+      <div class="co-title">🎯 Bench Perspective</div>
+      In the Lab, set S=1 with EN=0 — nothing happens. Raise EN and Q snaps high instantly. That "nothing… <em>now</em>" behavior is the entire concept of gating, and you'll feel it more clearly in ten seconds of clicking than in ten minutes of reading.
+    </div>
+    <div class="sim-links"><a class="sim-chip" href="#seqlab">📈 Lab: Gated SR — change inputs with EN low, then raise EN</a></div>
+  </div>
+
+  <!-- TAB 4 -->
+  <div class="tab-pane">
+    <h3>The D Latch — and Its Enable</h3>
+    <p>The gated SR latch still carries the forbidden S=R=1 landmine. The <strong>D latch</strong> removes it with one elegant move: replace the two inputs with a single <strong>Data</strong> input, wired to S directly and to R through an inverter. Now S and R are always opposites — the invalid combination is <em>structurally impossible</em>.</p>
+    <h4>Operation</h4>
+    <div class="formula">EN = 1 → Q follows D continuously ("transparent")&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;EN = 0 → Q holds the last value</div>
+    <ul class="styled">
+      <li><strong>While enabled,</strong> the output is a live window onto the input — wiggle D and Q wiggles in sympathy. This is why it's called the <strong>transparent latch</strong>.</li>
+      <li><strong>The instant EN falls,</strong> Q freezes at whatever D held at that moment. The falling edge of enable is effectively the "capture" event.</li>
+    </ul>
+    <h4>The D Latch with Explicit Enable</h4>
+    <p>The same concept packaged with explicit level-sensitive <strong>write control</strong>: if EN = 1, Q tracks D; if EN = 0, Q retains its prior state. This is the form you'll meet as register-like storage, for gating data into subsystems, and on <strong>bus interfaces</strong> — a latch grabs the data lines during the brief window an address is valid, then holds them for the slower peripheral while the bus moves on.</p>
+    <h4>Applications</h4>
+    <p>Temporary data storage, buffering, and input/output interfacing — anywhere you need to catch a value during a known-valid window and hold it afterward.</p>
+    <div class="callout co-warn">
+      <div class="co-title">⚠️ Transparency Cuts Both Ways</div>
+      While EN is high, glitches on D pass straight through to Q — transparency means <em>everything</em> gets through, noise included. That's precisely the weakness that motivates the flip-flop: shrink the vulnerable window from an interval down to a single instant. Hold that thought for the next tab.
+    </div>
+    <div class="sim-links"><a class="sim-chip" href="#seqlab">📈 Lab: D Latch — toggle D rapidly with EN high, then with EN low</a></div>
+  </div>
+
+  <!-- TAB 5 -->
+  <div class="tab-pane">
+    <h3>Latch vs. Flip-Flop: Level vs. Edge</h3>
+    <p>Everything so far has been level-sensitive. The <strong>flip-flop</strong> makes one decisive change: it responds not to the <em>level</em> of a control signal but to its <em>transition</em> — the <strong>clock edge</strong>. On the rising (or falling) edge, the device samples its inputs, updates once, and then ignores everything until the next edge.</p>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th>Feature</th><th>Latch</th><th>Flip-Flop</th></tr>
+      <tr><td><strong>Sensitivity</strong></td><td>Level-sensitive</td><td>Edge-triggered</td></tr>
+      <tr><td><strong>When output changes</strong></td><td>While enable is active</td><td>Only on the clock edge</td></tr>
+      <tr><td><strong>Timing style</strong></td><td>More asynchronous-like behavior</td><td>Synchronous behavior</td></tr>
+      <tr><td><strong>Typical use</strong></td><td>Temporary storage and gating</td><td>Registers, counters, and synchronous state machines</td></tr>
+    </table></div>
+    <h4>Why the Edge Wins in Big Systems</h4>
+    <ul class="styled">
+      <li><strong>Predictability:</strong> every storage element in the system updates at the same instant. Between edges, all signals are free to ripple through combinational logic — nothing gets stored until the next tick.</li>
+      <li><strong>Noise immunity:</strong> the vulnerable window shrinks from the whole enable interval to the tiny <strong>setup/hold window</strong> around the edge. Input glitches at any other time are simply invisible.</li>
+      <li><strong>Composability:</strong> chain a thousand flip-flops on one clock and the design still behaves — the discipline behind every synchronous processor, FPGA, and memory controller.</li>
+    </ul>
+    <h4>Reading the Symbol</h4>
+    <p>The <strong>triangle (▷) on the clock pin</strong> is the flip-flop's badge: it means "edge-triggered here." A plain triangle means rising-edge; a bubble in front of it means falling-edge. Latch symbols have no triangle — a plain EN pin means level-sensitive.</p>
+    <div class="callout co-pro">
+      <div class="co-title">💡 The One-Sentence Version</div>
+      A latch is a <strong>window</strong> (data flows while it's open); a flip-flop is a <strong>camera</strong> (one snapshot per click, immune to everything between shots). The Lab makes this visceral: watch Q chase D in D-Latch mode, then switch to D Flip-Flop and watch Q ignore D until you pulse the clock.
+    </div>
+    <div class="sim-links"><a class="sim-chip" href="#seqlab">📈 Lab: compare D Latch vs D Flip-Flop with the same input wiggles</a><a class="sim-chip alt" href="#analogies">🚗 Analogies + side-by-side timing comparison</a></div>
+  </div>
+
+  <!-- TAB 6 -->
+  <div class="tab-pane">
+    <h3>SR and D Flip-Flops — and the Clock Enable</h3>
+    <h4>SR Flip-Flop</h4>
+    <p>The edge-triggered counterpart of the SR latch. On the active clock edge: S=1 drives Q high, R=1 drives Q low, and S=R=0 preserves the current state. Between edges, S and R can do anything without effect. It inherits the SR family curse — S=R=1 at the edge is still undefined — which limits it to control systems where separate, mutually exclusive set and reset commands are guaranteed by design.</p>
+    <h4>D Flip-Flop: The One-Bit Memory Cell</h4>
+    <div class="formula">Characteristic equation:&nbsp;&nbsp;Q<sub>next</sub> = D&nbsp;&nbsp;&nbsp;(sampled at the active edge)</div>
+    <p>Q takes the value on D <em>at the edge instant</em>, then ignores all later D changes until the next edge. That's the whole device — and that simplicity is why it dominates: it is <em>the</em> classic one-bit memory cell for synchronous systems. Set D early, clock the system, and the value is captured cleanly with no invalid states and no ambiguity.</p>
+    <p><strong>Applications:</strong> registers, shift registers, pipeline stages, counters, and synchronous data transfer — essentially all of modern digital design's storage is D flip-flops in bulk.</p>
+    <h4>D Flip-Flop with Enable (Clock Enable)</h4>
+    <p>Adds a conditional-load input: <strong>EN=1 → load new data on the edge; EN=0 → hold the old value</strong> even though the clock keeps running. This is the standard way to make storage conditional <em>without touching the clock wiring</em> — gating the clock itself invites glitches and timing skew, while a clock enable keeps the clean global clock and simply tells the flip-flop "skip this one."</p>
+    <p><strong>Applications:</strong> register files (only the addressed register loads), state retention, and controlled pipeline updates (stalling a stage without stopping the clock).</p>
+    <div class="callout co-tip">
+      <div class="co-title">🎯 Quiz Tip</div>
+      "Q changes only at the clock edge" is the discriminator the exam will probe. If a question shows D changing three times between two clock edges, only the value present <em>at the edge</em> matters — the other changes never happened as far as Q is concerned. Prove it to yourself in the Lab's edge-capture exploration.
+    </div>
+    <div class="sim-links"><a class="sim-chip" href="#seqlab">📈 Lab: D FF — change D between pulses, then pulse the clock</a></div>
+  </div>
+
+  <!-- TAB 7 -->
+  <div class="tab-pane">
+    <h3>The JK Flip-Flop: The Universal One</h3>
+    <p>The JK is the SR flip-flop with its one flaw engineered away. Internal feedback from Q and Q&#773; steers the inputs so that the formerly forbidden both-asserted case becomes something <em>useful</em>: <strong>toggle</strong>.</p>
+    <h4>Operation (at each active clock edge)</h4>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th class="mono">J</th><th class="mono">K</th><th>Q<sub>next</sub></th><th>Operation</th></tr>
+      <tr><td class="mono">0</td><td class="mono">0</td><td class="mono">Q</td><td>Hold — keep the stored value</td></tr>
+      <tr><td class="mono">1</td><td class="mono">0</td><td class="mono">1</td><td>Set</td></tr>
+      <tr><td class="mono">0</td><td class="mono">1</td><td class="mono">0</td><td>Reset</td></tr>
+      <tr><td class="mono">1</td><td class="mono">1</td><td class="mono">Q&#773;</td><td><strong>Toggle</strong> — invert on every edge</td></tr>
+    </table></div>
+    <h4>Why "Universal"</h4>
+    <p>The JK can impersonate every other flip-flop, which is why it earned the name universal flip-flop:</p>
+    <ul class="styled">
+      <li><strong>As a D flip-flop:</strong> drive K with the inverse of J (K = J&#773;) — now J acts exactly like a D input.</li>
+      <li><strong>As a T flip-flop:</strong> tie J and K together — the shared input becomes T (0 = hold, 1 = toggle).</li>
+      <li><strong>As an SR flip-flop:</strong> use J as Set and K as Reset, with the bonus that the "both asserted" case is now defined and safe.</li>
+    </ul>
+    <p><strong>Applications:</strong> counters (the toggle mode is precisely what binary counting needs), toggle circuits, and flexible sequential logic design where one part number must cover many roles — the reason classic TTL families led with the 7476 dual JK.</p>
+    <div class="callout co-pro">
+      <div class="co-title">💡 The Design Lesson Inside the JK</div>
+      Notice the engineering pattern across three tabs: the SR latch had a forbidden state; the D latch <em>eliminated</em> it by restricting inputs; the JK <em>redefined</em> it as a new feature. Two valid strategies for the same flaw — constraint versus repurposing — and both are all over real-world circuit design.
+    </div>
+    <div class="sim-links"><a class="sim-chip" href="#seqlab">📈 Lab: JK — set J=K=1, enable auto-clock, and watch Q toggle every edge</a></div>
+  </div>
+
+  <!-- TAB 8 -->
+  <div class="tab-pane">
+    <h3>The T Flip-Flop and Frequency Division</h3>
+    <p>Strip the JK down to its most celebrated trick and you get the <strong>T (toggle) flip-flop</strong> — a single input device:</p>
+    <div class="formula">T = 1 → Q toggles on each active clock edge&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;T = 0 → Q holds&nbsp;&nbsp;&nbsp;(Q<sub>next</sub> = T ⊕ Q)</div>
+    <h4>The Divide-by-2 Miracle</h4>
+    <p>With T=1, Q inverts on <em>every</em> active edge. Follow the arithmetic: the clock must rise <strong>twice</strong> for Q to complete one full 0→1→0 cycle. Therefore:</p>
+    <div class="formula">f<sub>Q</sub> = f<sub>CLK</sub> / 2&nbsp;&nbsp;&nbsp;— and chaining n toggle stages gives&nbsp;&nbsp;f<sub>out</sub> = f<sub>CLK</sub> / 2ⁿ</div>
+    <ul class="styled">
+      <li><strong>One stage:</strong> 1 MHz in → 500 kHz out, a perfect 50% duty-cycle square wave regardless of the input's duty cycle.</li>
+      <li><strong>Chain of stages</strong> (each Q clocking the next stage): ÷2, ÷4, ÷8, ÷16 … Read the chain's outputs together and they count in binary — a <strong>ripple counter</strong> is nothing but T flip-flops holding hands.</li>
+      <li><strong>Fifteen stages:</strong> 32,768 Hz ÷ 2¹⁵ = exactly 1 Hz — which is literally how a quartz watch turns its crystal into seconds.</li>
+    </ul>
+    <p><strong>Applications:</strong> binary counters, frequency division, clock prescalers, and simple state toggling (a push-on/push-off power button is one T flip-flop).</p>
+    <div class="callout co-tip">
+      <div class="co-title">🎯 See the Division Happen</div>
+      In the Lab, select T FF, set T=1, and switch on auto-clock. Now read the timing diagram: the CLK lane completes two full cycles for every one cycle of the Q lane. That 2:1 picture <em>is</em> frequency division — count the edges yourself.
+    </div>
+    <div class="sim-links"><a class="sim-chip" href="#seqlab">📈 Lab: T FF + auto-clock — watch Q run at half speed</a></div>
+  </div>
+
+  <!-- TAB 9 -->
+  <div class="tab-pane">
+    <h3>Operations Vocabulary &amp; Where These Devices Live</h3>
+    <h4>The Five Operations — Precise Definitions</h4>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th>Operation</th><th>Meaning</th></tr>
+      <tr><td><strong>Set</strong></td><td>Forcing Q to 1.</td></tr>
+      <tr><td><strong>Reset / Clear</strong></td><td>Forcing Q to 0.</td></tr>
+      <tr><td><strong>Hold</strong></td><td>Keeping the previously stored value.</td></tr>
+      <tr><td><strong>Toggle</strong></td><td>Inverting the stored state on the next active clock event.</td></tr>
+      <tr><td><strong>Transparent</strong></td><td>Output follows the input while enabled (latches only).</td></tr>
+    </table></div>
+    <h4>The Application Map</h4>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th>Application</th><th>How Latches/Flip-Flops Deliver It</th><th>Best Device</th></tr>
+      <tr><td><strong>One-bit storage</strong></td><td>The bistable core holds a bit indefinitely — the atom of all sequential circuits</td><td>Any; D FF in synchronous designs</td></tr>
+      <tr><td><strong>Registers</strong></td><td>n flip-flops on one clock capture an n-bit word in a single edge</td><td>D FF (with clock enable for write control)</td></tr>
+      <tr><td><strong>Shift registers</strong></td><td>Each Q feeds the next D; bits march one position per clock — serial↔parallel conversion</td><td>D FF chain</td></tr>
+      <tr><td><strong>Counters</strong></td><td>Toggle stages chained so each divides by 2; outputs read as a binary count</td><td>T or JK FF</td></tr>
+      <tr><td><strong>Frequency division</strong></td><td>Each toggle stage halves the clock — prescalers, timekeeping</td><td>T FF</td></tr>
+      <tr><td><strong>Flags &amp; control logic</strong></td><td>Latch an event (fault, alarm, request) until acknowledged and cleared</td><td>SR latch</td></tr>
+      <tr><td><strong>State machines</strong></td><td>Flip-flops store the current state; gates compute the next — the pattern behind every controller</td><td>D FF + combinational logic</td></tr>
+      <tr><td><strong>Input synchronizing</strong></td><td>Two cascaded D FFs tame an asynchronous outside signal before it meets the clocked system, containing metastability</td><td>D FF pair</td></tr>
+      <tr><td><strong>Controlled data transfer</strong></td><td>Latches grab bus data during valid windows; clock-enabled FFs load only when addressed</td><td>D latch / D FF + EN</td></tr>
+    </table></div>
+    <div class="callout co-pro">
+      <div class="co-title">💡 Course Thread</div>
+      Diodes steered current (L1), supplies delivered it (L2), transistors switched it (L3), feedback made it precise (L4), gates made it logical (L5) — and now bistables give the logic a <strong>memory</strong>. Lesson 7 puts these cells to work in force: registers, counters, and the sequential systems that run on them.
+    </div>
+    <div class="sim-links">
+      <a class="sim-chip" href="#seqlab">📈 Sequential Logic Lab — all eight devices</a>
+      <a class="sim-chip alt" href="#apps">🏭 Applications Gallery — one worked example per device</a>
+      <a class="sim-chip alt" href="https://sands-mvcc.github.io/elt102/gates.html" target="_blank" rel="noopener">↩ Gates Simulator (prerequisite review)</a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ================= ANALOGIES (added) ================= -->
+<section id="analogies">
+  <h2 class="sec-title">🚗 Level vs. Edge: Two Paired Analogies</h2>
+  <p>Tab 5 compressed the whole distinction into "window vs. camera." Here are two fuller analogies built as a matched pair — same street, same cars, same one-bit question (<em>"is a car there?"</em>) — so the <strong>only</strong> thing that differs between them is <em>when</em> the answer gets recorded. That is exactly the difference between a latch and a flip-flop.</p>
+  <div class="fam-key"><span class="k-l">Level-sensitive (latch family)</span><span class="k-f">Edge-triggered (flip-flop family)</span></div>
+
+  <div class="analogy-grid">
+    <div class="an-card">
+      <div class="an-head"><span class="an-tag">Analogy 1 · Level-sensitive · D latch</span><h3>The One-Car Garage Door</h3></div>
+      <div class="an-body">
+        <div class="ill"><svg viewBox="0 0 360 210" role="img" aria-label="Illustration: one-car garage with the door held open; the car inside follows whatever pulls in or out, including a neighbor turning around."><line class="s" x1="0" y1="186" x2="360" y2="186"/><polygon class="fc" points="140,74 245,28 350,74"/><rect class="fc" x="150" y="74" width="190" height="112"/><rect class="fin" x="168" y="94" width="154" height="92"/><rect class="fnv" x="168" y="94" width="154" height="16"/><line class="sw" x1="168" y1="102" x2="322" y2="102"/><text x="245" y="64" text-anchor="middle" class="b sm">ONE-CAR GARAGE = ONE BIT</text><text x="245" y="126" text-anchor="middle" class="m sm">door up: contents follow the driveway</text><g transform="translate(205,140)"><rect class="fnv" x="0" y="12" width="80" height="20" rx="6"/><path class="s" d="M14,12 L24,1 L56,1 L68,12"/><line class="s" x1="40" y1="1" x2="40" y2="12"/><circle class="fk" cx="19" cy="33" r="7"/><circle class="fk" cx="61" cy="33" r="7"/></g><g transform="translate(40,140)" class="ghost"><rect class="fc dash" x="0" y="12" width="80" height="20" rx="6"/><path class="s dash" d="M14,12 L24,1 L56,1 L68,12"/><line class="s dash" x1="40" y1="1" x2="40" y2="12"/><circle class="fk" cx="19" cy="33" r="7"/><circle class="fk" cx="61" cy="33" r="7"/></g><path class="sa" d="M58,134 C72,104 118,104 130,128"/><polyline class="sa" points="121,125 130,128 132,119"/><text x="10" y="86" class="ta sm">neighbor turning around —</text><text x="10" y="99" class="ta sm">stored if door drops now!</text><rect class="fc" x="10" y="16" width="112" height="44" rx="6"/><text x="66" y="34" text-anchor="middle" class="b sm">OPENER HELD</text><text x="66" y="51" text-anchor="middle" class="tg">EN = 1</text><path class="sn dash" d="M122,38 H158 V94"/><text x="245" y="202" text-anchor="middle" class="m sm">car inside = Q = 1 · empty = Q = 0</text></svg></div>
+        <p>You hold the opener button, and the door stays up <em>as long as you hold it</em>. While it's up, the garage's contents simply follow the driveway: a car pulls in — occupied; it backs out — empty; it pulls in again — occupied. The garage is <strong>transparent</strong>. Release the button, the door comes down, and whatever is inside at that moment stays there, no matter what happens on the driveway afterward.</p>
+        <p>The danger is the <strong>open interval</strong>. If a neighbor noses in to turn around just as the door drops, the neighbor's car is what you've stored. Every glitch on the input during the window can end up as the answer.</p>
+        <div class="an-rule">Button held (EN=1) → contents follow driveway (Q = D)<br>Button released (EN=0) → door down, contents frozen (hold)</div>
+      </div>
+    </div>
+
+    <div class="an-card edge">
+      <div class="an-head"><span class="an-tag">Analogy 2 · Edge-triggered · D flip-flop</span><h3>The Red-Light Camera</h3></div>
+      <div class="an-body">
+        <div class="ill"><svg viewBox="0 0 360 210" role="img" aria-label="Illustration: red-light camera fires once at the instant the signal changes to red, recording whether a car is in the intersection at that instant."><rect class="fin" x="0" y="118" width="360" height="64"/><line class="s" x1="0" y1="118" x2="360" y2="118"/><line class="s" x1="0" y1="182" x2="360" y2="182"/><rect class="zone" x="153" y="120" width="112" height="60"/><rect class="fk" x="148" y="118" width="5" height="64"/><text x="209" y="197" text-anchor="middle" class="m sm">intersection (the data: car here or not?)</text><line class="s" x1="305" y1="118" x2="305" y2="86"/><rect class="fc" x="293" y="22" width="24" height="64" rx="4"/><circle class="frd" cx="305" cy="35" r="7"/><circle class="foff" cx="305" cy="54" r="7"/><circle class="foff" cx="305" cy="73" r="7"/><text x="287" y="36" text-anchor="end" class="tr sm">GREEN → RED</text><text x="287" y="50" text-anchor="end" class="b sm">= the clock EDGE</text><line class="s" x1="120" y1="118" x2="120" y2="60"/><rect class="fnv" x="102" y="44" width="36" height="18" rx="3"/><circle class="fc" cx="141" cy="53" r="5"/><line class="sa" x1="148" y1="56" x2="176" y2="122"/><line class="sa" x1="148" y1="56" x2="206" y2="120"/><line class="sa" x1="148" y1="56" x2="236" y2="122"/><line class="sa" x1="146" y1="44" x2="152" y2="36"/><line class="sa" x1="150" y1="50" x2="160" y2="46"/><g transform="translate(172,128)"><rect class="fnv" x="0" y="12" width="80" height="20" rx="6"/><path class="s" d="M14,12 L24,1 L56,1 L68,12"/><line class="s" x1="40" y1="1" x2="40" y2="12"/><circle class="fk" cx="19" cy="33" r="7"/><circle class="fk" cx="61" cy="33" r="7"/></g><g transform="translate(18,128)" class="ghost"><rect class="fc dash" x="0" y="12" width="80" height="20" rx="6"/><path class="s dash" d="M14,12 L24,1 L56,1 L68,12"/><line class="s dash" x1="40" y1="1" x2="40" y2="12"/><circle class="fk" cx="19" cy="33" r="7"/><circle class="fk" cx="61" cy="33" r="7"/></g><text x="58" y="112" text-anchor="middle" class="m sm">earlier car: ignored</text><text x="316" y="140" text-anchor="middle" class="m sm">later cars:</text><text x="316" y="153" text-anchor="middle" class="m sm">ignored</text><rect class="fc" x="8" y="8" width="84" height="68" rx="3"/><rect class="fin" x="14" y="14" width="72" height="38"/><g transform="translate(22,19) scale(0.7)"><rect class="fnv" x="0" y="12" width="80" height="20" rx="6"/><path class="s" d="M14,12 L24,1 L56,1 L68,12"/><line class="s" x1="40" y1="1" x2="40" y2="12"/><circle class="fk" cx="19" cy="33" r="7"/><circle class="fk" cx="61" cy="33" r="7"/></g><text x="50" y="68" text-anchor="middle" class="tg">Q = 1</text><text x="8" y="90" class="m sm">snapshot per change</text></svg></div>
+        <p>A red-light camera doesn't care how long the light has been red or green. It fires <strong>once</strong>, at the instant the signal <em>changes</em> to red, and records one fact: was a car in the intersection at that instant? The photo is kept until the next change. Cars that crossed a second earlier, or roll through a second later, never appear in it.</p>
+        <p>Its only vulnerable moment is the flash itself. A car sitting exactly on the stop line is the camera's version of a <strong>setup/hold violation</strong> — was it in or out? That ambiguous photo is the traffic-court equivalent of <strong>metastability</strong>.</p>
+        <div class="an-rule">Light turns red (rising CLK edge) → one snapshot: Q = D at that instant<br>Any other time → camera blind (hold)</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Mapping the Analogies onto the Circuit</h3>
+  <div class="tbl-wrap"><table class="data">
+    <tr><th>Circuit element</th><th>🚪 Garage door (level)</th><th>📸 Red-light camera (edge)</th></tr>
+    <tr><td><strong>Control signal</strong></td><td>Opener button held down (EN = 1 for as long as it's held)</td><td>The signal <em>changing</em> to red (the rising clock edge)</td></tr>
+    <tr><td><strong>Data input D</strong></td><td>"Is a car in the space right now?"</td><td>"Is a car in the intersection right now?"</td></tr>
+    <tr><td><strong>Output Q</strong></td><td>Car in the garage (1) or empty (0)</td><td>The photo: car (1) or no car (0)</td></tr>
+    <tr><td><strong>Transparent / following</strong></td><td>Yes — contents track the driveway while the door is up</td><td>Never — the camera is blind between changes</td></tr>
+    <tr><td><strong>Hold</strong></td><td>Door down: contents locked in</td><td>Between changes: the last photo stands</td></tr>
+    <tr><td><strong>Input glitch</strong></td><td>Neighbor turning around can be captured</td><td>Cars passing mid-cycle are never recorded</td></tr>
+    <tr><td><strong>Vulnerable window</strong></td><td>The entire time the door is up</td><td>Only the instant of the flash (setup/hold)</td></tr>
+    <tr><td><strong>Real part</strong></td><td class="mono">74HC373 / 74HC75 (D latches)</td><td class="mono">74HC74 / 74HC574 (D flip-flops)</td></tr>
+  </table></div>
+
+  <h3>See It: Same Input, Two Devices</h3>
+  <p>This diagram feeds the <strong>identical</strong> D waveform to a D latch and a D flip-flop, and uses the <strong>same square wave</strong> as the latch's EN and the flip-flop's CLK. Shaded bands are the latch's open windows ("door up"); amber dashed lines are the flip-flop's rising edges ("flash"). Generate new patterns and compare how often each Q changes. Try the glitchy pattern: single-step spikes inside a shaded band leak through the latch but almost never reach the flip-flop.</p>
+  <div class="grapher" style="padding:16px;">
+    <div class="ill" style="margin:0;"><svg id="cmpSvg" viewBox="0 0 720 270" role="img" aria-label="Timing diagram comparing D latch output and D flip-flop output for the same data and control waveforms"></svg></div>
+    <div class="cmp-ctrls">
+      <button class="g-btn" onclick="cmpDraw(false)">New D pattern</button>
+      <button class="g-btn g-green" onclick="cmpDraw(true)">Glitchy D pattern</button>
+    </div>
+    <div class="readout" id="cmpRead" aria-live="polite"></div>
+  </div>
+
+  <div class="callout co-warn">
+    <div class="co-title">⚠️ Where the Analogies Stop Being Accurate</div>
+    A real garage door takes seconds to move; a latch responds in nanoseconds (its <strong>propagation delay</strong>). A real camera needs light and a shutter; a flip-flop's "flash" is a master-slave or pulse-capture circuit inside the chip, and its setup/hold window is measured in picoseconds to nanoseconds. And both analogies store <em>one</em> yes/no fact — the one-car garage is deliberately small. A register is simply a row of garages (or cameras) sharing one button (or one traffic signal).
+  </div>
+  <div class="callout co-tip">
+    <div class="co-title">🎯 Classroom Activity: Human Latch vs. Human Flip-Flop (5 minutes)</div>
+    Pick two students. The instructor raises and lowers a hand at random (that's D). Student A is the <strong>latch</strong>: whenever a second student holds up a green card (EN), A mirrors the instructor's hand continuously; when the card drops, A freezes. Student B is the <strong>flip-flop</strong>: B may move only at the instant the instructor claps (the clock edge), copying the hand position at that clap. Run 30 seconds, then ask the class: who moved more? Who copied the "mistake" when the instructor twitched? The class reconstructs the timing diagram above from memory.
+  </div>
+
+  <h3>Quick Check: Level or Edge?</h3>
+  <p>Classify each everyday situation. Instant feedback appears after each choice.</p>
+  <div class="sorter" id="sorter"></div>
+  <div class="sort-score" id="sortScore"></div>
+</section>
+
+<!-- ================= SEQUENTIAL LOGIC LAB ================= -->
+<section id="seqlab">
+  <h2 class="sec-title">📈 Sequential Logic Lab — Operation Simulator</h2>
+  <p>All eight devices from the symbol library, live. The left side of the canvas shows the device with its current input and output states; the right side is a <strong>scrolling timing diagram</strong> recording everything you do. Toggle inputs with the buttons (or click the input pins on the canvas), pulse the clock manually to see edge-triggering, or switch on the auto-clock and watch behaviors like divide-by-2 draw themselves.</p>
+  <div class="grapher">
+    <div class="grapher-grid">
+      <div>
+        <canvas class="scope" id="labCv" width="720" height="460" role="img" aria-label="Sequential logic lab showing the selected latch or flip-flop with live input, output, and scrolling timing diagram lanes"></canvas>
+        <p style="font-family:'Arial Narrow',Arial,sans-serif;font-size:.78rem;color:var(--text-muted);margin-top:6px;">💡 Input pins on the device symbol are clickable too.</p>
+      </div>
+      <div>
+        <div class="ctrl">
+          <label>Device Under Test</label>
+          <div class="seg" id="devSeg">
+            <button class="active" onclick="setDev('srl',this)">SR Latch</button>
+            <button onclick="setDev('gsr',this)">Gated SR</button>
+            <button onclick="setDev('dl',this)">D Latch</button>
+            <button onclick="setDev('srf',this)">SR FF</button>
+            <button onclick="setDev('dff',this)">D FF</button>
+            <button onclick="setDev('dffe',this)">D FF + EN</button>
+            <button onclick="setDev('jk',this)">JK FF</button>
+            <button onclick="setDev('tff',this)">T FF</button>
+          </div>
+        </div>
+        <div class="ctrl">
+          <label>Inputs</label>
+          <div class="g-btns" id="inBtns"></div>
+        </div>
+        <div class="ctrl" id="clkCtrl">
+          <label>Clock</label>
+          <div class="g-btns">
+            <button class="g-btn g-green" onclick="pulseClk()">Pulse Clock ⏶</button>
+          </div>
+          <div class="toggle-row"><input type="checkbox" id="autoClk" onchange="draw()"> <span>Auto-clock (free-running)</span></div>
+        </div>
+        <div class="readout" id="labRead" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout co-pro">
+    <div class="co-title">💡 Guided Explorations</div>
+    <strong>1. Memory itself (SR Latch):</strong> pulse S on then off — Q stays set with both inputs at 0. That hold is the bistable remembering. <strong>2. The forbidden state:</strong> set S=1 and R=1 — read the red INVALID warning, then release both and notice the outcome is arbitrary. <strong>3. Gating (Gated SR):</strong> wiggle S with EN=0 — nothing; raise EN — instant response. <strong>4. Transparency (D Latch):</strong> toggle D rapidly with EN=1 and watch Q chase it in the timing lanes; drop EN and the chase freezes. <strong>5. The camera (D FF):</strong> change D two or three times <em>without</em> pulsing the clock — Q ignores everything; now pulse once — Q captures only the value at the edge. <strong>6. Universal toggle (JK):</strong> J=K=1, auto-clock on — Q flips every rising edge. <strong>7. Divide-by-2 (T FF):</strong> T=1, auto-clock on — count edges in the CLK lane vs the Q lane: exactly 2:1, frequency division drawn live.
+  </div>
+</section>
+
+
+<!-- ================= APPLICATIONS GALLERY (added) ================= -->
+<section id="apps">
+  <h2 class="sec-title">🏭 Applications Gallery: One Worked Example per Device</h2>
+  <p>Tab 9's Application Map tells you <em>which</em> device fits each job. This gallery shows <em>how</em>: one concrete, buildable circuit for each of the eight devices, with an illustration, the reason that device (and not its neighbor) is the right choice, and a representative part number you can find on a datasheet. Each "Try it" button loads that device in the Sequential Logic Lab.</p>
+  <div class="fam-key"><span class="k-l">Latch (level-sensitive)</span><span class="k-f">Flip-flop (edge-triggered)</span></div>
+  <div class="appgrid">
+
+    <div class="appcard">
+      <span class="app-dev">SR Latch</span>
+      <h3>The Switch Debouncer</h3>
+      <div class="ill"><svg viewBox="0 0 320 175" role="img" aria-label="SPDT pushbutton driving S and R of an SR latch; raw contact bounces while Q switches once cleanly."><text x="30" y="16" class="m sm">SPDT pushbutton</text><line class="s" x1="10" y1="58" x2="40" y2="58"/><text x="8" y="50" class="m sm">COM</text><circle class="fc" cx="40" cy="58" r="3"/><line class="s" x1="40" y1="58" x2="74" y2="38"/><circle class="fc" cx="78" cy="36" r="3.5"/><circle class="fc" cx="78" cy="80" r="3.5"/><line class="sn" x1="82" y1="36" x2="120" y2="36"/><line class="sn" x1="82" y1="80" x2="120" y2="80"/><rect class="fc" x="120" y="20" width="64" height="76" rx="4"/><text x="127" y="41" class="mono">S</text><text x="127" y="85" class="mono">R</text><text x="166" y="41" class="mono">Q</text><text x="164" y="85" class="mono">Q&#773;</text><line class="sg" x1="184" y1="36" x2="222" y2="36"/><circle class="fg" cx="232" cy="36" r="9"/><text x="246" y="40" class="tg sm">clean output</text><line class="sn" x1="184" y1="80" x2="222" y2="80"/><text x="8" y="134" class="m sm">contact</text><text x="8" y="162" class="b sm">Q</text><line class="sl" x1="150" y1="112" x2="150" y2="170"/><path class="sa" d="M70,138 H150 V122 H154 V138 H158 V122 H161 V138 H164 V122 H310"/><path class="sg" d="M70,166 H150 V150 H310"/><text x="166" y="116" class="ta sm">bounces = HOLD</text></svg></div>
+      <div class="app-row"><b>Scenario.</b> A mechanical pushbutton doesn't close cleanly: its contacts bounce 5–20 times over a few milliseconds. A counter watching the raw contact would count one press as a dozen.</div>
+      <div class="app-row"><b>How the device does it.</b> A single-pole double-throw switch drives S from one contact and R from the other. The <em>first</em> touch of the new contact sets (or resets) the latch. Each bounce only lifts that input back to 0 — and S=R=0 is the <strong>hold</strong> condition. The bounces are absorbed by memory.</div>
+      <div class="app-row"><b>Why this device.</b> The blade physically cannot touch both contacts at once, so S=R=1 can never happen. The SR latch's one flaw is designed out by the mechanics. (Practical builds use a NAND-based S&#773;R&#773; latch with pull-up resistors and active-low inputs; the logic is identical.)</div>
+      <div class="app-part">Parts: 74HC279 quad S&#773;R&#773; latch · also: fault and E-stop flags</div>
+      <div class="sim-links"><a class="sim-chip" href="#seqlab" onclick="labJump('srl')">📈 Try it: tap S several times quickly — Q sets once</a></div>
+    </div>
+
+    <div class="appcard">
+      <span class="app-dev">Gated SR Latch</span>
+      <h3>The Armed Security Alarm</h3>
+      <div class="ill"><svg viewBox="0 0 320 165" role="img" aria-label="Gated SR latch alarm: door sensor to S, arm key to EN, reset to R, output drives a siren."><rect class="fc" x="10" y="22" width="18" height="30"/><circle class="fk" cx="24" cy="38" r="1.8"/><text x="34" y="42" class="sm">door sensor</text><circle class="fc" cx="18" cy="65" r="6"/><line class="s" x1="24" y1="65" x2="38" y2="65"/><line class="s" x1="33" y1="65" x2="33" y2="70"/><text x="42" y="69" class="sm">ARM key</text><rect class="fc" x="10" y="85" width="16" height="14" rx="3"/><text x="32" y="96" class="sm">RESET</text><line class="sn" x1="96" y1="38" x2="130" y2="38"/><line class="sg" x1="96" y1="65" x2="130" y2="65"/><line class="sn" x1="96" y1="92" x2="130" y2="92"/><rect class="fc" x="130" y="20" width="70" height="90" rx="4"/><text x="137" y="43" class="mono">S</text><text x="137" y="70" class="mono">EN</text><text x="137" y="97" class="mono">R</text><text x="182" y="43" class="mono">Q</text><line class="sr" x1="200" y1="38" x2="238" y2="38"/><rect class="frd" x="238" y="28" width="14" height="20"/><polygon class="frd" points="252,28 266,18 266,58 252,48"/><path class="sr" d="M274,28 q8,10 0,20"/><path class="sr" d="M283,22 q13,16 0,32"/><text x="10" y="134" class="sm"><tspan class="tn">EN = 0 (disarmed):</tspan> door opens freely, Q holds 0</text><text x="10" y="152" class="sm"><tspan class="tr">EN = 1 (armed):</tspan> one opening sets Q; siren stays ON</text></svg></div>
+      <div class="app-row"><b>Scenario.</b> A security panel must ignore the door while the owner is home, but once armed, a single door opening must keep the siren sounding even after the intruder closes the door.</div>
+      <div class="app-row"><b>How the device does it.</b> Door sensor → S, arm key → EN, reset button → R. Disarmed (EN=0), the latch ignores the door entirely. Armed (EN=1), the first opening sets Q; when the door closes, S returns to 0 and the latch <strong>holds</strong> — the siren stays on until RESET.</div>
+      <div class="app-row"><b>Why this device.</b> The enable supplies the "listening window," the SR core supplies event memory. Design caution: pressing RESET while the door is still open (armed) is S=R=1. Real panels add priority logic so reset or alarm wins by rule, never by race.</div>
+      <div class="app-part">Parts: 74HC75 / gates + SR core · also: sample-window fault capture</div>
+      <div class="sim-links"><a class="sim-chip" href="#seqlab" onclick="labJump('gsr')">📈 Try it: S=1 with EN=0, then raise EN</a></div>
+    </div>
+
+    <div class="appcard">
+      <span class="app-dev">D Latch</span>
+      <h3>The Address Latch on a Multiplexed Bus</h3>
+      <div class="ill"><svg viewBox="0 0 320 190" role="img" aria-label="Multiplexed address/data bus: an ALE pulse opens a D latch that captures the address before the bus switches to data."><rect class="fc" x="8" y="24" width="58" height="86" rx="4"/><text x="37" y="62" text-anchor="middle" class="b">CPU</text><text x="37" y="78" text-anchor="middle" class="m sm">8051-style</text><path class="sbus" d="M66,40 H300 V70"/><text x="180" y="32" text-anchor="middle" class="tn sm">AD0–AD7 (address, then data)</text><line class="sbus" x1="165" y1="40" x2="165" y2="80"/><rect class="fc" x="130" y="80" width="70" height="46" rx="4"/><text x="165" y="99" text-anchor="middle" class="b sm">D latch ×8</text><text x="165" y="115" text-anchor="middle" class="m sm">74HC373</text><path class="sa" d="M66,100 H104 V118 H130"/><text x="72" y="95" class="ta sm">ALE → EN</text><path class="sbus" d="M200,103 H232"/><rect class="fc" x="232" y="70" width="80" height="60" rx="4"/><text x="272" y="94" text-anchor="middle" class="b sm">Memory</text><text x="272" y="110" text-anchor="middle" class="m sm">A0–A7 held</text><text x="8" y="150" class="m sm">AD bus</text><text x="8" y="180" class="m sm">ALE</text><polygon class="fc" points="90,146 96,138 184,138 190,146 184,154 96,154"/><text x="140" y="150" text-anchor="middle" class="sm b">ADDR</text><polygon class="fc" points="190,146 196,138 304,138 310,146 304,154 196,154"/><text x="250" y="150" text-anchor="middle" class="sm b">DATA</text><path class="sa" d="M90,182 H100 V166 H168 V182 H310"/><line class="sl" x1="168" y1="134" x2="168" y2="186"/><text x="174" y="178" class="ta sm">EN falls → address frozen</text></svg></div>
+      <div class="app-row"><b>Scenario.</b> To save pins, 8051-family microcontrollers send the low address byte and the data over the same eight wires, one after the other. The memory chip needs the address to stay put while the data arrives.</div>
+      <div class="app-row"><b>How the device does it.</b> The CPU places the address on AD0–AD7 and raises ALE (Address Latch Enable), wired to the latches' EN. While ALE=1, the latches are <strong>transparent</strong>, so the address flows straight to the memory. ALE falls just before the bus switches to data, freezing the address on A0–A7.</div>
+      <div class="app-row"><b>Why this device.</b> Here transparency is a feature: the address reaches memory immediately, with no wait for a clock edge. The only timing requirement is that the address be valid when ALE falls — the garage door closing.</div>
+      <div class="app-part">Parts: 74HC373 octal D latch · also: holding a reading for a slow display</div>
+      <div class="sim-links"><a class="sim-chip" href="#seqlab" onclick="labJump('dl')">📈 Try it: EN=1, wiggle D, then drop EN</a></div>
+    </div>
+
+    <div class="appcard ff">
+      <span class="app-dev">SR Flip-Flop</span>
+      <h3>Synchronous Start/Stop Conveyor Control</h3>
+      <div class="ill"><svg viewBox="0 0 320 165" role="img" aria-label="SR flip-flop conveyor control: START to S, STOP to R, system clock to CLK, Q drives motor and belt."><circle class="fg" cx="22" cy="36" r="10"/><text x="38" y="40" class="sm b">START</text><circle class="frd" cx="22" cy="96" r="10"/><text x="38" y="100" class="sm b">STOP</text><path class="sa" d="M10,64 h8 v-8 h8 v8 h8 v-8 h8 v8 h18"/><text x="10" y="79" class="ta sm">SYS CLK</text><line class="sn" x1="84" y1="36" x2="120" y2="36"/><line class="sa" x1="60" y1="64" x2="120" y2="64"/><line class="sn" x1="80" y1="96" x2="120" y2="96"/><rect class="fc" x="120" y="18" width="70" height="96" rx="4"/><polyline class="s" points="120,56 131,64 120,72"/><text x="127" y="41" class="mono">S</text><text x="135" y="68" class="tg sm">CLK</text><text x="127" y="101" class="mono">R</text><text x="172" y="41" class="mono">Q</text><line class="sg" x1="190" y1="36" x2="228" y2="36"/><circle class="fc" cx="242" cy="36" r="14"/><text x="242" y="41" text-anchor="middle" class="b">M</text><path class="s dash" d="M256,36 H302 V120"/><rect class="fc" x="200" y="120" width="112" height="16" rx="8"/><circle class="fc" cx="210" cy="128" r="5"/><circle class="fc" cx="302" cy="128" r="5"/><rect class="fam" x="226" y="103" width="18" height="16"/><rect class="fam" x="260" y="103" width="18" height="16"/><text x="256" y="156" text-anchor="middle" class="m sm">belt runs while Q = 1</text></svg></div>
+      <div class="app-row"><b>Scenario.</b> A packaging-line controller runs a conveyor from debounced START and STOP buttons. Every other part of the controller (warning horn, jam timer) runs on the same system clock.</div>
+      <div class="app-row"><b>How the device does it.</b> START → S, STOP → R, system clock → CLK. On each rising edge the controller samples both buttons: START sets Q (motor runs), STOP resets it, neither holds. The motor command changes <strong>in lockstep</strong> with the rest of the controller, so the horn timer and motor always start on the same tick.</div>
+      <div class="app-row"><b>Why this device.</b> Separate set and reset commands match how operators think. But S=R=1 at an edge is still undefined, so industrial logic makes STOP dominant (S is gated by STOP&#773;). The safety rule "stop always wins" is exactly the invalid-state fix.</div>
+      <div class="app-part">Parts: built from a D FF + gating logic, or inside a PLC/FPGA</div>
+      <div class="sim-links"><a class="sim-chip" href="#seqlab" onclick="labJump('srf')">📈 Try it: set S, then pulse the clock</a></div>
+    </div>
+
+    <div class="appcard ff">
+      <span class="app-dev">D Flip-Flop</span>
+      <h3>The Shift-Register LED Driver</h3>
+      <div class="ill"><svg viewBox="0 0 320 160" role="img" aria-label="Four D flip-flops chained as a shift register with a common clock, each output driving an LED."><line class="sn" x1="6" y1="52" x2="28" y2="52"/><text x="4" y="44" class="tn sm">SER</text><line class="sa" x1="8" y1="118" x2="300" y2="118"/><text x="6" y="134" class="ta sm">CLK (shared)</text><rect class="fc" x="28" y="38" width="48" height="52" rx="4"/><text x="33" y="57" class="mono">D</text><text x="60" y="57" class="mono">Q</text><polyline class="s" points="28,72 37,78 28,84"/><path class="sa" d="M20,118 V78 H28"/><line class="sn" x1="76" y1="52" x2="100" y2="52"/><line class="s" x1="88" y1="52" x2="88" y2="26"/><circle class="fk" cx="88" cy="52" r="2.5"/><circle class="fg" cx="88" cy="18" r="7"/><text x="78" y="22" text-anchor="end" class="sm b">Q0</text><rect class="fc" x="100" y="38" width="48" height="52" rx="4"/><text x="105" y="57" class="mono">D</text><text x="132" y="57" class="mono">Q</text><polyline class="s" points="100,72 109,78 100,84"/><path class="sa" d="M92,118 V78 H100"/><line class="sn" x1="148" y1="52" x2="172" y2="52"/><line class="s" x1="160" y1="52" x2="160" y2="26"/><circle class="fk" cx="160" cy="52" r="2.5"/><circle class="foff" cx="160" cy="18" r="7"/><text x="150" y="22" text-anchor="end" class="sm b">Q1</text><rect class="fc" x="172" y="38" width="48" height="52" rx="4"/><text x="177" y="57" class="mono">D</text><text x="204" y="57" class="mono">Q</text><polyline class="s" points="172,72 181,78 172,84"/><path class="sa" d="M164,118 V78 H172"/><line class="sn" x1="220" y1="52" x2="244" y2="52"/><line class="s" x1="232" y1="52" x2="232" y2="26"/><circle class="fk" cx="232" cy="52" r="2.5"/><circle class="fg" cx="232" cy="18" r="7"/><text x="222" y="22" text-anchor="end" class="sm b">Q2</text><rect class="fc" x="244" y="38" width="48" height="52" rx="4"/><text x="249" y="57" class="mono">D</text><text x="276" y="57" class="mono">Q</text><polyline class="s" points="244,72 253,78 244,84"/><path class="sa" d="M236,118 V78 H244"/><line class="sn" x1="292" y1="52" x2="304" y2="52"/><line class="s" x1="304" y1="52" x2="304" y2="26"/><circle class="fk" cx="304" cy="52" r="2.5"/><circle class="fg" cx="304" cy="18" r="7"/><text x="294" y="22" text-anchor="end" class="sm b">Q3</text><text x="160" y="152" text-anchor="middle" class="m sm">each rising edge: every bit steps one place to the right</text></svg></div>
+      <div class="app-row"><b>Scenario.</b> A microcontroller with three free pins must drive 8, 16, or 64 LEDs.</div>
+      <div class="app-row"><b>How the device does it.</b> D flip-flops are chained Q→D on a shared clock. On each rising edge, every bit moves one stage to the right while a new bit enters at SER. After eight clocks, an 8-bit pattern sits across eight outputs.</div>
+      <div class="app-row"><b>Why this device.</b> All stages sample at the <strong>same instant</strong>, so each one grabs its left neighbor's <em>old</em> value before that neighbor changes. Build the same chain from transparent latches and one enable window would let a bit race through the entire chain at once — the garage door problem, eight garages deep.</div>
+      <div class="app-part">Parts: 74HC595 (shift + output register) · also: two-FF synchronizer, pipelines</div>
+      <div class="sim-links"><a class="sim-chip" href="#seqlab" onclick="labJump('dff')">📈 Try it: change D between clock pulses</a></div>
+    </div>
+
+    <div class="appcard ff">
+      <span class="app-dev">D Flip-Flop + Enable</span>
+      <h3>The Display-Hold Register in a Digital Meter</h3>
+      <div class="ill"><svg viewBox="0 0 320 165" role="img" aria-label="Digital meter: fast ADC feeds D flip-flops with enable; the display register loads only on enabled clock edges."><rect class="fc" x="8" y="36" width="62" height="50" rx="4"/><text x="39" y="58" text-anchor="middle" class="b">ADC</text><text x="39" y="74" text-anchor="middle" class="m sm">fast, jittery</text><line class="sbus" x1="70" y1="55" x2="120" y2="55"/><text x="160" y="24" text-anchor="middle" class="b sm">D FF + EN ×12</text><rect class="fc" x="120" y="30" width="80" height="84" rx="4"/><text x="126" y="60" class="mono">D</text><text x="126" y="90" class="mono">EN</text><polyline class="s" points="120,98 129,104 120,110"/><text x="133" y="108" class="tg sm">CLK</text><line class="sbus" x1="200" y1="55" x2="226" y2="55"/><rect class="fdark" x="226" y="34" width="88" height="44" rx="4"/><text x="270" y="63" text-anchor="middle" class="seg7">3.274</text><text x="270" y="94" text-anchor="middle" class="m sm">steady readout</text><path class="sg" d="M80,124 H100 V85 H120"/><text x="8" y="128" class="tg sm">EN: 2 Hz tick</text><path class="sa" d="M70,148 H112 V104 H120"/><text x="8" y="152" class="ta sm">CLK: 1 MHz</text><text x="262" y="124" text-anchor="middle" class="sm">loads only when EN = 1</text><text x="262" y="140" text-anchor="middle" class="m sm">the clock never stops</text></svg></div>
+      <div class="app-row"><b>Scenario.</b> A multimeter's ADC produces thousands of readings per second. Shown directly, the last digits would blur into an unreadable flicker.</div>
+      <div class="app-row"><b>How the device does it.</b> The reading feeds a bank of clock-enabled D flip-flops. The 1 MHz clock never stops, but EN goes high for just one clock period twice per second (and stays low while the HOLD button is engaged). Only those edges load; every other edge is skipped.</div>
+      <div class="app-row"><b>Why this device.</b> Clock enable makes storage conditional <strong>without gating the clock</strong>, which would invite glitches and skew. It's the same trick a CPU register file uses: all registers see the clock, only the addressed one sees EN=1.</div>
+      <div class="app-part">Parts: 74HC377 octal D FF with enable · FPGA flip-flops (CE pin)</div>
+      <div class="sim-links"><a class="sim-chip" href="#seqlab" onclick="labJump('dffe')">📈 Try it: EN=0, pulse clock — nothing loads</a></div>
+    </div>
+
+    <div class="appcard ff">
+      <span class="app-dev">JK Flip-Flop</span>
+      <h3>The 3-Bit Event Counter</h3>
+      <div class="ill"><svg viewBox="0 0 320 185" role="img" aria-label="Three falling-edge JK flip-flops with J and K tied high form a ripple counter showing binary 101 equals 5."><text x="160" y="16" text-anchor="middle" class="m sm">falling-edge JKs (bubble before ▷), J = K = 1 → toggle</text><text x="4" y="60" class="ta sm">sensor</text><path class="sa" d="M6,76 h6 v-10 h4 v10 h8 v-10 h4 v10 h11"/><rect class="fc" x="48" y="30" width="56" height="80" rx="4"/><text x="53" y="51" class="mono">J</text><text x="53" y="103" class="mono">K</text><text x="86" y="51" class="mono">Q</text><circle class="fc" cx="43" cy="76" r="4"/><polyline class="s" points="48,70 57,76 48,82"/><text x="28" y="50" class="tg sm">1</text><line class="s" x1="36" y1="46" x2="48" y2="46"/><text x="28" y="102" class="tg sm">1</text><line class="s" x1="36" y1="98" x2="48" y2="98"/><path class="sn" d="M104,46 H114 V76 H131"/><circle class="fk" cx="110" cy="46" r="2.5"/><line class="s" x1="110" y1="46" x2="110" y2="131"/><circle class="fg" cx="110" cy="138" r="7"/><text x="110" y="160" text-anchor="middle" class="sm b">Q0 (÷2)</text><rect class="fc" x="140" y="30" width="56" height="80" rx="4"/><text x="145" y="51" class="mono">J</text><text x="145" y="103" class="mono">K</text><text x="178" y="51" class="mono">Q</text><circle class="fc" cx="135" cy="76" r="4"/><polyline class="s" points="140,70 149,76 140,82"/><text x="120" y="50" class="tg sm">1</text><line class="s" x1="128" y1="46" x2="140" y2="46"/><text x="120" y="102" class="tg sm">1</text><line class="s" x1="128" y1="98" x2="140" y2="98"/><path class="sn" d="M196,46 H206 V76 H223"/><circle class="fk" cx="202" cy="46" r="2.5"/><line class="s" x1="202" y1="46" x2="202" y2="131"/><circle class="foff" cx="202" cy="138" r="7"/><text x="202" y="160" text-anchor="middle" class="sm b">Q1 (÷4)</text><rect class="fc" x="232" y="30" width="56" height="80" rx="4"/><text x="237" y="51" class="mono">J</text><text x="237" y="103" class="mono">K</text><text x="270" y="51" class="mono">Q</text><circle class="fc" cx="227" cy="76" r="4"/><polyline class="s" points="232,70 241,76 232,82"/><text x="212" y="50" class="tg sm">1</text><line class="s" x1="220" y1="46" x2="232" y2="46"/><text x="212" y="102" class="tg sm">1</text><line class="s" x1="220" y1="98" x2="232" y2="98"/><line class="sn" x1="288" y1="46" x2="294" y2="46"/><circle class="fk" cx="294" cy="46" r="2.5"/><line class="s" x1="294" y1="46" x2="294" y2="131"/><circle class="fg" cx="294" cy="138" r="7"/><text x="294" y="160" text-anchor="middle" class="sm b">Q2 (÷8)</text><text x="160" y="180" text-anchor="middle" class="tn sm">after 5 pulses: Q2 Q1 Q0 = 1 0 1 = 5</text></svg></div>
+      <div class="app-row"><b>Scenario.</b> Count cars entering one level of a parking garage (0–7), or any stream of pulses from a sensor.</div>
+      <div class="app-row"><b>How the device does it.</b> Three JKs with J=K=1 are in toggle mode. Sensor pulses clock stage 0; each stage's Q clocks the next. With falling-edge devices, a stage triggers when the previous Q drops 1→0 — which is exactly a binary carry. Stage 0 toggles every pulse, stage 1 every two, stage 2 every four.</div>
+      <div class="app-row"><b>Why this device.</b> Toggle mode <em>is</em> binary counting, and JK universality means one stocked part can be a counter stage today and a set/reset flag tomorrow. (With rising-edge parts, clock each stage from the previous Q&#773;.) Lesson 7 fixes this ripple counter's accumulating delay with a synchronous design.</div>
+      <div class="app-part">Parts: 74HC73 / 74HC107 dual JK, negative-edge</div>
+      <div class="sim-links"><a class="sim-chip" href="#seqlab" onclick="labJump('jk')">📈 Try it: J=K=1 + auto-clock</a></div>
+    </div>
+
+    <div class="appcard ff">
+      <span class="app-dev">T Flip-Flop</span>
+      <h3>The Quartz Watch Divider</h3>
+      <div class="ill"><svg viewBox="0 0 320 196" role="img" aria-label="Quartz watch divider: 32768 Hz crystal feeds a chain of T flip-flops, each halving the frequency to reach 1 Hz; waveforms show CLK, divide by 2, divide by 4."><line class="s" x1="6" y1="45" x2="14" y2="45"/><line class="s" x1="14" y1="34" x2="14" y2="56"/><rect class="fc" x="19" y="36" width="8" height="18"/><line class="s" x1="32" y1="34" x2="32" y2="56"/><text x="4" y="72" class="sm b">32,768 Hz</text><path class="sn" d="M32,45 H44 V55 H50"/><rect class="fc" x="50" y="25" width="44" height="40" rx="4"/><text x="55" y="42" class="mono">T</text><polyline class="s" points="50,49 58,55 50,61"/><text x="72" y="80" text-anchor="middle" class="tn sm">÷2</text><rect class="fc" x="110" y="25" width="44" height="40" rx="4"/><text x="115" y="42" class="mono">T</text><polyline class="s" points="110,49 118,55 110,61"/><text x="132" y="80" text-anchor="middle" class="tn sm">÷4</text><rect class="fc" x="196" y="25" width="44" height="40" rx="4"/><text x="201" y="42" class="mono">T</text><polyline class="s" points="196,49 204,55 196,61"/><text x="218" y="80" text-anchor="middle" class="tn sm">÷2¹⁵</text><path class="sn" d="M94,40 H102 V55 H110"/><line class="sn" x1="154" y1="40" x2="166" y2="40"/><text x="175" y="45" text-anchor="middle" class="b">···</text><path class="sn" d="M184,40 H188 V55 H196"/><line class="sn" x1="240" y1="40" x2="266" y2="40"/><text x="244" y="33" class="tg sm">1 Hz</text><circle class="fc" cx="292" cy="44" r="22"/><line class="s" x1="292" y1="24" x2="292" y2="29"/><line class="s" x1="312" y1="44" x2="307" y2="44"/><line class="s" x1="292" y1="64" x2="292" y2="59"/><line class="s" x1="272" y1="44" x2="277" y2="44"/><line class="sr" x1="292" y1="44" x2="304" y2="30"/><circle class="fk" cx="292" cy="44" r="2.5"/><text x="292" y="80" text-anchor="middle" class="m sm">1 tick/s</text><line class="sl" x1="68" y1="98" x2="68" y2="170"/><line class="sl" x1="84" y1="98" x2="84" y2="170"/><line class="sl" x1="100" y1="98" x2="100" y2="170"/><line class="sl" x1="116" y1="98" x2="116" y2="170"/><line class="sl" x1="132" y1="98" x2="132" y2="170"/><line class="sl" x1="148" y1="98" x2="148" y2="170"/><line class="sl" x1="164" y1="98" x2="164" y2="170"/><line class="sl" x1="180" y1="98" x2="180" y2="170"/><line class="sl" x1="196" y1="98" x2="196" y2="170"/><line class="sl" x1="212" y1="98" x2="212" y2="170"/><line class="sl" x1="228" y1="98" x2="228" y2="170"/><line class="sl" x1="244" y1="98" x2="244" y2="170"/><line class="sl" x1="260" y1="98" x2="260" y2="170"/><line class="sl" x1="276" y1="98" x2="276" y2="170"/><line class="sl" x1="292" y1="98" x2="292" y2="170"/><path class="sa" d="M60,116 H68 V104 H76 V116 H84 V104 H92 V116 H100 V104 H108 V116 H116 V104 H124 V116 H132 V104 H140 V116 H148 V104 H156 V116 H164 V104 H172 V116 H180 V104 H188 V116 H196 V104 H204 V116 H212 V104 H220 V116 H228 V104 H236 V116 H244 V104 H252 V116 H260 V104 H268 V116 H276 V104 H284 V116 H292 V104 H300 V116 H308"/><text x="6" y="114" class="ta sm">CLK</text><path class="sg" d="M60,140 H68 V128 H76 H84 V140 H92 H100 V128 H108 H116 V140 H124 H132 V128 H140 H148 V140 H156 H164 V128 H172 H180 V140 H188 H196 V128 H204 H212 V140 H220 H228 V128 H236 H244 V140 H252 H260 V128 H268 H276 V140 H284 H292 V128 H300 H308"/><text x="6" y="138" class="tg sm">Q1 ÷2</text><path class="sn" d="M60,164 H68 V152 H76 H84 H92 H100 V164 H108 H116 H124 H132 V152 H140 H148 H156 H164 V164 H172 H180 H188 H196 V152 H204 H212 H220 H228 V164 H236 H244 H252 H260 V152 H268 H276 H284 H292 V164 H300 H308"/><text x="6" y="162" class="tn sm">Q2 ÷4</text><text x="160" y="188" text-anchor="middle" class="m sm">each stage halves its input frequency</text></svg></div>
+      <div class="app-row"><b>Scenario.</b> A watch crystal oscillates at 32,768 Hz, far too fast to step a seconds hand.</div>
+      <div class="app-row"><b>How the device does it.</b> A chain of T flip-flops with T=1, each clocked by the previous stage's output. Every stage halves the frequency with a perfect 50% duty cycle. After 15 stages, 32,768 ÷ 2¹⁵ = exactly 1 Hz.</div>
+      <div class="app-row"><b>Why this device.</b> Toggle-and-halve is the whole job, so the simplest flip-flop wins. The crystal frequency was chosen as a power of two for this reason. Same device, other job: a debounced button clocking one T flip-flop gives push-on/push-off lamp control.</div>
+      <div class="app-part">Parts: CD4060 (oscillator + 14 stages → 2 Hz) plus one more T stage → 1 Hz</div>
+      <div class="sim-links"><a class="sim-chip" href="#seqlab" onclick="labJump('tff')">📈 Try it: T=1 + auto-clock, count 2:1</a></div>
+    </div>
+
+  </div>
+  <div class="callout co-pro">
+    <div class="co-title">💡 Pattern Across the Gallery</div>
+    Notice which applications chose a latch: the debouncer, the alarm, and the bus latch all <em>want</em> immediate response or event capture, and each guarantees its inputs are quiet or exclusive. Every application that chains devices together or shares a system clock — shift register, meter, counter, divider — chose a flip-flop. That is the garage-vs-camera distinction showing up as an engineering decision.
+  </div>
+</section>
+
+<!-- ================= KEY FACTS ================= -->
+<section id="facts">
+  <h2 class="sec-title">Key Facts Reference Box</h2>
+  <div class="acc open" id="factsAcc">
+    <button class="acc-head" onclick="toggleAcc('factsAcc')">Key Facts Reference Box <span class="plus">➕</span></button>
+    <div class="acc-body">
+      <div class="facts">
+        <div class="fact"><div class="f-label">Bistable Element</div><div class="f-val">Two stable states = one stored bit</div></div>
+        <div class="fact"><div class="f-label">Latch</div><div class="f-val">Level-sensitive — follows inputs while enabled</div></div>
+        <div class="fact"><div class="f-label">Flip-Flop</div><div class="f-val">Edge-triggered — updates only at clock edge</div></div>
+        <div class="fact"><div class="f-label">SR Latch Rules</div><div class="f-val">S→Q=1 · R→Q=0 · 0,0→hold</div></div>
+        <div class="fact"><div class="f-label">SR Invalid State</div><div class="f-val">S=R=1 → race / metastability</div></div>
+        <div class="fact"><div class="f-label">Gated SR</div><div class="f-val">EN=0 ignores inputs and holds</div></div>
+        <div class="fact"><div class="f-label">D Latch</div><div class="f-val">EN=1: Q follows D (transparent) · no invalid state</div></div>
+        <div class="fact"><div class="f-label">D Flip-Flop Equation</div><div class="f-val">Q<sub>next</sub> = D (at the edge)</div></div>
+        <div class="fact"><div class="f-label">Clock Enable</div><div class="f-val">EN=0: skip the load, keep old value</div></div>
+        <div class="fact"><div class="f-label">JK Modes</div><div class="f-val">00 hold · 10 set · 01 reset · 11 toggle</div></div>
+        <div class="fact"><div class="f-label">JK = Universal</div><div class="f-val">Emulates D (K=J&#773;) and T (J=K)</div></div>
+        <div class="fact"><div class="f-label">T Flip-Flop</div><div class="f-val">Q<sub>next</sub> = T ⊕ Q · T=1 toggles</div></div>
+        <div class="fact"><div class="f-label">Frequency Division</div><div class="f-val">Toggling stage: f<sub>Q</sub> = f<sub>CLK</sub> ÷ 2 (n stages: ÷2ⁿ)</div></div>
+        <div class="fact"><div class="f-label">Edge Triangle ▷</div><div class="f-val">Symbol mark for edge-triggered clock pin</div></div>
+        <div class="fact"><div class="f-label">Setup / Hold Time</div><div class="f-val">Data must be stable around the edge</div></div>
+        <div class="fact"><div class="f-label">Level Analogy</div><div class="f-val">Garage door: contents follow while open</div></div>
+        <div class="fact"><div class="f-label">Edge Analogy</div><div class="f-val">Red-light camera: one snapshot per change</div></div>
+        <div class="fact"><div class="f-label">The Five Operations</div><div class="f-val">Set · Reset · Hold · Toggle · Transparent</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="quiz">
+  <h2 class="sec-title">Interactive Knowledge Check</h2>
+  <div class="acc open" id="quizAcc">
+    <button class="acc-head" onclick="toggleAcc('quizAcc')">Interactive Knowledge Check <span class="plus">➕</span></button>
+    <div class="acc-body">
+      <p style="font-style:italic;color:var(--text-muted);">Test your understanding with ten questions. Select your answers and click "Submit Answers" for your score and detailed feedback.</p>
+      <div id="quizWrap"></div>
+      <button class="submit-btn" onclick="gradeQuiz()">Submit Answers</button>
+      <div class="score-box" id="scoreBox"><div class="big">Score: 0 / 10</div><p>Please complete all questions to view your results.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOOT NAV ================= -->
+<div class="foot-nav">
+  <a href="lesson05.html">← Lesson 5: Gates &amp; Boolean Algebra</a>
+  <a class="home" href="https://sands-mvcc.github.io/elt/index.html">🏠 ELT 102 Home</a>
+  <a href="lesson07.html">Next: Lesson 7 →</a>
+</div>
+
+</main>
+
+<footer>
+  ELT 102 · Digital Logic &amp; Solid State Devices · Lesson 6: Latches &amp; Flip-Flops<br>
+  Designed and Built by Lead Electronics Instructor &amp; Professor · Moraine Valley Community College<br>
+  © 2026 ELT 102 Course Materials. All rights reserved. Self-contained Offline Edition.
+</footer>
+
+<script>
+/* ============ THEME ============ */
+(function(){
+  if(localStorage.getItem('elt-theme')==='dark'){ document.documentElement.setAttribute('data-theme','dark'); }
+})();
+function toggleTheme(){
+  var d=document.documentElement.getAttribute('data-theme')==='dark';
+  if(d){ document.documentElement.removeAttribute('data-theme'); localStorage.setItem('elt-theme','light'); }
+  else { document.documentElement.setAttribute('data-theme','dark'); localStorage.setItem('elt-theme','dark'); }
+}
+function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+/* ============ ACCORDION & TABS ============ */
+function toggleAcc(id){ document.getElementById(id).classList.toggle('open'); }
+function showTab(i,btn){
+  document.querySelectorAll('.tab-pane').forEach(function(p,idx){ p.classList.toggle('show',idx===i); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+/* ============ SEQUENTIAL LOGIC LAB ============ */
+var cv=document.getElementById('labCv'), cx=cv.getContext('2d');
+var dev='srl';
+var IN={S:0,R:0,D:0,J:0,K:0,T:0,EN:0};
+var Q=0, invalid=false, edges=0, opState='HOLD';
+var clkPulse=0, prevClk=0, frame=0;
+var DEVICES={
+  srl:{name:'SR Latch', ins:['S','R'], ff:false, lanes:['S','R','Q']},
+  gsr:{name:'Gated SR Latch', ins:['S','R','EN'], ff:false, lanes:['EN','S','R','Q']},
+  dl:{name:'D Latch', ins:['D','EN'], ff:false, lanes:['EN','D','Q']},
+  srf:{name:'SR Flip-Flop', ins:['S','R'], ff:true, lanes:['CLK','S','R','Q']},
+  dff:{name:'D Flip-Flop', ins:['D'], ff:true, lanes:['CLK','D','Q']},
+  dffe:{name:'D Flip-Flop + Enable', ins:['D','EN'], ff:true, lanes:['CLK','EN','D','Q']},
+  jk:{name:'JK Flip-Flop', ins:['J','K'], ff:true, lanes:['CLK','J','K','Q']},
+  tff:{name:'T Flip-Flop', ins:['T'], ff:true, lanes:['CLK','T','Q']}
+};
+var HISTLEN=520, hist={}, badHist=[];
+function resetHist(){
+  hist={}; badHist=[];
+  DEVICES[dev].lanes.forEach(function(L){ hist[L]=[]; });
+}
+function setDev(d,btn){
+  dev=d; Q=0; invalid=false; edges=0; clkPulse=0; prevClk=0;
+  document.querySelectorAll('#devSeg button').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('clkCtrl').style.display = DEVICES[d].ff? 'block':'none';
+  document.getElementById('autoClk').checked=false;
+  buildInputBtns();
+  resetHist();
+}
+function buildInputBtns(){
+  var w=document.getElementById('inBtns'); w.innerHTML='';
+  DEVICES[dev].ins.forEach(function(name){
+    var b=document.createElement('button');
+    b.className='g-btn'+(IN[name]?' on':'');
+    b.id='in-'+name;
+    b.textContent=name+' = '+IN[name];
+    b.onclick=function(){ togIn(name); };
+    w.appendChild(b);
+  });
+}
+function togIn(name){
+  IN[name]^=1;
+  var b=document.getElementById('in-'+name);
+  if(b){ b.textContent=name+' = '+IN[name]; b.classList.toggle('on',IN[name]===1); }
+}
+function pulseClk(){ clkPulse=16; }
+
+/* ---- per-frame device evaluation ---- */
+function clkVal(){
+  if(!DEVICES[dev].ff) return 0;
+  if(document.getElementById('autoClk').checked) return (frame%64)<32 ? 1:0;
+  return clkPulse>0 ? 1:0;
+}
+function evalDevice(clk, rising){
+  invalid=false;
+  if(dev==='srl'){
+    if(IN.S&&IN.R){ invalid=true; opState='INVALID'; }
+    else if(IN.S){ Q=1; opState='SET'; }
+    else if(IN.R){ Q=0; opState='RESET'; }
+    else opState='HOLD';
+  }
+  else if(dev==='gsr'){
+    if(!IN.EN){ opState='HOLD (EN=0)'; }
+    else if(IN.S&&IN.R){ invalid=true; opState='INVALID'; }
+    else if(IN.S){ Q=1; opState='SET'; }
+    else if(IN.R){ Q=0; opState='RESET'; }
+    else opState='HOLD';
+  }
+  else if(dev==='dl'){
+    if(IN.EN){ Q=IN.D; opState='TRANSPARENT (Q=D)'; }
+    else opState='HOLD (EN=0)';
+  }
+  else if(dev==='srf'){
+    if(IN.S&&IN.R){ invalid=true; }
+    if(rising){
+      edges++;
+      if(IN.S&&IN.R){ opState='INVALID @ edge'; }
+      else if(IN.S){ Q=1; opState='SET @ edge'; }
+      else if(IN.R){ Q=0; opState='RESET @ edge'; }
+      else opState='HOLD @ edge';
+    }
+  }
+  else if(dev==='dff'){
+    if(rising){ edges++; Q=IN.D; opState='CAPTURED D='+IN.D+' @ edge'; }
+  }
+  else if(dev==='dffe'){
+    if(rising){
+      edges++;
+      if(IN.EN){ Q=IN.D; opState='LOADED D='+IN.D+' @ edge'; }
+      else opState='HOLD (EN=0) @ edge';
+    }
+  }
+  else if(dev==='jk'){
+    if(rising){
+      edges++;
+      if(IN.J&&IN.K){ Q^=1; opState='TOGGLE @ edge'; }
+      else if(IN.J){ Q=1; opState='SET @ edge'; }
+      else if(IN.K){ Q=0; opState='RESET @ edge'; }
+      else opState='HOLD @ edge';
+    }
+  }
+  else if(dev==='tff'){
+    if(rising){
+      edges++;
+      if(IN.T){ Q^=1; opState='TOGGLE @ edge'; }
+      else opState='HOLD @ edge';
+    }
+  }
+}
+
+/* ---- drawing ---- */
+var pinBoxes=[];
+function drawDevice(clk){
+  pinBoxes=[];
+  var d=DEVICES[dev];
+  var bx=250, by=16, bw=130, bh=118;
+  cx.strokeStyle=css('--text'); cx.lineWidth=2.4; cx.fillStyle=css('--card');
+  cx.beginPath(); cx.rect(bx,by,bw,bh); cx.fill(); cx.stroke();
+  cx.font='bold 12px Arial'; cx.fillStyle=css('--navy'); cx.textAlign='center';
+  cx.fillText(d.name, bx+bw/2, by-4);
+  cx.textAlign='left';
+  // input pins (left side)
+  var pins=d.ins.slice();
+  if(d.ff) pins.push('CLK');
+  var n=pins.length, gap=bh/(n+1);
+  pins.forEach(function(p,i){
+    var py=by+gap*(i+1);
+    var v = p==='CLK'? clk : IN[p];
+    cx.strokeStyle= v? css('--green') : css('--text-muted');
+    cx.lineWidth= v? 3:2;
+    cx.beginPath(); cx.moveTo(bx-70,py); cx.lineTo(bx,py); cx.stroke();
+    if(p==='CLK'){
+      cx.strokeStyle=css('--text'); cx.lineWidth=2;
+      cx.beginPath(); cx.moveTo(bx,py-8); cx.lineTo(bx+12,py); cx.lineTo(bx,py+8); cx.stroke();
+      cx.fillStyle=css('--green-dark'); cx.font='11px Arial';
+      cx.fillText('CLK', bx+16, py+4);
+    } else {
+      cx.fillStyle=css('--text'); cx.font='bold 13px Courier New';
+      cx.fillText(p, bx+8, py+4);
+      // clickable switch bubble at wire start
+      cx.fillStyle= v? css('--green') : css('--card-alt');
+      cx.strokeStyle=css('--navy'); cx.lineWidth=2;
+      cx.beginPath(); cx.arc(bx-82,py,12,0,Math.PI*2); cx.fill(); cx.stroke();
+      cx.fillStyle= v? '#fff':css('--text-muted'); cx.font='bold 11px Arial'; cx.textAlign='center';
+      cx.fillText(v, bx-82, py+4); cx.textAlign='left';
+      pinBoxes.push({x:bx-96,y:py-14,w:28,h:28,name:p});
+    }
+    cx.fillStyle=css('--text-muted'); cx.font='10px Arial';
+    if(p!=='CLK') cx.fillText(p, bx-104-cx.measureText(p).width, py+3);
+  });
+  // outputs Q, Q̄
+  var qv= invalid? '?' : Q, qb= invalid? '?' : (Q^1);
+  [[qv,'Q',by+bh*0.3],[qb,'Q\u0305',by+bh*0.7]].forEach(function(o){
+    var on = o[0]===1;
+    cx.strokeStyle= invalid? css('--red') : (on? css('--green'):css('--text-muted'));
+    cx.lineWidth= on?3:2;
+    cx.beginPath(); cx.moveTo(bx+bw,o[2]); cx.lineTo(bx+bw+46,o[2]); cx.stroke();
+    cx.fillStyle=css('--text'); cx.font='bold 13px Courier New';
+    cx.fillText(o[1], bx+bw-24, o[2]+4);
+    // lamp
+    cx.fillStyle= invalid? css('--red') : (on? css('--green'):css('--card-alt'));
+    cx.strokeStyle= invalid? css('--red') : css('--border');
+    cx.beginPath(); cx.arc(bx+bw+62,o[2],14,0,Math.PI*2); cx.fill(); cx.stroke();
+    cx.fillStyle= (on||invalid)? '#fff':css('--text-muted');
+    cx.font='bold 12px Arial'; cx.textAlign='center';
+    cx.fillText(o[0], bx+bw+62, o[2]+4); cx.textAlign='left';
+  });
+  if(invalid){
+    cx.fillStyle=css('--red'); cx.font='bold 14px Arial'; cx.textAlign='center';
+    cx.fillText('⚠ INVALID: S = R = 1', bx+bw/2, by+bh+18);
+    cx.textAlign='left';
+  } else {
+    cx.fillStyle=css('--green-dark'); cx.font='bold 12px Arial'; cx.textAlign='center';
+    cx.fillText(opState, bx+bw/2, by+bh+18);
+    cx.textAlign='left';
+  }
+}
+function drawLanes(){
+  var d=DEVICES[dev], lanes=d.lanes;
+  var x0=70, x1=cv.width-14, y0=170;
+  var laneH=Math.min(64,(cv.height-y0-10)/lanes.length);
+  cx.font='bold 12px Courier New';
+  lanes.forEach(function(L,li){
+    var top=y0+li*laneH, hi=top+10, lo=top+laneH-16;
+    cx.fillStyle=css('--text'); cx.fillText(L, 16, (hi+lo)/2+4);
+    cx.strokeStyle=css('--border'); cx.lineWidth=1;
+    cx.beginPath(); cx.moveTo(x0,lo); cx.lineTo(x1,lo); cx.stroke();
+    var h=hist[L]||[];
+    if(h.length<2) return;
+    var step=(x1-x0)/HISTLEN;
+    cx.lineWidth=2.2;
+    var isQ=(L==='Q');
+    cx.beginPath();
+    var started=false, lastY=0;
+    for(var i=0;i<h.length;i++){
+      var x=x1-(h.length-1-i)*step;
+      var y=h[i]?hi:lo;
+      var bad=isQ&&badHist[i];
+      if(isQ){
+        // draw in segments so bad regions can be red
+        if(!started){ cx.beginPath(); cx.moveTo(x,y); started=true; lastY=y; cx.strokeStyle= bad?css('--red'):css('--green-dark'); }
+        else{
+          var prevBad=isQ&&badHist[i-1];
+          if(bad!==prevBad){ cx.lineTo(x,lastY); cx.stroke(); cx.beginPath(); cx.strokeStyle= bad?css('--red'):css('--green-dark'); cx.moveTo(x,lastY); }
+          if(y!==lastY){ cx.lineTo(x,lastY); cx.lineTo(x,y); lastY=y; }
+          else cx.lineTo(x,y);
+        }
+      } else {
+        cx.strokeStyle= L==='CLK'? css('--amber') : css('--navy');
+        if(!started){ cx.moveTo(x,y); started=true; lastY=y; }
+        else{ if(y!==lastY){ cx.lineTo(x,lastY); cx.lineTo(x,y); lastY=y; } else cx.lineTo(x,y); }
+      }
+    }
+    cx.stroke();
+  });
+  cx.fillStyle=css('--text-muted'); cx.font='10px Arial';
+  cx.fillText('time →', x1-40, y0-6);
+}
+function draw(){
+  var clk=clkVal();
+  var rising = clk===1 && prevClk===0;
+  evalDevice(clk, rising);
+  prevClk=clk;
+  if(clkPulse>0) clkPulse--;
+  // record history
+  var d=DEVICES[dev];
+  d.lanes.forEach(function(L){
+    var v = L==='CLK'? clk : L==='Q'? Q : IN[L];
+    hist[L].push(v);
+    if(hist[L].length>HISTLEN) hist[L].shift();
+  });
+  badHist.push(invalid?1:0);
+  if(badHist.length>HISTLEN) badHist.shift();
+  // render
+  cx.fillStyle=css('--card'); cx.fillRect(0,0,cv.width,cv.height);
+  cx.strokeStyle=css('--border'); cx.lineWidth=1;
+  cx.beginPath(); cx.moveTo(0,158); cx.lineTo(cv.width,158); cx.stroke();
+  drawDevice(clk);
+  drawLanes();
+  // readout
+  var insTxt=d.ins.map(function(p){return p+'='+IN[p];}).join(' ');
+  document.getElementById('labRead').innerHTML=
+    'Device : <span class="r-on">'+d.name+'</span><br>'+
+    'Inputs : '+insTxt+(d.ff? ' · CLK='+clk : '')+'<br>'+
+    'Q = <span class="'+(invalid?'r-off':(Q?'r-on':'r-bd'))+'">'+(invalid?'?':Q)+'</span> · Q\u0305 = '+(invalid?'?':(Q^1))+'<br>'+
+    'State : '+(invalid?'<span class="r-off">'+opState+'</span>':'<span class="r-on">'+opState+'</span>')+
+    (d.ff? '<br>Clock edges seen : '+edges : '');
+  frame++;
+  requestAnimationFrame(draw);
+}
+/* clickable pins */
+cv.addEventListener('click', function(ev){
+  var r=cv.getBoundingClientRect();
+  var x=(ev.clientX-r.left)*cv.width/r.width, y=(ev.clientY-r.top)*cv.height/r.height;
+  pinBoxes.forEach(function(c){ if(x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h) togIn(c.name); });
+});
+
+/* ============ QUIZ ============ */
+var QUIZ=[
+ {q:"What makes a bistable element capable of storing one bit of information?",
+  o:["It contains a small capacitor that holds charge.","It has exactly two stable states and rests in either one indefinitely until commanded to change.","It responds to a clock signal.","It has two inputs."],
+  a:1, e:"Two cross-coupled gates hold each other in place through feedback — the circuit rests at Q=0 or Q=1 with no energy storage component needed. Two stable states is exactly one bit."},
+ {q:"What is the fundamental difference between a latch and a flip-flop?",
+  o:["Latches store more bits than flip-flops.","A latch is level-sensitive (output can follow inputs while enable is active); a flip-flop is edge-triggered (output updates only at the clock transition).","Flip-flops are analog; latches are digital.","Latches have no outputs."],
+  a:1, e:"The window vs. camera distinction: a latch's output follows inputs continuously during the enable interval, while a flip-flop samples once per clock edge and holds between edges."},
+ {q:"An SR latch has S=0, R=0. What does Q do?",
+  o:["Q goes to 0.","Q goes to 1.","Q holds its previous state — this is the memory condition.","Q becomes invalid."],
+  a:2, e:"With neither input asserted, the cross-coupled feedback preserves whatever was last written. Hold is not a failure mode — it IS the storage function."},
+ {q:"Why is S=R=1 called the invalid condition of an SR latch?",
+  o:["It draws too much current.","Both outputs are forced to the same level (Q = Q̄, a contradiction), and releasing both inputs at once causes an unpredictable race, possibly metastability.","It sets Q to 1 permanently.","It only works at high frequency."],
+  a:1, e:"Both asserted forces the complementary outputs to agree — logically impossible — and the release race is decided by nanosecond manufacturing differences. Designs must prevent this combination; the D latch and JK flip-flop are the two classic fixes."},
+ {q:"How does the D latch eliminate the invalid state?",
+  o:["It uses a faster clock.","One Data input drives S directly and R through an inverter, so S and R are always opposites — S=R=1 becomes structurally impossible.","It ignores the R input entirely.","It adds a second enable."],
+  a:1, e:"With D fanning out to S and (inverted) to R, the two internal signals can never both be 1. One input, no forbidden combination — and Q simply follows D while enabled."},
+ {q:"A D latch has EN=1 and D is wiggling up and down. What does Q do, and what is this behavior called?",
+  o:["Q holds its old value; this is edge-triggering.","Q follows every wiggle of D; this is transparent operation.","Q toggles once; this is the toggle mode.","Q becomes invalid."],
+  a:1, e:"While enable is active the latch is a live window — Q tracks D continuously. Drop EN and Q freezes at the last value. Transparency is the defining latch behavior (and its noise weakness)."},
+ {q:"A D flip-flop's D input changes three times between two rising clock edges. How many times does Q change?",
+  o:["Three times, following D.","At most once — Q captures only the value present on D at the clock edge and ignores all changes between edges.","Twice.","Q becomes metastable."],
+  a:1, e:"Edge-triggering means one snapshot per edge: Q_next = D sampled at the transition. Everything D does between edges is invisible to Q — verify with Lab exploration 5."},
+ {q:"A JK flip-flop has J=1, K=1 at the rising clock edge. What happens?",
+  o:["Invalid state — same as the SR flip-flop.","Q toggles (inverts) — the JK defines the both-asserted case as toggle instead of forbidden.","Q holds.","Q always goes to 1."],
+  a:1, e:"This is the JK's whole reason for existing: internal feedback from Q and Q̄ converts the SR's forbidden combination into the useful toggle operation — and toggle is exactly what counters need."},
+ {q:"A 1 MHz clock drives a T flip-flop with T=1. What is the frequency at Q?",
+  o:["1 MHz","2 MHz","500 kHz — Q toggles every edge, so it needs two clock cycles per full output cycle: divide-by-2.","250 kHz"],
+  a:2, e:"One toggle per rising edge means Q completes one full 0→1→0 cycle every two clock cycles: f_Q = f_CLK/2. Chain n stages for ÷2ⁿ — 15 stages turn a 32,768 Hz watch crystal into 1 Hz."},
+ {q:"Which device is the best choice for building an n-bit storage register in a synchronous system, and why?",
+  o:["SR latches — simplest construction.","D flip-flops sharing one clock — each captures its bit cleanly at the edge with no invalid states, giving a whole word stored per clock tick.","T flip-flops — they toggle.","Comparators."],
+  a:1, e:"Registers are rows of D flip-flops on a common clock: Q_next = D means each bit loads exactly what's presented, exactly once per edge. Add clock enables for write control; wire Q→D of the next stage and it becomes a shift register."}
+];
+(function buildQuiz(){
+  var w=document.getElementById('quizWrap'), L=['A','B','C','D'];
+  QUIZ.forEach(function(item,qi){
+    var d=document.createElement('div'); d.className='quiz-q';
+    var h='<div class="q-text">'+(qi+1)+'. '+item.q+'</div>';
+    item.o.forEach(function(opt,oi){
+      h+='<label class="opt" id="q'+qi+'o'+oi+'"><input type="radio" name="q'+qi+'" value="'+oi+'">'+L[oi]+'. '+opt+'</label>';
+    });
+    h+='<div class="explain" id="ex'+qi+'"><strong>Explanation:</strong> '+item.e+'</div>';
+    d.innerHTML=h; w.appendChild(d);
+  });
+})();
+function gradeQuiz(){
+  var score=0, answered=0;
+  QUIZ.forEach(function(item,qi){
+    var sel=document.querySelector('input[name=q'+qi+']:checked');
+    for(var oi=0;oi<4;oi++){ document.getElementById('q'+qi+'o'+oi).classList.remove('correct','incorrect'); }
+    if(sel){
+      answered++;
+      var v=parseInt(sel.value);
+      if(v===item.a){ score++; document.getElementById('q'+qi+'o'+v).classList.add('correct'); }
+      else{ document.getElementById('q'+qi+'o'+v).classList.add('incorrect'); document.getElementById('q'+qi+'o'+item.a).classList.add('correct'); }
+      document.getElementById('ex'+qi).classList.add('show');
+    }
+  });
+  var box=document.getElementById('scoreBox');
+  if(answered<QUIZ.length){
+    box.innerHTML='<div class="big">Score: '+score+' / 10</div><p>You have answered '+answered+' of 10 questions. Complete all questions for a full evaluation.</p>';
+  } else {
+    var msg = score>=9 ? '🏆 Outstanding — from bistables to divide-by-2, sequential logic is yours!'
+            : score>=7 ? '✅ Solid work. Review the missed explanations, then verify each behavior in the Sequential Logic Lab.'
+            : score>=5 ? '📘 Getting there. Revisit the Latch vs Flip-Flop and JK tabs, then retake the quiz.'
+            : '🔁 Review the full lesson and complete all seven guided Lab explorations before retaking this check.';
+    box.innerHTML='<div class="big">Score: '+score+' / 10</div><p>'+msg+'</p>';
+  }
+  box.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+
+/* ============ ADDED: LAB JUMP ============ */
+function labJump(d){
+  var btns=document.querySelectorAll('#devSeg button');
+  for(var i=0;i<btns.length;i++){ if(btns[i].getAttribute('onclick').indexOf("'"+d+"'")>-1){ setDev(d,btns[i]); break; } }
+}
+
+/* ============ ADDED: LATCH vs FLIP-FLOP COMPARISON ============ */
+var CMP={N:48,per:12};
+function cmpDraw(glitchy){
+  var N=CMP.N, D=[], v=Math.random()<.5?1:0, t;
+  for(t=0;t<N;t++){ if(Math.random()<0.16) v^=1; D.push(v); }
+  if(glitchy){ for(var k=0;k<4;k++){ var p=1+Math.floor(Math.random()*(N-2)); D[p]=D[p-1]^1; D[p+1]=D[p-1]; } }
+  var C=[],QL=[],QF=[],ql=0,qf=0,prev=0,edges=[];
+  for(t=0;t<N;t++){
+    var c=((t%CMP.per)>=CMP.per/2)?1:0; C.push(c);
+    if(c) ql=D[t];
+    if(c&&!prev){ qf=D[t]; edges.push(t); }
+    prev=c; QL.push(ql); QF.push(qf);
+  }
+  function changes(a){ var n=0; for(var i=1;i<a.length;i++) if(a[i]!==a[i-1]) n++; return n; }
+  var x0=150,x1=708,step=(x1-x0)/N, tops=[22,82,142,202], H=30;
+  var s='';
+  for(t=0;t<N;t++){ if(C[t]&&(t===0||!C[t-1])){ s+='<rect class="win" x="'+(x0+t*step)+'" y="12" width="'+(step*CMP.per/2)+'" height="236"/>'; } }
+  edges.forEach(function(e){ var x=x0+e*step; s+='<line class="sa dash" x1="'+x+'" y1="12" x2="'+x+'" y2="248" style="stroke-width:1.4"/><polygon points="'+(x-5)+',10 '+(x+5)+',10 '+x+',18" style="fill:var(--amber)"/>'; });
+  function wv(a,top,cls){
+    var hi=top, lo=top+H, d='';
+    for(var i=0;i<a.length;i++){ var x=x0+i*step, y=a[i]?hi:lo;
+      if(i===0) d='M'+x+','+y; else if(a[i]!==a[i-1]) d+=' V'+y; d+=' H'+(x+step); }
+    return '<line class="sl" x1="'+x0+'" y1="'+lo+'" x2="'+x1+'" y2="'+lo+'" style="stroke-dasharray:none;opacity:.5"/><path class="'+cls+'" d="'+d+'"/>';
+  }
+  var labels=[['EN / CLK','same signal','ta'],['D','shared input','tn'],['Q · D latch','door (level)','tn'],['Q · D flip-flop','camera (edge)','tg']];
+  [C,D,QL,QF].forEach(function(a,i){
+    var cls=['sa','sn','sn','sg'][i];
+    s+=wv(a,tops[i],cls);
+    s+='<text x="8" y="'+(tops[i]+14)+'" class="'+labels[i][2]+'">'+labels[i][0]+'</text><text x="8" y="'+(tops[i]+28)+'" class="m sm">'+labels[i][1]+'</text>';
+  });
+  s+='<text x="'+(x1-4)+'" y="266" text-anchor="end" class="m sm">time →</text>';
+  document.getElementById('cmpSvg').innerHTML=s;
+  document.getElementById('cmpRead').innerHTML=
+    'D changed : <span class="r-bd">'+changes(D)+'</span> times<br>'+
+    'D latch Q changed : <span class="r-on">'+changes(QL)+'</span> times (follows D inside every shaded window)<br>'+
+    'D flip-flop Q changed : <span class="r-on">'+changes(QF)+'</span> times (at most once per edge — '+edges.length+' edges)';
+}
+
+/* ============ ADDED: LEVEL-OR-EDGE SORTER ============ */
+var SORT=[
+ {s:"A turnstile counter adds one visitor at the instant the arm clicks past its detent.", a:'E', e:"One count per transition, no matter how slowly the visitor walks through — edge-triggered."},
+ {s:"An elevator door: passengers get on and off the whole time it's open; once it closes, the load is fixed.", a:'L', e:"Contents track the input for the entire open interval, then hold — level-sensitive, like a latch."},
+ {s:"A photo-finish camera records which runner is at the line at the instant the beam is broken.", a:'E', e:"A single snapshot tied to a moment — edge-triggered, like a flip-flop."},
+ {s:"Q follows D the entire time EN is high, including a brief glitch on D.", a:'L', e:"That's transparency: glitches during the enable window pass straight through. Level-sensitive."},
+ {s:"Q changed only once even though D changed four times between clock ticks.", a:'E', e:"Only the value at the edge counts — edge-triggered behavior."},
+ {s:"A live video call shows whatever is in front of the camera while the privacy shutter is open.", a:'L', e:"Output continuously mirrors input while enabled; shutter closed = last frame held. Level-sensitive."}
+];
+(function buildSorter(){
+  var w=document.getElementById('sorter'); if(!w) return;
+  SORT.forEach(function(it,i){
+    var d=document.createElement('div'); d.className='sort-item'; d.id='si'+i;
+    d.innerHTML='<div class="si-q"><strong>'+(i+1)+'.</strong> '+it.s+'</div>'+
+      '<div class="si-btns"><button onclick="sortPick('+i+',\'L\',this)">🚪 Level (latch)</button><button onclick="sortPick('+i+',\'E\',this)">📸 Edge (flip-flop)</button></div>'+
+      '<div class="si-fb" id="sfb'+i+'"></div>';
+    w.appendChild(d);
+  });
+})();
+var sortAns={};
+function sortPick(i,ch,btn){
+  var it=SORT[i], box=document.getElementById('si'+i);
+  box.querySelectorAll('button').forEach(function(b){b.classList.remove('pick');});
+  btn.classList.add('pick');
+  var ok=(ch===it.a); sortAns[i]=ok;
+  box.classList.toggle('ok',ok); box.classList.toggle('no',!ok);
+  document.getElementById('sfb'+i).innerHTML=(ok?'✅ Correct. ':'❌ Not quite. ')+it.e;
+  var n=Object.keys(sortAns).length, sc=0; for(var k in sortAns) if(sortAns[k]) sc++;
+  document.getElementById('sortScore').textContent='Score: '+sc+' / '+n+' answered'+(n===SORT.length?(sc===SORT.length?' — perfect sort!':' — review the feedback above.'):'');
+}
+cmpDraw(false);
+
+/* init */
+buildInputBtns();
+resetHist();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
