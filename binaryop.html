@@ -1,190 +1,938 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="light">
 <head>
-    <title>8-Bit Register Operations</title>
-    <style>
-        body {
-            background-color: #1c1c1c; /* Dark grey */
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            margin-top: 50px;
-        }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Number Systems Lab: Binary, Hex and Decimal | LAN121</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F6FB; --surface:#FFFFFF; --sunk:#E9EEF6; --ink:#14223B; --muted:#55657E; --line:#D3DCEA;
+  --bin:#00a86b; --bin-ink:#007a4e; --bin-soft:#DFF5EB;
+  --dec:#0047AB; --dec-ink:#0047AB; --dec-soft:#E2EAF8;
+  --hex:#7B3FD4; --hex-ink:#6A2FC2; --hex-soft:#EEE6FB;
+  --bad:#B4361A; --bad-soft:#FBE7E1; --led-off:#C6D0DF; --act:#FFF2C2;
+  --sans:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1626; --surface:#152238; --sunk:#1B2B45; --ink:#E5ECF6; --muted:#9DAEC6; --line:#2A3C59;
+    --bin:#2FD195; --bin-ink:#45DBA3; --bin-soft:#133A2E; --dec:#5C9BFF; --dec-ink:#7DB0FF; --dec-soft:#16294B;
+    --hex:#B48CFF; --hex-ink:#C3A2FF; --hex-soft:#2A2047; --bad:#FF8A6B; --bad-soft:#3B1F1A; --led-off:#2C3E5C; --act:#3A3416;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1626; --surface:#152238; --sunk:#1B2B45; --ink:#E5ECF6; --muted:#9DAEC6; --line:#2A3C59;
+  --bin:#2FD195; --bin-ink:#45DBA3; --bin-soft:#133A2E; --dec:#5C9BFF; --dec-ink:#7DB0FF; --dec-soft:#16294B;
+  --hex:#B48CFF; --hex-ink:#C3A2FF; --hex-soft:#2A2047; --bad:#FF8A6B; --bad-soft:#3B1F1A; --led-off:#2C3E5C; --act:#3A3416;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 70px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+img,svg{max-width:100%}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--dec);outline-offset:2px}
+code,.mono{font-family:var(--mono);font-size:.92em}
+sub{font-size:.65em}
+.b2{color:var(--bin-ink)} .b10{color:var(--dec-ink)} .b16{color:var(--hex-ink)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
 
-        h2 {
-            color: #e60000; /* Red */
-            font-size: 32px;
-        }
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;min-height:56px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:15px;display:flex;align-items:center;gap:10px}
+.brand .chip{font-family:var(--mono);font-size:12px;background:var(--dec);color:#fff;padding:2px 8px;border-radius:4px}
+.prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.prog .segs{display:flex;gap:4px}
+.prog .seg{width:26px;height:8px;border-radius:2px;background:var(--led-off);transition:background .3s}
+.prog .seg.done{background:var(--bin)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:15px;min-height:40px}
+.btn:hover{border-color:var(--dec)}
+.btn.primary{background:var(--dec);border-color:var(--dec);color:#fff;font-weight:700}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.go{background:var(--bin);border-color:var(--bin);color:#fff;font-weight:700}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 
-        .register, .controls {
-            background-color: #333333; /* Dark grey */
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px;
-            width: 300px;
-            text-align: center;
-        }
+/* hero */
+.hero{padding:36px 0 28px}
+.hero h1{font-size:clamp(30px,5vw,50px);line-height:1.08;margin:0 0 12px;letter-spacing:-.01em;max-width:20ch}
+.hero .lede{color:var(--muted);max-width:62ch;margin:0 0 26px;font-size:18px}
+.bench{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px}
+.bench-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.bench-head h2{margin:0;font-size:18px}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.tools .btn{font-size:14px;padding:6px 12px;min-height:36px}
+.register{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;padding:6px 0 4px}
+.nibble{display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--sunk);border-radius:12px;padding:10px 8px 8px}
+.nib-bits{display:flex;gap:6px}
+.nib-tag{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.nib-tag b{color:var(--hex-ink);font-size:18px;margin-left:2px}
+.bit{width:56px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0 8px;border-radius:9px;border:2px solid var(--line);background:var(--surface);cursor:pointer;transition:border-color .15s,transform .1s}
+.bit:active{transform:translateY(1px)}
+.bit .led{width:14px;height:14px;border-radius:50%;background:var(--led-off);transition:background .15s,box-shadow .15s}
+.bit.on{border-color:var(--bin)}
+.bit.on .led{background:var(--bin);box-shadow:0 0 10px 2px color-mix(in srgb,var(--bin) 60%,transparent)}
+.bit .bv{font-family:var(--mono);font-size:28px;font-weight:700;line-height:1.2;color:var(--muted)}
+.bit.on .bv{color:var(--bin-ink)}
+.bit .pv{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--dec-ink)}
+.bit .pw{font-size:11px;color:var(--muted)}
+.readouts{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:12px;margin-top:18px}
+.ro{border:1px solid var(--line);border-left:5px solid;border-radius:10px;padding:8px 12px;background:var(--surface)}
+.ro label{display:block;font-size:13px;color:var(--muted)}
+.ro input{width:100%;border:0;background:transparent;font-family:var(--mono);font-size:24px;font-weight:700;padding:2px 0;outline:none}
+.ro input:focus-visible{outline:none}
+.ro:focus-within{box-shadow:0 0 0 3px color-mix(in srgb,var(--dec) 35%,transparent)}
+.ro.d{border-left-color:var(--dec)} .ro.d input{color:var(--dec-ink)}
+.ro.h{border-left-color:var(--hex)} .ro.h input{color:var(--hex-ink)}
+.ro.b{border-left-color:var(--bin)} .ro.b input{color:var(--bin-ink)}
+.ro.invalid{border-color:var(--bad);background:var(--bad-soft)}
+.sumline{margin-top:14px;font-family:var(--mono);font-size:16px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
+.sumline b{color:var(--dec-ink)}
+.msg{min-height:1.4em;font-size:14px;color:var(--bad);margin-top:6px}
 
-        .register span {
-            font-weight: bold;
-            font-size: 20px;
-        }
+/* tabs */
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:2px solid var(--line);margin:30px 0 0;scrollbar-width:thin}
+.tab{border:0;background:transparent;padding:12px 16px;cursor:pointer;font-size:16px;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tab .n{font-family:var(--mono);font-size:13px;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--sunk)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--dec);font-weight:700}
+.tab[aria-selected="true"] .n{background:var(--dec);color:#fff}
+.panel{padding:28px 0 60px}
+.panel[hidden]{display:none}
+.panel h2{font-size:28px;margin:0 0 8px}
+.panel h3{font-size:20px;margin:28px 0 10px}
+.intro{color:var(--muted);max-width:68ch;margin:0 0 20px}
+.cols{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.objectives{margin:0;padding-left:20px}
+.objectives li{margin:4px 0}
 
-        .register p {
-            background-color: #000000; /* Black */
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 24px;
-            margin-top: 10px;
-            color: #e6e6e6; /* Light grey */
-        }
+/* skills */
+.skills{display:flex;flex-direction:column;gap:8px}
+details.skill{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+details.skill summary{cursor:pointer;padding:12px 16px;display:flex;gap:12px;align-items:baseline;list-style:none;font-weight:700}
+details.skill summary::-webkit-details-marker{display:none}
+details.skill summary .k{font-family:var(--mono);color:var(--dec-ink);min-width:2ch}
+details.skill summary .t{flex:1}
+details.skill summary::after{content:"+";font-family:var(--mono);color:var(--muted)}
+details.skill[open] summary::after{content:"−"}
+details.skill .body{padding:0 16px 14px 46px;color:var(--ink)}
+details.skill .body p{margin:6px 0}
+.ex{background:var(--sunk);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:14px;margin:8px 0;overflow-x:auto}
+.ref{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:15px}
+.ref th{font-family:var(--sans);font-size:13px;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:2px solid var(--line)}
+.ref td{padding:5px 8px;border-bottom:1px solid var(--line)}
+.ref tbody tr{cursor:pointer}
+.ref tbody tr:hover,.ref tbody tr:focus{background:var(--act);outline:none}
+.recall{display:flex;flex-direction:column;gap:10px}
+.recall .q{font-size:22px;font-family:var(--mono);font-weight:700}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ans{border:2px solid var(--line);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:20px;background:var(--surface);min-width:0;flex:1 1 180px}
+.ans:focus{border-color:var(--dec);outline:none}
+.ans.ok{border-color:var(--bin)} .ans.no{border-color:var(--bad)}
+.small{font-size:14px;color:var(--muted)}
 
-        input[type="number"], input[type="text"] {
-            width: 60px;
-            padding: 5px;
-            font-size: 18px;
-            border: 2px solid #e60000; /* Red */
-            border-radius: 5px;
-            background-color: #222222; /* Dark grey */
-            color: white;
-            text-align: center;
-        }
+/* segmented controls */
+.seg-ctl{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.seg-ctl button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:14px}
+.seg-ctl button[aria-checked="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
-        select, button {
-            font-size: 20px;
-            padding: 8px 15px;
-            margin: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #e60000; /* Red */
-            color: white;
-            transition: background-color 0.3s ease;
-        }
+/* demo stage */
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.stage .say{padding:18px 20px;font-size:18px;min-height:88px;border-bottom:1px solid var(--line)}
+.stage .view{padding:20px;min-height:200px}
+.player{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--sunk);flex-wrap:wrap}
+.dots{display:flex;gap:4px;flex-wrap:wrap;max-width:60%}
+.dots span{width:9px;height:9px;border-radius:50%;background:var(--led-off)}
+.dots span.on{background:var(--dec)}
+.tbl-wrap{overflow-x:auto}
+table.pv{border-collapse:separate;border-spacing:4px;font-family:var(--mono);margin:0 auto}
+table.pv th{font-family:var(--sans);font-size:13px;color:var(--muted);text-align:right;padding-right:10px;font-weight:400;white-space:nowrap}
+table.pv td{min-width:46px;text-align:center;padding:7px 6px;border-radius:6px;background:var(--sunk);font-size:16px;transition:background .2s}
+table.pv tr.r-val td{color:var(--dec-ink);font-weight:600}
+table.pv td.one{color:var(--bin-ink);font-weight:700}
+table.pv td.hx{color:var(--hex-ink);font-weight:700}
+table.pv td.act{background:var(--act);box-shadow:inset 0 0 0 2px var(--dec)}
+table.pv td.empty{background:transparent}
+.total{text-align:center;margin-top:16px;font-family:var(--mono);font-size:20px}
+.total b{color:var(--dec-ink)}
+.nibs{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.nb{border:2px solid var(--line);border-radius:10px;padding:10px;text-align:center;min-width:120px;transition:border-color .2s}
+.nb.act{border-color:var(--dec);background:var(--act)}
+.nb .w{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.35em}
+.nb .bb{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--bin-ink);letter-spacing:.2em}
+.nb .bb .pad{color:var(--muted);opacity:.6}
+.nb .eq{font-family:var(--mono);font-size:14px;color:var(--muted);min-height:1.4em}
+.nb .hd{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--hex-ink);min-height:1.3em}
+.div-tbl{border-collapse:collapse;font-family:var(--mono);margin:0 auto;font-size:17px}
+.div-tbl td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right}
+.div-tbl tr.act td{background:var(--act)}
+.div-tbl td.r{color:var(--hex-ink);font-weight:700}
+.answer-line{margin-top:16px;text-align:center;font-size:20px}
+.answer-line code{font-size:22px;font-weight:700}
 
-        select {
-            width: 180px;
-        }
+/* practice */
+.prac{display:grid;grid-template-columns:1.6fr 1fr;gap:24px;align-items:start}
+.problem .lbl{color:var(--muted);font-size:15px}
+.problem .src{font-family:var(--mono);font-size:clamp(28px,5vw,44px);font-weight:700;margin:4px 0 14px;word-break:break-all}
+.problem .src sub{font-size:.4em;color:var(--muted)}
+.fb{margin-top:14px;border-radius:10px;padding:12px 14px;display:none}
+.fb.show{display:block}
+.fb.ok{background:var(--bin-soft);border-left:5px solid var(--bin)}
+.fb.no{background:var(--bad-soft);border-left:5px solid var(--bad)}
+.sol{margin-top:14px;display:none}
+.sol.show{display:block}
+.sol ol{margin:0 0 12px;padding-left:22px}
+.sol li{margin:4px 0}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--sunk);border-radius:10px;padding:10px 12px}
+.stat .v{font-family:var(--mono);font-size:28px;font-weight:700}
+.stat .l{font-size:13px;color:var(--muted)}
+.mastery{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.mastery .m{display:flex;justify-content:space-between;font-size:14px;align-items:center;gap:8px}
+.mastery .bar{flex:1;height:6px;background:var(--sunk);border-radius:3px;overflow:hidden;max-width:110px}
+.mastery .bar i{display:block;height:100%;background:var(--bin);width:0;transition:width .3s}
+.mini-reg{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:6px 0 4px}
+.mini-reg .bit{width:48px}
+.mini-reg .bit .bv{font-size:22px}
 
-        button:hover {
-            background-color: #cc0000; /* Darker Red */
-        }
+/* apply */
+.ipbits{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:14px 0}
+.oct{display:flex;flex-direction:column;align-items:center;gap:4px}
+.oct .bs{display:flex;gap:3px}
+.ib{width:30px;height:40px;border-radius:6px;border:2px solid var(--line);background:var(--surface);font-family:var(--mono);font-weight:700;font-size:17px;cursor:pointer;color:var(--muted)}
+.ib.on{color:var(--bin-ink);border-color:var(--bin)}
+.ib.net{background:var(--dec-soft)}
+.oct .ov{font-family:var(--mono);font-size:15px;color:var(--dec-ink);font-weight:700}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--muted);justify-content:center}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+.kv{width:100%;border-collapse:collapse}
+.kv th{text-align:left;font-weight:400;color:var(--muted);font-size:14px;padding:7px 10px 7px 0;width:38%;vertical-align:top}
+.kv td{font-family:var(--mono);padding:7px 0;border-bottom:1px solid var(--line);word-break:break-all}
+input[type=range]{width:100%;accent-color:var(--dec)}
+.ipin{font-family:var(--mono);font-size:18px;border:2px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--surface);width:220px;max-width:100%}
 
-        .controls span {
-            font-size: 20px;
-        }
+/* quiz */
+.quiz{display:flex;flex-direction:column;gap:14px}
+fieldset.qq{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--surface);margin:0}
+fieldset.qq legend{font-weight:700;padding:0 6px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;border-radius:8px;cursor:pointer}
+.opt:hover{background:var(--sunk)}
+.opt input{margin-top:5px;accent-color:var(--dec)}
+.opt.right{background:var(--bin-soft)}
+.opt.wrong{background:var(--bad-soft)}
+.why{display:none;margin-top:8px;font-size:15px;color:var(--muted);border-left:3px solid var(--dec);padding-left:10px}
+.graded .why{display:block}
+.result{font-size:22px;font-weight:700}
 
-        .result {
-            font-size: 22px;
-            font-weight: bold;
-            margin-top: 20px;
-        }
+/* glossary */
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.fc{perspective:900px;height:170px;border:0;background:none;padding:0;cursor:pointer;text-align:left}
+.fc .in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.fc.flipped .in{transform:rotateY(180deg)}
+.fc .f,.fc .b{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;padding:16px;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+.fc .f{background:var(--surface)}
+.fc .f strong{font-size:20px}
+.fc .f span{font-size:13px;color:var(--muted);margin-top:6px}
+.fc .b{background:var(--dec);color:#fff;transform:rotateY(180deg);font-size:15px;line-height:1.45}
 
-        .output-decimal {
-            background-color: #222222; /* Dark grey */
-            padding: 5px;
-            font-size: 18px;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            width: 100px;
-            margin-top: 10px;
-        }
-    </style>
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,120px);background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:10px;font-weight:700;z-index:50;transition:transform .35s;max-width:90vw}
+.toast.show{transform:translate(-50%,0)}
+#report{display:none}
+footer{border-top:1px solid var(--line);padding:20px 0 30px;color:var(--muted);font-size:14px}
+
+@media (max-width:860px){
+  .cols,.prac{grid-template-columns:1fr}
+  .readouts{grid-template-columns:1fr 1fr}
+  .readouts .ro.b{grid-column:1/-1}
+}
+@media (max-width:520px){
+  body{font-size:16px}
+  .bit{width:44px} .bit .bv{font-size:22px}
+  .bench{padding:14px}
+  .prog .lbltxt{display:none}
+  .stage .say{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  body>*:not(#report){display:none!important}
+  #report{display:block!important;color:#000;font:12pt/1.5 var(--sans);padding:0}
+  #report h1{font-size:20pt}
+  #report table{border-collapse:collapse;width:100%}
+  #report td,#report th{border:1px solid #999;padding:4px 8px;text-align:left}
+}
+</style>
 </head>
 <body>
-    <h2>8-Bit Register Operations</h2>
-    
-    <div class="register">
-        <span>Register A:</span> 
-        <input type="number" id="valueA" min="0" max="127">
-        <button onclick="loadRegister('A')">LOAD A</button>
-        <p id="registerA">00000000</p>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="chip">LAN121</span> Number Systems Lab</div>
+    <div class="prog" title="Milestones: explore the register, watch three demos, 10 correct practice answers, 3 network challenges, finish the knowledge check">
+      <span class="segs" id="segs"><i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i><i class="seg"></i></span>
+      <span class="lbltxt" id="progLabel">0 of 5 milestones</span>
     </div>
+    <button class="btn ghost" id="themeBtn" type="button" aria-pressed="false">Dark mode</button>
+  </div>
+</header>
 
-    <div class="register">
-        <span>Register B:</span> 
-        <input type="number" id="valueB" min="0" max="127">
-        <button onclick="loadRegister('B')">LOAD B</button>
-        <p id="registerB">00000000</p>
+<main class="wrap">
+  <section class="hero">
+    <h1>One value, three ways to write it</h1>
+    <p class="lede">Switches and routers work in <span class="b2">binary</span>, people think in <span class="b10">decimal</span>, and packet captures, MAC addresses, and IPv6 show <span class="b16">hexadecimal</span>. Flip the switches or type into any box and watch all three change together.</p>
+
+    <div class="bench">
+      <div class="bench-head">
+        <h2>Bit register</h2>
+        <div class="tools">
+          <button class="btn" type="button" id="rClear">Clear</button>
+          <button class="btn" type="button" id="rRand">Random</button>
+          <button class="btn" type="button" id="rInc">Add 1</button>
+          <button class="btn" type="button" id="rShl" title="Shift every bit one place left">Shift left (×2)</button>
+          <button class="btn" type="button" id="rShr" title="Shift every bit one place right">Shift right (÷2)</button>
+          <button class="btn primary" type="button" id="rWidth">Use 16 bits</button>
+        </div>
+      </div>
+      <div class="register" id="register" aria-label="Bit register"></div>
+      <div class="readouts">
+        <div class="ro d"><label for="fDec">Decimal (base 10)</label><input id="fDec" inputmode="numeric" autocomplete="off" spellcheck="false"></div>
+        <div class="ro h"><label for="fHex">Hexadecimal (base 16)</label><input id="fHex" autocomplete="off" spellcheck="false"></div>
+        <div class="ro b"><label for="fBin">Binary (base 2)</label><input id="fBin" inputmode="numeric" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="sumline"><span id="sumLine"></span><span id="maxNote"></span></div>
+      <div class="msg" id="regMsg" role="status"></div>
     </div>
+  </section>
 
-    <div class="controls">
-        <span>Select Operation:</span>
-        <select id="operation">
-            <option value="add">Add</option>
-            <option value="subtract">Subtract</option>
-            <option value="and">AND</option>
-            <option value="or">OR</option>
-            <option value="xor">XOR</option>
-        </select>
-        <button onclick="compute()">Compute</button>
+  <nav class="tabs" role="tablist" aria-label="Lab sections">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="p-learn" id="t-learn"><span class="n">1</span>Learn the skills</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-watch" id="t-watch"><span class="n">2</span>Watch it worked</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-prac" id="t-prac"><span class="n">3</span>Practice</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-apply" id="t-apply"><span class="n">4</span>Apply to networks</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-check" id="t-check"><span class="n">5</span>Knowledge check</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-gloss" id="t-gloss"><span class="n">?</span>Glossary</button>
+  </nav>
+
+  <!-- LEARN -->
+  <section class="panel" id="p-learn" role="tabpanel" aria-labelledby="t-learn">
+    <h2>The ten skills behind every conversion</h2>
+    <p class="intro">Each conversion is a short chain of small skills. Master these in order and every conversion in this lab becomes a routine you can do on paper, on an exam, or in your head while reading a packet capture.</p>
+    <div class="cols">
+      <div>
+        <div class="skills" id="skills"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div class="card">
+          <h3 style="margin-top:0">By the end of this lab you can</h3>
+          <ul class="objectives">
+            <li>Explain positional notation for bases 2, 10, and 16.</li>
+            <li>Convert any value from 0 to 65,535 between binary, decimal, and hex without a calculator.</li>
+            <li>Convert IPv4 octets and subnet masks between dotted decimal and binary.</li>
+            <li>Read hex in MAC and IPv6 addresses as binary.</li>
+            <li>Check an answer by converting it back.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">The 16 patterns to memorize</h3>
+          <p class="small" style="margin-top:0">Select a row to load it into the register.</p>
+          <div class="tbl-wrap"><table class="ref" id="refTbl"><thead><tr><th>Decimal</th><th>Binary</th><th>Hex</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div class="card recall">
+          <h3 style="margin:0">Quick recall drill</h3>
+          <p class="small" style="margin:0">Powers of 2 and hex digits, the facts every other skill depends on. Press Enter to check.</p>
+          <div class="q" id="rcQ"></div>
+          <div class="row"><input class="ans" id="rcA" aria-label="Your answer" autocomplete="off"><button class="btn primary" type="button" id="rcGo">Check</button></div>
+          <div class="small" id="rcFb" role="status">Score: 0 of 0</div>
+        </div>
+      </div>
     </div>
+  </section>
 
-    <div class="register">
-        <span>Register X (Result):</span>
-        <p id="registerX">00000000</p>
-        <span>Decimal Value:</span>
-        <input type="text" id="outputDecimal" class="output-decimal" readonly>
+  <!-- WATCH -->
+  <section class="panel" id="p-watch" role="tabpanel" aria-labelledby="t-watch" hidden>
+    <h2>Watch each conversion worked out</h2>
+    <p class="intro">Choose a conversion, enter a value (or take a random one), then step through the method. Use Play to let it run. Complete at least three different conversions to earn the milestone.</p>
+    <div class="seg-ctl" id="wType" role="radiogroup" aria-label="Conversion type"></div>
+    <div class="row" style="margin-bottom:16px">
+      <label for="wIn" class="small" id="wInLbl">Binary value</label>
+      <input class="ans" id="wIn" style="max-width:260px" autocomplete="off" spellcheck="false">
+      <button class="btn" type="button" id="wRand">Random</button>
+      <button class="btn primary" type="button" id="wGo">Show the steps</button>
     </div>
-    
-    <script>
-        function toBinary(value) {
-            return value.toString(2).padStart(8, '0');
-        }
+    <div class="msg" id="wMsg" role="status"></div>
+    <div class="stage">
+      <div class="say" id="wSay" aria-live="polite">Choose a conversion and press Show the steps.</div>
+      <div class="view" id="wView"></div>
+      <div class="player">
+        <button class="btn" type="button" id="wPrev" disabled>Previous</button>
+        <div class="dots" id="wDots" aria-hidden="true"></div>
+        <div class="row">
+          <button class="btn" type="button" id="wPlay" disabled>Play</button>
+          <button class="btn primary" type="button" id="wNext" disabled>Next step</button>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        function loadRegister(register) {
-            let value;
-            if (register === 'A') {
-                value = parseInt(document.getElementById('valueA').value);
-                if (isNaN(value) || value < 0 || value > 127) {
-                    alert("Please enter a value between 0 and 127 for Register A.");
-                    return;
-                }
-                document.getElementById('registerA').textContent = toBinary(value);
-            } else if (register === 'B') {
-                value = parseInt(document.getElementById('valueB').value);
-                if (isNaN(value) || value < 0 || value > 127) {
-                    alert("Please enter a value between 0 and 127 for Register B.");
-                    return;
-                }
-                document.getElementById('registerB').textContent = toBinary(value);
-            }
-        }
+  <!-- PRACTICE -->
+  <section class="panel" id="p-prac" role="tabpanel" aria-labelledby="t-prac" hidden>
+    <h2>Your turn</h2>
+    <p class="intro">Problems are generated fresh each time. Spaces, leading zeros, and prefixes like <code>0x</code> or <code>0b</code> are accepted. A wrong answer shows what likely went wrong and the full worked solution.</p>
+    <div class="seg-ctl" id="pType" role="radiogroup" aria-label="Problem type"></div>
+    <div class="seg-ctl" id="pSize" role="radiogroup" aria-label="Problem size"></div>
+    <div class="prac">
+      <div class="card problem">
+        <div class="lbl" id="pLbl"></div>
+        <div class="src" id="pSrc"></div>
+        <div id="pBuild"></div>
+        <div class="row" id="pAnsRow">
+          <input class="ans" id="pAns" aria-labelledby="pLbl" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn go" type="button" id="pCheck">Check answer</button>
+          <button class="btn" type="button" id="pHint">Hint</button>
+          <button class="btn" type="button" id="pShow">Show solution</button>
+          <button class="btn primary" type="button" id="pNext">Next problem</button>
+        </div>
+        <div class="fb" id="pFb" role="status"></div>
+        <div class="sol" id="pSol"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Scoreboard</h3>
+        <div class="score">
+          <div class="stat"><div class="v" id="sCor">0</div><div class="l">Correct</div></div>
+          <div class="stat"><div class="v" id="sAcc">–</div><div class="l">Accuracy</div></div>
+          <div class="stat"><div class="v" id="sStr">0</div><div class="l">Current streak</div></div>
+          <div class="stat"><div class="v" id="sBest">0</div><div class="l">Best streak</div></div>
+        </div>
+        <div class="mastery" id="mastery"></div>
+        <p class="small">Five correct of a type fills its bar.</p>
+      </div>
+    </div>
+  </section>
 
-        function compute() {
-            let valueA = parseInt(document.getElementById('registerA').textContent, 2);
-            let valueB = parseInt(document.getElementById('registerB').textContent, 2);
-            let operation = document.getElementById('operation').value;
-            let result;
+  <!-- APPLY -->
+  <section class="panel" id="p-apply" role="tabpanel" aria-labelledby="t-apply" hidden>
+    <h2>Where these conversions show up on a network</h2>
+    <p class="intro">An IPv4 address is 32 bits written as four decimal octets. A subnet mask marks which of those bits name the network. Change the address, flip any bit, or drag the prefix length to see the binary underneath.</p>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div class="row"><label for="ipIn" class="small">IPv4 address</label><input class="ipin" id="ipIn" value="192.168.10.37" spellcheck="false"></div>
+        <div style="flex:1 1 260px;max-width:420px"><label for="pfx" class="small">Prefix length: <b id="pfxV" class="mono">/24</b></label><input type="range" id="pfx" min="0" max="32" value="24"></div>
+      </div>
+      <div class="ipbits" id="ipBits"></div>
+      <div class="legend"><span><i style="background:var(--dec-soft)"></i>Network bits (mask = 1)</span><span><i style="background:var(--surface)"></i>Host bits (mask = 0)</span></div>
+      <div class="tbl-wrap" style="margin-top:14px"><table class="kv" id="ipKv"></table></div>
+    </div>
+    <h3>Network challenges</h3>
+    <p class="intro" style="margin-bottom:12px">Three correct answers earns the milestone.</p>
+    <div class="card problem">
+      <div class="lbl" id="nQ" style="font-size:18px;color:var(--ink)"></div>
+      <div class="row" style="margin-top:12px">
+        <input class="ans" id="nAns" aria-labelledby="nQ" autocomplete="off" spellcheck="false">
+        <button class="btn go" type="button" id="nCheck">Check answer</button>
+        <button class="btn primary" type="button" id="nNext">Next challenge</button>
+      </div>
+      <div class="fb" id="nFb" role="status"></div>
+      <p class="small" id="nScore" style="margin-bottom:0">0 correct of 0 attempted</p>
+    </div>
+  </section>
 
-            switch (operation) {
-                case 'add':
-                    result = (valueA + valueB) & 0xFF; // Limit to 8 bits
-                    break;
-                case 'subtract':
-                    result = (valueA - valueB) & 0xFF; // Limit to 8 bits
-                    break;
-                case 'and':
-                    result = valueA & valueB;
-                    break;
-                case 'or':
-                    result = valueA | valueB;
-                    break;
-                case 'xor':
-                    result = valueA ^ valueB;
-                    break;
-                default:
-                    alert("Invalid operation.");
-                    return;
-            }
+  <!-- CHECK -->
+  <section class="panel" id="p-check" role="tabpanel" aria-labelledby="t-check" hidden>
+    <h2>Knowledge check</h2>
+    <p class="intro">Twelve questions. Answer them all, then submit to see your score and an explanation for every question.</p>
+    <form class="quiz" id="quiz" onsubmit="return false"></form>
+    <div class="row" style="margin-top:18px">
+      <button class="btn go" type="button" id="qSubmit">Submit answers</button>
+      <button class="btn" type="button" id="qReset">Retake</button>
+    </div>
+    <p class="result" id="qResult" role="status"></p>
+    <div class="card" style="margin-top:20px">
+      <h3 style="margin-top:0">Results summary</h3>
+      <p class="small" style="margin-top:0">Prints your milestones, practice record, network challenges, and quiz score on one page for submission.</p>
+      <div class="row"><label for="stuName" class="small">Your name</label><input class="ipin" id="stuName" style="width:260px"><button class="btn primary" type="button" id="printBtn">Print results</button></div>
+    </div>
+  </section>
 
-            document.getElementById('registerX').textContent = toBinary(result);
-            document.getElementById('outputDecimal').value = result;
-        }
-    </script>
+  <!-- GLOSSARY -->
+  <section class="panel" id="p-gloss" role="tabpanel" aria-labelledby="t-gloss" hidden>
+    <h2>Glossary</h2>
+    <p class="intro">Select a card to flip it.</p>
+    <div class="gloss" id="gloss"></div>
+  </section>
+</main>
+
+<footer><div class="wrap">LAN121 Network Essentials · Moraine Valley Community College · Self-contained HTML, works offline once loaded.</div></footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="report"></div>
+
+<script>
+(function(){
+"use strict";
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const HEX="0123456789ABCDEF";
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const rand=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const toBin=(v,w)=>v.toString(2).padStart(w,"0");
+const toHex=(v,d)=>v.toString(16).toUpperCase().padStart(d||1,"0");
+const group4=s=>s.replace(/\B(?=([01]{4})+(?![01]))/g," ");
+const widthFor=n=>n<16?4:n<256?8:16;
+const popcount=x=>{let c=0;while(x){c+=x&1;x>>>=1}return c};
+const B=(s)=>`<code class="b2">${s}<sub>2</sub></code>`;
+const D=(s)=>`<code class="b10">${s}<sub>10</sub></code>`;
+const H=(s)=>`<code class="b16">${s}<sub>16</sub></code>`;
+
+/* ---------- theme ---------- */
+const themeBtn=$("#themeBtn");
+function isDark(){return document.documentElement.getAttribute("data-theme")==="dark"}
+function applyTheme(t){document.documentElement.setAttribute("data-theme",t);themeBtn.textContent=isDark()?"Light mode":"Dark mode";themeBtn.setAttribute("aria-pressed",String(isDark()))}
+applyTheme(store.get("lan121-nsl-theme")||"light");
+themeBtn.onclick=()=>{const t=isDark()?"light":"dark";store.set("lan121-nsl-theme",t);applyTheme(t)};
+
+/* ---------- toast + progress ---------- */
+let toastT;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600)}
+const progress={explore:false,watch:false,practice:false,apply:false,quiz:false};
+const PNAMES={explore:"Explored the register",watch:"Watched three conversions",practice:"10 correct practice answers",apply:"3 network challenges solved",quiz:"Completed the knowledge check"};
+const C={toggles:0,watched:new Set(),correct:0,attempts:0,streak:0,best:0,byType:{},nCorrect:0,nAttempts:0,quiz:null};
+function mark(k){if(progress[k])return;progress[k]=true;renderProgress();toast("Milestone: "+PNAMES[k])}
+function renderProgress(){const ks=Object.keys(progress);$$("#segs .seg").forEach((s,i)=>{s.classList.toggle("done",progress[ks[i]]);s.title=PNAMES[ks[i]]});$("#progLabel").textContent=ks.filter(k=>progress[k]).length+" of 5 milestones"}
+renderProgress();
+
+/* ---------- register ---------- */
+const reg={width:8,value:200};
+const fD=$("#fDec"),fH=$("#fHex"),fB=$("#fBin");
+function makeBit(pos,on,onClick){
+  const b=document.createElement("button");b.type="button";b.className="bit"+(on?" on":"");b.dataset.pos=pos;
+  b.setAttribute("aria-pressed",String(!!on));
+  b.setAttribute("aria-label",`Bit ${pos}, place value ${2**pos}, ${on?"on":"off"}`);
+  b.innerHTML=`<span class="led"></span><span class="bv">${on}</span><span class="pv">${2**pos}</span><span class="pw">2<sup>${pos}</sup></span>`;
+  b.onclick=onClick;return b;
+}
+function renderRegister(focusPos){
+  const wrap=$("#register");wrap.innerHTML="";
+  const groups=reg.width/4;
+  for(let g=0;g<groups;g++){
+    const grp=document.createElement("div");grp.className="nibble";
+    const row=document.createElement("div");row.className="nib-bits";
+    for(let j=0;j<4;j++){
+      const pos=reg.width-1-(g*4+j);const on=(reg.value>>pos)&1;
+      row.appendChild(makeBit(pos,on,()=>{reg.value^=(1<<pos);C.toggles++;if(C.toggles>=8)mark("explore");renderRegister(pos);syncReadouts();}));
+    }
+    const nv=(reg.value>>((groups-1-g)*4))&15;
+    const tag=document.createElement("div");tag.className="nib-tag";tag.innerHTML=`${toBin(nv,4)} = <b>${HEX[nv]}</b>`;
+    grp.appendChild(row);grp.appendChild(tag);wrap.appendChild(grp);
+  }
+  if(focusPos!==undefined){const f=$(`#register [data-pos="${focusPos}"]`);if(f)f.focus()}
+}
+function syncReadouts(except){
+  const v=reg.value;
+  if(except!==fD)fD.value=v;
+  if(except!==fH)fH.value=toHex(v,reg.width/4);
+  if(except!==fB)fB.value=group4(toBin(v,reg.width));
+  const parts=[];for(let p=reg.width-1;p>=0;p--)if((v>>p)&1)parts.push(2**p);
+  $("#sumLine").innerHTML=parts.length?`${parts.join(" + ")} = <b>${v}</b>`:`No bits on = <b>0</b>`;
+  $("#maxNote").textContent=`${reg.width} bits hold 0 to ${(2**reg.width-1).toLocaleString()}`;
+}
+function regSet(v){reg.value=v;renderRegister();syncReadouts();$$(".ro").forEach(r=>r.classList.remove("invalid"));$("#regMsg").textContent=""}
+function fieldInput(el,parse){
+  el.addEventListener("input",()=>{
+    const s=el.value;const r=parse(s);const ro=el.closest(".ro");const max=2**reg.width-1;
+    if(s.trim()===""){ro.classList.remove("invalid");$("#regMsg").textContent="";return}
+    if(r===null){ro.classList.add("invalid");$("#regMsg").textContent=el===fB?"Binary uses only the digits 0 and 1.":el===fH?"Hex uses 0 to 9 and A to F.":"Decimal uses the digits 0 to 9.";return}
+    if(r>max){ro.classList.add("invalid");$("#regMsg").textContent=`That needs more than ${reg.width} bits. Enter 0 to ${max}`+(reg.width===8?", or switch to 16 bits.":".");return}
+    ro.classList.remove("invalid");$("#regMsg").textContent="";reg.value=r;renderRegister();syncReadouts(el);
+  });
+  el.addEventListener("blur",()=>{el.closest(".ro").classList.remove("invalid");$("#regMsg").textContent="";syncReadouts()});
+}
+function parseAns(s,base){
+  s=(s||"").trim().replace(/[\s_,]/g,"");
+  if(base===2){s=s.replace(/^0b/i,"");if(!/^[01]+$/.test(s))return null;return parseInt(s,2)}
+  if(base===16){s=s.replace(/^0x/i,"").replace(/h$/i,"");if(!/^[0-9a-f]+$/i.test(s))return null;return parseInt(s,16)}
+  if(!/^\d+$/.test(s))return null;return parseInt(s,10);
+}
+fieldInput(fD,s=>parseAns(s,10));fieldInput(fH,s=>parseAns(s,16));fieldInput(fB,s=>parseAns(s,2));
+const maxV=()=>2**reg.width-1;
+$("#rClear").onclick=()=>regSet(0);
+$("#rRand").onclick=()=>regSet(rand(1,maxV()));
+$("#rInc").onclick=()=>{const n=reg.value+1;if(n>maxV()){toast("Overflow: "+reg.width+" bits can't hold "+n+", so it wraps to 0");regSet(0)}else regSet(n)};
+$("#rShl").onclick=()=>{const lost=(reg.value>>(reg.width-1))&1;regSet((reg.value<<1)&maxV());if(lost)toast("The leftmost 1 fell off the end, so the value didn't fully double")};
+$("#rShr").onclick=()=>{const lost=reg.value&1;regSet(reg.value>>1);if(lost)toast("The rightmost 1 fell off: odd numbers lose their remainder")};
+$("#rWidth").onclick=()=>{reg.width=reg.width===8?16:8;if(reg.value>maxV())reg.value&=maxV();$("#rWidth").textContent=reg.width===8?"Use 16 bits":"Use 8 bits";renderRegister();syncReadouts()};
+renderRegister();syncReadouts();
+
+/* ---------- tabs ---------- */
+const tabs=$$(".tab");
+function openTab(t){tabs.forEach(x=>{const on=x===t;x.setAttribute("aria-selected",String(on));x.tabIndex=on?0:-1;$("#"+x.getAttribute("aria-controls")).hidden=!on})}
+tabs.forEach((t,i)=>{t.onclick=()=>openTab(t);t.onkeydown=e=>{let j=null;if(e.key==="ArrowRight")j=(i+1)%tabs.length;if(e.key==="ArrowLeft")j=(i-1+tabs.length)%tabs.length;if(j!==null){e.preventDefault();openTab(tabs[j]);tabs[j].focus()}}});
+openTab(tabs[0]);
+
+/* ---------- learn: skills ---------- */
+const SKILLS=[
+ ["Read positional notation",`<p>In any base, a digit's value is the digit times the base raised to its position. Positions count from 0 on the right.</p><div class="ex">352₁₀ = 3×10² + 5×10¹ + 2×10⁰ = 300 + 50 + 2</div><p>Binary and hex work the same way, with base 2 and base 16.</p>`],
+ ["Know the powers of 2",`<p>Memorize 2⁰ through 2⁷ for an octet, and through 2¹⁵ for 16-bit values.</p><div class="ex">128  64  32  16  8  4  2  1<br>32768 16384 8192 4096 2048 1024 512 256</div><p>Each place doubles the one to its right. An n-bit number holds 0 to 2ⁿ − 1, so one octet holds 0 to 255.</p>`],
+ ["Count in hexadecimal",`<p>Hex needs 16 single-character digits: 0–9, then A=10, B=11, C=12, D=13, E=14, F=15.</p><p>Hex place values are powers of 16: 1, 16, 256, 4096.</p><div class="ex">…E, F, 10, 11 … 1F, 20 … FF, 100</div>`],
+ ["Memorize the 16 nibble patterns",`<p>A nibble is 4 bits, and 4 bits map to exactly one hex digit. Weight each nibble 8-4-2-1.</p><div class="ex">1010 = 8+2 = 10 = A&nbsp;&nbsp;&nbsp;1111 = 15 = F&nbsp;&nbsp;&nbsp;0111 = 7</div><p>This single fact makes binary ↔ hex the fastest conversion of all.</p>`],
+ ["Binary → decimal: add the place values",`<p>Write the place value above each bit, then add the values under every 1.</p><div class="ex">1100 1000 → 128 + 64 + 8 = 200</div>`],
+ ["Decimal → binary: subtract the largest fit",`<p>Walk the place values from largest to smallest. If it fits in what's left, write 1 and subtract; if not, write 0.</p><div class="ex">200: 128 fits (72 left) → 1, 64 fits (8 left) → 1, 32 no → 0, 16 no → 0, 8 fits (0 left) → 1, then 0 0 0 = 11001000</div><p>An alternative is repeated division by 2, reading remainders bottom to top.</p>`],
+ ["Group bits into nibbles from the right",`<p>Split binary into groups of four starting at the rightmost bit. Pad the leftmost group with leading zeros, which never change the value.</p><div class="ex">101101 → 0010 1101 → 2D</div>`],
+ ["Hex → decimal: multiply by powers of 16",`<p>Multiply each hex digit's value by its place value and add.</p><div class="ex">2F = 2×16 + 15×1 = 47&nbsp;&nbsp;&nbsp;1A3 = 1×256 + 10×16 + 3 = 419</div>`],
+ ["Decimal → hex: divide by 16",`<p>Divide by 16 and keep the remainder as a hex digit. Repeat with the quotient until it reaches 0, then read the remainders from last to first.</p><div class="ex">200 ÷ 16 = 12 r 8 → 8<br>12 ÷ 16 = 0 r 12 → C&nbsp;&nbsp;&nbsp;→ C8</div><p>Or go decimal → binary → hex, which is often easier for values up to 255.</p>`],
+ ["Write notation clearly and verify",`<p>Label the base so readers know what they're looking at: <code>0b11001000</code>, <code>11001000₂</code>, <code>0xC8</code>, <code>C8h</code>, <code>200₁₀</code>. Then check your work by converting the answer back to the starting base.</p>`]
+];
+$("#skills").innerHTML=SKILLS.map((s,i)=>`<details class="skill"${i===0?" open":""}><summary><span class="k">${i+1}</span><span class="t">${s[0]}</span></summary><div class="body">${s[1]}</div></details>`).join("");
+$("#refTbl tbody").innerHTML=Array.from({length:16},(_,i)=>`<tr tabindex="0" data-v="${i}"><td class="b10">${i}</td><td class="b2">${toBin(i,4)}</td><td class="b16">${HEX[i]}</td></tr>`).join("");
+$$("#refTbl tbody tr").forEach(tr=>{const go=()=>{regSet(+tr.dataset.v);toast(`Loaded ${tr.dataset.v} into the register`)};tr.onclick=go;tr.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}}});
+
+/* recall drill */
+const RC=[];for(let k=0;k<=15;k++)RC.push({q:`2<sup>${k}</sup> = ?`,a:String(2**k),base:10});
+for(let i=10;i<16;i++){RC.push({q:`Hex ${HEX[i]} in decimal?`,a:String(i),base:10});RC.push({q:`Decimal ${i} in hex?`,a:HEX[i],base:16})}
+for(let i=0;i<16;i++)RC.push({q:`${toBin(i,4)} in hex?`,a:HEX[i],base:16});
+let rcCur,rcOk=0,rcN=0;
+function rcNext(){rcCur=pick(RC);$("#rcQ").innerHTML=rcCur.q;$("#rcA").value="";$("#rcA").className="ans"}
+function rcCheck(){const v=parseAns($("#rcA").value,rcCur.base);if($("#rcA").value.trim()==="")return;rcN++;const right=v!==null&&v===parseAns(rcCur.a,rcCur.base);if(right)rcOk++;
+  $("#rcFb").innerHTML=(right?`<span class="b2">Correct.</span> `:`<span style="color:var(--bad)">The answer is ${rcCur.a}.</span> `)+`Score: ${rcOk} of ${rcN}`;
+  $("#rcA").className="ans "+(right?"ok":"no");setTimeout(rcNext,right?600:1600)}
+$("#rcGo").onclick=rcCheck;$("#rcA").onkeydown=e=>{if(e.key==="Enter")rcCheck()};rcNext();
+
+/* ---------- step generators ---------- */
+const total=(t)=>`<div class="total">Running total: <b>${t}</b></div>`;
+function bin2decSteps(bits){
+  const n=bits.length,cols=[...bits].map((b,i)=>({b:+b,p:n-1-i,v:2**(n-1-i)}));
+  const view=(act,rev)=>`<div class="tbl-wrap"><table class="pv">
+   <tr><th>Power</th>${cols.map((c,i)=>`<td class="${i===act?"act":""}">2<sup>${c.p}</sup></td>`).join("")}</tr>
+   <tr class="r-val"><th>Place value</th>${cols.map((c,i)=>`<td class="${i===act?"act":""}">${c.v}</td>`).join("")}</tr>
+   <tr><th>Bit</th>${cols.map((c,i)=>`<td class="${c.b?"one":""} ${i===act?"act":""}">${c.b}</td>`).join("")}</tr>
+   <tr><th>Adds</th>${cols.map((c,i)=>`<td class="${i===act?"act":""} ${i>rev?"empty":""}">${i<=rev?(c.b?c.v:"0"):""}</td>`).join("")}</tr></table></div>`;
+  const st=[{say:`Write the place value above each bit. The rightmost bit is 2<sup>0</sup> = 1 and each place to the left doubles.`,view:view(-1,-1)}];
+  let sum=0;
+  cols.forEach((c,i)=>{if(c.b){sum+=c.v;st.push({say:`The bit in the ${c.v} place is <b>1</b>, so add ${c.v}.`,view:view(i,i)+total(sum)})}else st.push({say:`The bit in the ${c.v} place is <b>0</b>, so it adds nothing.`,view:view(i,i)+total(sum)})});
+  const parts=cols.filter(c=>c.b).map(c=>c.v);
+  st.push({say:`Add the values under the 1s: ${parts.length?parts.join(" + "):"0"} = <b>${sum}</b>.`,view:view(-1,n-1)+`<div class="answer-line">${B(group4(bits))} = ${D(sum)}</div>`,ans:String(sum)});
+  return st;
+}
+function dec2binSteps(v){
+  const w=widthFor(v),cols=[];for(let p=w-1;p>=0;p--)cols.push({p,v:2**p});
+  const bits=[],left=[];let r=v;
+  cols.forEach(c=>{if(c.v<=r){bits.push(1);r-=c.v}else bits.push(0);left.push(r)});
+  const view=(act)=>`<div class="tbl-wrap"><table class="pv">
+   <tr class="r-val"><th>Place value</th>${cols.map((c,i)=>`<td class="${i===act?"act":""}">${c.v}</td>`).join("")}</tr>
+   <tr><th>Bit</th>${cols.map((c,i)=>`<td class="${i<=act&&bits[i]?"one":""} ${i===act?"act":""} ${i>act?"empty":""}">${i<=act?bits[i]:""}</td>`).join("")}</tr>
+   <tr><th>Left over</th>${cols.map((c,i)=>`<td class="${i===act?"act":""} ${i>act?"empty":""}">${i<=act?left[i]:""}</td>`).join("")}</tr></table></div>`;
+  const st=[{say:`${v} is less than ${2**w}, so ${w} bits are enough. List the place values from ${2**(w-1)} down to 1 and work left to right with ${v} to place.`,view:view(-1)}];
+  let before=v;
+  cols.forEach((c,i)=>{const fits=bits[i]===1;st.push({say:fits?`Does ${c.v} fit into ${before}? <b>Yes.</b> Write 1 and subtract: ${before} − ${c.v} = ${left[i]}.`:`Does ${c.v} fit into ${before}? <b>No.</b> Write 0 and keep ${before}.`,view:view(i)});before=left[i]});
+  const s=bits.join("");
+  st.push({say:`Read the bits left to right. Check: the 1s are worth ${cols.filter((c,i)=>bits[i]).map(c=>c.v).join(" + ")||"0"} = ${v}.`,view:view(w-1)+`<div class="answer-line">${D(v)} = ${B(group4(s))}</div>`,ans:s});
+  return st;
+}
+function nibView(nibs,pads,act,done){
+  return `<div class="nibs">${nibs.map((nb,i)=>{const val=parseInt(nb,2);const pad=i===0?pads:0;
+   return `<div class="nb ${i===act?"act":""}"><div class="w">8421</div><div class="bb">${[...nb].map((d,j)=>j<pad?`<span class="pad">${d}</span>`:d).join("")}</div>
+   <div class="eq">${done[i]?([8,4,2,1].filter((w,j)=>nb[j]==="1").join("+")||"0")+" = "+val:""}</div><div class="hd">${done[i]?HEX[val]:""}</div></div>`}).join("")}</div>`;
+}
+function bin2hexSteps(bits){
+  const pad=(4-bits.length%4)%4,p="0".repeat(pad)+bits,nibs=p.match(/.{4}/g),done=nibs.map(()=>false);
+  const st=[{say:`Split the bits into groups of four, starting from the <b>right</b>.`+(pad?` The leftmost group is short, so add ${pad} leading zero${pad>1?"s":""}. Leading zeros don't change the value.`:""),view:nibView(nibs,pad,-1,done)}];
+  for(let i=nibs.length-1;i>=0;i--){done[i]=true;const val=parseInt(nibs[i],2);
+    st.push({say:`Nibble <code>${nibs[i]}</code>: add the weights under the 1s to get ${val}${val>9?`, which is <b>${HEX[val]}</b> in hex (A=10 … F=15)`:`, which is hex <b>${HEX[val]}</b>`}.`,view:nibView(nibs,pad,i,done)})}
+  const h=nibs.map(n=>HEX[parseInt(n,2)]).join("");
+  st.push({say:`Read the hex digits left to right. It's often written <code>0x${h}</code>.`,view:nibView(nibs,pad,-1,done)+`<div class="answer-line">${B(group4(bits))} = ${H(h)}</div>`,ans:h});
+  return st;
+}
+function hex2binSteps(h){
+  h=h.toUpperCase();const ds=[...h],nibs=ds.map(d=>toBin(HEX.indexOf(d),4)),done=ds.map(()=>false);
+  const view=(act)=>`<div class="nibs">${ds.map((d,i)=>{const val=HEX.indexOf(d);return `<div class="nb ${i===act?"act":""}"><div class="hd">${d}</div><div class="eq">${val>9?d+" = "+val:""}${done[i]?(val>9?" = ":"")+([8,4,2,1].filter(w=>val&w).join("+")||"0"):""}</div><div class="w">8421</div><div class="bb">${done[i]?nibs[i]:"____"}</div></div>`}).join("")}</div>`;
+  const st=[{say:`Each hex digit becomes exactly four bits. Work one digit at a time using the 8-4-2-1 weights.`,view:view(-1)}];
+  ds.forEach((d,i)=>{done[i]=true;const val=HEX.indexOf(d);st.push({say:`${d} is ${val}${val?` = ${[8,4,2,1].filter(w=>val&w).join(" + ")}`:""}, so write <code>${nibs[i]}</code>. Keep all four bits, including zeros.`,view:view(i)})});
+  const b=nibs.join("");
+  st.push({say:`Join the nibbles in order.`+(b.startsWith("0")?` Leading zeros on the far left can be dropped (${b.replace(/^0+(?=.)/,"")}), but network fields usually keep the full width.`:""),view:view(-1)+`<div class="answer-line">${H(h)} = ${B(group4(b))}</div>`,ans:b});
+  return st;
+}
+function hex2decSteps(h){
+  h=h.toUpperCase();const ds=[...h],n=ds.length,cols=ds.map((d,i)=>({d,dv:HEX.indexOf(d),p:n-1-i,pv:16**(n-1-i)}));
+  const view=(act,rev)=>`<div class="tbl-wrap"><table class="pv">
+   <tr><th>Power</th>${cols.map((c,i)=>`<td class="${i===act?"act":""}">16<sup>${c.p}</sup></td>`).join("")}</tr>
+   <tr class="r-val"><th>Place value</th>${cols.map((c,i)=>`<td class="${i===act?"act":""}">${c.pv}</td>`).join("")}</tr>
+   <tr><th>Hex digit</th>${cols.map((c,i)=>`<td class="hx ${i===act?"act":""}">${c.d}</td>`).join("")}</tr>
+   <tr><th>Digit value</th>${cols.map((c,i)=>`<td class="${i===act?"act":""}">${c.dv}</td>`).join("")}</tr>
+   <tr><th>Product</th>${cols.map((c,i)=>`<td class="${i===act?"act":""} ${i>rev?"empty":""}">${i<=rev?c.dv*c.pv:""}</td>`).join("")}</tr></table></div>`;
+  const st=[{say:`Hex place values are powers of 16: 1, 16, 256, 4096. Write each digit's decimal value (A=10 … F=15) under its place.`,view:view(-1,-1)}];
+  let sum=0;
+  cols.forEach((c,i)=>{sum+=c.dv*c.pv;st.push({say:`${c.d} is worth ${c.dv}. Multiply by its place value: ${c.dv} × ${c.pv} = <b>${c.dv*c.pv}</b>.`,view:view(i,i)+total(sum)})});
+  st.push({say:`Add the products: ${cols.map(c=>c.dv*c.pv).join(" + ")} = <b>${sum}</b>.`,view:view(-1,n-1)+`<div class="answer-line">${H(h)} = ${D(sum)}</div>`,ans:String(sum)});
+  return st;
+}
+function dec2hexSteps(v){
+  const rows=[];let q=v;do{rows.push({n:q,q:Math.floor(q/16),r:q%16});q=Math.floor(q/16)}while(q>0);
+  const view=(act)=>`<table class="div-tbl"><tbody>${rows.map((r,i)=>i>act?"":`<tr class="${i===act?"act":""}"><td>${r.n} ÷ 16</td><td>= ${r.q}</td><td>remainder ${r.r}</td><td class="r">→ ${HEX[r.r]}</td></tr>`).join("")}</tbody></table>`;
+  const st=[{say:`Divide by 16. Each remainder (0 to 15) becomes one hex digit. Repeat with the quotient until it reaches 0.`,view:view(-1)}];
+  rows.forEach((r,i)=>st.push({say:`${r.n} ÷ 16 = ${r.q} with remainder ${r.r}${r.r>9?`, and ${r.r} is <b>${HEX[r.r]}</b> in hex`:`, so the digit is <b>${r.r}</b>`}.`+(r.q===0?" The quotient is 0, so stop.":""),view:view(i)}));
+  const h=rows.map(r=>HEX[r.r]).reverse().join("");
+  st.push({say:`Read the remainders from the <b>last one up to the first</b>. Check: ${[...h].map((d,i)=>`${HEX.indexOf(d)}×${16**(h.length-1-i)}`).join(" + ")} = ${v}.`,view:view(rows.length-1)+`<div class="answer-line">${D(v)} = ${H(h)}</div>`,ans:h});
+  return st;
+}
+
+/* conversion catalog */
+const T={
+ b2d:{label:"Binary → Decimal",from:2,to:10,steps:s=>bin2decSteps(s),hint:"Label each bit with its place value (… 128, 64, 32, 16, 8, 4, 2, 1) and add the values that sit above a 1."},
+ d2b:{label:"Decimal → Binary",from:10,to:2,steps:s=>dec2binSteps(+s),hint:"Start at the largest place value that fits. Write 1 and subtract when it fits, 0 when it doesn't, and keep going down to 1."},
+ b2h:{label:"Binary → Hex",from:2,to:16,steps:s=>bin2hexSteps(s),hint:"Group the bits in fours from the right. Each group, weighted 8-4-2-1, is one hex digit."},
+ h2b:{label:"Hex → Binary",from:16,to:2,steps:s=>hex2binSteps(s),hint:"Replace every hex digit with its 4-bit pattern, keeping the zeros inside each group."},
+ h2d:{label:"Hex → Decimal",from:16,to:10,steps:s=>hex2decSteps(s),hint:"Multiply each digit's value by its place value (… 4096, 256, 16, 1) and add."},
+ d2h:{label:"Decimal → Hex",from:10,to:16,steps:s=>dec2hexSteps(+s),hint:"Divide by 16 and keep the remainders, reading them bottom to top. Or convert to binary first and group in fours."}
+};
+const BASENAME={2:"Binary",10:"Decimal",16:"Hex"};
+function fmtSrc(v,base,w){return base===2?toBin(v,w):base===16?toHex(v,Math.max(1,w/4)):String(v)}
+
+/* ---------- watch ---------- */
+let wT="b2d",wSteps=[],wI=0,wTimer=null;
+$("#wType").innerHTML=Object.entries(T).map(([k,t])=>`<button type="button" role="radio" aria-checked="${k===wT}" data-t="${k}">${t.label}</button>`).join("");
+function wSetType(k){wT=k;$$("#wType button").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.t===k)));$("#wInLbl").textContent=BASENAME[T[k].from]+" value";wRandom()}
+$$("#wType button").forEach(b=>b.onclick=()=>wSetType(b.dataset.t));
+function wRandom(){const v=rand(5,255);$("#wIn").value=fmtSrc(v,T[wT].from,8);$("#wMsg").textContent=""}
+function wStart(){
+  const from=T[wT].from;let raw=$("#wIn").value.trim().replace(/[\s_]/g,"");
+  if(from===2)raw=raw.replace(/^0b/i,"");if(from===16)raw=raw.replace(/^0x/i,"").toUpperCase();
+  const v=parseAns(raw,from);
+  if(v===null||raw===""){$("#wMsg").textContent=`Enter a valid ${BASENAME[from].toLowerCase()} value.`;return}
+  if(v>65535||(from===2&&raw.length>16)||(from===16&&raw.length>4)){$("#wMsg").textContent="Keep it to 16 bits or fewer (0 to 65535, up to 4 hex digits).";return}
+  $("#wMsg").textContent="";
+  const src=from===10?String(v):raw;
+  wSteps=T[wT].steps(src);wI=0;stopPlay();wRender();
+}
+function wRender(){
+  const s=wSteps[wI];$("#wSay").innerHTML=s.say;$("#wView").innerHTML=s.view;
+  $("#wDots").innerHTML=wSteps.map((_,i)=>`<span class="${i<=wI?"on":""}"></span>`).join("");
+  $("#wPrev").disabled=wI===0;$("#wNext").disabled=wI>=wSteps.length-1;$("#wPlay").disabled=wSteps.length<2;
+  if(wI===wSteps.length-1){C.watched.add(wT);if(C.watched.size>=3)mark("watch");stopPlay()}
+}
+function stopPlay(){clearInterval(wTimer);wTimer=null;$("#wPlay").textContent="Play"}
+$("#wGo").onclick=wStart;$("#wRand").onclick=()=>{wRandom();wStart()};
+$("#wIn").onkeydown=e=>{if(e.key==="Enter")wStart()};
+$("#wNext").onclick=()=>{if(wI<wSteps.length-1){wI++;wRender()}};
+$("#wPrev").onclick=()=>{if(wI>0){wI--;wRender()}};
+$("#wPlay").onclick=()=>{if(wTimer){stopPlay();return}if(wI>=wSteps.length-1)wI=0,wRender();$("#wPlay").textContent="Pause";wTimer=setInterval(()=>{if(wI<wSteps.length-1){wI++;wRender()}else stopPlay()},1700)};
+wSetType("b2d");wStart();
+
+/* ---------- practice ---------- */
+const PTYPES={...Object.fromEntries(Object.entries(T).map(([k,t])=>[k,t.label])),build:"Flip the bits",mixed:"Mixed"};
+const SIZES={4:"4-bit (0–15)",8:"8-bit octet (0–255)",16:"16-bit (0–65,535)"};
+let pT="mixed",pW=8,prob=null,pDone=false;
+Object.keys(PTYPES).forEach(k=>C.byType[k]=0);
+$("#pType").innerHTML=Object.entries(PTYPES).map(([k,l])=>`<button type="button" role="radio" aria-checked="${k===pT}" data-k="${k}">${l}</button>`).join("");
+$("#pSize").innerHTML=Object.entries(SIZES).map(([k,l])=>`<button type="button" role="radio" aria-checked="${+k===pW}" data-k="${k}">${l}</button>`).join("");
+$$("#pType button").forEach(b=>b.onclick=()=>{pT=b.dataset.k;$$("#pType button").forEach(x=>x.setAttribute("aria-checked",String(x===b)));newProb()});
+$$("#pSize button").forEach(b=>b.onclick=()=>{pW=+b.dataset.k;$$("#pSize button").forEach(x=>x.setAttribute("aria-checked",String(x===b)));newProb()});
+function newProb(){
+  const type=pT==="mixed"?pick(Object.keys(T)):pT;
+  const lo=pW===4?1:pW===8?16:256,hi=2**pW-1;
+  const v=rand(lo,hi);prob={type,v,w:pW,build:0};pDone=false;
+  $("#pFb").className="fb";$("#pSol").className="sol";$("#pSol").innerHTML="";$("#pAns").value="";$("#pAns").className="ans";
+  if(type==="build"){
+    const asHex=Math.random()<.35;prob.asHex=asHex;
+    $("#pLbl").textContent="Switch on the bits that make this value, then check your answer:";
+    $("#pSrc").innerHTML=asHex?`<span class="b16">${toHex(v,pW/4)}<sub>16</sub></span>`:`<span class="b10">${v}<sub>10</sub></span>`;
+    $("#pAnsRow").hidden=true;renderBuild();
+  }else{
+    const t=T[type];$("#pAnsRow").hidden=false;$("#pBuild").innerHTML="";
+    prob.src=fmtSrc(v,t.from,pW);
+    $("#pLbl").textContent=`Convert this ${BASENAME[t.from].toLowerCase()} value to ${BASENAME[t.to].toLowerCase()}:`;
+    const cls=t.from===2?"b2":t.from===16?"b16":"b10";
+    $("#pSrc").innerHTML=`<span class="${cls}">${t.from===2?group4(prob.src):prob.src}<sub>${t.from}</sub></span>`;
+    $("#pAns").placeholder=`Answer in ${BASENAME[t.to].toLowerCase()}`;
+    $("#pAns").focus({preventScroll:true});
+  }
+}
+function renderBuild(){
+  const box=$("#pBuild");box.innerHTML="";const wrap=document.createElement("div");wrap.className="mini-reg";
+  for(let g=0;g<prob.w/4;g++){const grp=document.createElement("div");grp.className="nibble";const row=document.createElement("div");row.className="nib-bits";
+    for(let j=0;j<4;j++){const pos=prob.w-1-(g*4+j);const on=(prob.build>>pos)&1;
+      row.appendChild(makeBit(pos,on,()=>{if(pDone)return;prob.build^=(1<<pos);renderBuild();const f=$(`#pBuild [data-pos="${pos}"]`);if(f)f.focus()}))}
+    grp.appendChild(row);wrap.appendChild(grp)}
+  box.appendChild(wrap);
+  const cur=document.createElement("p");cur.className="small";cur.style.textAlign="center";cur.textContent="Your bits currently equal "+prob.build;box.appendChild(cur);
+}
+function diagnose(type,raw,ans,v){
+  const to=T[type].to;const clean=(raw||"").trim().replace(/[\s_,]/g,"").replace(/^0[bx]/i,"");
+  if(ans===null)return to===2?"Binary answers use only 0 and 1.":to===16?"Hex answers use 0–9 and A–F.":"Decimal answers use only the digits 0–9.";
+  if(to===2){const rv=[...clean].reverse().join("");if(rv!==clean&&parseInt(rv,2)===v)return "Your bits are in reverse order. The leftmost bit is the most significant (largest place value).";}
+  if(to===16){const rv=[...clean].reverse().join("");if(rv.toUpperCase()!==clean.toUpperCase()&&parseInt(rv,16)===v)return "Your hex digits are reversed. In the division method, read remainders from the last one up to the first.";
+    if(/^\d+$/.test(clean)&&+clean===v)return "That's the decimal value. Express it in base 16.";}
+  if(to===10&&type==="h2d"&&clean.toUpperCase()===prob.src.toUpperCase().replace(/^0+(?=.)/,""))return "You copied the hex digits. Each digit has to be multiplied by its power of 16.";
+  if(to!==10||type==="b2d"){const x=(ans^v)>>>0;if(x&&popcount(x)===1&&x<=65535){const place=Math.log2(x);return to===16?`Close: one bit is off, in the 2<sup>${place}</sup> (${x}) place. Recheck that nibble.`:to===2?`Close: one bit is wrong, the one in the ${x} place.`:`Close: you're off by ${x}. Check whether the bit in the ${x} place is a 1.`}}
+  if(to===10&&Math.abs(ans-v)===1)return "Off by one. Recheck the rightmost bit or digit.";
+  return "Compare your work with each step of the solution below.";
+}
+function showSolution(){
+  const st=prob.type==="build"?dec2binSteps(prob.v):T[prob.type].steps(prob.src);
+  const last=st[st.length-1];
+  $("#pSol").innerHTML=`<h3 style="margin-top:0">Worked solution</h3><ol>${st.map(s=>`<li>${s.say}</li>`).join("")}</ol>${last.view}`;
+  $("#pSol").className="sol show";
+}
+function record(ok,type){
+  C.attempts++;if(ok){C.correct++;C.streak++;C.best=Math.max(C.best,C.streak);C.byType[type]++;if(C.correct>=10)mark("practice")}else C.streak=0;
+  renderScore();
+}
+function renderScore(){
+  $("#sCor").textContent=C.correct;$("#sAcc").textContent=C.attempts?Math.round(100*C.correct/C.attempts)+"%":"–";
+  $("#sStr").textContent=C.streak;$("#sBest").textContent=C.best;
+  $("#mastery").innerHTML=Object.keys(T).concat("build").map(k=>`<div class="m"><span>${PTYPES[k]}</span><span class="bar"><i style="width:${Math.min(100,C.byType[k]*20)}%"></i></span><span class="mono" style="min-width:2ch;text-align:right">${C.byType[k]}</span></div>`).join("");
+}
+function pCheck(){
+  if(!prob||pDone)return;
+  const fb=$("#pFb");
+  if(prob.type==="build"){
+    const ok=prob.build===prob.v;pDone=true;record(ok,"build");
+    fb.className="fb show "+(ok?"ok":"no");
+    fb.innerHTML=ok?`<b>Correct.</b> ${group4(toBin(prob.v,prob.w))} = ${prob.v}${prob.asHex?" = 0x"+toHex(prob.v,prob.w/4):""}.`:`<b>Not yet.</b> Your bits make ${prob.build}, but the target is ${prob.v}. The pattern is <code>${group4(toBin(prob.v,prob.w))}</code>.`;
+    if(!ok)showSolution();renderBuild();return;
+  }
+  const raw=$("#pAns").value;if(raw.trim()===""){$("#pAns").focus();return}
+  const t=T[prob.type],ans=parseAns(raw,t.to),ok=ans===prob.v;
+  pDone=true;record(ok,prob.type);
+  $("#pAns").className="ans "+(ok?"ok":"no");
+  const right=t.to===2?group4(toBin(prob.v,prob.w)):t.to===16?toHex(prob.v,prob.w/4):String(prob.v);
+  fb.className="fb show "+(ok?"ok":"no");
+  fb.innerHTML=ok?`<b>Correct.</b> ${prob.src} in ${BASENAME[t.to].toLowerCase()} is <code>${right}</code>.${C.streak>=3?` Streak of ${C.streak}.`:""}`:`<b>Not quite.</b> ${diagnose(prob.type,raw,ans,prob.v)} The answer is <code>${right}</code>.`;
+  if(!ok)showSolution();
+}
+$("#pCheck").onclick=pCheck;$("#pAns").onkeydown=e=>{if(e.key==="Enter"){pDone?newProb():pCheck()}};
+$("#pNext").onclick=newProb;$("#pShow").onclick=()=>{if(prob){showSolution();if(!pDone){pDone=true;record(false,prob.type);$("#pFb").className="fb show no";$("#pFb").innerHTML="Solution shown, so this one counts as a miss. Try the next problem."}}};
+$("#pHint").onclick=()=>{if(!prob)return;const fb=$("#pFb");fb.className="fb show ok";fb.style.borderLeftColor="var(--dec)";fb.innerHTML="<b>Hint.</b> "+(prob.type==="build"?"Switch on the largest place value that fits, subtract it, and repeat with what's left.":T[prob.type].hint);setTimeout(()=>fb.style.borderLeftColor="",0)};
+renderScore();newProb();
+
+/* ---------- apply: IPv4 explorer ---------- */
+const ip={oct:[192,168,10,37],pfx:24};
+function maskOcts(p){const m=p===0?0:(0xFFFFFFFF<<(32-p))>>>0;return [24,16,8,0].map(s=>(m>>>s)&255)}
+function renderIP(focus){
+  const box=$("#ipBits");box.innerHTML="";
+  ip.oct.forEach((o,k)=>{const oc=document.createElement("div");oc.className="oct";const bs=document.createElement("div");bs.className="bs";
+    for(let j=0;j<8;j++){const idx=k*8+j,pos=7-j,on=(o>>pos)&1;const b=document.createElement("button");b.type="button";b.className="ib"+(on?" on":"")+(idx<ip.pfx?" net":"");b.textContent=on;b.dataset.idx=idx;
+      b.setAttribute("aria-label",`Octet ${k+1}, bit worth ${2**pos}, ${on?"1":"0"}, ${idx<ip.pfx?"network":"host"} bit`);
+      b.onclick=()=>{ip.oct[k]^=(1<<pos);$("#ipIn").value=ip.oct.join(".");renderIP(idx)};bs.appendChild(b)}
+    oc.appendChild(bs);const ov=document.createElement("div");ov.className="ov";ov.textContent=o;oc.appendChild(ov);box.appendChild(oc)});
+  if(focus!==undefined){const f=$(`#ipBits [data-idx="${focus}"]`);if(f)f.focus()}
+  const m=maskOcts(ip.pfx),net=ip.oct.map((o,i)=>o&m[i]);
+  const hosts=ip.pfx>=31?(ip.pfx===32?1:2):2**(32-ip.pfx)-2;
+  $("#ipKv").innerHTML=`<tr><th>Address (dotted decimal)</th><td class="b10">${ip.oct.join(".")}</td></tr>
+   <tr><th>Address (binary)</th><td class="b2">${ip.oct.map(o=>toBin(o,8)).join(".")}</td></tr>
+   <tr><th>Address (hex, as in a packet capture)</th><td class="b16">0x${ip.oct.map(o=>toHex(o,2)).join("")}</td></tr>
+   <tr><th>Mask /${ip.pfx} (binary)</th><td class="b2">${m.map(o=>toBin(o,8)).join(".")}</td></tr>
+   <tr><th>Mask (dotted decimal)</th><td class="b10">${m.join(".")}</td></tr>
+   <tr><th>Network address (address AND mask)</th><td class="b10">${net.join(".")}</td></tr>
+   <tr><th>Usable hosts</th><td>${hosts.toLocaleString()}</td></tr>`;
+}
+$("#pfx").oninput=e=>{ip.pfx=+e.target.value;$("#pfxV").textContent="/"+ip.pfx;renderIP()};
+$("#ipIn").oninput=e=>{const p=e.target.value.trim().split(".");const ok=p.length===4&&p.every(x=>/^\d{1,3}$/.test(x)&&+x<=255);e.target.style.borderColor=ok?"":"var(--bad)";if(ok){ip.oct=p.map(Number);renderIP()}};
+renderIP();
+
+/* network challenges */
+let nP=null,nDone=false;
+function bitsSum(v){const parts=[];for(let p=7;p>=0;p--)if((v>>p)&1)parts.push(2**p);return parts.join(" + ")||"0"}
+function newNet(){
+  nDone=false;$("#nAns").value="";$("#nAns").className="ans";$("#nFb").className="fb";
+  const kind=pick(["octet","mask","maskoct","mac","ipv6","hexoct"]);
+  if(kind==="octet"){const o=[rand(1,223),rand(0,255),rand(0,255),rand(1,254)],i=rand(0,3),v=o[i];
+    nP={q:`Write octet ${i+1} of <code>${o.join(".")}</code> in binary (8 bits).`,base:2,v,why:`${v} = ${bitsSum(v)}, so the octet is <code>${toBin(v,8)}</code>.`}}
+  else if(kind==="mask"){const p=rand(17,30),m=maskOcts(p);
+    nP={q:`Write the <code>/${p}</code> subnet mask in dotted decimal.`,dotted:m,why:`/${p} means ${p} ones followed by ${32-p} zeros: <code>${m.map(o=>toBin(o,8)).join(".")}</code> = ${m.join(".")}.`}}
+  else if(kind==="maskoct"){const v=pick([128,192,224,240,248,252,254]);
+    nP={q:`A subnet mask octet is <code>${toBin(v,8)}</code>. What is it in decimal?`,base:10,v,why:`${bitsSum(v)} = ${v}. Mask octets are always a run of 1s from the left, so only 0, 128, 192, 224, 240, 248, 252, 254, and 255 are possible.`}}
+  else if(kind==="mac"){const v=rand(16,255),h=toHex(v,2);const rest=Array.from({length:5},()=>toHex(rand(0,255),2)).join(":");
+    nP={q:`The MAC address <code>${h}:${rest}</code> starts with byte <code>${h}</code>. Convert that byte to decimal.`,base:10,v,why:`${h[0]} × 16 + ${h[1]} × 1 = ${HEX.indexOf(h[0])*16} + ${HEX.indexOf(h[1])} = ${v}.`}}
+  else if(kind==="ipv6"){const v=rand(4096,65535),h=toHex(v,4);
+    nP={q:`IPv6 groups are 16-bit hextets. Convert the hextet <code>${h}</code> to binary (16 bits).`,base:2,v,why:`One hex digit per nibble: ${[...h].map(d=>`${d} → ${toBin(HEX.indexOf(d),4)}`).join(", ")}, so <code>${group4(toBin(v,16))}</code>.`}}
+  else{const v=rand(16,255);
+    nP={q:`Packet captures show addresses in hex. Write the octet <code>${v}</code> as two hex digits.`,base:16,v,why:`${v} ÷ 16 = ${Math.floor(v/16)} remainder ${v%16}, so the hex is <code>${toHex(v,2)}</code>.`}}
+  $("#nQ").innerHTML=nP.q;$("#nAns").placeholder=nP.dotted?"e.g. 255.255.0.0":nP.base===2?"Binary":nP.base===16?"Hex":"Decimal";
+}
+function nCheck(){
+  if(nDone||!nP)return;const raw=$("#nAns").value.trim();if(!raw){$("#nAns").focus();return}
+  let ok;
+  if(nP.dotted){const p=raw.split(".").map(s=>s.trim());ok=p.length===4&&p.every((s,i)=>/^\d+$/.test(s)&&+s===nP.dotted[i])}
+  else{const a=parseAns(raw,nP.base);ok=a===nP.v;if(ok&&nP.base===2&&raw.replace(/[\s_]/g,"").replace(/^0b/i,"").length<(nP.q.includes("16 bits")?16:8))nP.why+=" Your value is right; in network fields, write all the bits including leading zeros."}
+  nDone=true;C.nAttempts++;if(ok){C.nCorrect++;if(C.nCorrect>=3)mark("apply")}
+  $("#nAns").className="ans "+(ok?"ok":"no");
+  $("#nFb").className="fb show "+(ok?"ok":"no");$("#nFb").innerHTML=(ok?"<b>Correct.</b> ":"<b>Not quite.</b> ")+nP.why;
+  $("#nScore").textContent=`${C.nCorrect} correct of ${C.nAttempts} attempted`;
+}
+$("#nCheck").onclick=nCheck;$("#nNext").onclick=newNet;$("#nAns").onkeydown=e=>{if(e.key==="Enter"){nDone?newNet():nCheck()}};
+newNet();
+
+/* ---------- quiz ---------- */
+const QZ=[
+ {q:"In an 8-bit octet, what is the place value of the leftmost bit?",o:["255","256","128","64"],a:2,w:"Positions count from 0 on the right, so the leftmost of 8 bits is position 7: 2⁷ = 128."},
+ {q:"What is 10101010₂ in decimal?",o:["170","85","160","172"],a:0,w:"128 + 32 + 8 + 2 = 170. (Its complement, 01010101, is 85.)"},
+ {q:"Which hex digit represents decimal 13?",o:["B","C","D","E"],a:2,w:"A=10, B=11, C=12, D=13, E=14, F=15."},
+ {q:"How many bits does one hexadecimal digit represent?",o:["2","4","8","16"],a:1,w:"16 = 2⁴, so each hex digit maps to exactly one 4-bit nibble."},
+ {q:"0xFF equals which decimal value?",o:["256","15","255","240"],a:2,w:"F×16 + F = 15×16 + 15 = 240 + 15 = 255, the largest value one byte can hold."},
+ {q:"What is decimal 100 in 8-bit binary?",o:["01100100","01010100","01100010","00110100"],a:0,w:"64 fits (36 left), 32 fits (4 left), 16 no, 8 no, 4 fits (0 left): 0110 0100."},
+ {q:"When converting binary to hex, where do you start grouping bits into fours?",o:["From the left (most significant bit)","From the right (least significant bit)","From the middle","It doesn't matter"],a:1,w:"Group from the right so each group lines up with the 1, 16, 256 … hex places. Pad the leftmost group with zeros if it's short."},
+ {q:"The subnet mask 255.255.255.192 is which prefix length?",o:["/25","/26","/27","/28"],a:1,w:"192 = 11000000, which adds 2 ones to the 24 from the first three octets: 24 + 2 = /26."},
+ {q:"What is the largest unsigned value that 8 bits can hold?",o:["256","128","255","512"],a:2,w:"n bits hold 0 to 2ⁿ − 1. 2⁸ − 1 = 255. That's why every IPv4 octet is 0–255."},
+ {q:"In the divide-by-16 method for decimal → hex, how do you read the answer?",o:["Quotients, top to bottom","Remainders, first to last","Remainders, last to first","Quotients, bottom to top"],a:2,w:"The first remainder is the 16⁰ (ones) digit, so it goes on the right. Reading from the last remainder up puts the digits in the correct order."},
+ {q:"An IPv6 hextet such as 2001 contains how many bits?",o:["8","16","32","64"],a:1,w:"Four hex digits × 4 bits each = 16 bits. Eight hextets make the full 128-bit IPv6 address."},
+ {q:"What is 0x2F in decimal?",o:["32","47","215","29"],a:1,w:"2 × 16 + F (15) × 1 = 32 + 15 = 47."}
+];
+function renderQuiz(){
+  $("#quiz").className="quiz";
+  $("#quiz").innerHTML=QZ.map((x,i)=>`<fieldset class="qq" id="qq${i}"><legend>${i+1}. ${x.q}</legend>${x.o.map((o,j)=>`<label class="opt"><input type="radio" name="q${i}" value="${j}"><span>${o}</span></label>`).join("")}<div class="why">${x.w}</div></fieldset>`).join("");
+  $("#qResult").textContent="";$("#qSubmit").disabled=false;
+}
+$("#qSubmit").onclick=()=>{
+  const ans=QZ.map((_,i)=>{const s=$(`input[name="q${i}"]:checked`);return s?+s.value:null});
+  const missing=ans.filter(a=>a===null).length;
+  if(missing){$("#qResult").textContent=`Answer all questions first (${missing} left).`;const f=ans.indexOf(null);$(`#qq${f}`).scrollIntoView({behavior:"smooth",block:"center"});return}
+  let score=0;const missed=[];
+  QZ.forEach((x,i)=>{const fs=$(`#qq${i}`);$$(".opt",fs).forEach((l,j)=>{l.classList.toggle("right",j===x.a);l.classList.toggle("wrong",j===ans[i]&&j!==x.a);$("input",l).disabled=true});if(ans[i]===x.a)score++;else missed.push(i+1)});
+  $("#quiz").classList.add("graded");$("#qSubmit").disabled=true;
+  C.quiz={score,total:QZ.length,missed};
+  $("#qResult").textContent=`Score: ${score} of ${QZ.length} (${Math.round(100*score/QZ.length)}%)`+(score===QZ.length?". Perfect.":missed.length?`. Review question${missed.length>1?"s":""} ${missed.join(", ")}.`:"");
+  mark("quiz");
+};
+$("#qReset").onclick=renderQuiz;renderQuiz();
+
+/* ---------- glossary ---------- */
+const GL=[
+ ["Bit","binary digit","The smallest unit of data: a single 0 or 1."],
+ ["Nibble","4 bits","Half a byte. One nibble maps to exactly one hex digit (0–F)."],
+ ["Byte / octet","8 bits","Holds 0–255. Networking says octet because a byte's size was once machine-dependent."],
+ ["Base (radix)","the number of digit symbols","Binary is base 2, decimal base 10, hex base 16."],
+ ["Place value","base raised to the position","In binary the places are 1, 2, 4, 8 …; in hex 1, 16, 256, 4096 …"],
+ ["MSB","most significant bit","The leftmost bit, carrying the largest place value."],
+ ["LSB","least significant bit","The rightmost bit, worth 1. If it's 1 the number is odd."],
+ ["Hexadecimal","base 16","Digits 0–9 and A–F. A compact way to write binary, four bits per digit."],
+ ["0x and 0b","notation prefixes","0x marks hex (0xC8), 0b marks binary (0b11001000). Subscripts ₂ ₁₀ ₁₆ do the same on paper."],
+ ["Subnet mask","network/host divider","A 32-bit pattern of 1s then 0s. The 1s mark the network portion of an address."],
+ ["Prefix length","CIDR /n","The number of 1 bits in the mask: /24 = 255.255.255.0."],
+ ["Hextet","16-bit IPv6 group","Four hex digits, such as 2001 or FE80. Eight hextets form an IPv6 address."]
+];
+$("#gloss").innerHTML=GL.map(g=>`<button type="button" class="fc" aria-label="${g[0]}: select to reveal definition"><div class="in"><div class="f"><strong>${g[0]}</strong><span>${g[1]}</span></div><div class="b">${g[2]}</div></div></button>`).join("");
+$$(".fc").forEach(c=>c.onclick=()=>c.classList.toggle("flipped"));
+
+/* ---------- report ---------- */
+$("#printBtn").onclick=()=>{
+  const name=$("#stuName").value.trim()||"(name not entered)";
+  const rows=Object.keys(progress).map(k=>`<tr><td>${PNAMES[k]}</td><td>${progress[k]?"Complete":"Not yet"}</td></tr>`).join("");
+  const types=Object.keys(T).concat("build").map(k=>`<tr><td>${PTYPES[k].replace("→","to")}</td><td>${C.byType[k]}</td></tr>`).join("");
+  $("#report").innerHTML=`<h1>Number Systems Lab: Results</h1><p><b>Student:</b> ${name.replace(/</g,"&lt;")}<br><b>Course:</b> LAN121 Network Essentials<br><b>Date:</b> ${new Date().toLocaleString()}</p>
+   <h2>Milestones</h2><table>${rows}</table>
+   <h2>Practice</h2><p>${C.correct} correct of ${C.attempts} attempted${C.attempts?` (${Math.round(100*C.correct/C.attempts)}%)`:""}. Best streak: ${C.best}.</p><table><tr><th>Conversion</th><th>Correct</th></tr>${types}</table>
+   <h2>Network challenges</h2><p>${C.nCorrect} correct of ${C.nAttempts} attempted.</p>
+   <h2>Knowledge check</h2><p>${C.quiz?`${C.quiz.score} of ${C.quiz.total} (${Math.round(100*C.quiz.score/C.quiz.total)}%)${C.quiz.missed.length?". Missed: "+C.quiz.missed.join(", "):""}`:"Not submitted."}</p>
+   <p>Recall drill: ${rcOk} of ${rcN}.</p>`;
+  window.print();
+};
+})();
+</script>
 </body>
 </html>
