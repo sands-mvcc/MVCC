@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Line 2 Shift: IIoT and Actuator Technician Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#DCE0E4; --panel:#F3F4F6; --panel2:#E7EAED; --ink:#1D232A; --muted:#55606A; --line:#B4BBC3;
+  --pipe:#87919B; --equip:#3D4750; --equip-off:#F3F4F6;
+  --navy:#0047AB; --navy-ink:#FFFFFF; --green:#00A86B; --green-soft:rgba(0,168,107,.16);
+  --p1:#CF231A; --p2:#DC700C; --p3:#BF9A00; --p4:#7A4FCB;
+  --lcd-bg:#C7D2BE; --lcd-ink:#18261A; --walk:rgba(191,154,0,.20);
+  --sans:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --cond:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14181D; --panel:#1E242B; --panel2:#262D35; --ink:#E2E6EA; --muted:#98A2AC; --line:#38414B;
+    --pipe:#6E7882; --equip:#C8CFD6; --equip-off:#1E242B;
+    --navy:#6E9EEC; --navy-ink:#0C1420; --green:#2FC48C; --green-soft:rgba(47,196,140,.18);
+    --p1:#FF5A4F; --p2:#FF9B40; --p3:#EBCB3B; --p4:#AA8CF2;
+    --lcd-bg:#0F1A12; --lcd-ink:#7CF0A6; --walk:rgba(235,203,59,.16);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14181D; --panel:#1E242B; --panel2:#262D35; --ink:#E2E6EA; --muted:#98A2AC; --line:#38414B;
+  --pipe:#6E7882; --equip:#C8CFD6; --equip-off:#1E242B;
+  --navy:#6E9EEC; --navy-ink:#0C1420; --green:#2FC48C; --green-soft:rgba(47,196,140,.18);
+  --p1:#FF5A4F; --p2:#FF9B40; --p3:#EBCB3B; --p4:#AA8CF2;
+  --lcd-bg:#0F1A12; --lcd-ink:#7CF0A6; --walk:rgba(235,203,59,.16);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px)}
+body{font-family:var(--sans);font-size:16px;line-height:1.5;background:var(--bg);color:var(--ink);min-height:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+h1,h2,h3{font-family:var(--cond);font-weight:700;line-height:1.15;letter-spacing:.005em}
+h1{font-size:2.1rem}
+h2{font-size:1.4rem}
+h3{font-size:1.12rem;margin-bottom:.5rem}
+p{max-width:72ch}
+a{color:var(--navy)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+.hint{color:var(--muted);font-size:.92rem;margin-bottom:.75rem}
+code,.mono{font-family:var(--mono);font-size:.88em}
+
+/* Top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;gap:1.25rem;padding:.6rem 1.25rem;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.7rem;margin-right:auto;text-decoration:none;color:var(--ink)}
+.brand svg{width:34px;height:34px;flex:none}
+.brand-title{font-family:var(--cond);font-weight:700;font-size:1.15rem;line-height:1.1}
+.brand-sub{font-size:.82rem;color:var(--muted)}
+.shiftmeter{display:flex;flex-direction:column;gap:.25rem;min-width:190px;font-size:.85rem;color:var(--muted)}
+.meter{height:8px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--green);transition:width .4s ease}
+.themebtn{border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:.4rem .75rem;font-weight:600;cursor:pointer;white-space:nowrap}
+
+/* Shell */
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:calc(100vh - 60px)}
+.rail{border-right:1px solid var(--line);background:var(--panel);padding:1rem 0}
+.rail ul{list-style:none;position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+.rail a{display:flex;align-items:center;gap:.6rem;padding:.55rem 1.1rem;color:var(--ink);text-decoration:none;border-left:3px solid transparent;font-size:.95rem}
+.rail a:hover{background:var(--panel2)}
+.rail a.active{background:var(--panel2);border-left-color:var(--navy);font-weight:600}
+.rail .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--pipe);flex:none;display:grid;place-items:center}
+.rail a.done .dot{background:var(--green);border-color:var(--green)}
+.rail a.done .dot::after{content:"";width:6px;height:3px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.rail .sep{height:1px;background:var(--line);margin:.6rem 1.1rem}
+.rail .wo{font-family:var(--cond);color:var(--muted);font-size:.8rem;min-width:4.2em}
+main{padding:1.5rem clamp(1rem,2.5vw,2.25rem) 3rem;min-width:0}
+.view[hidden]{display:none}
+
+/* Panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1rem 1.15rem}
+.lab{display:grid;gap:1rem;margin-top:1.1rem}
+.lab.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.lab.three{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:.6rem 0}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:.5rem .85rem;font-weight:600;cursor:pointer;font-size:.95rem}
+.btn:hover{border-color:var(--pipe)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:var(--navy-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.fb{margin-top:.75rem;font-size:.95rem;min-height:1px}
+.fb:empty{display:none}
+.fb.ok,.fb.bad,.fb.info{padding:.65rem .8rem;border-radius:4px;background:var(--panel2);border-left:4px solid var(--navy)}
+.fb.ok{border-left-color:var(--green)}
+.fb.bad{border-left-color:var(--p1)}
+.scroll-x{overflow-x:auto}
+label.f{display:flex;flex-direction:column;gap:.25rem;font-size:.88rem;font-weight:600;color:var(--muted)}
+input[type=number],select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:.4rem .5rem;min-width:0}
+input[type=range]{accent-color:var(--navy);width:100%}
+
+/* Station head (work order ticket) */
+.st-head{display:grid;grid-template-columns:auto 1fr;gap:0 1.25rem;align-items:start}
+.ticket{font-family:var(--cond);border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:.5rem .8rem;text-align:center;min-width:104px}
+.ticket b{display:block;font-size:1.25rem}
+.ticket span{font-size:.82rem;color:var(--muted)}
+.ticket.closed{border-color:var(--green);box-shadow:inset 0 -4px 0 var(--green)}
+.st-head p{margin-top:.45rem;color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem}
+.chip{font-size:.8rem;padding:.15rem .55rem;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--panel)}
+
+/* Plant view */
+.plant-intro{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem}
+.plant-intro p{color:var(--muted);margin-top:.4rem}
+.plant-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1rem;margin-top:1rem}
+#pid{width:100%;height:auto;display:block}
+#pid text{font-family:var(--cond);fill:var(--ink)}
+#pid .tag{font-size:13px;font-weight:700;text-anchor:middle}
+#pid .sub{font-size:11px;fill:var(--muted);text-anchor:middle}
+#pid .val{font-size:12px;font-weight:600;fill:var(--navy)}
+#pid .zone{font-size:12px;fill:var(--muted)}
+#pid .divider{stroke:var(--line);stroke-dasharray:2 4}
+#pid .pipe{stroke:var(--pipe);stroke-width:7;fill:none;stroke-linecap:round}
+#pid .flow{stroke:var(--panel);stroke-width:2;fill:none;stroke-dasharray:4 8;animation:flow 1s linear infinite}
+#pid .sig{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:6 4}
+#pid .netline{stroke:var(--navy);stroke-width:2;fill:none}
+#pid .box{fill:var(--panel2);stroke:var(--ink);stroke-width:1.4}
+#pid .equip{fill:var(--equip);stroke:var(--ink);stroke-width:1.4}
+#pid .equip-text{fill:var(--panel);font-weight:700;text-anchor:middle;font-size:14px}
+#pid .bubble{fill:var(--panel);stroke:var(--ink);stroke-width:1.4}
+#pid .bt{font-size:11px;font-weight:700;text-anchor:middle}
+#pid .tankwall{fill:var(--panel);stroke:var(--ink);stroke-width:1.6}
+#pid .tankfill{fill:var(--pipe);opacity:.55}
+#pid .belt{fill:var(--panel2);stroke:var(--ink);stroke-width:1.2}
+#pid .bottle{fill:var(--equip)}
+#pid .bottles{animation:belt 1.6s linear infinite}
+#pid .wave{stroke:var(--navy);fill:none;stroke-width:1.4}
+#pid .hot{cursor:pointer}
+#pid .halo{fill:transparent;stroke:var(--navy);stroke-width:1.5;stroke-dasharray:5 4;rx:6}
+#pid .hot:hover .halo,#pid .hot:focus .halo{fill:var(--green-soft);stroke-dasharray:none}
+#pid .hot.done .halo{stroke:var(--green);stroke-dasharray:none}
+#pid .hot:focus{outline:none}
+#pid .badge{font-size:10px;font-weight:700;fill:var(--navy)}
+#pid .hot.done .badge{fill:var(--green)}
+@keyframes flow{to{stroke-dashoffset:-24}}
+@keyframes belt{from{transform:translateX(0)}to{transform:translateX(40px)}}
+.legend{display:flex;flex-wrap:wrap;gap:1rem;font-size:.82rem;color:var(--muted);margin-top:.5rem}
+.legend span{display:inline-flex;align-items:center;gap:.35rem}
+.legend svg{width:28px;height:10px}
+.wo-list ol{list-style:none;display:grid;gap:.45rem;margin-top:.6rem}
+.wo-item{display:grid;grid-template-columns:auto 1fr;gap:.05rem .6rem;padding:.55rem .65rem;border:1px solid var(--line);border-radius:4px;text-decoration:none;color:var(--ink);background:var(--panel)}
+.wo-item:hover{border-color:var(--navy)}
+.wo-item .n{font-family:var(--cond);font-weight:700;grid-row:span 2;color:var(--navy);font-size:.9rem}
+.wo-item.done .n{color:var(--green)}
+.wo-item .t{font-weight:600;font-size:.92rem;line-height:1.25}
+.wo-item .d{font-size:.8rem;color:var(--muted)}
+.tagstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem;margin-top:1rem}
+.tagv{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:.5rem .7rem}
+.tagv small{display:block;color:var(--muted);font-size:.78rem}
+.tagv b{font-family:var(--cond);font-size:1.35rem;font-variant-numeric:tabular-nums}
+
+/* LOTO */
+.cards{display:grid;gap:.45rem}
+.stepcard{text-align:left;padding:.6rem .75rem;border:1px solid var(--line);border-radius:4px;background:var(--panel2);cursor:pointer;font-size:.93rem;line-height:1.35}
+.stepcard:hover:not(:disabled){border-color:var(--navy)}
+.stepcard:disabled{opacity:.35;cursor:default}
+.seq{display:grid;gap:.4rem;padding-left:1.4rem}
+.seq li{padding:.45rem .5rem;border-bottom:1px solid var(--line);font-size:.93rem;display:flex;gap:.5rem;justify-content:space-between;align-items:flex-start}
+.seq li.empty{list-style:none;margin-left:-1.4rem;color:var(--muted);border:1px dashed var(--line);border-radius:4px}
+.seq .x{border:none;background:none;cursor:pointer;color:var(--muted);font-size:1.1rem;line-height:1;padding:0 .25rem}
+.ds{width:100%;max-width:220px;display:block;margin:0 auto}
+.ds text{font-family:var(--cond);fill:var(--ink);text-anchor:middle}
+#dsHandle{transition:transform .8s cubic-bezier(.5,0,.3,1.2)}
+#dsLock{transition:opacity .4s .7s}
+
+/* Tabs */
+.tabs{display:flex;gap:.25rem;border-bottom:1px solid var(--line);margin-top:1.1rem;flex-wrap:wrap}
+.tab{border:1px solid transparent;border-bottom:none;background:none;padding:.5rem .9rem;cursor:pointer;font-weight:600;border-radius:4px 4px 0 0;color:var(--muted);display:flex;gap:.4rem;align-items:center}
+.tab[aria-selected=true]{background:var(--panel);border-color:var(--line);color:var(--ink);margin-bottom:-1px}
+.tab .ok{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.tab.done .ok{background:var(--green)}
+
+/* Valve */
+.valve-svg{width:100%;max-width:260px;display:block;margin:0 auto}
+.valve-svg text{font-family:var(--cond);fill:var(--ink)}
+.v-body{fill:var(--panel2);stroke:var(--ink);stroke-width:1.5}
+.v-dark{fill:var(--equip)}
+#vMove{transition:none}
+canvas{display:block;width:100%;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
+.trend-legend{display:flex;gap:1rem;font-size:.82rem;color:var(--muted);margin-top:.35rem}
+.trend-legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:.3rem}
+.radio-list{display:grid;gap:.4rem;margin-top:.5rem}
+.radio-list label{display:flex;gap:.55rem;align-items:flex-start;padding:.45rem .6rem;border:1px solid var(--line);border-radius:4px;cursor:pointer;font-size:.93rem;background:var(--panel)}
+.radio-list input{margin-top:.25rem;accent-color:var(--navy)}
+.sigbtns{display:flex;gap:.3rem;flex-wrap:wrap}
+.sigbtns .btn{padding:.3rem .55rem;font-size:.85rem}
+.big-read{font-family:var(--cond);font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* VFD */
+.lcd{background:var(--lcd-bg);color:var(--lcd-ink);border-radius:4px;padding:.7rem .9rem;font-family:var(--cond);font-variant-numeric:tabular-nums;border:2px solid var(--equip)}
+.lcd .hz{font-size:2.6rem;font-weight:700;line-height:1}
+.lcd .st{font-size:1rem;font-weight:700;margin-top:.2rem}
+.lcd .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-top:.5rem;font-size:.95rem}
+.lcd small{display:block;opacity:.75;font-size:.75rem}
+.lcd.fault{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{background:var(--p1);color:#fff}}
+.params{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.6rem;margin:.75rem 0}
+.motor-svg{width:140px;height:140px;display:block}
+.motor-svg .fan{fill:var(--equip)}
+.motor-svg circle{fill:var(--panel2);stroke:var(--ink);stroke-width:2}
+.log{font-family:var(--mono);font-size:.8rem;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:.5rem .6rem;max-height:160px;overflow:auto;list-style:none}
+.log li{padding:.15rem 0;border-bottom:1px dashed var(--line)}
+.log li:last-child{border:none}
+.log .e{color:var(--p1);font-weight:700}
+
+/* Calibration */
+.rig{width:100%;display:block}
+.rig text{font-family:var(--cond);fill:var(--ink)}
+.dmm{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem;margin:.75rem 0}
+table.cal{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+table.cal th,table.cal td{padding:.4rem .5rem;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.cal th{font-family:var(--cond);font-size:.85rem;color:var(--muted);font-weight:600}
+table.cal th:first-child,table.cal td:first-child{text-align:left}
+td.pass{color:var(--green);font-weight:700}
+td.fail{color:var(--p1);font-weight:700}
+tr.near td{background:var(--green-soft)}
+.trim{display:grid;gap:.6rem;margin-top:.6rem}
+.trim[aria-disabled=true]{opacity:.45;pointer-events:none}
+
+/* PLC */
+.opstation{display:grid;grid-template-columns:repeat(2,1fr);gap:.8rem;justify-items:center;padding:1rem;background:var(--panel2);border:1px solid var(--line);border-radius:6px}
+.pb{width:76px;height:76px;border-radius:50%;border:5px solid var(--equip);cursor:pointer;font-family:var(--cond);font-weight:700;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 4px 0 var(--equip)}
+.pb.start{background:#1B8A4C}
+.pb.stop{background:#C0241B;border-radius:50%;width:82px;height:82px}
+.pb.pressed{transform:translateY(3px);box-shadow:0 1px 0 var(--equip)}
+.pb-cap{font-size:.8rem;color:var(--muted);text-align:center;margin-top:.3rem}
+.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem;cursor:pointer}
+.switch input{width:38px;height:20px;accent-color:var(--navy)}
+.lamp{width:56px;height:56px;border-radius:50%;border:4px solid var(--equip);background:var(--panel);margin:0 auto}
+.lamp.on{background:#F2C200;box-shadow:0 0 18px #F2C200}
+#ladder{width:100%;min-width:640px;display:block}
+#ladder text{font-family:var(--cond);fill:var(--ink);text-anchor:middle}
+#ladder .rail-l{stroke:var(--ink);stroke-width:3}
+#ladder .w{stroke:var(--ink);stroke-width:2;fill:none}
+#ladder .w.pf{stroke:var(--green);stroke-width:3.5}
+#ladder .ct{cursor:pointer}
+#ladder .ct .hl{fill:transparent;stroke:transparent}
+#ladder .ct.on .hl,#ladder .coil.on .hl{fill:var(--green-soft);stroke:var(--green)}
+#ladder .ct:hover .hl,#ladder .ct:focus .hl{stroke:var(--navy);stroke-dasharray:3 3}
+#ladder .ct:focus{outline:none}
+#ladder .sym{stroke:var(--ink);stroke-width:2.4;fill:none}
+#ladder .lab{font-size:12px;font-weight:600}
+#ladder .adr{font-size:11px;fill:var(--muted)}
+#ladder .mn{font-size:11px;font-weight:700;fill:var(--navy)}
+table.io{border-collapse:collapse;width:100%;font-size:.88rem}
+table.io td,table.io th{padding:.3rem .4rem;border-bottom:1px solid var(--line);text-align:left}
+table.io th{font-family:var(--cond);color:var(--muted);font-weight:600}
+.bit{font-family:var(--mono);font-weight:700;display:inline-block;min-width:1.4em;text-align:center;border-radius:3px}
+.bit.b1{background:var(--green);color:#fff}
+.bit.b0{background:var(--panel2);color:var(--muted)}
+.checks{list-style:none;display:grid;gap:.3rem;font-size:.92rem}
+.checks li::before{content:"";display:inline-block;width:12px;height:12px;border:2px solid var(--pipe);border-radius:3px;margin-right:.5rem;vertical-align:-1px}
+.checks li.y::before{background:var(--green);border-color:var(--green)}
+.scanbar{display:flex;gap:.25rem;margin-top:.5rem;font-size:.78rem}
+.scanbar span{flex:1;text-align:center;padding:.2rem;border:1px solid var(--line);border-radius:3px;color:var(--muted)}
+.scanbar span.on{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+
+/* HMI */
+.mimic{border-radius:6px;border:1px solid var(--line);overflow:hidden}
+.mimic svg{width:100%;display:block}
+.mimic text{font-family:var(--cond)}
+.mimic.hp{background:var(--panel2)}
+.mimic.hp text{fill:var(--ink)}
+.mimic.hp .m-tank{fill:var(--panel);stroke:var(--muted);stroke-width:1.5}
+.mimic.hp .m-fill{fill:var(--pipe)}
+.mimic.hp .m-pipe{stroke:var(--pipe)}
+.mimic.hp .m-pump{fill:var(--equip);stroke:var(--muted)}
+.mimic.hp .m-band{fill:var(--panel)}
+.mimic.hp .m-ind{fill:var(--line)}
+.mimic.hp .m-ptr{fill:var(--ink)}
+.mimic.hp .m-val{fill:var(--ink);font-weight:700}
+.mimic.hp .m-valve{fill:var(--panel);stroke:var(--ink)}
+.mimic.legacy{background:#06080A}
+.mimic.legacy text{fill:#F5F5F5}
+.mimic.legacy .m-tank{fill:#3A3A3A;stroke:#C8C8C8;stroke-width:3}
+.mimic.legacy .m-fill{fill:#1F6BFF}
+.mimic.legacy .m-pipe{stroke:#C8C8C8}
+.mimic.legacy .m-pump{fill:#18D618;stroke:#fff}
+.mimic.legacy .m-band,.mimic.legacy .m-ind,.mimic.legacy .m-ptr{display:none}
+.mimic.legacy .m-val{fill:#FFE600;font-weight:700}
+.mimic.legacy .m-valve{fill:#FF2B2B;stroke:#fff}
+.mimic .m-alm{display:none}
+.mimic .m-alm.show{display:inline}
+.mimic.legacy .m-alm{display:none!important}
+.prio{display:inline-grid;place-items:center;width:22px;height:22px;font-family:var(--cond);font-weight:700;font-size:.8rem;color:#fff}
+.prio.p1{background:var(--p1)}
+.prio.p2{background:var(--p2);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.prio.p3{background:var(--p3);clip-path:polygon(50% 0,100% 100%,0 100%);padding-top:6px;color:#1D232A}
+.prio.p4{background:var(--p4);border-radius:50%}
+table.alarms{border-collapse:collapse;width:100%;font-size:.9rem}
+table.alarms th{font-family:var(--cond);color:var(--muted);font-weight:600;text-align:left;padding:.35rem .5rem;border-bottom:1px solid var(--line)}
+table.alarms td{padding:.45rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+table.alarms tr.al{cursor:pointer}
+table.alarms tr.al:hover td,table.alarms tr.sel td{background:var(--panel2)}
+table.alarms tr.unack td:nth-child(4){font-weight:700}
+table.alarms tr.res td{color:var(--muted);text-decoration:line-through}
+table.alarms tr.shelved td{color:var(--muted);font-style:italic}
+.empty-note{color:var(--muted);font-size:.92rem;padding:.6rem 0}
+.opts{display:grid;gap:.4rem;margin-top:.5rem}
+.opt{text-align:left;padding:.55rem .7rem;border:1px solid var(--line);border-radius:4px;background:var(--panel2);cursor:pointer;font-size:.92rem;line-height:1.35}
+.opt:hover:not(:disabled){border-color:var(--navy)}
+.opt.right{border-color:var(--green);background:var(--green-soft)}
+.opt.wrong{border-color:var(--p1);opacity:.6}
+.opt:disabled{cursor:default}
+.q{font-weight:600}
+
+/* Protocols */
+.frame{display:flex;flex-wrap:wrap;gap:.3rem;margin:.6rem 0}
+.byte{font-family:var(--mono);font-weight:700;padding:.35rem .45rem;border-radius:3px;border:1px solid var(--line);background:var(--panel2);text-align:center;min-width:2.6em}
+.byte small{display:block;font-family:var(--cond);font-weight:500;font-size:.68rem;color:var(--muted)}
+.byte.addr{border-color:var(--navy)}
+.byte.fc{border-color:var(--p4)}
+.byte.dat{border-color:var(--pipe)}
+.byte.crc{border-color:var(--green)}
+.byte.exc{border-color:var(--p1)}
+.bus-svg{width:100%;display:block}
+.bus-svg text{font-family:var(--cond);fill:var(--ink)}
+#pkt{transition:transform .9s cubic-bezier(.45,0,.55,1)}
+table.map{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+table.map td,table.map th{padding:.35rem .45rem;border-bottom:1px solid var(--line);text-align:left}
+table.map th{font-family:var(--cond);color:var(--muted);font-weight:600}
+pre.out{font-family:var(--mono);font-size:.82rem;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:.6rem .7rem;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.6rem}
+
+/* Vibration */
+.route{display:grid;gap:.4rem}
+.route button{display:flex;justify-content:space-between;gap:.5rem;text-align:left;padding:.55rem .7rem;border:1px solid var(--line);border-radius:4px;background:var(--panel2);cursor:pointer;font-size:.92rem}
+.route button[aria-pressed=true]{border-color:var(--navy);box-shadow:inset 3px 0 0 var(--navy)}
+.route .rs{font-family:var(--cond);color:var(--muted);font-size:.85rem;white-space:nowrap}
+.route .rs.ok{color:var(--green);font-weight:700}
+.readout{font-family:var(--cond);font-size:.95rem;color:var(--muted);margin-top:.35rem;min-height:1.4em;font-variant-numeric:tabular-nums}
+.zones{display:flex;margin-top:.5rem;border-radius:4px;overflow:hidden;font-family:var(--cond);font-size:.8rem;text-align:center}
+.zones span{flex:1;padding:.25rem;background:var(--panel2);color:var(--muted);border-right:1px solid var(--line)}
+.zones span.on{color:#fff;font-weight:700}
+.zones span.on.zA,.zones span.on.zB{background:var(--green)}
+.zones span.on.zC{background:var(--p2)}
+.zones span.on.zD{background:var(--p1)}
+
+/* Tracking */
+#fac{width:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+#fac text{font-family:var(--cond);fill:var(--muted);font-size:13px}
+#fac .zonebox{fill:var(--panel2);stroke:var(--line)}
+#fac .walk{fill:var(--walk);stroke:var(--p3);stroke-dasharray:6 4}
+#fac .rack{fill:var(--line)}
+#fac .anchor{fill:var(--navy)}
+#fac .asset circle{stroke:var(--panel);stroke-width:2}
+#fac .asset text{fill:var(--ink);font-weight:700;font-size:12px}
+#fac .fl circle{fill:var(--equip)}
+#fac .pp circle{fill:var(--p4)}
+#fac .asset.sel circle{stroke:var(--navy);stroke-width:3}
+#fac .ring{fill:none;stroke:var(--navy);stroke-width:1;opacity:.5}
+#fac .gf{fill:rgba(0,71,171,.12);stroke:var(--navy);stroke-width:2;stroke-dasharray:6 3}
+#fac .gf.armed{fill:rgba(207,35,26,.10);stroke:var(--p1)}
+#fac .portal{fill:var(--navy)}
+#fac.drawing{cursor:crosshair}
+.reads{list-style:none;font-family:var(--mono);font-size:.82rem;display:grid;gap:.2rem;margin-top:.5rem}
+.reads li.miss{color:var(--p1);font-weight:700}
+
+/* Architecture */
+.purdue{display:grid;gap:.35rem}
+.band{display:grid;grid-template-columns:150px 1fr;gap:.6rem;align-items:center;min-height:52px;border:1px solid var(--line);border-radius:4px;padding:.4rem .6rem;background:var(--panel);cursor:pointer;text-align:left}
+.band:hover{border-color:var(--navy)}
+.band.dmz{background:repeating-linear-gradient(135deg,var(--panel),var(--panel) 8px,var(--panel2) 8px,var(--panel2) 16px)}
+.band b{font-family:var(--cond);font-size:.98rem;display:block}
+.band small{color:var(--muted);font-size:.78rem;line-height:1.2;display:block}
+.slots{display:flex;flex-wrap:wrap;gap:.35rem}
+.dev{font-size:.85rem;padding:.3rem .6rem;border:1px solid var(--line);border-radius:999px;background:var(--panel2);cursor:pointer;font-weight:600}
+.dev.sel{border-color:var(--navy);background:var(--navy);color:var(--navy-ink)}
+.dev.right{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}
+.dev.wrong{border-color:var(--p1);box-shadow:inset 0 0 0 1px var(--p1)}
+.pool{display:flex;flex-wrap:wrap;gap:.4rem;min-height:44px;padding:.5rem;border:1px dashed var(--line);border-radius:4px}
+.lat{display:grid;gap:.4rem;margin-top:.6rem;font-size:.85rem}
+.lat div{display:grid;grid-template-columns:110px 1fr 70px;gap:.5rem;align-items:center}
+.lat i{display:block;height:10px;border-radius:2px;background:var(--pipe)}
+.lat i.ok{background:var(--green)}
+.lat i.no{background:var(--p1)}
+
+/* Competency */
+.dom{border:1px solid var(--line);border-radius:6px;background:var(--panel);margin-top:.6rem}
+.dom summary{cursor:pointer;padding:.75rem 1rem;display:flex;align-items:center;gap:.8rem;list-style:none}
+.dom summary::-webkit-details-marker{display:none}
+.dom summary h3{margin:0;flex:1}
+.dom summary .pct{font-family:var(--cond);color:var(--muted);font-size:.9rem}
+.dom .body{padding:0 1rem 1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.dom h4{font-family:var(--cond);font-size:.95rem;margin-bottom:.3rem}
+.dom ul{padding-left:1.1rem;font-size:.9rem;display:grid;gap:.25rem}
+.stlink{display:inline-flex;align-items:center;gap:.3rem;font-size:.82rem;padding:.15rem .55rem;border-radius:999px;border:1px solid var(--line);text-decoration:none;color:var(--ink);margin:.15rem .2rem 0 0}
+.stlink.done{border-color:var(--green);color:var(--green);font-weight:600}
+.refs{font-size:.85rem;color:var(--muted);margin-top:1.25rem}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 1.25rem);transform:translate(-50%,150%);background:var(--ink);color:var(--panel);padding:.7rem 1.1rem;border-radius:6px;font-weight:600;transition:transform .35s ease;z-index:50;max-width:92vw}
+.toast.show{transform:translate(-50%,0)}
+
+@media (max-width:1100px){.plant-grid{grid-template-columns:1fr}}
+@media (max-width:820px){
+  .shell{grid-template-columns:1fr}
+  .rail{border-right:none;border-bottom:1px solid var(--line);padding:0;position:sticky;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:15}
+  .rail ul{display:flex;overflow-x:auto;position:static;scrollbar-width:thin}
+  .rail a{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;padding:.6rem .8rem}
+  .rail a.active{border-bottom-color:var(--navy)}
+  .rail .sep{display:none}
+  .shiftmeter{display:none}
+  h1{font-size:1.7rem}
+  .st-head{grid-template-columns:1fr}
+  .ticket{justify-self:start;margin-bottom:.6rem}
+  .band{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){
+  #pid .flow,#pid .bottles,.lcd.fault{animation:none}
+  #dsHandle,#pkt,.toast,.meter i{transition:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#plant" aria-label="Line 2 plant overview">
+    <svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 8a8 8 0 0 1 8 8H9a8 8 0 0 1 8-8z" fill="#0047AB"/><line x1="17" y1="16" x2="17" y2="22" stroke="#0047AB" stroke-width="2"/><path d="M5 18l12 6-12 6zM29 18l-12 6 12 6z" fill="#00A86B"/></svg>
+    <span><span class="brand-title">Line 2 technician shift</span><br><span class="brand-sub">IIoT and actuator field simulator</span></span>
+  </a>
+  <div class="shiftmeter"><span id="woCount">0 of 9 work orders closed</span><div class="meter"><i id="woBar"></i></div></div>
+  <button class="themebtn" id="themeBtn" type="button">☾ Dark mode</button>
+</header>
+
+<div class="shell">
+  <nav class="rail" aria-label="Simulator sections"><ul id="rail"></ul></nav>
+  <main id="main">
+
+<!-- PLANT -->
+<section class="view" id="v-plant">
+  <div class="plant-intro">
+    <div>
+      <h1>Second shift, Line 2 filling</h1>
+      <p>You’re the ICS technician on duty. Every device on this line either turns a control signal into motion or reports what that motion did. Select a device on the diagram, or open a work order, to start.</p>
+    </div>
+  </div>
+  <div class="plant-grid">
+    <figure class="panel">
+      <svg id="pid" viewBox="0 0 920 420" role="img" aria-labelledby="pidT">
+        <title id="pidT">Line 2 process and control diagram. Devices with dashed outlines have open work orders.</title>
+        <defs><clipPath id="tankClip"><path d="M50 216H130V370Q130 385 115 385H65Q50 385 50 370Z"/></clipPath><clipPath id="beltClip"><rect x="650" y="330" width="255" height="40"/></clipPath></defs>
+        <text x="16" y="30" class="zone">Control network</text>
+        <text x="16" y="186" class="zone">Field devices and process</text>
+        <line x1="16" y1="166" x2="904" y2="166" class="divider"/>
+        <line x1="110" y1="64" x2="870" y2="64" class="netline"/>
+        <!-- signal bus -->
+        <path d="M170 136V176M160 176H540M160 176V207M335 176V240M390 176V282M460 176V302M540 176V282" class="sig"/>
+        <!-- process pipes -->
+        <path d="M130 350H226M274 350H440M480 350H580" class="pipe"/>
+        <path d="M130 350H226M274 350H440M480 350H580" class="flow"/>
+        <path d="M390 318V350M540 318V350M130 240H142" class="sig" style="stroke-dasharray:none;stroke:var(--ink)"/>
+        <!-- tank -->
+        <path d="M50 216H130V370Q130 385 115 385H65Q50 385 50 370Z" class="tankwall"/>
+        <rect id="tankFill" x="50" y="270" width="80" height="120" class="tankfill" clip-path="url(#tankClip)"/>
+        <text x="90" y="208" class="tag">T-101</text>
+        <circle cx="160" cy="225" r="18" class="bubble"/><text x="160" y="222" class="bt">LT</text><text x="160" y="234" class="bt">101</text>
+        <text x="160" y="262" class="val" text-anchor="middle" id="tLT">68%</text>
+        <!-- DS-101 -->
+        <g class="hot" data-go="loto" tabindex="0" role="button" aria-label="DS-101 disconnect, work order WO-2101">
+          <title>DS-101 disconnect: lockout/tagout</title>
+          <rect class="halo" x="198" y="180" width="60" height="54"/>
+          <rect x="205" y="196" width="45" height="30" class="box"/>
+          <path d="M213 218L238 206M238 218V214" stroke="var(--ink)" stroke-width="2" fill="none"/>
+          <text x="227" y="191" class="tag" style="font-size:11px">DS-101</text>
+          <text x="252" y="190" class="badge">2101</text>
+        </g>
+        <path d="M250 211H300V240M290 265L266 276" stroke="var(--ink)" stroke-width="1.6" fill="none"/>
+        <!-- VFD -->
+        <g class="hot" data-go="actuators" tabindex="0" role="button" aria-label="VFD-101 drive, work order WO-2102">
+          <title>VFD-101 variable frequency drive</title>
+          <rect class="halo" x="283" y="232" width="70" height="62"/>
+          <rect x="290" y="240" width="56" height="32" class="box"/>
+          <text x="318" y="261" class="tag" style="font-size:12px">VFD-101</text>
+          <text x="318" y="288" class="val" text-anchor="middle" id="tHz">54 Hz</text>
+        </g>
+        <!-- Motor and pump -->
+        <g class="hot" data-go="vibration" tabindex="0" role="button" aria-label="M-101 motor and P-101 pump, work order WO-2107">
+          <title>M-101 motor and P-101 pump: vibration route</title>
+          <rect class="halo" x="216" y="256" width="68" height="146"/>
+          <line x1="250" y1="298" x2="250" y2="326" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="250" cy="280" r="18" class="equip"/><text x="250" y="285" class="equip-text">M</text>
+          <circle cx="250" cy="350" r="24" class="equip"/>
+          <path d="M240 338L264 350L240 362" stroke="var(--panel)" stroke-width="2" fill="none"/>
+          <text x="250" y="392" class="tag">P-101</text>
+          <text x="283" y="270" class="badge" text-anchor="end">2107</text>
+        </g>
+        <!-- PT-104 -->
+        <g class="hot" data-go="calibration" tabindex="0" role="button" aria-label="PT-104 pressure transmitter, work order WO-2103">
+          <title>PT-104 discharge pressure transmitter: calibration</title>
+          <rect class="halo" x="310" y="278" width="102" height="44"/>
+          <circle cx="390" cy="300" r="18" class="bubble"/><text x="390" y="297" class="bt">PT</text><text x="390" y="309" class="bt">104</text>
+          <text x="366" y="304" class="val" text-anchor="end" id="tPT">62 psi</text>
+        </g>
+        <!-- FCV-101 -->
+        <g class="hot" data-go="actuators" tabindex="0" role="button" aria-label="FCV-101 control valve, work order WO-2102">
+          <title>FCV-101 flow control valve</title>
+          <rect class="halo" x="432" y="296" width="56" height="110"/>
+          <path d="M444 318A16 16 0 0 1 476 318Z" class="equip"/>
+          <line x1="460" y1="318" x2="460" y2="350" stroke="var(--ink)" stroke-width="2"/>
+          <path d="M440 338V362L460 350ZM480 338V362L460 350Z" class="box" style="fill:var(--panel)"/>
+          <text x="460" y="378" class="tag" style="font-size:11px">FCV-101</text>
+          <text x="460" y="396" class="val" text-anchor="middle" id="tFCV">64% open</text>
+          <text x="486" y="312" class="badge">2102</text>
+        </g>
+        <!-- FT-101 -->
+        <circle cx="540" cy="300" r="18" class="bubble"/><text x="540" y="297" class="bt">FT</text><text x="540" y="309" class="bt">101</text>
+        <text x="540" y="380" class="val" text-anchor="middle" id="tFT">41 gpm</text>
+        <!-- Filler -->
+        <rect x="580" y="300" width="70" height="80" class="box"/>
+        <text x="615" y="336" class="tag" style="font-size:12px">Filler</text><text x="615" y="352" class="sub">F-201</text>
+        <!-- conveyor -->
+        <rect x="650" y="368" width="255" height="12" rx="6" class="belt"/>
+        <g clip-path="url(#beltClip)"><g class="bottles">
+          <rect x="615" y="348" width="11" height="20" rx="2" class="bottle"/><rect x="655" y="348" width="11" height="20" rx="2" class="bottle"/><rect x="695" y="348" width="11" height="20" rx="2" class="bottle"/><rect x="735" y="348" width="11" height="20" rx="2" class="bottle"/><rect x="775" y="348" width="11" height="20" rx="2" class="bottle"/><rect x="815" y="348" width="11" height="20" rx="2" class="bottle"/><rect x="855" y="348" width="11" height="20" rx="2" class="bottle"/><rect x="895" y="348" width="11" height="20" rx="2" class="bottle"/>
+        </g></g>
+        <!-- RFID portal and dock -->
+        <g class="hot" data-go="tracking" tabindex="0" role="button" aria-label="RD-01 RFID portal and RTLS, work order WO-2108">
+          <title>RD-01 RFID reader and RTLS asset tracking</title>
+          <rect class="halo" x="732" y="292" width="76" height="94"/>
+          <rect x="745" y="314" width="6" height="56" fill="var(--equip)"/><rect x="795" y="314" width="6" height="56" fill="var(--equip)"/><rect x="745" y="310" width="56" height="6" fill="var(--equip)"/>
+          <path d="M760 330q-6 8 0 16M786 330q6 8 0 16M754 326q-10 12 0 24M792 326q10 12 0 24" class="wave"/>
+          <text x="773" y="304" class="tag" style="font-size:11px">RD-01</text>
+          <text x="806" y="300" class="badge">2108</text>
+        </g>
+        <g class="hot" data-go="tracking" tabindex="0" role="button" aria-label="Dock and warehouse RTLS, work order WO-2108">
+          <title>Dock and warehouse: RTLS</title>
+          <rect class="halo" x="794" y="190" width="118" height="96"/>
+          <rect x="800" y="198" width="105" height="80" class="box"/>
+          <text x="852" y="222" class="tag" style="font-size:12px">Dock and</text><text x="852" y="236" class="tag" style="font-size:12px">warehouse</text>
+          <path d="M826 262h22v-10h8l6 10h6v8h-42z" fill="var(--equip)"/><circle cx="832" cy="271" r="4" fill="var(--equip)"/><circle cx="858" cy="271" r="4" fill="var(--equip)"/>
+          <circle cx="890" cy="252" r="9" fill="none" stroke="var(--navy)"/><circle cx="890" cy="252" r="3" fill="var(--navy)"/>
+        </g>
+        <!-- network devices -->
+        <g class="hot" data-go="plc" tabindex="0" role="button" aria-label="PLC-1 controller, work order WO-2104">
+          <title>PLC-1 controller: ladder logic</title>
+          <rect class="halo" x="122" y="74" width="96" height="70"/>
+          <line x1="170" y1="64" x2="170" y2="82" class="netline"/>
+          <rect x="130" y="82" width="80" height="54" class="box"/>
+          <rect x="136" y="88" width="10" height="42" fill="var(--equip)"/><rect x="150" y="88" width="10" height="42" fill="var(--equip)"/><rect x="164" y="88" width="10" height="42" fill="var(--equip)"/>
+          <text x="193" y="108" class="tag" style="font-size:12px">PLC-1</text>
+          <text x="214" y="80" class="badge" text-anchor="end">2104</text>
+        </g>
+        <g class="hot" data-go="hmi" tabindex="0" role="button" aria-label="HMI-1 operator screen, work order WO-2105">
+          <title>HMI-1 operator screen: alarm management</title>
+          <rect class="halo" x="252" y="74" width="96" height="70"/>
+          <line x1="300" y1="64" x2="300" y2="82" class="netline"/>
+          <rect x="262" y="82" width="76" height="44" class="box"/><rect x="268" y="88" width="64" height="32" fill="var(--panel)"/>
+          <rect x="294" y="126" width="12" height="8" fill="var(--ink)"/>
+          <text x="300" y="108" class="tag" style="font-size:12px">HMI-1</text>
+          <text x="344" y="80" class="badge" text-anchor="end">2105</text>
+        </g>
+        <g class="hot" data-go="protocols" tabindex="0" role="button" aria-label="GW-1 protocol gateway, work order WO-2106">
+          <title>GW-1 Modbus-to-MQTT gateway</title>
+          <rect class="halo" x="402" y="74" width="96" height="70"/>
+          <line x1="450" y1="64" x2="450" y2="82" class="netline"/>
+          <rect x="410" y="82" width="80" height="54" class="box"/>
+          <text x="450" y="104" class="tag" style="font-size:12px">GW-1</text><text x="450" y="120" class="sub">Modbus to MQTT</text>
+          <text x="494" y="80" class="badge" text-anchor="end">2106</text>
+        </g>
+        <g class="hot" data-go="architecture" tabindex="0" role="button" aria-label="EDG-1 edge device and enterprise network, work order WO-2109">
+          <title>EDG-1 edge analytics and enterprise connections</title>
+          <rect class="halo" x="552" y="74" width="96" height="70"/>
+          <line x1="600" y1="64" x2="600" y2="82" class="netline"/>
+          <rect x="560" y="82" width="80" height="54" class="box"/>
+          <text x="600" y="104" class="tag" style="font-size:12px">EDG-1</text><text x="600" y="120" class="sub">edge analytics</text>
+          <text x="644" y="80" class="badge" text-anchor="end">2109</text>
+        </g>
+        <rect x="684" y="52" width="24" height="24" fill="var(--p2)" opacity=".85"/><path d="M684 60h24M684 68h24M692 52v8M700 60v8M692 68v8" stroke="var(--panel)" stroke-width="1.5"/>
+        <text x="696" y="94" class="sub">firewall</text>
+        <path d="M770 120a20 20 0 0 1 8-36 26 26 0 0 1 48-6 18 18 0 0 1 30 14 16 16 0 0 1-4 28z" class="box"/>
+        <text x="810" y="110" class="sub">enterprise</text><text x="810" y="122" class="sub">and cloud</text>
+      </svg>
+      <figcaption class="legend">
+        <span><svg viewBox="0 0 28 10"><line x1="0" y1="5" x2="28" y2="5" stroke="var(--pipe)" stroke-width="6"/></svg>Process line</span>
+        <span><svg viewBox="0 0 28 10"><line x1="0" y1="5" x2="28" y2="5" stroke="var(--muted)" stroke-dasharray="6 4" stroke-width="1.5"/></svg>Electrical signal (4–20 mA, discrete)</span>
+        <span><svg viewBox="0 0 28 10"><line x1="0" y1="5" x2="28" y2="5" stroke="var(--navy)" stroke-width="2"/></svg>Industrial Ethernet</span>
+        <span><svg viewBox="0 0 28 10"><rect x="9" y="0" width="10" height="10" fill="var(--equip)"/></svg>Dark fill means running (ISA-101)</span>
+      </figcaption>
+    </figure>
+    <div class="panel wo-list">
+      <h2>Open work orders</h2>
+      <ol id="woList"></ol>
+    </div>
+  </div>
+  <div class="tagstrip" aria-live="off">
+    <div class="tagv"><small>LT-101 tank level</small><b id="sLT">68.0 %</b></div>
+    <div class="tagv"><small>FT-101 flow</small><b id="sFT">41.0 gpm</b></div>
+    <div class="tagv"><small>PT-104 discharge</small><b id="sPT">62.0 psi</b></div>
+    <div class="tagv"><small>VFD-101 output</small><b id="sHz">54.0 Hz</b></div>
+    <div class="tagv"><small>FCV-101 position</small><b id="sFCV">64 %</b></div>
+  </div>
+</section>
+
+<!-- LOTO -->
+<section class="view" id="v-loto" hidden>
+  <div class="st-head" data-st="loto"></div>
+  <div class="lab three">
+    <div class="panel">
+      <h3>Steps you could take</h3>
+      <p class="hint">Click steps in the order you’d perform them. Some of these aren’t energy isolation at all; leave those out.</p>
+      <div id="lotoPool" class="cards"></div>
+    </div>
+    <div class="panel">
+      <h3>Your energy control procedure</h3>
+      <ol id="lotoSeq" class="seq"></ol>
+      <div class="row"><button class="btn primary" id="lotoCheck" type="button">Check procedure</button><button class="btn" id="lotoClear" type="button">Clear</button></div>
+      <div class="fb" id="lotoFb" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <h3>DS-101, 480 VAC disconnect</h3>
+      <svg class="ds" viewBox="0 0 200 250" aria-label="Rotary disconnect switch DS-101">
+        <rect x="25" y="14" width="150" height="222" rx="8" fill="var(--panel2)" stroke="var(--ink)" stroke-width="2"/>
+        <rect x="40" y="26" width="120" height="26" rx="3" fill="#E8C200"/><text x="100" y="44" style="font-size:13px;font-weight:700;fill:#1D232A">DANGER 480 V</text>
+        <circle cx="100" cy="130" r="40" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>
+        <text x="100" y="80" style="font-size:13px;font-weight:700">ON</text>
+        <text x="40" y="134" style="font-size:13px;font-weight:700">OFF</text>
+        <g id="dsHandle" style="transform-origin:100px 130px;transform:rotate(0deg)">
+          <rect x="91" y="88" width="18" height="60" rx="7" fill="var(--equip)"/><circle cx="100" cy="130" r="10" fill="var(--equip)"/>
+        </g>
+        <g id="dsLock" opacity="0">
+          <path d="M50 168a10 10 0 0 1 20 0v10" stroke="var(--ink)" stroke-width="3" fill="none"/>
+          <rect x="44" y="176" width="32" height="26" rx="4" fill="#CF231A"/>
+          <line x1="60" y1="202" x2="60" y2="210" stroke="var(--ink)"/>
+          <rect x="38" y="210" width="44" height="22" rx="2" fill="#F3F4F6" stroke="#CF231A" stroke-width="2"/>
+          <text x="60" y="225" style="font-size:9px;font-weight:700;fill:#CF231A">DO NOT OPERATE</text>
+        </g>
+      </svg>
+      <p class="hint" id="dsCap" style="text-align:center;margin-top:.5rem">Energized. Not safe to work.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ACTUATORS -->
+<section class="view" id="v-actuators" hidden>
+  <div class="st-head" data-st="actuators"></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="tabValve" id="tbValve" type="button"><i class="ok"></i>FCV-101 stroke test</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tabVfd" id="tbVfd" type="button"><i class="ok"></i>VFD-101 trip troubleshooting</button>
+  </div>
+  <div id="tabValve" role="tabpanel" aria-labelledby="tbValve">
+    <div class="lab two">
+      <div class="panel">
+        <h3>Loop calibrator sourcing the positioner</h3>
+        <p class="hint">FCV-101 is bypassed for testing. Drive the signal slowly up and back down through the full range, then watch how actual stem travel follows the command.</p>
+        <label class="f">Output signal <span class="big-read" id="vSigTxt">4.0 mA = 0% command</span>
+          <input type="range" id="vSig" min="4" max="20" step="0.1" value="4"></label>
+        <div class="sigbtns" style="margin-top:.5rem">
+          <button class="btn" data-ma="4" type="button">4 mA</button><button class="btn" data-ma="8" type="button">8</button><button class="btn" data-ma="12" type="button">12</button><button class="btn" data-ma="16" type="button">16</button><button class="btn" data-ma="20" type="button">20 mA</button>
+        </div>
+        <svg class="valve-svg" viewBox="0 0 240 270" aria-label="Control valve with travel indicator">
+          <path d="M50 80Q120 18 190 80Z" class="v-dark"/><rect x="46" y="78" width="148" height="10" rx="2" class="v-body"/>
+          <line x1="88" y1="88" x2="88" y2="176" stroke="var(--ink)" stroke-width="5"/><line x1="152" y1="88" x2="152" y2="176" stroke="var(--ink)" stroke-width="5"/>
+          <g id="vScale">
+            <line x1="160" y1="118" x2="160" y2="152" stroke="var(--ink)"/>
+            <line x1="160" y1="122" x2="170" y2="122" stroke="var(--ink)"/><text x="174" y="126" style="font-size:10px">100%</text>
+            <line x1="160" y1="137" x2="167" y2="137" stroke="var(--ink)"/><text x="174" y="141" style="font-size:10px">50%</text>
+            <line x1="160" y1="152" x2="170" y2="152" stroke="var(--ink)"/><text x="174" y="156" style="font-size:10px">0%</text>
+          </g>
+          <ellipse cx="120" cy="214" rx="62" ry="34" class="v-body"/>
+          <rect x="20" y="198" width="44" height="32" class="v-body"/><rect x="176" y="198" width="44" height="32" class="v-body"/>
+          <path d="M98 214H142" stroke="var(--ink)" stroke-width="2"/>
+          <g id="vMove">
+            <rect x="115" y="88" width="10" height="112" fill="var(--pipe)" stroke="var(--ink)"/>
+            <path d="M104 200h32l-6 14h-20z" class="v-dark"/>
+            <path d="M126 152l10-5v10z" fill="var(--navy)"/>
+          </g>
+          <rect x="4" y="96" width="70" height="40" rx="3" class="v-body"/>
+          <text x="39" y="112" text-anchor="middle" style="font-size:11px">Positioner</text>
+          <text x="39" y="128" text-anchor="middle" style="font-size:13px;font-weight:700;fill:var(--navy)" id="vPosTxt">0.0%</text>
+        </svg>
+      </div>
+      <div class="panel">
+        <h3>Travel trend, last 30 seconds</h3>
+        <canvas id="vTrend" height="220" aria-label="Trend of commanded signal versus actual valve travel"></canvas>
+        <div class="trend-legend"><span><i style="background:var(--navy)"></i>Command (%)</span><span><i style="background:var(--p2)"></i>Actual travel (%)</span></div>
+        <h3 style="margin-top:1rem">What’s wrong with FCV-101?</h3>
+        <div class="radio-list" id="vDiag"></div>
+        <div class="row"><button class="btn primary" id="vCheck" type="button">Submit diagnosis</button><button class="btn" id="vNew" type="button">Load a different valve</button></div>
+        <div class="fb" id="vFb" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+  <div id="tabVfd" role="tabpanel" aria-labelledby="tbVfd" hidden>
+    <div class="lab two">
+      <div class="panel">
+        <h3>VFD-101 keypad</h3>
+        <div class="lcd" id="vfdLcd">
+          <div class="hz"><span id="vfdHz">0.0</span> Hz</div>
+          <div class="st" id="vfdSt">READY</div>
+          <div class="grid3">
+            <div><small>Output</small><span id="vfdA">0.0</span> A</div>
+            <div><small>DC bus</small><span id="vfdV">650</span> V</div>
+            <div><small>Motor</small><span id="vfdRpm">0</span> rpm</div>
+          </div>
+        </div>
+        <div class="params">
+          <label class="f">P1.03 Accel time (s)<input type="number" id="pAcc" min="0.5" max="30" step="0.5" value="2"></label>
+          <label class="f">P1.04 Decel time (s)<input type="number" id="pDec" min="0.5" max="30" step="0.5" value="1.5"></label>
+          <label class="f">Speed setpoint <span id="spTxt">60 Hz</span><input type="range" id="pSp" min="0" max="60" step="1" value="60"></label>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="vfdRun" type="button">Run</button>
+          <button class="btn" id="vfdStop" type="button">Stop</button>
+          <button class="btn" id="vfdReset" type="button">Fault reset</button>
+        </div>
+        <p class="hint">Motor nameplate: 15 hp, 460 V, 20 A full-load, 1,750 rpm. Drive trips on overcurrent at 150% (30 A) and on DC bus overvoltage above 800 V. The pump has a heavy flywheel-like impeller.</p>
+      </div>
+      <div class="panel">
+        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+          <svg class="motor-svg" viewBox="0 0 140 140" aria-label="Motor cooling fan">
+            <circle cx="70" cy="70" r="60"/>
+            <g id="fan" class="fan"><path d="M70 70L66 18Q70 12 74 18Z"/><path d="M70 70L66 18Q70 12 74 18Z" transform="rotate(72 70 70)"/><path d="M70 70L66 18Q70 12 74 18Z" transform="rotate(144 70 70)"/><path d="M70 70L66 18Q70 12 74 18Z" transform="rotate(216 70 70)"/><path d="M70 70L66 18Q70 12 74 18Z" transform="rotate(288 70 70)"/></g>
+            <circle cx="70" cy="70" r="9" style="fill:var(--ink)"/>
+          </svg>
+          <div style="flex:1;min-width:200px">
+            <h3>Your goal</h3>
+            <p style="font-size:.93rem">Run M-101 to 60 Hz and stop it back to 0 Hz in one clean cycle with no trip. When it trips, read the fault code and the drive manual excerpt below, change one parameter, reset, and try again.</p>
+          </div>
+        </div>
+        <h3 style="margin-top:.8rem">Fault history</h3>
+        <ul class="log" id="vfdLog"><li>No faults recorded this shift.</li></ul>
+        <details style="margin-top:.7rem"><summary style="cursor:pointer;font-weight:600">Drive manual: fault codes</summary>
+          <p style="font-size:.9rem;margin-top:.4rem"><b>OC1, overcurrent during acceleration.</b> Output current exceeded 150% of motor FLA while ramping up. Causes: acceleration time too short for the load inertia, mechanical binding, shorted motor lead.</p>
+          <p style="font-size:.9rem;margin-top:.4rem"><b>OV2, DC bus overvoltage during deceleration.</b> The load drove the motor as a generator faster than the drive could dissipate the energy. Fixes: longer deceleration time, a dynamic braking resistor, or coast-to-stop where the process allows it.</p>
+        </details>
+        <div class="fb" id="vfdFb" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CALIBRATION -->
+<section class="view" id="v-calibration" hidden>
+  <div class="st-head" data-st="calibration"></div>
+  <div class="lab two">
+    <div class="panel">
+      <h3>Test rig: hand pump, reference gauge, and PT-104</h3>
+      <svg class="rig" viewBox="0 0 520 210" aria-label="Pressure calibration rig">
+        <rect x="14" y="118" width="74" height="44" rx="4" fill="var(--panel2)" stroke="var(--ink)"/>
+        <line x1="34" y1="118" x2="24" y2="76" stroke="var(--ink)" stroke-width="5" stroke-linecap="round" id="pumpHandle"/>
+        <text x="51" y="182" text-anchor="middle" style="font-size:12px">Hand pump</text>
+        <path d="M88 140H410" stroke="var(--pipe)" stroke-width="6"/>
+        <line x1="190" y1="128" x2="190" y2="140" stroke="var(--pipe)" stroke-width="6"/>
+        <circle cx="190" cy="74" r="56" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>
+        <g id="gTicks"></g>
+        <line id="gNeedle" x1="190" y1="74" x2="190" y2="30" stroke="var(--p1)" stroke-width="2.5" stroke-linecap="round" style="transform-origin:190px 74px"/>
+        <circle cx="190" cy="74" r="4" fill="var(--ink)"/>
+        <text x="190" y="104" text-anchor="middle" style="font-size:10px">psi, 0.05% reference</text>
+        <rect x="372" y="54" width="76" height="64" rx="6" fill="var(--panel2)" stroke="var(--ink)" stroke-width="1.6"/>
+        <text x="410" y="78" text-anchor="middle" style="font-size:13px;font-weight:700">PT-104</text>
+        <text x="410" y="94" text-anchor="middle" style="font-size:10px">0–150 psi</text>
+        <text x="410" y="108" text-anchor="middle" style="font-size:10px">4–20 mA</text>
+        <line x1="410" y1="118" x2="410" y2="140" stroke="var(--pipe)" stroke-width="6"/>
+        <path d="M430 54V30H500V54M390 54V22" stroke="var(--ink)" fill="none"/>
+        <rect x="470" y="54" width="40" height="40" rx="4" fill="var(--equip)"/><text x="490" y="78" text-anchor="middle" style="font-size:10px;fill:var(--panel)">DMM</text>
+        <text x="390" y="16" text-anchor="middle" style="font-size:10px">24 VDC loop</text>
+      </svg>
+      <label class="f" style="margin-top:.4rem">Applied pressure <span class="big-read" id="pTxt">0.0 psi</span>
+        <input type="range" id="pIn" min="0" max="150" step="0.5" value="0"></label>
+      <div class="sigbtns" style="margin-top:.4rem" id="calPts"></div>
+      <div class="dmm">
+        <div class="lcd"><small>DMM in series</small><span class="hz" style="font-size:1.9rem" id="dmmTxt">4.000</span> mA</div>
+        <div class="lcd"><small>PLC-1 sees PT-104 as</small><span class="hz" style="font-size:1.9rem" id="pvTxt">0.0</span> psi</div>
+      </div>
+      <div class="row"><button class="btn primary" id="calRec" type="button">Record reading</button><span class="hint" id="calMode" style="margin:0">Recording: as-found</span></div>
+      <div class="trim" id="trim" aria-disabled="true">
+        <label class="f">Zero trim <span id="zTxt">0.000 mA</span><input type="range" id="zTrim" min="-0.4" max="0.4" step="0.002" value="0"></label>
+        <label class="f">Span trim <span id="sTxt">0.00%</span><input type="range" id="sTrim" min="-5" max="5" step="0.02" value="0"></label>
+        <p class="hint" style="margin:0">Zero at 0 psi first, then span at 150 psi. On this transmitter the two adjustments don’t interact.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Calibration data sheet</h3>
+      <p class="hint">Tolerance ±0.5% of span (±0.080 mA). Error is (measured − expected) ÷ 16 mA × 100.</p>
+      <div class="scroll-x"><table class="cal"><thead><tr><th>Input</th><th>Test psi</th><th>Expected</th><th>As-found</th><th>Error</th><th>As-left</th><th>Error</th></tr></thead><tbody id="calBody"></tbody></table></div>
+      <div class="fb" id="calFb" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLC -->
+<section class="view" id="v-plc" hidden>
+  <div class="st-head" data-st="plc"></div>
+  <div class="lab" style="grid-template-columns:minmax(220px,260px) minmax(0,1fr)">
+    <div class="panel">
+      <h3>Local operator station</h3>
+      <div class="opstation">
+        <div><button class="pb start" id="pbStart" type="button" aria-label="Start pushbutton, press and hold">START</button><div class="pb-cap">Normally open</div></div>
+        <div><button class="pb stop" id="pbStop" type="button" aria-label="Stop pushbutton, press and hold">STOP</button><div class="pb-cap">Normally closed</div></div>
+        <div style="grid-column:span 2;text-align:center"><div class="lamp" id="runLamp"></div><div class="pb-cap">M1 running</div></div>
+      </div>
+      <div style="display:grid;gap:.5rem;margin-top:.8rem">
+        <label class="switch"><input type="checkbox" id="swOL">Overload relay tripped</label>
+        <label class="switch"><input type="checkbox" id="swGuard" checked>Guard door closed</label>
+      </div>
+      <p class="hint" style="margin-top:.7rem">Hold a pushbutton down with the mouse, finger, or Space key; it springs back when released.</p>
+    </div>
+    <div class="panel" style="min-width:0">
+      <h3>PLC-1, routine MAIN, rung 0 (online)</h3>
+      <p class="hint">Green highlight means the instruction is true this scan. Select any contact to toggle it between XIC (examine if closed) and XIO (examine if open).</p>
+      <div class="scroll-x"><svg id="ladder" viewBox="0 0 760 210" aria-label="Ladder logic rung for motor M1"></svg></div>
+      <div class="scanbar" aria-hidden="true"><span id="sc0">Read inputs</span><span id="sc1">Solve logic</span><span id="sc2">Write outputs</span></div>
+      <div class="lab two" style="margin-top:.8rem">
+        <div>
+          <h3>I/O status</h3>
+          <table class="io"><thead><tr><th>Address</th><th>Device</th><th>Bit</th></tr></thead><tbody id="ioBody"></tbody></table>
+        </div>
+        <div>
+          <h3>Prove it works</h3>
+          <ul class="checks" id="plcChecks"></ul>
+          <ul class="log" id="plcLog" style="margin-top:.6rem"><li>Online with PLC-1. Edits are logged.</li></ul>
+        </div>
+      </div>
+      <div class="fb" id="plcFb" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- HMI -->
+<section class="view" id="v-hmi" hidden>
+  <div class="st-head" data-st="hmi"></div>
+  <div class="lab two">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;margin-top:0">
+        <h3 style="margin:0">HMI-1, Line 2 overview</h3>
+        <div class="row" style="margin:0" role="group" aria-label="Display style">
+          <button class="btn" id="styHP" type="button" aria-pressed="true">High-performance</button>
+          <button class="btn" id="styLeg" type="button" aria-pressed="false">Legacy</button>
+        </div>
+      </div>
+      <div class="mimic hp" id="mimic">
+        <svg viewBox="0 0 520 210" aria-label="Line 2 mimic display">
+          <line x1="90" y1="170" x2="200" y2="170" class="m-pipe" stroke-width="6"/><line x1="240" y1="170" x2="360" y2="170" class="m-pipe" stroke-width="6"/><line x1="400" y1="170" x2="500" y2="170" class="m-pipe" stroke-width="6"/>
+          <rect x="30" y="30" width="60" height="150" rx="4" class="m-tank"/>
+          <rect x="31" y="100" width="58" height="79" id="mFill" class="m-fill"/>
+          <rect x="100" y="30" width="12" height="150" class="m-ind"/>
+          <rect x="100" y="52" width="12" height="82" class="m-band"/>
+          <path d="M114 100l10-6v12z" class="m-ptr" id="mPtr"/>
+          <text x="60" y="22" text-anchor="middle" class="m-val" id="mLvl">72.0%</text>
+          <text x="60" y="200" text-anchor="middle" style="font-size:12px">T-101</text>
+          <g class="m-alm" id="mAlmT"><rect x="72" y="8" width="20" height="20" fill="var(--p1)"/><text x="82" y="23" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:13px">1</text></g>
+          <circle cx="220" cy="170" r="20" class="m-pump"/><text x="220" y="204" text-anchor="middle" style="font-size:12px">P-101</text>
+          <text x="220" y="112" text-anchor="middle" style="font-size:12px">M-101 winding</text>
+          <text x="220" y="132" text-anchor="middle" class="m-val" id="mTemp">96 °C</text>
+          <g class="m-alm" id="mAlmM"><path d="M252 104l11 11-11 11-11-11z" fill="var(--p2)"/><text x="252" y="120" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">2</text></g>
+          <path d="M360 158v24l20-12zM400 158v24l-20-12z" class="m-valve"/>
+          <text x="380" y="140" text-anchor="middle" class="m-val" id="mFcv">64%</text>
+          <text x="380" y="204" text-anchor="middle" style="font-size:12px">FCV-101</text>
+          <text x="460" y="140" text-anchor="middle" class="m-val" id="mFlow">41.0 gpm</text>
+          <text x="460" y="204" text-anchor="middle" style="font-size:12px">FT-101</text>
+        </svg>
+      </div>
+      <p class="hint" id="styNote" style="margin-top:.6rem">High-performance style (ISA-101): muted grays, analog indicators with the normal range shown, and color reserved for abnormal conditions, so an alarm stands out the instant it appears.</p>
+      <div class="row"><button class="btn primary" id="hmiStart" type="button">Start shift scenario</button><span class="hint" style="margin:0" id="hmiClock">Scenario idle</span></div>
+    </div>
+    <div class="panel">
+      <h3>Alarm summary</h3>
+      <div class="scroll-x"><table class="alarms"><thead><tr><th>Pri</th><th>Time</th><th>Tag</th><th>Description</th><th>State</th></tr></thead><tbody id="almBody"><tr><td colspan="5" class="empty-note">No active alarms. Start the scenario to begin the shift.</td></tr></tbody></table></div>
+      <div id="almDetail" style="margin-top:.9rem"></div>
+      <div class="fb" id="hmiFb" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROTOCOLS -->
+<section class="view" id="v-protocols" hidden>
+  <div class="st-head" data-st="protocols"></div>
+  <div class="lab two">
+    <div class="panel">
+      <h3>Task 1: build the poll request</h3>
+      <p class="hint">The historian needs LT-101 level and FT-101 flow. They live in holding registers 40001 and 40002 on PLC-1, Modbus slave 3, on the RS-485 trunk to GW-1.</p>
+      <div class="form-grid">
+        <label class="f">Slave address<input type="number" id="mbAddr" min="1" max="247" value="1"></label>
+        <label class="f">Function code<select id="mbFc"><option value="3">03 Read holding registers</option><option value="4">04 Read input registers</option><option value="6">06 Write single register</option></select></label>
+        <label class="f">Start address (on the wire)<input type="number" id="mbStart" min="0" max="65535" value="0"></label>
+        <label class="f"><span id="mbQtyL">Quantity</span><input type="number" id="mbQty" min="0" max="65535" value="1"></label>
+      </div>
+      <h3 style="margin-top:.8rem">Request frame (RTU)</h3>
+      <div class="frame" id="mbReq"></div>
+      <svg class="bus-svg" viewBox="0 0 600 110" aria-label="RS-485 bus between GW-1 and PLC-1">
+        <rect x="10" y="30" width="110" height="50" rx="4" fill="var(--panel2)" stroke="var(--ink)"/><text x="65" y="60" text-anchor="middle" style="font-size:14px;font-weight:700">GW-1</text>
+        <rect x="480" y="30" width="110" height="50" rx="4" fill="var(--panel2)" stroke="var(--ink)"/><text x="535" y="52" text-anchor="middle" style="font-size:14px;font-weight:700">PLC-1</text><text x="535" y="68" text-anchor="middle" style="font-size:11px">slave 3</text>
+        <line x1="120" y1="50" x2="480" y2="50" stroke="var(--ink)" stroke-width="2"/><line x1="120" y1="60" x2="480" y2="60" stroke="var(--ink)" stroke-width="2"/>
+        <text x="300" y="94" text-anchor="middle" style="font-size:11px">RS-485, 19,200 baud, 8E1</text>
+        <g id="pkt" style="transform:translateX(0)"><rect x="122" y="40" width="40" height="30" rx="4" fill="var(--navy)"/><text x="142" y="60" text-anchor="middle" style="font-size:11px;fill:var(--navy-ink);font-weight:700" id="pktTxt">REQ</text></g>
+      </svg>
+      <div class="row"><button class="btn primary" id="mbSend" type="button">Send on RS-485</button></div>
+      <h3>Response frame</h3>
+      <div class="frame" id="mbResp"><span class="hint">Nothing sent yet.</span></div>
+      <div class="fb" id="mbFb" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <h3>PLC-1 Modbus register map</h3>
+      <div class="scroll-x"><table class="map"><thead><tr><th>Register</th><th>Wire offset</th><th>Tag</th><th>Raw</th><th>Scaling</th></tr></thead><tbody id="mbMap"></tbody></table></div>
+      <h3 style="margin-top:1rem">What GW-1 publishes</h3>
+      <pre class="out" id="mbPub">Waiting for a good poll.</pre>
+      <h3 style="margin-top:1rem">Task 2: review the gateway security log</h3>
+      <pre class="out">02:14:07 GW-1 poll  10.20.1.10 → slave 3  FC03 40001 qty 2  OK
+02:14:08 GW-1 poll  10.20.1.10 → slave 3  FC03 40001 qty 2  OK
+02:14:09 GW-1 pass  10.20.5.77 → slave 3  FC06 40003 = 0x0258  OK
+02:14:09 PLC-1      M-101 speed reference changed 54.0 → 60.0 Hz</pre>
+      <div id="mbSec"></div>
+    </div>
+  </div>
+</section>
+
+<!-- VIBRATION -->
+<section class="view" id="v-vibration" hidden>
+  <div class="st-head" data-st="vibration"></div>
+  <div class="lab" style="grid-template-columns:minmax(220px,280px) minmax(0,1fr)">
+    <div class="panel">
+      <h3>Route LN2-VIB</h3>
+      <div class="route" id="route"></div>
+      <p class="hint" style="margin-top:.8rem">All points: running speed 1,780 rpm, so 1× = 29.7 Hz. Velocity in mm/s RMS.</p>
+    </div>
+    <div class="panel" style="min-width:0">
+      <div class="row" style="justify-content:space-between;margin-top:0">
+        <h3 style="margin:0" id="vibTitle">Select a route point</h3>
+        <div class="row" style="margin:0"><button class="btn" id="vibCollect" type="button">Collect spectrum</button><label class="switch"><input type="checkbox" id="vibOrders">Show 1×, 2×, 3× markers</label></div>
+      </div>
+      <canvas id="vibCanvas" height="260" aria-label="Velocity spectrum. Move the pointer over it to read frequency and amplitude."></canvas>
+      <div class="readout" id="vibRead">Move across the spectrum to place the cursor.</div>
+      <div class="row" style="justify-content:space-between">
+        <span>Overall: <b class="big-read" id="vibOverall" style="font-size:1.25rem">--</b></span>
+        <span class="hint" style="margin:0">ISO 10816-3, group 2, rigid foundation</span>
+      </div>
+      <div class="zones" id="vibZones"><span class="zA">A ≤1.4</span><span class="zB">B ≤2.8</span><span class="zC">C ≤4.5</span><span class="zD">D &gt;4.5</span></div>
+      <h3 style="margin-top:1rem">Diagnosis</h3>
+      <div class="radio-list" id="vibDiag"></div>
+      <div class="row"><button class="btn primary" id="vibCheck" type="button">Submit diagnosis</button></div>
+      <div class="fb" id="vibFb" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACKING -->
+<section class="view" id="v-tracking" hidden>
+  <div class="st-head" data-st="tracking"></div>
+  <div class="lab" style="grid-template-columns:minmax(0,1fr) minmax(260px,330px)">
+    <div class="panel" style="min-width:0">
+      <div class="row" style="justify-content:space-between;margin-top:0">
+        <h3 style="margin:0">UWB RTLS, Building 2 floor</h3>
+        <div class="row" style="margin:0"><button class="btn primary" id="gfDraw" type="button">Draw geofence</button><button class="btn" id="gfClear" type="button">Clear</button></div>
+      </div>
+      <p class="hint">Select an asset to see the anchor ranges used to locate it. To create a geofence, choose Draw geofence and drag a rectangle over the area forklifts must slow down in.</p>
+      <svg id="fac" viewBox="0 0 800 420" aria-label="Facility floor map with live asset positions">
+        <rect x="10" y="10" width="400" height="235" class="zonebox"/><text x="20" y="30">Production</text>
+        <rect x="430" y="10" width="360" height="235" class="zonebox"/><text x="440" y="30">Storage racks</text>
+        <rect x="470" y="50" width="280" height="14" class="rack"/><rect x="470" y="100" width="280" height="14" class="rack"/><rect x="470" y="150" width="280" height="14" class="rack"/>
+        <rect x="10" y="255" width="780" height="40" class="walk"/><text x="20" y="280" style="fill:var(--p3);font-weight:700">Pedestrian walkway</text>
+        <rect x="10" y="305" width="400" height="105" class="zonebox"/><text x="20" y="325">Staging</text>
+        <rect x="430" y="305" width="360" height="105" class="zonebox"/><text x="440" y="325">Shipping dock</text>
+        <rect x="480" y="404" width="50" height="6" fill="var(--equip)"/><rect x="585" y="404" width="50" height="6" fill="var(--equip)"/><rect x="690" y="404" width="50" height="6" fill="var(--equip)"/>
+        <rect x="580" y="392" width="5" height="18" class="portal"/><rect x="635" y="392" width="5" height="18" class="portal"/><text x="610" y="388" text-anchor="middle" style="font-size:11px;fill:var(--navy)">RD-01</text>
+        <g id="anchors"></g>
+        <g id="rings"></g>
+        <g id="gfLayer"></g>
+        <g id="assets"></g>
+      </svg>
+    </div>
+    <div class="panel">
+      <h3>RTLS events</h3>
+      <ul class="log" id="rtlsLog"><li>RTLS engine online. 3 tags reporting at 10 Hz.</li></ul>
+      <div class="fb" id="gfFb" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="lab two">
+    <div class="panel">
+      <h3>Dock door 2 RFID portal</h3>
+      <p class="hint">Shipment SH-88 should leave with six pallets. Run it through the portal and compare reads to the manifest.</p>
+      <div class="row"><button class="btn primary" id="portalRun" type="button">Run SH-88 through the portal</button></div>
+      <ul class="reads" id="reads"></ul>
+      <div id="portalQ" style="margin-top:.6rem"></div>
+    </div>
+    <div class="panel">
+      <h3>Pick the right technology</h3>
+      <div id="techQ"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="view" id="v-architecture" hidden>
+  <div class="st-head" data-st="architecture"></div>
+  <div class="lab" style="grid-template-columns:minmax(0,1fr) minmax(260px,340px)">
+    <div class="panel" style="min-width:0">
+      <h3>Purdue reference model, Line 2</h3>
+      <p class="hint">Select a device, then select the level where it belongs. Select a placed device to move it again.</p>
+      <div class="pool" id="devPool" aria-label="Unplaced devices"></div>
+      <div class="purdue" id="purdue" style="margin-top:.7rem"></div>
+      <div class="row"><button class="btn primary" id="archCheck" type="button">Check placement</button></div>
+      <div class="fb" id="archFb" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <h3>Where does the trip logic run?</h3>
+      <p class="hint">The T-101 high-high level trip must close the inlet within 100 ms of the switch actuating.</p>
+      <div class="lat">
+        <div><span>PLC-1 scan</span><i class="ok" style="width:8%"></i><span>~10 ms</span></div>
+        <div><span>EDG-1 edge</span><i style="width:30%"></i><span>15–40 ms</span></div>
+        <div><span>Cloud round trip</span><i class="no" style="width:100%"></i><span>80–400 ms</span></div>
+      </div>
+      <div id="latQ" style="margin-top:.8rem"></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPETENCIES -->
+<section class="view" id="v-competencies" hidden>
+  <h1>ICS technician competency map</h1>
+  <p style="color:var(--muted);margin-top:.4rem">The knowledge, skills, and observable competencies this shift practices, grouped by domain. Each domain lists the work orders where students demonstrate it; closed work orders show in green.</p>
+  <div id="compList"></div>
+  <p class="refs">Aligned to: ISA Certified Control Systems Technician (CCST) domains; NICE Workforce Framework OT-related work roles; ISA/IEC 62443 (zones and conduits); OSHA 29 CFR 1910.147 and NFPA 70E; ISA-18.2 alarm management; ISA-101 HMI design; ISO 10816-3 and ISO 20816 vibration severity; Modbus Application Protocol v1.1b3.</p>
+  <div class="row" style="margin-top:1rem"><button class="btn" id="resetAll" type="button">Reset all progress</button></div>
+</section>
+
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const STORE='iiotsim-progress-v1', THEMEKEY='iiotsim-theme';
+let S={done:{}};
+try{const raw=localStorage.getItem(STORE); if(raw){const p=JSON.parse(raw); if(p&&p.done) S=p;}}catch(e){}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}}
+function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function say(el,kind,html){el.className='fb '+kind; el.innerHTML=html;}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function hex(n){return n.toString(16).toUpperCase().padStart(2,'0');}
+
+/* Theme: default light */
+let theme='light';
+try{theme=localStorage.getItem(THEMEKEY)||'light';}catch(e){}
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  const b=$('#themeBtn'); b.textContent=t==='dark'?'☀ Light mode':'☾ Dark mode';
+  b.setAttribute('aria-label',t==='dark'?'Switch to light mode':'Switch to dark mode');
+}
+applyTheme(theme);
+$('#themeBtn').addEventListener('click',()=>{theme=theme==='dark'?'light':'dark';applyTheme(theme);try{localStorage.setItem(THEMEKEY,theme);}catch(e){}});
+
+/* Data */
+const DOMAINS={
+ safety:{name:'Safety and energy control',
+  k:['OSHA 29 CFR 1910.147 energy control, including stored energy in drive capacitors and pressurized lines','NFPA 70E shock and arc-flash boundaries and PPE','Management of change (MOC) for logic, setpoint, and alarm edits'],
+  s:['Sequence and apply lockout/tagout with personal locks','Verify absence of voltage with live-dead-live testing','Recognize when a control action is not an isolation'],
+  c:['Places equipment in a verified zero-energy state before work and documents it']},
+ instr:{name:'Instrumentation and calibration',
+  k:['4–20 mA live-zero loops, scaling, and HART basics','Accuracy, tolerance, percent-of-span error, as-found and as-left','Pressure, level, flow, and temperature transmitters'],
+  s:['Run a five-point calibration against a reference standard','Trim zero and span and calculate error','Measure loop current with a DMM in series'],
+  c:['Returns an instrument to service within tolerance with complete records']},
+ actuate:{name:'Actuators and final control elements',
+  k:['Control valve anatomy: actuator, positioner, stem, packing, trim','VFD operation: V/Hz, ramps, fault codes, regenerative energy','Motors, solenoids, and pneumatic cylinders'],
+  s:['Stroke-test a valve and interpret travel versus signal','Tune drive parameters and clear faults from the manual'],
+  c:['Diagnoses final control element faults from trend and fault data instead of swapping parts']},
+ control:{name:'PLC and control logic',
+  k:['PLC scan cycle, I/O addressing, XIC and XIO instructions','Fail-safe wiring of stops and overloads','Seal-in motor control and permissive interlocks'],
+  s:['Read ladder online and trace power flow','Make and test an online edit under MOC'],
+  c:['Restores correct machine behavior and proves every function before handing back to operations']},
+ hmi:{name:'HMI and alarm management',
+  k:['ISA-101 high-performance HMI principles','ISA-18.2 alarm lifecycle: priority, shelving, rationalization, chattering alarms'],
+  s:['Respond to alarms in priority order with alarm response procedures','Identify nuisance alarms and request rationalization'],
+  c:['Keeps operator alarm load manageable without hiding real abnormal conditions']},
+ net:{name:'Industrial networks and protocols',
+  k:['Modbus RTU/TCP, EtherNet/IP, PROFINET, PROFIBUS, RS-485 physical layer','Register maps, function codes, zero-based addressing, CRC','MQTT and OPC UA for IIoT data'],
+  s:['Build and decode Modbus frames','Map field data to MQTT topics and OPC UA nodes with correct scaling'],
+  c:['Commissions a gateway that delivers correct, scaled data to IT systems']},
+ iiot:{name:'IIoT, edge, and asset tracking',
+  k:['Edge versus cloud processing, latency budgets, store-and-forward','RFID bands, tag types, and RF behavior near metal and liquid','RTLS methods: UWB, BLE, trilateration, geofencing'],
+  s:['Configure geofences and alert rules','Troubleshoot missed reads at an RFID portal'],
+  c:['Selects and tunes the tracking or edge technology that fits the use case']},
+ pdm:{name:'Condition monitoring and predictive maintenance',
+  k:['Vibration basics: amplitude, frequency, orders of running speed, FFT','Signatures of imbalance, misalignment, looseness, and bearing defects','ISO 10816/20816 severity zones'],
+  s:['Collect route data and read a spectrum with a cursor and harmonics','Recommend action and priority'],
+  c:['Turns condition data into a planned work order before failure']},
+ sec:{name:'OT cybersecurity',
+  k:['Purdue model and ISA/IEC 62443 zones and conduits','Protocols without authentication and the compensating controls for them','Remote access through a DMZ jump host'],
+  s:['Place assets in the correct level and zone','Recommend allowlisting and protocol-aware filtering'],
+  c:['Spots and escalates suspicious OT traffic and keeps safety functions local']},
+ prof:{name:'Documentation and communication',
+  k:['CMMS work orders, calibration records, and shift handoff','Communicating with operators during abnormal situations'],
+  s:['Record as-found, as-left, and corrective actions','Notify affected personnel before and after work'],
+  c:['Leaves an audit-ready record the next shift can act on']}
+};
+const STATIONS=[
+ {id:'loto',wo:'WO-2101',short:'Lockout/tagout',title:'Lock out the P-101 pump motor',device:'DS-101 disconnect, VFD-101',dom:['safety','prof'],
+  brief:'P-101’s inboard bearing is running hot and maintenance will change it tonight. Before anyone puts hands on the pump, you own the energy control procedure for M-101 and its drive.'},
+ {id:'actuators',wo:'WO-2102',short:'Actuators',title:'Stroke-test FCV-101 and stop the VFD-101 trips',device:'FCV-101 valve, VFD-101 drive',dom:['actuate','instr'],
+  brief:'Operators say FCV-101 won’t hold the flow setpoint, and VFD-101 has tripped on starts and stops all week. Stroke-test the valve to find its fault, then tune the drive so M-101 ramps up and down cleanly.'},
+ {id:'calibration',wo:'WO-2103',short:'Loop calibration',title:'Calibrate pressure transmitter PT-104',device:'PT-104, 0–150 psi, 4–20 mA',dom:['instr','prof'],
+  brief:'PT-104 reads a few psi off the local gauge. Run a five-point as-found check, trim zero and span, and record an as-left within ±0.5% of span.'},
+ {id:'plc',wo:'WO-2104',short:'PLC logic',title:'M-101 won’t start from the local station',device:'PLC-1, rung 0',dom:['control','safety'],
+  brief:'After a panel rewire, M-101 won’t start from the local station, though the field wiring matches the drawing. Find the logic problem, make an online edit, and prove start, seal-in, stop, and overload trip.'},
+ {id:'hmi',wo:'WO-2105',short:'HMI and alarms',title:'Work the alarm flood on HMI-1',device:'HMI-1 alarm summary',dom:['hmi','prof'],
+  brief:'The second-shift operator is buried in alarms. Run the scenario, respond to each alarm using its response guidance, handle the highest priority first, and deal with the nuisance alarm the right way.'},
+ {id:'protocols',wo:'WO-2106',short:'Gateway and protocols',title:'Commission the Modbus-to-MQTT gateway',device:'GW-1, PLC-1 slave 3',dom:['net','sec','iiot'],
+  brief:'The historian team wants tank level and flow published to MQTT. Build the Modbus RTU request GW-1 will poll, check the response, then review a suspicious line in the gateway’s security log.'},
+ {id:'vibration',wo:'WO-2107',short:'Condition monitoring',title:'Run tonight’s vibration route',device:'P-101, M-101, F-201 gearbox',dom:['pdm'],
+  brief:'Three points on tonight’s route. Collect each spectrum, use the cursor and running-speed markers to find the dominant peaks, and diagnose each machine.'},
+ {id:'tracking',wo:'WO-2108',short:'RFID and RTLS',title:'Geofence the walkway and fix the dock portal',device:'UWB RTLS, RD-01 portal',dom:['iiot','safety'],
+  brief:'Forklifts and pedestrians share the main aisle, and shipping says the dock portal keeps missing pallets. Draw an RTLS geofence over the walkway, then troubleshoot the RFID portal.'},
+ {id:'architecture',wo:'WO-2109',short:'Edge and architecture',title:'Place new devices in the plant architecture',device:'EDG-1, cloud broker, jump host',dom:['sec','iiot','net'],
+  brief:'Engineering is adding an edge analytics box, a cloud broker, and a remote-access jump host. Place every Line 2 device in its Purdue level, then decide where time-critical trip logic must run.'}
+];
+const ST=Object.fromEntries(STATIONS.map(s=>[s.id,s]));
+Object.values(DOMAINS).forEach(d=>d.st=[]);
+STATIONS.forEach(s=>s.dom.forEach(d=>DOMAINS[d].st.push(s.id)));
+
+/* Rail, heads, progress */
+function buildRail(){
+  const items=[`<li><a href="#plant" data-view="plant"><span class="dot" style="border-color:var(--navy)"></span>Plant overview</a></li><li class="sep" aria-hidden="true"></li>`]
+   .concat(STATIONS.map(s=>`<li><a href="#${s.id}" data-view="${s.id}" class="${S.done[s.id]?'done':''}"><span class="dot"></span><span class="wo">${s.wo.slice(3)}</span>${s.short}</a></li>`))
+   .concat([`<li class="sep" aria-hidden="true"></li><li><a href="#competencies" data-view="competencies"><span class="dot" style="border-radius:3px"></span>Competency map</a></li>`]);
+  $('#rail').innerHTML=items.join('');
+  $$('#rail a').forEach(a=>a.classList.toggle('active',a.dataset.view===current));
+}
+function buildHeads(){
+  $$('.st-head').forEach(h=>{
+    const s=ST[h.dataset.st], d=!!S.done[s.id];
+    h.innerHTML=`<div class="ticket ${d?'closed':''}"><span>Work order</span><b>${s.wo}</b><span>${d?'Closed':'Open'}</span></div>
+      <div><h1>${s.title}</h1><p>${s.brief}</p><div class="chips">${s.dom.map(k=>`<span class="chip">${DOMAINS[k].name}</span>`).join('')}</div></div>`;
+  });
+}
+function renderWO(){
+  $('#woList').innerHTML=STATIONS.map(s=>`<li><a class="wo-item ${S.done[s.id]?'done':''}" href="#${s.id}"><span class="n">${s.wo}</span><span class="t">${s.title}</span><span class="d">${s.device}. ${S.done[s.id]?'Closed.':'Open.'}</span></a></li>`).join('');
+}
+function renderProgress(){
+  const n=STATIONS.filter(s=>S.done[s.id]).length;
+  $('#woCount').textContent=`${n} of ${STATIONS.length} work orders closed`;
+  $('#woBar').style.width=(n/STATIONS.length*100)+'%';
+  $$('#pid .hot').forEach(g=>g.classList.toggle('done',!!S.done[g.dataset.go]));
+  buildRail(); buildHeads(); renderWO();
+  if(current==='competencies') renderComp();
+}
+let toastT;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200);}
+function complete(id){
+  if(S.done[id]) return;
+  S.done[id]=Date.now(); save(); renderProgress();
+  const n=STATIONS.filter(s=>S.done[s.id]).length;
+  toast(n===STATIONS.length?'All nine work orders closed. Shift complete.':`${ST[id].wo} closed: ${ST[id].short}`);
+}
+
+/* Router */
+const VIEWS=['plant'].concat(STATIONS.map(s=>s.id),['competencies']);
+let current='plant';
+const INIT={}, inited={}, TICKS={};
+function show(name){
+  if(!VIEWS.includes(name)) name='plant';
+  current=name;
+  VIEWS.forEach(v=>{const el=$('#v-'+v); if(el) el.hidden=v!==name;});
+  $$('#rail a').forEach(a=>a.classList.toggle('active',a.dataset.view===name));
+  if(!inited[name]&&INIT[name]){inited[name]=true;INIT[name]();}
+  if(name==='competencies') renderComp();
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+setInterval(()=>{const f=TICKS[current]; if(f) f(0.1);},100);
+
+/* Plant */
+$$('#pid .hot').forEach(g=>{
+  const go=()=>{location.hash='#'+g.dataset.go;};
+  g.addEventListener('click',go);
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+});
+let pt=0;
+TICKS.plant=function(dt){
+  pt+=dt;
+  const lvl=68+4*Math.sin(pt/6), flow=41+1.2*Math.sin(pt/2.3)+Math.random()*.3, psi=62+1.5*Math.sin(pt/3.1+1)+Math.random()*.2, hz=54+.3*Math.sin(pt/4), fcv=64+2*Math.sin(pt/2.3);
+  $('#tankFill').setAttribute('y',(385-1.69*lvl).toFixed(1));
+  $('#tLT').textContent=lvl.toFixed(0)+'%'; $('#sLT').textContent=lvl.toFixed(1)+' %';
+  $('#tFT').textContent=flow.toFixed(0)+' gpm'; $('#sFT').textContent=flow.toFixed(1)+' gpm';
+  $('#tPT').textContent=psi.toFixed(0)+' psi'; $('#sPT').textContent=psi.toFixed(1)+' psi';
+  $('#tHz').textContent=hz.toFixed(0)+' Hz'; $('#sHz').textContent=hz.toFixed(1)+' Hz';
+  $('#tFCV').textContent=fcv.toFixed(0)+'% open'; $('#sFCV').textContent=fcv.toFixed(0)+' %';
+};
+
+/* Generic multiple choice */
+function mcq(box,q,onRight){
+  box.innerHTML=`<p class="q">${q.q}</p><div class="opts">${q.opts.map((o,i)=>`<button class="opt" type="button" data-i="${i}">${o.t}</button>`).join('')}</div><div class="fb" aria-live="polite"></div>`;
+  const fb=box.querySelector('.fb');
+  box.querySelector('.opts').addEventListener('click',e=>{
+    const b=e.target.closest('.opt'); if(!b||b.disabled) return;
+    const o=q.opts[+b.dataset.i];
+    if(o.ok){b.classList.add('right');$$('.opt',box).forEach(x=>x.disabled=true);say(fb,'ok',o.why);if(onRight)onRight();}
+    else{b.classList.add('wrong');b.disabled=true;say(fb,'bad',o.why);}
+  });
+}
+
+/* ---------- LOTO ---------- */
+INIT.loto=function(){
+  const steps=[
+   {id:'s1',ok:true,t:'Identify every energy source: the 480 VAC feed, the VFD-101 DC bus capacitors, and pressure trapped in the pump casing'},
+   {id:'s2',ok:true,t:'Notify the Line 2 operator and everyone affected that P-101 is being locked out'},
+   {id:'s3',ok:true,t:'Shut P-101 down with its normal stop control'},
+   {id:'s4',ok:true,t:'Open disconnect DS-101 and close the suction and discharge isolation valves'},
+   {id:'s5',ok:true,t:'Apply your personal lock and tag to DS-101 and to the valve lockout devices'},
+   {id:'s6',ok:true,t:'Release stored energy: wait out the drive’s labeled discharge time and bleed the casing pressure'},
+   {id:'s7',ok:true,t:'Verify zero energy: try the local start, then test for absence of voltage with a meter proved on a known source (live-dead-live)'},
+   {id:'d1',ok:false,t:'Put PLC-1 in program mode so the motor output can’t turn on',why:'A PLC mode is a control function, not energy isolation. Logic can be changed, forced, or reverted remotely, and the 480 V feed is still live.'},
+   {id:'d2',ok:false,t:'Send a stop command to VFD-101 from the HMI and tag the screen',why:'A drive stop command only removes the run signal. The drive and motor leads remain energized, and the DC bus stays charged.'},
+   {id:'d3',ok:false,t:'Ask the operator to watch the HMI and not restart the pump',why:'That’s an administrative request, not a physical isolation device under your own lock.'}
+  ];
+  const hints=[
+   'You can’t isolate what you haven’t identified. A drive keeps energy on its DC bus after the disconnect opens.',
+   'Affected employees are told before the equipment is shut down, so nobody is surprised by the stop.',
+   'Stop the machine with its normal control first; opening a disconnect under load can damage it and create an arc.',
+   'Isolate every source you identified, electrical and mechanical, before applying locks.',
+   'Locks and tags go on the isolation devices once they’re in the safe position.',
+   'Stored energy is released after isolation and lock application, not before.',
+   'Verification is always the last step before work. Prove your meter works before and after the test.'
+  ];
+  const by=Object.fromEntries(steps.map(s=>[s.id,s]));
+  const correct=['s1','s2','s3','s4','s5','s6','s7'];
+  const order=shuffle(steps.slice());
+  let seq=[];
+  const pool=$('#lotoPool'), list=$('#lotoSeq'), fb=$('#lotoFb');
+  function render(){
+    pool.innerHTML=order.map(s=>`<button class="stepcard" type="button" data-id="${s.id}" ${seq.includes(s.id)?'disabled':''}>${s.t}</button>`).join('');
+    list.innerHTML=seq.length?seq.map((id,i)=>`<li><span>${by[id].t}</span><button class="x" type="button" data-rm="${i}" aria-label="Remove step ${i+1}">×</button></li>`).join(''):'<li class="empty">Select steps on the left to build the procedure.</li>';
+  }
+  function lock(on){
+    $('#dsHandle').style.transform=on?'rotate(-90deg)':'rotate(0deg)';
+    $('#dsLock').setAttribute('opacity',on?'1':'0');
+    $('#dsCap').textContent=on?'Locked out, tagged, and verified at zero energy.':'Energized. Not safe to work.';
+  }
+  pool.addEventListener('click',e=>{const b=e.target.closest('.stepcard');if(!b||b.disabled)return;seq.push(b.dataset.id);render();fb.className='fb';fb.innerHTML='';});
+  list.addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(!b)return;seq.splice(+b.dataset.rm,1);render();});
+  $('#lotoClear').addEventListener('click',()=>{seq=[];render();fb.className='fb';fb.innerHTML='';lock(false);});
+  $('#lotoCheck').addEventListener('click',()=>{
+    const bad=seq.find(id=>!by[id].ok);
+    if(bad) return say(fb,'bad',`Take out “${by[bad].t}.” ${by[bad].why}`);
+    if(seq.length<7) return say(fb,'bad',`Your procedure has ${seq.length} of the 7 required steps. Which energy source, notification, or verification is still missing?`);
+    const i=seq.findIndex((id,k)=>id!==correct[k]);
+    if(i>=0) return say(fb,'bad',`Look again at step ${i+1}. ${hints[i]}`);
+    lock(true);
+    say(fb,'ok','Procedure verified. This sequence follows OSHA 1910.147: prepare, notify, shut down, isolate, lock and tag, release stored energy, verify. Note that two of the three rejected steps involved the control system: software and drive commands never substitute for a lock on an energy-isolating device.');
+    complete('loto');
+  });
+  render(); if(S.done.loto) lock(true);
+};
+
+/* ---------- ACTUATORS ---------- */
+INIT.actuators=function(){
+  const tabs=[['#tbValve','#tabValve'],['#tbVfd','#tabVfd']];
+  tabs.forEach(([t,p])=>$(t).addEventListener('click',()=>{tabs.forEach(([t2,p2])=>{$(t2).setAttribute('aria-selected',t2===t);$(p2).hidden=p2!==p;});}));
+  const sub=S.sub||(S.sub={});
+  function markTabs(){$('#tbValve').classList.toggle('done',!!sub.valve);$('#tbVfd').classList.toggle('done',!!sub.vfd);}
+  function subDone(k){sub[k]=true;save();markTabs();if(sub.valve&&sub.vfd)complete('actuators');}
+  markTabs();
+
+  /* Valve */
+  const FAULTS={
+   span:{t:'Positioner span is off. Travel falls further short of the command as the signal rises. Run the positioner’s auto-calibration and recheck.',
+     why:'The gap between command and travel grows with signal and the stem never reaches 100%. That proportional error is a span (gain) problem in the positioner.'},
+   stiction:{t:'Stiction. The stem sticks, then jumps once enough force builds. Inspect the packing and stem for binding.',
+     why:'Travel holds still while the command changes, then jumps in steps. Stiction like this makes the flow loop hunt around setpoint.'},
+   air:{t:'Insufficient supply air. The valve tracks well at low signal but stalls short of full open. Check the regulator, filter, and supply pressure.',
+     why:'Travel follows the command closely until about 65%, then flattens no matter how high the signal goes. The actuator has run out of force.'},
+   ok:{t:'No fault. The valve tracks the signal within tolerance.',why:''}
+  };
+  let fault, cmd=0, pos=0, stuck=0, minC=100, maxC=0, hist=[];
+  function newValve(){fault=shuffle(['span','stiction','air'])[0];cmd=0;pos=0;stuck=0;minC=100;maxC=0;hist=[];$('#vSig').value=4;sigTxt();
+    $('#vDiag').innerHTML=shuffle(Object.keys(FAULTS)).map(k=>`<label><input type="radio" name="vdiag" value="${k}"><span>${FAULTS[k].t}</span></label>`).join('');
+    say($('#vFb'),'','');}
+  function sigTxt(){const ma=+$('#vSig').value;cmd=(ma-4)/16*100;$('#vSigTxt').textContent=`${ma.toFixed(1)} mA = ${cmd.toFixed(0)}% command`;}
+  $('#vSig').addEventListener('input',sigTxt);
+  $$('[data-ma]').forEach(b=>b.addEventListener('click',()=>{$('#vSig').value=b.dataset.ma;sigTxt();}));
+  $('#vNew').addEventListener('click',newValve);
+  $('#vCheck').addEventListener('click',()=>{
+    const fb=$('#vFb'), pick=$('input[name=vdiag]:checked');
+    if(minC>10||maxC<90) return say(fb,'bad','Stroke the valve through its full range first, from below 10% to above 90% and back. A diagnosis from a partial stroke can miss the fault.');
+    if(!pick) return say(fb,'bad','Choose a diagnosis.');
+    if(pick.value===fault){say(fb,'ok',`Correct. ${FAULTS[fault].why} Select “Load a different valve” to practice the other fault signatures.`);subDone('valve');}
+    else if(pick.value==='ok') say(fb,'bad','Compare the two pens on the trend. A healthy valve keeps actual travel within a percent or two of command across the whole range, in both directions.');
+    else say(fb,'bad',`Not this one. If it were that fault, you’d see this: ${FAULTS[pick.value].why.split('.')[0]}. Look at where and how the orange pen departs from the blue one.`);
+  });
+  newValve();
+
+  /* VFD */
+  let vs='ready', f=0, code='', cycle=null, ang=0, amps=0, vbus=650;
+  const lcd=$('#vfdLcd');
+  $('#pSp').addEventListener('input',()=>{$('#spTxt').textContent=$('#pSp').value+' Hz';});
+  function logF(c){const ul=$('#vfdLog');if(ul.firstElementChild&&!ul.firstElementChild.dataset.e)ul.innerHTML='';
+    const t=new Date().toLocaleTimeString();const li=document.createElement('li');li.dataset.e='1';
+    li.innerHTML=`<span class="e">${c}</span> ${t} at ${f.toFixed(1)} Hz, ${amps.toFixed(1)} A, bus ${vbus.toFixed(0)} V`;ul.prepend(li);}
+  function trip(c){vs='fault';code=c;cycle=null;logF(c);
+    say($('#vfdFb'),'bad',c==='OC1'?`Tripped on OC1 at ${f.toFixed(0)} Hz. The drive tried to accelerate the heavy impeller faster than 150% current allows. Which parameter controls how hard it pushes?`:`Tripped on OV2 while slowing down. The spinning pump fed energy back into the drive faster than the DC bus could absorb it. Which parameter controls how fast it slows?`);}
+  $('#vfdRun').addEventListener('click',()=>{
+    if(vs==='fault') return say($('#vfdFb'),'bad','The drive is faulted. Read the code, change a parameter if needed, then press Fault reset.');
+    if(vs==='ready'&&f<0.5){cycle={reached:false,sp:+$('#pSp').value};}
+    vs='run';
+  });
+  $('#vfdStop').addEventListener('click',()=>{if(vs==='run')vs='stopping';});
+  $('#vfdReset').addEventListener('click',()=>{if(vs==='fault'){vs=f>0.5?'coast':'ready';code='';say($('#vfdFb'),'info','Fault cleared. The drive is ready.');}});
+  TICKS.actuators=function(dt){
+    /* valve dynamics */
+    let target;
+    if(fault==='span') target=cmd*0.82;
+    else if(fault==='air') target=Math.min(cmd,64+Math.random()*0.6);
+    else if(fault==='stiction'){if(Math.abs(cmd-stuck)>7) stuck=cmd; target=stuck;}
+    else target=cmd;
+    pos+=(target-pos)*(fault==='stiction'?0.55:0.18);
+    minC=Math.min(minC,cmd); maxC=Math.max(maxC,cmd);
+    hist.push([cmd,pos]); if(hist.length>300) hist.shift();
+    $('#vMove').setAttribute('transform',`translate(0 ${(-0.3*pos).toFixed(2)})`);
+    $('#vPosTxt').textContent=pos.toFixed(1)+'%';
+    drawTrend();
+    /* drive dynamics */
+    const acc=clamp(+$('#pAcc').value||2,0.5,30), dec=clamp(+$('#pDec').value||1.5,0.5,30), sp=+$('#pSp').value;
+    let accel=0, decel=0;
+    if(vs==='run'){ if(f<sp){accel=60/acc; f=Math.min(sp,f+accel*dt);} else if(f>sp){decel=60/dec; f=Math.max(sp,f-decel*dt);} }
+    else if(vs==='stopping'){decel=60/dec; f=Math.max(0,f-decel*dt); if(f===0){vs='ready'; if(cycle&&cycle.reached){say($('#vfdFb'),'ok',`Clean cycle: 0 to 60 Hz and back with no trip. With accel at ${acc}s and decel at ${dec}s, current stayed under 30 A and the DC bus under 800 V. On a real job you’d record the changed parameters in the drive’s change log and the work order.`);subDone('vfd');} cycle=null;}}
+    else if(vs==='fault'||vs==='coast'){f=Math.max(0,f-6*dt); if(vs==='coast'&&f===0) vs='ready';}
+    amps = f>0.2&&(vs==='run'||vs==='stopping') ? 6+10*(f/60)+1.2*accel+Math.random()*0.4 : 0;
+    vbus = 650+(vs==='stopping'||(vs==='run'&&decel)?12*decel:0)+Math.random()*3;
+    if(vs==='run'&&amps>30) trip('OC1');
+    if((vs==='stopping'||vs==='run')&&vbus>800) trip('OV2');
+    if(cycle&&f>=59.5&&cycle.sp>=59.5) cycle.reached=true;
+    const rpm=f>0?f*30-50*(f/60):0;
+    $('#vfdHz').textContent=f.toFixed(1); $('#vfdA').textContent=amps.toFixed(1); $('#vfdV').textContent=vbus.toFixed(0); $('#vfdRpm').textContent=rpm.toFixed(0);
+    $('#vfdSt').textContent=vs==='fault'?'FAULT '+code:vs==='run'?(accel?'ACCEL':decel?'DECEL':'RUN'):vs==='stopping'?'DECEL TO STOP':vs==='coast'?'COASTING':'READY';
+    lcd.classList.toggle('fault',vs==='fault');
+    ang=(ang+f*1.4)%360; $('#fan').setAttribute('transform',`rotate(${ang.toFixed(1)} 70 70)`);
+  };
+  function drawTrend(){
+    const c=$('#vTrend'), ctx=c.getContext&&c.getContext('2d'); if(!ctx) return;
+    const dpr=window.devicePixelRatio||1, w=c.clientWidth||600, h=c.clientHeight||220;
+    if(c.width!==Math.round(w*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);}
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+    const L=34,R=8,T=8,B=20, pw=w-L-R, ph=h-T-B;
+    ctx.strokeStyle=cv('--line'); ctx.fillStyle=cv('--muted'); ctx.font='11px Barlow, sans-serif'; ctx.lineWidth=1;
+    for(let p=0;p<=100;p+=25){const y=T+ph*(1-p/100);ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(w-R,y);ctx.stroke();ctx.fillText(p+'%',2,y+4);}
+    ctx.fillText('−30 s',L,h-4); ctx.fillText('now',w-R-22,h-4);
+    const pen=(idx,col,width,dash)=>{ctx.strokeStyle=col;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();
+      hist.forEach((pt,i)=>{const x=L+pw*(i+300-hist.length)/299,y=T+ph*(1-pt[idx]/100);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();ctx.setLineDash([]);};
+    pen(0,cv('--navy'),2,[6,4]); pen(1,cv('--p2'),2.5,[]);
+  }
+};
+
+/* ---------- CALIBRATION ---------- */
+INIT.calibration=function(){
+  const zeroErr=0.09+Math.random()*0.1, spanGain=1.016+Math.random()*0.012;
+  const PTS=[0,25,50,75,100];
+  const rec={found:{},left:{}};
+  let mode='found', P=0;
+  const ticks=$('#gTicks');
+  let tk='';
+  for(let p=0;p<=150;p+=15){const a=(-135+270*p/150)*Math.PI/180, r1=48, r2=p%50===0?38:42;
+    tk+=`<line x1="${190+r1*Math.sin(a)}" y1="${74-r1*Math.cos(a)}" x2="${190+r2*Math.sin(a)}" y2="${74-r2*Math.cos(a)}" stroke="var(--ink)" stroke-width="${p%50===0?2:1}"/>`;
+    if(p%50===0) tk+=`<text x="${190+30*Math.sin(a)}" y="${78-30*Math.cos(a)}" text-anchor="middle" style="font-size:10px">${p}</text>`;}
+  ticks.innerHTML=tk;
+  $('#calPts').innerHTML=PTS.map(p=>`<button class="btn" type="button" data-pp="${p}">${p}% (${(p*1.5).toFixed(1)} psi)</button>`).join('');
+  $$('[data-pp]').forEach(b=>b.addEventListener('click',()=>{$('#pIn').value=+b.dataset.pp*1.5;}));
+  function mA(p){return 4+zeroErr+(+$('#zTrim').value)+16*(p/150)*spanGain*(1+(+$('#sTrim').value)/100);}
+  function err(m,p){return (m-(4+16*p/100))/16*100;}
+  function nearPt(){return PTS.find(p=>Math.abs(P-p*1.5)<=0.75);}
+  function cell(v,p){if(v===undefined) return '<td>--</td><td>--</td>';const e=err(v,p);return `<td>${v.toFixed(3)}</td><td class="${Math.abs(e)<=0.5?'pass':'fail'}">${e>=0?'+':''}${e.toFixed(2)}%</td>`;}
+  function table(){const n=nearPt();
+    $('#calBody').innerHTML=PTS.map(p=>`<tr class="${n===p?'near':''}"><td>${p}%</td><td>${(p*1.5).toFixed(1)}</td><td>${(4+16*p/100).toFixed(3)}</td>${cell(rec.found[p],p)}${cell(rec.left[p],p)}</tr>`).join('');}
+  $('#zTrim').addEventListener('input',()=>{$('#zTxt').textContent=(+$('#zTrim').value>=0?'+':'')+(+$('#zTrim').value).toFixed(3)+' mA';});
+  $('#sTrim').addEventListener('input',()=>{$('#sTxt').textContent=(+$('#sTrim').value>=0?'+':'')+(+$('#sTrim').value).toFixed(2)+'%';});
+  $('#calRec').addEventListener('click',()=>{
+    const fb=$('#calFb'), p=nearPt();
+    if(p===undefined) return say(fb,'bad','Apply one of the five test pressures first. The reading must be within 0.75 psi of a test point.');
+    rec[mode][p]=+lastMa.toFixed(3); table();
+    const done=PTS.every(q=>rec[mode][q]!==undefined);
+    if(mode==='found'&&done){
+      const worst=Math.max(...PTS.map(q=>Math.abs(err(rec.found[q],q))));
+      mode='left'; $('#calMode').textContent='Recording: as-left'; $('#trim').setAttribute('aria-disabled','false');
+      say(fb,worst>0.5?'bad':'ok',`As-found complete: worst error ${worst.toFixed(2)}% of span, ${worst>0.5?'out of tolerance':'in tolerance'}. Notice the error at 0% (a zero shift) and how it grows toward 100% (a span error). Apply 0 psi and trim zero until the DMM reads 4.000 mA, then apply 150 psi and trim span to 20.000 mA. Then record all five as-left points.`);
+    } else if(mode==='left'&&done){
+      const worst=Math.max(...PTS.map(q=>Math.abs(err(rec.left[q],q))));
+      if(worst<=0.5){say(fb,'ok',`As-left passes: worst error ${worst.toFixed(2)}% of span. PT-104 is back in service. The data sheet now holds the record an auditor or the next technician needs: as-found, adjustments, as-left, and the reference standard used.`);complete('calibration');}
+      else{PTS.forEach(q=>delete rec.left[q]);table();say(fb,'bad',`As-left still fails (worst ${worst.toFixed(2)}%). The as-left readings were cleared. Re-trim zero at 0 psi and span at 150 psi, then record all five points again.`);}
+    } else say(fb,'info',`Recorded ${p}% (${(p*1.5).toFixed(1)} psi).`);
+  });
+  let lastMa=4;
+  TICKS.calibration=function(){
+    P=+$('#pIn').value;
+    $('#pTxt').textContent=P.toFixed(1)+' psi';
+    $('#gNeedle').style.transform=`rotate(${-135+270*P/150}deg)`;
+    lastMa=mA(P)+(Math.random()-.5)*0.002;
+    $('#dmmTxt').textContent=lastMa.toFixed(3);
+    $('#pvTxt').textContent=((lastMa-4)/16*150).toFixed(1);
+    const n=nearPt(); if(n!==table._n){table._n=n;table();}
+  };
+  table();
+};
+
+/* ---------- PLC ---------- */
+INIT.plc=function(){
+  const phys={start:false,stop:false,ol:false,guard:true};
+  const inst={stop:'XIO',start:'XIC',seal:'XIC',ol:'XIC',guard:'XIC'};
+  const RIGHT={stop:'XIC',start:'XIC',seal:'XIC',ol:'XIC',guard:'XIC'};
+  let M=false, prevM=false, tests={start:false,seal:false,stop:false,ol:false}, scan=0, finished=!!S.done.plc;
+  const bits=()=>({stop:!phys.stop, start:phys.start, ol:!phys.ol, guard:phys.guard, seal:M});
+  const val=(k,b)=>inst[k]==='XIC'?b[k]:!b[k];
+  const ADDR={stop:'I:0/0',start:'I:0/1',ol:'I:0/2',guard:'I:0/3',seal:'O:0/0'};
+  const LAB={stop:'Stop PB',start:'Start PB',ol:'Overload OK',guard:'Guard closed',seal:'M1 seal-in'};
+  const pos={stop:[100,70],start:[240,70],seal:[240,150],ol:[400,70],guard:[500,70]};
+  function contact(k){const [x,y]=pos[k];
+    return `<g class="ct" id="ct-${k}" data-k="${k}" tabindex="0" role="button" aria-label="${LAB[k]}, ${ADDR[k]}">
+      <rect class="hl" x="${x-24}" y="${y-36}" width="48" height="90" rx="4"/>
+      <line class="sym" x1="${x-8}" y1="${y-14}" x2="${x-8}" y2="${y+14}"/><line class="sym" x1="${x+8}" y1="${y-14}" x2="${x+8}" y2="${y+14}"/>
+      <line class="sym" id="sl-${k}" x1="${x-13}" y1="${y+14}" x2="${x+13}" y2="${y-14}"/>
+      <text class="lab" x="${x}" y="${y-22}">${LAB[k]}</text><text class="adr" x="${x}" y="${y+30}">${ADDR[k]}</text><text class="mn" id="mn-${k}" x="${x}" y="${y+44}">XIC</text></g>`;}
+  $('#ladder').innerHTML=`
+    <line class="rail-l" x1="20" y1="20" x2="20" y2="195"/><line class="rail-l" x1="740" y1="20" x2="740" y2="195"/>
+    <path class="w" id="w0" d="M20 70H92"/><path class="w" id="w1" d="M108 70H170"/>
+    <path class="w" id="wTop" d="M170 70H232"/><path class="w" id="wBot" d="M170 70V150H232"/>
+    <path class="w" id="wTopO" d="M248 70H310"/><path class="w" id="wBotO" d="M248 150H310V70"/>
+    <path class="w" id="w2" d="M310 70H392"/><path class="w" id="w3" d="M408 70H492"/><path class="w" id="w4" d="M508 70H606"/><path class="w" id="w5" d="M634 70H740"/>
+    ${['stop','start','seal','ol','guard'].map(contact).join('')}
+    <g class="coil" id="coil"><rect class="hl" x="594" y="34" width="52" height="64" rx="4"/>
+      <path class="sym" d="M612 56Q600 70 612 84M628 56Q640 70 628 84"/><text class="lab" x="620" y="48">M1 contactor</text><text class="adr" x="620" y="104">O:0/0</text></g>`;
+  $$('#ladder .ct').forEach(g=>{
+    const tog=()=>{const k=g.dataset.k; inst[k]=inst[k]==='XIC'?'XIO':'XIC'; tests={start:false,seal:false,stop:false,ol:false};
+      log(`Rung 0 edited: ${LAB[k]} (${ADDR[k]}) changed to ${inst[k]}. Retest required.`); paintChecks();};
+    g.addEventListener('click',tog); g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();}});
+  });
+  function log(m){const ul=$('#plcLog');const li=document.createElement('li');li.textContent=new Date().toLocaleTimeString()+'  '+m;ul.prepend(li);}
+  function hold(btn,key){
+    const on=e=>{e.preventDefault();phys[key]=true;btn.classList.add('pressed');};
+    const off=()=>{phys[key]=false;btn.classList.remove('pressed');};
+    btn.addEventListener('pointerdown',e=>{try{btn.setPointerCapture(e.pointerId);}catch(_){}on(e);});
+    btn.addEventListener('pointerup',off); btn.addEventListener('pointercancel',off); btn.addEventListener('lostpointercapture',off);
+    btn.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter')on(e);});
+    btn.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')off();});
+    btn.addEventListener('blur',off);
+  }
+  hold($('#pbStart'),'start'); hold($('#pbStop'),'stop');
+  $('#swOL').addEventListener('change',e=>{phys.ol=e.target.checked;});
+  $('#swGuard').addEventListener('change',e=>{phys.guard=e.target.checked;});
+  const CHK=[['start','Start PB energizes M1'],['seal','M1 stays on after Start is released (seal-in)'],['stop','Stop PB drops M1 out'],['ol','An overload trip drops M1 out']];
+  function paintChecks(){$('#plcChecks').innerHTML=CHK.map(([k,t])=>`<li class="${tests[k]?'y':''}">${t}</li>`).join('');}
+  paintChecks();
+  TICKS.plc=function(){
+    scan=(scan+1)%3; ['sc0','sc1','sc2'].forEach((id,i)=>$('#'+id).classList.toggle('on',i===scan));
+    const b=bits(), v={}; Object.keys(inst).forEach(k=>v[k]=val(k,b));
+    const branch=v.stop&&(v.start||v.seal);
+    M=branch&&v.ol&&v.guard;
+    if(!prevM&&M&&phys.start) tests.start=true;
+    if(M&&!phys.start&&tests.start) tests.seal=true;
+    if(prevM&&!M&&phys.stop) tests.stop=true;
+    if(prevM&&!M&&phys.ol) tests.ol=true;
+    prevM=M;
+    const pf={w0:true,w1:v.stop,wTop:v.stop,wBot:v.stop,wTopO:v.stop&&v.start,wBotO:v.stop&&v.seal,w2:branch,w3:branch&&v.ol,w4:M,w5:M};
+    Object.entries(pf).forEach(([id,on])=>$('#'+id).classList.toggle('pf',!!on));
+    Object.keys(inst).forEach(k=>{$('#ct-'+k).classList.toggle('on',v[k]);$('#sl-'+k).style.display=inst[k]==='XIO'?'':'none';$('#mn-'+k).textContent=inst[k];});
+    $('#coil').classList.toggle('on',M); $('#runLamp').classList.toggle('on',M);
+    const nb=bits();
+    $('#ioBody').innerHTML=[['stop','Stop PB (NC)'],['start','Start PB (NO)'],['ol','OL relay aux (NC)'],['guard','Guard safety relay'],['seal','M1 contactor coil']].map(([k,n])=>`<tr><td class="mono">${ADDR[k]}</td><td>${n}</td><td><span class="bit ${nb[k]?'b1':'b0'}">${nb[k]?1:0}</span></td></tr>`).join('');
+    paintChecks();
+    const allRight=Object.keys(RIGHT).every(k=>inst[k]===RIGHT[k]);
+    if(!finished&&allRight&&CHK.every(([k])=>tests[k])){finished=true;
+      say($('#plcFb'),'ok','All four functions proven. The fault was an XIO on the Stop button. Because the Stop PB is wired normally closed, its input bit is 1 when nobody is pressing it, so the logic has to examine that bit for 1 (XIC). Wiring stops and overloads NC is deliberate: a cut wire or loose terminal stops the machine instead of preventing a stop. On a live line, this online edit would go through management of change and be documented in the work order.');
+      complete('plc');}
+  };
+};
+
+/* ---------- HMI ---------- */
+INIT.hmi=function(){
+  const mim=$('#mimic');
+  const setSty=hp=>{mim.className='mimic '+(hp?'hp':'legacy');$('#styHP').setAttribute('aria-pressed',hp);$('#styLeg').setAttribute('aria-pressed',!hp);
+    $('#styNote').textContent=hp?'High-performance style (ISA-101): muted grays, analog indicators with the normal range shown, and color reserved for abnormal conditions, so an alarm stands out the instant it appears.':'Legacy style: saturated color everywhere, a green pump and red valve that mean different things on different screens, and no normal range on the tank. Try spotting the high-high level in this view once the scenario runs.';};
+  $('#styHP').addEventListener('click',()=>setSty(true)); $('#styLeg').addEventListener('click',()=>setSty(false));
+  const ALM=[
+   {id:'A1',pri:4,tag:'RD-01',desc:'RFID reader communication loss',chatter:true,at:t=>t>=1,
+    cons:'Pallet reads at dock door 2 drop out. No process or safety impact.',time:'Hours',
+    opts:[{t:'Shelve RD-01 for this shift and open a work order to add an on-delay and inspect the reader cable',ok:true,why:'Right. A chattering alarm trains operators to ignore the alarm list. Shelving is a controlled, time-limited suppression under ISA-18.2, and the work order fixes the cause.'},
+          {t:'Acknowledge it each time it comes back',ok:false,why:'It has already returned more than a dozen times. Acknowledging every repeat buries the operator and hides the alarms that matter.'},
+          {t:'Delete the alarm from the HMI configuration',ok:false,why:'Deleting an alarm outside management of change removes a real diagnostic and breaks the plant’s alarm philosophy.'}]},
+   {id:'A2',pri:3,tag:'PT-104',desc:'Pump discharge pressure high',at:t=>t>=3,
+    cons:'Higher load on P-101 seals if sustained.',time:'30 minutes',
+    opts:[{t:'Confirm against the local gauge and check whether FCV-101 is throttling more than its output calls for',ok:true,why:'Right. High discharge pressure with low flow points downstream, and FCV-101 already had a work order. Verify the measurement, then look at the likely cause.'},
+          {t:'Raise the high-pressure alarm limit so it clears',ok:false,why:'Changing a limit to clear an alarm hides the condition. Limits change only through rationalization and MOC.'},
+          {t:'Stop P-101 immediately',ok:false,why:'Priority 3 means there’s time to investigate. Stopping the pump halts the line for a condition that isn’t dangerous yet.'}]},
+   {id:'A3',pri:2,tag:'FT-101',desc:'Flow below setpoint by more than 10%',at:t=>t>=5,
+    cons:'Filler F-201 starves and rejects underfilled bottles.',time:'10 minutes',
+    opts:[{t:'Compare FCV-101 position feedback with the controller output and dispatch a technician to the valve',ok:true,why:'Right. A gap between output and actual travel is the fingerprint of a sticking or under-supplied valve.'},
+          {t:'Put the flow loop in manual at 100% output',ok:false,why:'Driving the valve wide open in manual removes the controller’s protection and can overpressure the filler.'},
+          {t:'Acknowledge and wait for it to clear',ok:false,why:'Priority 2 calls for action within minutes, not waiting.'}]},
+   {id:'A4',pri:1,tag:'LT-101',desc:'Tank level HIGH-HIGH',at:(t,l)=>l>=95,
+    cons:'T-101 overflows to the containment sump within minutes.',time:'Immediate',
+    opts:[{t:'Stop the inlet transfer and close the inlet valve per the alarm response procedure, then confirm level is falling',ok:true,why:'Right. A priority 1 alarm gets an immediate, defined response, and you confirm it worked.'},
+          {t:'Start P-101 faster to drain the tank',ok:false,why:'Downstream is restricted (see the pressure and flow alarms), so speeding up the pump won’t help and loads the seals further. Remove the inflow.'},
+          {t:'Silence the horn and finish the lower-priority alarms first',ok:false,why:'Highest priority first. This one has the shortest time to consequence.'}]},
+   {id:'A5',pri:2,tag:'M-101',desc:'Motor winding temperature high',at:(t,l,temp)=>temp>=128,
+    cons:'Insulation damage and an unplanned motor failure.',time:'15 minutes',
+    opts:[{t:'Reduce load if the process allows, send a technician to check the cooling fan and air path, and plan a controlled shutdown',ok:true,why:'Right. Removing the cause of heating while preparing a controlled stop beats letting the thermal protection trip the line.'},
+          {t:'Bypass the motor thermal protection to keep running',ok:false,why:'Never bypass protection to stay running. That’s how a hot motor becomes a burned one, or a fire.'},
+          {t:'Ignore it; the drive will trip if it gets too hot',ok:false,why:'Relying on the trip means an unplanned outage. The alarm exists to give you time to act first.'}]}
+  ];
+  let running=false, t=0, lvl=72, temp=96, sel=null, skips=0, first=0, wrong={};
+  const st={};
+  function row(a){const s=st[a.id];
+    const state=s.shelved?'Shelved':s.res?'Resolved':s.chat&&!s.active?'RTN, unack':'Active, unack';
+    return `<tr class="al ${sel===a.id?'sel':''} ${s.res?'res':''} ${s.shelved?'shelved':''} ${!s.res&&!s.shelved?'unack':''}" data-id="${a.id}" tabindex="0">
+      <td><span class="prio p${a.pri}">${a.pri}</span></td><td>${s.time}</td><td>${a.tag}</td><td>${a.desc}${a.chatter&&!s.shelved?` <span class="hint">(×${s.count})</span>`:''}</td><td>${state}</td></tr>`;}
+  function paint(){
+    const list=ALM.filter(a=>st[a.id]).sort((x,y)=>{const sx=st[x.id],sy=st[y.id];const dx=(sx.res||sx.shelved)?1:0,dy=(sy.res||sy.shelved)?1:0;return dx-dy||x.pri-y.pri||sy.n-sx.n;});
+    $('#almBody').innerHTML=list.length?list.map(row).join(''):'<tr><td colspan="5" class="empty-note">No active alarms.</td></tr>';
+  }
+  $('#almBody').addEventListener('click',e=>{const r=e.target.closest('tr.al');if(r)select(r.dataset.id);});
+  $('#almBody').addEventListener('keydown',e=>{const r=e.target.closest('tr.al');if(r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();select(r.dataset.id);}});
+  function select(id){sel=id;paint();const a=ALM.find(x=>x.id===id), s=st[id];
+    const box=$('#almDetail');
+    if(s.res||s.shelved){box.innerHTML=`<p class="hint">${a.tag} is ${s.shelved?'shelved':'resolved'}.</p>`;return;}
+    box.innerHTML=`<div class="panel" style="background:var(--panel2)"><div style="display:flex;gap:.6rem;align-items:center"><span class="prio p${a.pri}">${a.pri}</span><b>${a.tag}: ${a.desc}</b></div>
+      <p style="font-size:.9rem;margin-top:.4rem"><b>Consequence if ignored:</b> ${a.cons}<br><b>Time to respond:</b> ${a.time}</p><div id="almQ"></div></div>`;
+    const q={q:'Your response:',opts:shuffle(a.opts.slice())};
+    mcq($('#almQ'),q,()=>resolve(a));
+    $('#almQ').querySelector('.opts').addEventListener('click',e=>{const b=e.target.closest('.opt');if(b&&b.classList.contains('wrong'))wrong[a.id]=true;});
+  }
+  function resolve(a){const s=st[a.id];
+    const higher=ALM.filter(x=>st[x.id]&&!st[x.id].res&&!st[x.id].shelved&&x.pri<a.pri&&x.id!==a.id);
+    if(higher.length){skips++;say($('#hmiFb'),'bad',`Resolved, but a priority ${higher[0].pri} alarm (${higher[0].tag}) was waiting. Work the alarm list from the highest priority down.`);}
+    else say($('#hmiFb'),'info',`${a.tag} handled.`);
+    if(!wrong[a.id]) first++;
+    if(a.chatter) s.shelved=true; else s.res=true;
+    paint();
+    if(ALM.every(x=>st[x.id]&&(st[x.id].res||st[x.id].shelved))){
+      running=false; $('#hmiStart').disabled=false; $('#hmiStart').textContent='Run the scenario again';
+      say($('#hmiFb'),'ok',`Alarm flood cleared. ${first} of 5 responses right on the first try, ${skips} priority ${skips===1?'skip':'skips'}. ${skips===0&&first>=4?'Strong shift.':'Run it again and aim for zero skips: priority 1 always first.'} Notice that three alarms shared one root cause downstream of P-101, and one was pure noise. That pattern is what alarm rationalization under ISA-18.2 sets out to fix.`);
+      complete('hmi');
+    }
+  }
+  $('#hmiStart').addEventListener('click',()=>{running=true;t=0;lvl=72;temp=96;sel=null;skips=0;first=0;wrong={};Object.keys(st).forEach(k=>delete st[k]);
+    $('#almDetail').innerHTML='';$('#hmiFb').className='fb';$('#hmiFb').innerHTML='';$('#hmiStart').disabled=true;paint();});
+  let n=0;
+  TICKS.hmi=function(dt){
+    if(running){
+      t+=dt;
+      const a4=st.A4; if(a4&&a4.res) lvl=Math.max(70,lvl-1.5*dt); else if(t>2) lvl=Math.min(99,lvl+2.5*dt);
+      const a5=st.A5; if(a5&&a5.res) temp=Math.max(105,temp-3*dt); else if(t>8) temp=Math.min(140,temp+4*dt);
+      let changed=false;
+      ALM.forEach(a=>{
+        if(!st[a.id]&&a.at(t,lvl,temp)){st[a.id]={time:new Date().toLocaleTimeString(),n:n++,count:1,active:true,chat:!!a.chatter};changed=true;}
+        const s=st[a.id];
+        if(s&&a.chatter&&!s.shelved&&Math.floor(t*10)%25===0){s.active=!s.active;if(s.active)s.count++;changed=true;}
+      });
+      if(changed) paint();
+      $('#hmiClock').textContent=`Shift time ${t.toFixed(0)} s`;
+    }
+    $('#mFill').setAttribute('y',(179-1.48*lvl).toFixed(1)); $('#mFill').setAttribute('height',(1.48*lvl).toFixed(1));
+    $('#mPtr').setAttribute('transform',`translate(0 ${(80-1.5*lvl).toFixed(1)})`);
+    $('#mLvl').textContent=lvl.toFixed(1)+'%'; $('#mTemp').textContent=temp.toFixed(0)+' °C';
+    const fcv=running?Math.max(40,64-t*0.8):64; $('#mFcv').textContent=fcv.toFixed(0)+'%';
+    $('#mFlow').textContent=(running?Math.max(30,41-t*0.5):41).toFixed(1)+' gpm';
+    $('#mAlmT').classList.toggle('show',!!(st.A4&&!st.A4.res)); $('#mAlmM').classList.toggle('show',!!(st.A5&&!st.A5.res));
+  };
+};
+
+/* ---------- PROTOCOLS ---------- */
+INIT.protocols=function(){
+  const holding=[734,412,540,640], input=[624];
+  const MAP=[['40001',0,'LT-101 level',()=>holding[0],'÷10 = %'],['40002',1,'FT-101 flow',()=>holding[1],'÷10 = gpm'],['40003',2,'M-101 speed ref',()=>holding[2],'÷10 = Hz'],['40004',3,'FCV-101 position',()=>holding[3],'÷10 = %'],['30001',0,'PT-104 pressure',()=>input[0],'÷10 = psi']];
+  function paintMap(){$('#mbMap').innerHTML=MAP.map(r=>`<tr><td class="mono">${r[0]}</td><td class="mono">${r[1]}</td><td>${r[2]}</td><td class="mono">${r[3]()}</td><td>${r[4]}</td></tr>`).join('');}
+  paintMap();
+  function crc16(bytes){let c=0xFFFF;for(const b of bytes){c^=b;for(let i=0;i<8;i++)c=(c&1)?(c>>>1)^0xA001:c>>>1;}return c;}
+  function withCrc(b){const c=crc16(b);return b.concat([c&0xFF,c>>8]);}
+  function req(){const a=clamp(+$('#mbAddr').value|0,0,255),fc=+$('#mbFc').value,s=clamp(+$('#mbStart').value|0,0,65535),q=clamp(+$('#mbQty').value|0,0,65535);
+    return {a,fc,s,q,bytes:withCrc([a,fc,s>>8,s&0xFF,q>>8,q&0xFF])};}
+  const ROLE=['addr','fc','dat','dat','dat','dat','crc','crc'];
+  function chips(bytes,labels,roles){return bytes.map((b,i)=>`<span class="byte ${roles[i]}">${hex(b)}<small>${labels[i]}</small></span>`).join('');}
+  function paintReq(){const r=req();$('#mbQtyL').textContent=r.fc===6?'Value to write':'Quantity';
+    $('#mbReq').innerHTML=chips(r.bytes,['slave','function','start hi','start lo',r.fc===6?'value hi':'qty hi',r.fc===6?'value lo':'qty lo','CRC lo','CRC hi'],ROLE);}
+  ['#mbAddr','#mbFc','#mbStart','#mbQty'].forEach(s=>$(s).addEventListener('input',paintReq));
+  paintReq();
+  let busy=false, t1=!!(S.sub&&S.sub.mb1), t2=!!(S.sub&&S.sub.mb2);
+  const sub=S.sub||(S.sub={});
+  function check(){if(t1&&t2) complete('protocols');}
+  function respond(r){
+    if(r.a!==3) return {timeout:true};
+    let tbl=r.fc===3?holding:r.fc===4?input:null;
+    if(r.fc===6){ if(r.s>3) return {exc:2}; holding[r.s]=r.q; paintMap(); return {bytes:r.bytes.slice(0,6)}; }
+    if(r.q<1||r.q>125) return {exc:3};
+    if(r.s+r.q>tbl.length) return {exc:2};
+    const data=[]; for(let i=r.s;i<r.s+r.q;i++){data.push(tbl[i]>>8,tbl[i]&0xFF);}
+    return {bytes:[3,r.fc,data.length].concat(data)};
+  }
+  $('#mbSend').addEventListener('click',()=>{
+    if(busy) return; busy=true;
+    const r=req(), fb=$('#mbFb'), pkt=$('#pkt');
+    $('#pktTxt').textContent='REQ'; pkt.style.transform='translateX(316px)';
+    $('#mbResp').innerHTML='<span class="hint">Waiting for response…</span>';
+    setTimeout(()=>{
+      const res=respond(r);
+      if(res.timeout){pkt.style.transition='none';pkt.style.transform='translateX(0)';void pkt.getBoundingClientRect();pkt.style.transition='';busy=false;
+        $('#mbResp').innerHTML='<span class="hint">No response. Timeout after 1,000 ms.</span>';
+        return say(fb,'bad',`Nothing answered at slave address ${r.a}. On a multidrop RS-485 trunk only the device whose address matches replies. PLC-1 is slave 3.`);}
+      let bytes, labels, roles;
+      if(res.exc){bytes=withCrc([3,r.fc|0x80,res.exc]);labels=['slave','exception','code','CRC lo','CRC hi'];roles=['addr','exc','exc','crc','crc'];}
+      else{bytes=withCrc(res.bytes);
+        if(r.fc===6){labels=['slave','function','reg hi','reg lo','value hi','value lo','CRC lo','CRC hi'];roles=ROLE;}
+        else{labels=['slave','function','byte count'];roles=['addr','fc','dat'];for(let i=0;i<res.bytes[2]/2;i++){labels.push(`reg ${i} hi`,`reg ${i} lo`);roles.push('dat','dat');}labels.push('CRC lo','CRC hi');roles.push('crc','crc');}}
+      $('#pktTxt').textContent=res.exc?'EXC':'RSP'; pkt.style.transform='translateX(0)';
+      $('#mbResp').innerHTML=chips(bytes,labels,roles);
+      setTimeout(()=>{busy=false;},900);
+      if(res.exc===2) return say(fb,'bad',`Exception 02, illegal data address: PLC-1 has no register at that offset range. Check the register map. Remember that 40001 is offset 0 on the wire.`);
+      if(res.exc===3) return say(fb,'bad','Exception 03, illegal data value: quantity must be between 1 and 125 registers.');
+      if(r.fc===6) return say(fb,'bad',`You just wrote ${r.q} to holding register ${40001+r.s} on a running PLC. Writes change the process, and this one went through with no authentication. The historian only needs reads; use function 03.`);
+      if(r.fc===4) return say(fb,'info',`Function 04 reads input registers (3xxxx), a separate table. You read PT-104 at ${(input[0]/10).toFixed(1)} psi. Level and flow live in holding registers (4xxxx).`);
+      if(r.s===1) return say(fb,'bad','Off by one. You read 40002 and 40003. Modbus documentation numbers registers from 40001, but the wire address is zero-based, so 40001 is start address 0.');
+      if(r.s===0&&r.q===2){
+        const lvl=holding[0]/10, flw=holding[1]/10, ts=new Date().toISOString();
+        $('#mbPub').textContent=`MQTT  topic: mvcc/plant2/line2/T-101/level   qos 1, retain\n      payload: {"value": ${lvl.toFixed(1)}, "unit": "%", "quality": "good", "ts": "${ts}"}\nMQTT  topic: mvcc/plant2/line2/FT-101/flow\n      payload: {"value": ${flw.toFixed(1)}, "unit": "gpm", "quality": "good", "ts": "${ts}"}\nOPC UA  ns=2;s=Line2.T101.Level = ${lvl.toFixed(1)}  (Good)\n        ns=2;s=Line2.FT101.Flow  = ${flw.toFixed(1)}  (Good)`;
+        say(fb,'ok',`Good poll. Bytes 4–7 of the response carry two 16-bit registers: 0x${hex(holding[0]>>8)}${hex(holding[0]&255)} = ${holding[0]} → ${lvl.toFixed(1)}%, and 0x${hex(holding[1]>>8)}${hex(holding[1]&255)} = ${holding[1]} → ${flw.toFixed(1)} gpm. The gateway applies the ÷10 scaling before publishing, so the historian never sees raw counts.`);
+        if(!t1){t1=true;sub.mb1=true;save();check();}
+        return;
+      }
+      say(fb,'info','Valid read, but not the two registers the historian asked for (40001 and 40002).');
+    },950);
+  });
+  mcq($('#mbSec'),{q:'10.20.5.77 is not the SCADA server (10.20.1.10). What’s the best control to put in place?',opts:shuffle([
+    {t:'Configure GW-1 or an industrial firewall to allow only function codes 03 and 04 from 10.20.1.10, and alert on any write',ok:true,why:'Right. Modbus has no authentication, so protocol-aware allowlisting by source address and function code is the compensating control (ISA/IEC 62443 conduit filtering). Also escalate the event: someone changed a motor speed reference.'},
+    {t:'Change PLC-1’s slave address from 3 to 7',ok:false,why:'That’s obscurity, not security. A scan of 247 addresses finds the new one in seconds.'},
+    {t:'Turn on TLS for the Modbus RTU link',ok:false,why:'Serial Modbus RTU has no TLS option. Modbus/TCP Security exists for Ethernet, but the gap here is that the gateway forwarded a write from an unauthorized host.'},
+    {t:'Block port 443 on the corporate firewall',ok:false,why:'That port isn’t involved. The write came from inside the control network through the gateway.'}])},()=>{if(!t2){t2=true;sub.mb2=true;save();check();}});
+};
+
+/* ---------- VIBRATION ---------- */
+INIT.vibration=function(){
+  const RS=29.67;
+  const DX={
+   imbalance:{t:'Imbalance: dominant 1× peak in the radial direction',peaks:[[1,3.9],[2,0.45],[3,0.18]],
+     why:'Nearly all the energy sits at 1× running speed with small harmonics. Next step: confirm phase, then field-balance the rotor.'},
+   misalign:{t:'Misalignment: high 2× (often with 1×), strong axial vibration',peaks:[[1,1.8],[2,3.2],[3,0.9]],
+     why:'2× is larger than 1×, the classic angular or parallel misalignment pattern. Next step: laser-align the coupling and check for soft foot.'},
+   loose:{t:'Mechanical looseness: long string of running-speed harmonics',peaks:[[0.5,0.5],[1,1.4],[2,1.1],[3,0.9],[4,0.8],[5,0.7],[6,0.6],[7,0.5],[8,0.4],[9,0.35],[10,0.3]],
+     why:'A long series of 1× harmonics (and a ½× peak) is the signature of looseness. Next step: check base bolts, bearing housing fits, and cracked feet.'},
+   bearing:{t:'Rolling-element bearing defect: non-synchronous peaks and harmonics',peaks:[[1,0.8],[3.57,1.2],[7.14,0.8],[10.71,0.5]],
+     why:'The peaks at 3.57× don’t line up with running-speed harmonics. That’s the outer-race defect frequency (BPFO) and its harmonics. The overall level is still in zone B, which is why spectrum analysis catches bearings early. Next step: confirm with envelope (demodulated) analysis and schedule a bearing change.'}
+  };
+  const pts=[{id:'P-101 IB',name:'P-101 pump, inboard bearing, horizontal'},{id:'M-101 OB',name:'M-101 motor, outboard bearing, horizontal'},{id:'F-201 GB',name:'F-201 filler gearbox input, horizontal'}];
+  const kinds=shuffle(Object.keys(DX)).slice(0,3);
+  pts.forEach((p,i)=>{p.dx=kinds[i];p.ok=false;p.spec=null;});
+  const N=800, DF=0.5;
+  function gen(dx){const a=new Float32Array(N);const fl=dx==='bearing'?0.07:0.035;
+    for(let i=0;i<N;i++)a[i]=fl*(0.6+Math.random()*0.8);
+    DX[dx].peaks.forEach(([o,amp])=>{const f0=o*RS;for(let i=0;i<N;i++){const f=i*DF;a[i]+=amp*Math.exp(-((f-f0)**2)/(2*0.9*0.9));}});
+    return a;}
+  let cur=null, reveal=0, hx=-1;
+  function overall(dx){return Math.sqrt(DX[dx].peaks.reduce((s,[,a])=>s+a*a,0)+0.02);}
+  function paintRoute(){$('#route').innerHTML=pts.map((p,i)=>`<button type="button" data-i="${i}" aria-pressed="${cur===p}"><span><b>${p.id}</b><br><span class="hint" style="margin:0">${p.name}</span></span><span class="rs ${p.ok?'ok':''}">${p.ok?'Diagnosed':p.spec?'Collected':'Pending'}</span></button>`).join('');}
+  $('#route').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cur=pts[+b.dataset.i];reveal=cur.spec?N:0;paintRoute();
+    $('#vibTitle').textContent=cur.id+(cur.spec?'':', not collected');$('#vibFb').className='fb';$('#vibFb').innerHTML='';
+    $$('input[name=vdx]').forEach(r=>r.checked=false);paintOverall();draw();});
+  $('#vibDiag').innerHTML=Object.keys(DX).map(k=>`<label><input type="radio" name="vdx" value="${k}"><span>${DX[k].t}</span></label>`).join('');
+  $('#vibCollect').addEventListener('click',()=>{if(!cur)return say($('#vibFb'),'bad','Select a route point first.');if(!cur.spec)cur.spec=gen(cur.dx);reveal=0;$('#vibTitle').textContent=cur.id;paintRoute();});
+  $('#vibOrders').addEventListener('change',draw);
+  function paintOverall(){const z=$$('#vibZones span');z.forEach(s=>s.classList.remove('on'));
+    if(!cur||!cur.spec){$('#vibOverall').textContent='--';return;}
+    const o=overall(cur.dx);$('#vibOverall').textContent=o.toFixed(2)+' mm/s';
+    z[o<=1.4?0:o<=2.8?1:o<=4.5?2:3].classList.add('on');}
+  $('#vibCheck').addEventListener('click',()=>{const fb=$('#vibFb');
+    if(!cur||!cur.spec) return say(fb,'bad','Collect the spectrum for a route point first.');
+    const p=$('input[name=vdx]:checked'); if(!p) return say(fb,'bad','Choose a diagnosis.');
+    if(p.value===cur.dx){cur.ok=true;paintRoute();say(fb,'ok','Correct. '+DX[cur.dx].why);if(pts.every(x=>x.ok))complete('vibration');}
+    else say(fb,'bad','Not quite. Place the cursor on the tallest peaks and read their order (the × value). Do they fall on whole multiples of running speed? Is one order dominant, or is there a long series?');
+  });
+  const c=$('#vibCanvas');
+  c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();hx=e.clientX-r.left;draw();});
+  c.addEventListener('pointerleave',()=>{hx=-1;draw();});
+  function draw(){
+    const ctx=c.getContext&&c.getContext('2d'); if(!ctx) return;
+    const dpr=window.devicePixelRatio||1,w=c.clientWidth||600,h=c.clientHeight||260;
+    if(c.width!==Math.round(w*dpr)){c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);}
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    const L=40,R=10,T=10,B=24,pw=w-L-R,ph=h-T-B,ymax=4.5;
+    ctx.strokeStyle=cv('--line');ctx.fillStyle=cv('--muted');ctx.font='11px Barlow, sans-serif';ctx.lineWidth=1;
+    for(let y=0;y<=4;y++){const yy=T+ph*(1-y/ymax);ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke();ctx.fillText(y.toFixed(0),L-14,yy+4);}
+    for(let f=0;f<=400;f+=50){const x=L+pw*f/400;ctx.fillText(f+' Hz',x-12,h-6);}
+    if($('#vibOrders').checked){ctx.strokeStyle=cv('--p4');ctx.setLineDash([4,4]);for(let o=1;o*RS<400;o++){const x=L+pw*o*RS/400;ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+ph);ctx.stroke();if(o<=6){ctx.fillStyle=cv('--p4');ctx.fillText(o+'×',x+2,T+10);}}ctx.setLineDash([]);}
+    if(!cur||!cur.spec){ctx.fillStyle=cv('--muted');ctx.font='14px Barlow, sans-serif';ctx.fillText(cur?'Select Collect spectrum to acquire data.':'Select a route point to begin.',L+20,T+ph/2);$('#vibRead').textContent='Move across the spectrum to place the cursor.';return;}
+    const n=Math.min(N,Math.floor(reveal));
+    ctx.strokeStyle=cv('--navy');ctx.lineWidth=1.5;ctx.beginPath();
+    for(let i=0;i<n;i++){const x=L+pw*(i*DF)/400,y=T+ph*(1-Math.min(cur.spec[i],ymax)/ymax);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+    if(hx>=L&&hx<=w-R&&n===N){const f=(hx-L)/pw*400,i=clamp(Math.round(f/DF),0,N-1),a=cur.spec[i];
+      ctx.strokeStyle=cv('--p1');ctx.beginPath();ctx.moveTo(hx,T);ctx.lineTo(hx,T+ph);ctx.stroke();
+      $('#vibRead').textContent=`Cursor: ${(i*DF).toFixed(1)} Hz, ${(i*DF/RS).toFixed(2)}× running speed, ${a.toFixed(2)} mm/s`;}
+  }
+  TICKS.vibration=function(){if(cur&&cur.spec&&reveal<N){reveal+=N/10;if(reveal>=N){reveal=N;paintOverall();}draw();}};
+  paintRoute();draw();
+};
+
+/* ---------- TRACKING ---------- */
+INIT.tracking=function(){
+  const svg=$('#fac'), NS='http://www.w3.org/2000/svg';
+  const ANCH=[[14,14],[786,14],[14,406],[786,406],[420,130],[420,350]];
+  $('#anchors').innerHTML=ANCH.map(([x,y])=>`<path class="anchor" d="M${x} ${y-7}l7 12h-14z"/>`).join('');
+  const assets=[
+    {id:'FL-01',cls:'fl',path:[[520,200],[520,340],[700,340],[700,200]],v:60,d:0},
+    {id:'FL-02',cls:'fl',path:[[150,190],[320,190],[320,360],[150,360]],v:55,d:120},
+    {id:'W-07',cls:'pp',path:[[40,275],[760,275]],v:28,d:0,bounce:true}
+  ];
+  assets.forEach(a=>{let L=0;const seg=[];const P=a.bounce?a.path:a.path.concat([a.path[0]]);
+    for(let i=0;i<P.length-1;i++){const l=Math.hypot(P[i+1][0]-P[i][0],P[i+1][1]-P[i][1]);seg.push([P[i],P[i+1],l]);L+=l;}a.seg=seg;a.len=L;a.inside=false;});
+  $('#assets').innerHTML=assets.map(a=>`<g class="asset ${a.cls}" id="as-${a.id}" data-id="${a.id}" tabindex="0" role="button" aria-label="${a.id}"><circle r="9"/><text x="12" y="-10">${a.id}</text></g>`).join('');
+  let selA=null;
+  $$('#assets .asset').forEach(g=>{const f=()=>{selA=selA===g.dataset.id?null:g.dataset.id;$$('#assets .asset').forEach(x=>x.classList.toggle('sel',x.dataset.id===selA));};
+    g.addEventListener('click',e=>{e.stopPropagation();f();});g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f();}});});
+  function posOf(a){let d=a.d;if(a.bounce){const t=d%(2*a.len);d=t>a.len?2*a.len-t:t;}else d=d%a.len;
+    for(const [p,q,l] of a.seg){if(d<=l){const k=d/l;return [p[0]+(q[0]-p[0])*k,p[1]+(q[1]-p[1])*k];}d-=l;}return a.path[0];}
+  function log(m,warn){const ul=$('#rtlsLog');const li=document.createElement('li');li.innerHTML=`${new Date().toLocaleTimeString()} ${warn?'<span class="e">':''}${m}${warn?'</span>':''}`;ul.prepend(li);while(ul.children.length>40)ul.lastChild.remove();}
+  /* geofence */
+  let drawing=false, gf=null, drag=null, armed=false;
+  const WALK={x:10,y:255,w:780,h:40};
+  const sub=S.sub||(S.sub={});
+  function pt(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const m=svg.getScreenCTM();return m?p.matrixTransform(m.inverse()):{x:0,y:0};}
+  function paintGf(){$('#gfLayer').innerHTML=gf?`<rect class="gf ${armed?'armed':''}" x="${gf.x}" y="${gf.y}" width="${gf.w}" height="${gf.h}"/>`+(armed?`<text x="${gf.x+6}" y="${gf.y+14}" style="fill:var(--p1);font-weight:700">Geofence: forklift 5 km/h zone</text>`:''):'';}
+  $('#gfDraw').addEventListener('click',()=>{drawing=true;armed=false;svg.classList.add('drawing');say($('#gfFb'),'info','Drag a rectangle on the map.');});
+  $('#gfClear').addEventListener('click',()=>{gf=null;armed=false;paintGf();});
+  svg.addEventListener('pointerdown',e=>{if(!drawing)return;const p=pt(e);drag={x0:p.x,y0:p.y};try{svg.setPointerCapture(e.pointerId);}catch(_){}});
+  svg.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e);gf={x:Math.min(drag.x0,p.x),y:Math.min(drag.y0,p.y),w:Math.abs(p.x-drag.x0),h:Math.abs(p.y-drag.y0)};paintGf();});
+  svg.addEventListener('pointerup',()=>{if(!drag)return;drag=null;drawing=false;svg.classList.remove('drawing');
+    const fb=$('#gfFb');if(!gf||gf.w<10||gf.h<10){gf=null;paintGf();return say(fb,'bad','That rectangle is too small. Choose Draw geofence and try again.');}
+    const ix=Math.max(0,Math.min(gf.x+gf.w,WALK.x+WALK.w)-Math.max(gf.x,WALK.x)), iy=Math.max(0,Math.min(gf.y+gf.h,WALK.y+WALK.h)-Math.max(gf.y,WALK.y));
+    const cover=ix*iy/(WALK.w*WALK.h), area=gf.w*gf.h/(WALK.w*WALK.h);
+    if(cover<0.7){paintGf();return say(fb,'bad',`This geofence covers only ${(cover*100).toFixed(0)}% of the walkway. Forklifts could cross the uncovered part at full speed. Redraw it over the whole yellow aisle.`);}
+    if(area>2.2){paintGf();return say(fb,'bad','Too big. A geofence that covers most of the floor fires constantly, and drivers learn to ignore it, which is the same alarm-fatigue problem as on the HMI. Keep it tight to the walkway.');}
+    armed=true;paintGf();say(fb,'ok','Geofence armed. Watch the event log as forklifts cross the walkway. In a real system the RTLS engine sends the speed-limit command to the forklift’s controller through an edge gateway, so the response doesn’t depend on a cloud round trip.');
+    log('Geofence “Walkway” created. Rule: forklift → 5 km/h, horn, beacon.');
+    if(!sub.gf){sub.gf=true;save();chk();}
+  });
+  function chk(){if(sub.gf&&sub.portal&&sub.tech)complete('tracking');}
+  TICKS.tracking=function(dt){
+    const P={};
+    assets.forEach(a=>{a.d+=a.v*dt;const [x,y]=posOf(a);P[a.id]=[x,y];$('#as-'+a.id).setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+      if(armed&&gf&&a.cls==='fl'){const inside=x>=gf.x&&x<=gf.x+gf.w&&y>=gf.y&&y<=gf.y+gf.h;
+        if(inside&&!a.inside){const w=P['W-07']||posOf(assets[2]);const dist=Math.hypot(w[0]-x,w[1]-y);
+          log(`${a.id} entered Walkway. Speed limited to 5 km/h.${dist<120?' W-07 is '+(dist/12).toFixed(0)+' m away: proximity warning sent to both tags.':''}`,dist<120);}
+        a.inside=inside;}});
+    if(selA){const [x,y]=P[selA];const near=ANCH.map(a=>[a,Math.hypot(a[0]-x,a[1]-y)]).sort((p,q)=>p[1]-q[1]).slice(0,3);
+      $('#rings').innerHTML=near.map(([a,r])=>`<circle class="ring" cx="${a[0]}" cy="${a[1]}" r="${r.toFixed(1)}"/><line x1="${a[0]}" y1="${a[1]}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--navy)" stroke-dasharray="3 3" opacity=".6"/>`).join('');}
+    else $('#rings').innerHTML='';
+  };
+  /* portal */
+  $('#portalRun').addEventListener('click',()=>{
+    const pal=['P-0414 empty bottles, cartons','P-0415 caps and labels','P-0416 bottled water, plastic wrap','P-0417 cartons','P-0418 shrink film rolls','P-0419 bottled water, steel slip sheet'];
+    const ul=$('#reads');ul.innerHTML='';$('#portalRun').disabled=true;
+    pal.forEach((p,i)=>setTimeout(()=>{const li=document.createElement('li');
+      if(i===5){li.className='miss';li.textContent=`NO READ   ${p}`;}else li.textContent=`EPC 3034F8…${(1040+i).toString(16).toUpperCase()}  RSSI −${52+i*3} dBm  ${p}`;
+      ul.appendChild(li);
+      if(i===5){$('#portalRun').disabled=false;
+        mcq($('#portalQ'),{q:'Manifest says 6 pallets; the portal read 5. What’s the most likely cause and fix?',opts:shuffle([
+         {t:'Water and the steel sheet absorb and detune UHF energy at the tag. Use on-metal or standoff tags on the pallet’s outer face and re-aim the portal antennas',ok:true,why:'Right. Passive UHF tags near liquid and metal lose read range. Tag placement and tag type fix it at the source. Then verify with a read-rate test of 50 passes.'},
+         {t:'RFID needs line of sight like a barcode, so add a barcode scanner',ok:false,why:'RFID doesn’t need line of sight. The problem is RF absorption and detuning near this particular load.'},
+         {t:'Turn every antenna up to maximum power',ok:false,why:'Full power causes stray reads from pallets at the neighboring doors and can exceed regulatory limits. It treats the symptom, not the tag problem.'},
+         {t:'Switch to 125 kHz LF tags',ok:false,why:'LF tags tolerate liquid and metal better but read only a few centimeters away, which is useless for a dock door portal.'}])},
+         ()=>{if(!sub.portal){sub.portal=true;save();chk();}});}
+    },i*450));
+  });
+  mcq($('#techQ'),{q:'Safety wants forklift positions to within about 30 cm, updated several times a second, for collision alerts. Which technology fits?',opts:shuffle([
+    {t:'UWB (ultra-wideband) RTLS with fixed anchors',ok:true,why:'Right. UWB time-of-flight ranging gives 10–30 cm accuracy at high update rates. That’s what this map simulates.'},
+    {t:'BLE beacons',ok:false,why:'BLE signal-strength positioning is cheap and low-power but is typically accurate to 1–3 m. It suits room-level presence, not collision avoidance.'},
+    {t:'Passive UHF RFID',ok:false,why:'Passive UHF tells you a tag passed a reader, not where it is between readers. Good for portals and inventory.'},
+    {t:'GPS trackers',ok:false,why:'GPS doesn’t work reliably indoors under a steel roof.'}])},()=>{if(!sub.tech){sub.tech=true;save();chk();}});
+};
+
+/* ---------- ARCHITECTURE ---------- */
+INIT.architecture=function(){
+  const LV=[
+   ['L5','Level 5','Enterprise network, internet, cloud'],['L4','Level 4','Business planning and logistics (ERP, email)'],
+   ['DMZ','Level 3.5, IT/OT DMZ','Brokered data and access between IT and OT'],['L3','Level 3','Site operations: historian, SCADA servers'],
+   ['L2','Level 2','Area supervisory control: HMIs, engineering workstations'],['L1','Level 1','Basic control: PLCs, safety controllers, drives'],['L0','Level 0','Physical process: sensors and actuators']];
+  const DEV=[
+   {n:'PT-104 transmitter',ok:['L0'],why:'Field instruments sense the process directly: Level 0.'},
+   {n:'FCV-101 control valve',ok:['L0'],why:'Actuators act on the process: Level 0.'},
+   {n:'VFD-101 drive',ok:['L1','L0'],why:'A drive executes control of the motor. Most models put it at Level 1, some at Level 0.'},
+   {n:'PLC-1',ok:['L1'],why:'Controllers that execute logic are Level 1.'},
+   {n:'Safety PLC (SIS)',ok:['L1'],why:'Safety instrumented systems sit at Level 1, in their own zone, as independent from the basic control system as possible.'},
+   {n:'HMI-1',ok:['L2'],why:'Operator interfaces for an area are Level 2.'},
+   {n:'EDG-1 edge analytics',ok:['L2','L3'],why:'Edge devices sit close to the data they process, usually Level 2 or 3, and push results upward through a conduit.'},
+   {n:'Process historian',ok:['L3'],why:'Site-wide data collection is Level 3. A replica in the DMZ serves IT users.'},
+   {n:'RTLS engine server',ok:['L3'],why:'Site operations applications such as RTLS and MES are Level 3.'},
+   {n:'Remote-access jump host',ok:['DMZ'],why:'Vendors and remote staff land in the DMZ and never connect directly into Level 2 or below.'},
+   {n:'Patch and AV mirror',ok:['DMZ'],why:'OT pulls patches from a DMZ staging server; it never browses the internet.'},
+   {n:'ERP system',ok:['L4'],why:'Business planning is Level 4.'},
+   {n:'Cloud MQTT broker',ok:['L5'],why:'Cloud services are outside the plant, at Level 5. Data reaches them outbound through the DMZ.'}];
+  const place={}; let selD=null;
+  function chip(i){const d=DEV[i];return `<button type="button" class="dev ${selD===i?'sel':''} ${d.mark||''}" data-d="${i}">${d.n}</button>`;}
+  function paint(){
+    $('#devPool').innerHTML=DEV.map((d,i)=>place[i]?'':chip(i)).join('')||'<span class="hint" style="margin:0">All devices placed.</span>';
+    $('#purdue').innerHTML=LV.map(([k,t,s])=>`<div class="band ${k==='DMZ'?'dmz':''}" data-l="${k}" role="button" tabindex="0" aria-label="${t}"><div><b>${t}</b><small>${s}</small></div><div class="slots">${DEV.map((d,i)=>place[i]===k?chip(i):'').join('')}</div></div>`).join('');
+  }
+  $('#v-architecture').addEventListener('click',e=>{
+    const c=e.target.closest('.dev');
+    if(c){e.stopPropagation();const i=+c.dataset.d;selD=selD===i?null:i;paint();return;}
+    const b=e.target.closest('.band');
+    if(b&&selD!==null){place[selD]=b.dataset.l;DEV[selD].mark='';selD=null;paint();}
+  });
+  $('#purdue').addEventListener('keydown',e=>{const b=e.target.closest('.band');if(b&&(e.key==='Enter'||e.key===' ')&&selD!==null){e.preventDefault();place[selD]=b.dataset.l;DEV[selD].mark='';selD=null;paint();}});
+  let archOk=false, latOk=false;
+  function chk(){if(archOk&&latOk)complete('architecture');}
+  $('#archCheck').addEventListener('click',()=>{
+    const fb=$('#archFb'), left=DEV.filter((d,i)=>!place[i]).length;
+    if(left) return say(fb,'bad',`${left} ${left===1?'device is':'devices are'} still unplaced.`);
+    const bad=[];DEV.forEach((d,i)=>{const ok=d.ok.includes(place[i]);d.mark=ok?'right':'wrong';if(!ok)bad.push(d);});
+    paint();
+    if(bad.length) return say(fb,'bad',`${bad.length} to fix:<br>`+bad.map(d=>`<b>${d.n}:</b> ${d.why}`).join('<br>'));
+    archOk=true;say(fb,'ok','Every device is in the right level. Each boundary you crossed is a conduit in ISA/IEC 62443 terms, and each conduit gets a firewall rule that allows only the traffic that zone needs, such as GW-1’s read-only Modbus polls.');chk();
+  });
+  mcq($('#latQ'),{q:'Where must the high-high level trip logic execute?',opts:shuffle([
+   {t:'In the Level 1 controller (or safety PLC) wired directly to the level switch and inlet valve',ok:true,why:'Right. Safety and time-critical logic stays local, at Level 1, deterministic and independent of network or cloud availability. The edge and cloud can analyze trends, but they don’t hold the trip.'},
+   {t:'On EDG-1, so it can use analytics to predict overflow',ok:false,why:'Prediction is a good edge job, but the trip itself can’t depend on a general-purpose computer and an extra network hop.'},
+   {t:'In the cloud, so every plant uses the same logic',ok:false,why:'A cloud round trip can take 80–400 ms and disappears entirely when the internet link goes down. Never put a trip there.'}])},()=>{latOk=true;chk();});
+  paint();
+};
+
+/* ---------- COMPETENCIES ---------- */
+function renderComp(){
+  $('#compList').innerHTML=Object.entries(DOMAINS).map(([k,d])=>{
+    const done=d.st.filter(s=>S.done[s]).length;
+    return `<details class="dom"><summary><h3>${d.name}</h3><span class="pct">${done} of ${d.st.length} work orders</span></summary><div class="body">
+      <div><h4>Knowledge</h4><ul>${d.k.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div><h4>Skills</h4><ul>${d.s.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div><h4>Competency (observable)</h4><ul>${d.c.map(x=>`<li>${x}</li>`).join('')}</ul>
+      <h4 style="margin-top:.6rem">Practiced in</h4>${d.st.map(s=>`<a class="stlink ${S.done[s]?'done':''}" href="#${s}">${ST[s].wo} ${ST[s].short}</a>`).join('')}</div></div></details>`;}).join('');
+}
+$('#resetAll').addEventListener('click',()=>{if(confirm('Clear all work order progress?')){S={done:{}};save();location.hash='#plant';location.reload();}});
+
+/* Boot */
+renderProgress();
+show(location.hash.slice(1)||'plant');
+})();
+</script>
+</body>
+</html>
