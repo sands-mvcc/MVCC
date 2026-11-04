@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cipher Workbench: Cryptography Review Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F7FB; --surface:#FFFFFF; --surface-2:#EAF0F8; --ink:#0E1E36; --ink-2:#4A5A72; --line:#D3DDEB;
+  --brand:#0047AB; --accent:#0047AB; --green:#00A86B; --good:#007A4E; --bad:#C2303A; --warn:#9A6200;
+  --brand-tint:#E3ECFA; --good-tint:#E2F5EC; --bad-tint:#FBE7E8;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A1528; --surface:#111F38; --surface-2:#18294A; --ink:#E6EDF7; --ink-2:#A6B5CD; --line:#26395E;
+    --brand:#2F6BD8; --accent:#86AEF2; --green:#2BD18F; --good:#3FD99A; --bad:#FF7A7A; --warn:#F2B24C;
+    --brand-tint:#1A2F57; --good-tint:#12352B; --bad-tint:#3A1C24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A1528; --surface:#111F38; --surface-2:#18294A; --ink:#E6EDF7; --ink-2:#A6B5CD; --line:#26395E;
+  --brand:#2F6BD8; --accent:#86AEF2; --green:#2BD18F; --good:#3FD99A; --bad:#FF7A7A; --warn:#F2B24C;
+  --brand-tint:#1A2F57; --good-tint:#12352B; --bad-tint:#3A1C24;
+  color-scheme:dark;
+}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.mono,code,pre,textarea.mono,input.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+h1,h2,h3{line-height:1.2;margin:0}
+p{margin:.5em 0}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:0}
+.skip:focus{left:12px;top:12px;z-index:50;background:var(--surface);padding:8px 12px}
+
+/* top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:10px 20px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;white-space:nowrap}
+.brand svg{width:30px;height:30px;flex:none}
+.meter{flex:1;display:flex;align-items:center;gap:12px;max-width:420px;margin-left:auto}
+.meter-bar{flex:1;height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.meter-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--green));transition:width .5s ease}
+.meter-text{font-size:.9rem;color:var(--ink-2);white-space:nowrap}
+.meter-text b{color:var(--ink)}
+.theme-btn{font:inherit;font-size:.9rem;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:6px 14px;cursor:pointer;white-space:nowrap}
+.theme-btn:hover{border-color:var(--accent)}
+
+/* shell */
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:32px;max-width:1240px;margin:0 auto;padding:28px 20px 72px}
+.rail ol{list-style:none;margin:0;padding:0;position:sticky;top:calc(env(safe-area-inset-top,0px) + 80px);display:flex;flex-direction:column;gap:4px}
+.rail button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:center;padding:9px 10px;border-radius:10px;cursor:pointer;border-left:3px solid transparent}
+.rail button:hover{background:var(--surface)}
+.rail button[aria-current="step"]{background:var(--surface);border-left-color:var(--brand)}
+.rail .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--surface-2);color:var(--ink-2)}
+.rail button[aria-current="step"] .num{background:var(--brand);color:#fff}
+.rail .num.full{background:var(--green);color:#fff}
+.rail .nm{font-weight:700;font-size:.95rem;line-height:1.25}
+.rail .sub{display:block;font-weight:400;font-size:.8rem;color:var(--ink-2)}
+.rail button:focus-visible{outline:3px solid var(--accent)}
+
+/* stations */
+.station{display:none;max-width:900px}
+.station.active{display:block}
+.st-head{margin-bottom:22px}
+.st-num{color:var(--accent);font-weight:700;margin:0 0 4px}
+.st-head h2{font-size:clamp(1.7rem,3.2vw,2.3rem);letter-spacing:-.01em}
+.st-head .intro{color:var(--ink-2);max-width:68ch;font-size:1.05rem}
+h3{font-size:1.15rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.stack>*+*{margin-top:12px}
+.small{font-size:.88rem;color:var(--ink-2)}
+.label{display:block;font-weight:700;font-size:.92rem;margin:12px 0 6px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.concept{border-left:3px solid var(--accent);padding:4px 0 4px 14px;color:var(--ink-2);margin:14px 0;max-width:70ch}
+
+/* tasks */
+.task{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:12px;padding:18px 22px;margin:20px 0;transition:border-color .3s}
+.task.done{border-left-color:var(--green)}
+.task-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:6px}
+.pts{flex:none;font-size:.82rem;font-weight:700;padding:2px 10px;border-radius:99px;background:var(--brand-tint);color:var(--accent)}
+.task.done .pts{background:var(--good-tint);color:var(--good)}
+.task.done .pts::before{content:"✓ "}
+
+/* controls */
+.btn{font:inherit;font-weight:700;font-size:.95rem;border:1.5px solid var(--brand);background:var(--brand);color:#fff;border-radius:9px;padding:8px 16px;cursor:pointer;line-height:1.3}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent);border-color:var(--accent)}
+.btn.warn{background:transparent;color:var(--bad);border-color:var(--bad)}
+input[type=text],input[type=number],textarea,select{font:inherit;font-size:.95rem;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:9px;padding:8px 11px}
+input[type=text]:focus,input[type=number]:focus,textarea:focus,select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--brand-tint)}
+textarea{width:100%;resize:vertical;min-height:72px}
+input.ans{min-width:0;flex:1 1 220px}
+input[type=number]{width:120px}
+input[type=range]{accent-color:var(--brand);width:100%}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;padding:3px;gap:3px;background:var(--surface-2)}
+.seg button{font:inherit;font-size:.9rem;font-weight:700;border:0;background:transparent;color:var(--ink-2);padding:5px 14px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.out{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.84rem;background:var(--surface-2);border-radius:9px;padding:10px 12px;word-break:break-all;white-space:pre-wrap;min-height:2.6em;margin:0}
+.out:empty::before{content:"—";color:var(--ink-2)}
+.out.tall{max-height:220px;overflow:auto}
+.fb{margin:10px 0 0;font-size:.95rem;min-height:0}
+.fb:empty{display:none}
+.fb.ok{color:var(--good)}
+.fb.bad{color:var(--bad)}
+.fb.info{color:var(--ink-2)}
+.fb.ok,.fb.bad,.fb.info{padding:10px 14px;border-radius:9px}
+.fb.ok{background:var(--good-tint)}
+.fb.bad{background:var(--bad-tint)}
+.fb.info{background:var(--surface-2)}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:.92rem}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:28px;align-items:center;margin-bottom:34px}
+.hero h1{font-size:clamp(2.4rem,5vw,3.6rem);letter-spacing:-.025em;line-height:1.02}
+.hero .lede{font-size:1.12rem;color:var(--ink-2);max-width:46ch;margin-top:14px}
+.locked{background:var(--brand);color:#fff;border-radius:16px;padding:24px;position:relative;overflow:hidden}
+.locked p{margin:0}
+.locked .lk-label{font-size:.92rem;opacity:.85}
+.locked-msg{font-family:"JetBrains Mono",monospace;font-size:clamp(1.15rem,2.4vw,1.45rem);font-weight:600;letter-spacing:.06em;margin:16px 0 18px!important;min-height:2.4em;word-break:break-word}
+.locked input[type=range]{accent-color:#fff}
+.locked .lk-note{font-size:.9rem;margin-top:8px!important;opacity:.9}
+.locked.solved{background:var(--good)}
+:root[data-theme="dark"] .locked.solved{background:#0F6B47}
+.ksa-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0 28px}
+.ksa-grid h3{margin-bottom:8px}
+.ksa-grid ul{margin:0;padding-left:1.1em}
+.ksa-grid li{margin:6px 0;font-size:.95rem}
+.ksa-grid .code{font-weight:700;color:var(--accent)}
+
+/* wheel */
+.wheel-wrap{display:flex;flex-direction:column;align-items:center}
+#wheel{width:100%;max-width:320px;height:auto}
+#wheel .w-outer{fill:var(--surface-2);stroke:var(--line)}
+#wheel .w-plain{fill:var(--ink);font-size:15px;font-weight:700;font-family:"JetBrains Mono",monospace}
+#wheel .w-inner{fill:var(--brand)}
+#wheel .w-cipher{fill:#fff;font-size:14px;font-weight:600;font-family:"JetBrains Mono",monospace}
+#wheel .w-hub{fill:var(--surface);stroke:var(--line)}
+#wheel .w-hubnum{fill:var(--ink);font-size:34px;font-weight:700}
+#wheel .w-hublbl{fill:var(--ink-2);font-size:11px}
+#wheel .w-pointer{fill:var(--green)}
+#innerRing{transition:transform .55s cubic-bezier(.2,.8,.2,1);transform-origin:160px 160px}
+.wheel-ctl{display:flex;align-items:center;gap:10px;width:100%;max-width:320px;margin-top:10px}
+.wheel-ctl .btn{padding:4px 12px}
+.mapline{font-family:"JetBrains Mono",monospace;font-size:.9rem;color:var(--ink-2);margin-top:6px}
+.brute-table{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:4px 16px;font-family:"JetBrains Mono",monospace;font-size:.82rem;margin-top:12px}
+.brute-table div{padding:3px 8px;border-radius:6px;background:var(--surface-2)}
+.brute-table b{color:var(--accent);display:inline-block;width:2.4em}
+.bars{display:grid;grid-template-columns:repeat(26,minmax(0,1fr));gap:3px;align-items:end;height:150px;margin-top:12px}
+.bars div{display:flex;flex-direction:column;justify-content:flex-end;height:100%;align-items:center}
+.bars i{display:block;width:100%;background:var(--brand);border-radius:3px 3px 0 0;min-height:2px}
+.bars span{font-family:"JetBrains Mono",monospace;font-size:.7rem;color:var(--ink-2);margin-top:3px}
+.cipherblock{font-family:"JetBrains Mono",monospace;font-size:.88rem;background:var(--surface-2);padding:12px 14px;border-radius:9px;line-height:1.7;word-break:break-word}
+
+/* rsa steps */
+.rsa-step{border-top:1px dashed var(--line);padding:14px 0}
+.rsa-step:first-of-type{border-top:0;padding-top:4px}
+.rsa-step.locked{opacity:.42}
+.rsa-step h4{margin:0 0 4px;font-size:1rem}
+.formula{font-family:"JetBrains Mono",monospace;font-size:.88rem;color:var(--ink-2)}
+.keybox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+.keybox div{border-radius:9px;padding:8px 12px;font-size:.9rem}
+.keybox .pub{background:var(--good-tint)}
+.keybox .priv{background:var(--bad-tint)}
+
+/* pki */
+.certview{display:grid;grid-template-columns:200px 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.9rem}
+.certview dt,.certview dd{margin:0;padding:7px 12px;border-bottom:1px solid var(--line)}
+.certview dt{background:var(--surface-2);font-weight:700}
+.certview dd{font-family:"JetBrains Mono",monospace;font-size:.82rem;word-break:break-word}
+.certview dt:nth-last-of-type(1),.certview dd:last-of-type{border-bottom:0}
+.mcq{margin:16px 0}
+.mcq p.q{font-weight:700;margin-bottom:8px}
+.opts{display:grid;gap:7px}
+.opt{font:inherit;font-size:.95rem;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:9px;padding:9px 13px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--good);background:var(--good-tint)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-tint)}
+.chain{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.slot{border:2px dashed var(--line);border-radius:12px;min-height:96px;padding:6px;margin-bottom:10px;position:relative}
+.slot .slot-lbl{font-size:.8rem;color:var(--ink-2);padding:2px 6px}
+.chip{all:unset;box-sizing:border-box;display:block;width:100%;background:var(--surface);border:1.5px solid var(--line);border-left:5px solid var(--brand);border-radius:10px;padding:9px 12px;margin-bottom:8px;cursor:pointer;font-size:.86rem}
+.chip:hover{border-color:var(--accent)}
+.chip:focus-visible{outline:3px solid var(--accent)}
+.chip strong{display:block;font-size:.95rem}
+.chip span{display:block;font-family:"JetBrains Mono",monospace;font-size:.76rem;color:var(--ink-2)}
+.chain-arrow{text-align:center;color:var(--ink-2);font-size:.8rem;margin:-4px 0 6px}
+.trust-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.scn{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--surface)}
+.scn .url{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:.9rem;color:var(--accent);word-break:break-all}
+.scn dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:.82rem;margin:8px 0 10px}
+.scn dt{color:var(--ink-2)}
+.scn dd{margin:0;font-family:"JetBrains Mono",monospace;font-size:.78rem;word-break:break-word}
+.scn .row .btn{padding:6px 14px;font-size:.88rem}
+.scn.r-ok{border-color:var(--good)}
+.scn.r-bad{border-color:var(--bad)}
+pre.cert{font-family:"JetBrains Mono",monospace;font-size:.78rem;background:var(--surface-2);padding:12px 14px;border-radius:9px;overflow:auto;max-height:340px;margin:8px 0;white-space:pre-wrap;word-break:break-all}
+
+/* summary */
+.sum-table{width:100%;border-collapse:collapse;font-size:.93rem;margin:10px 0 18px}
+.sum-table th,.sum-table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.sum-table th{font-size:.85rem;color:var(--ink-2)}
+.sum-table td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.status{font-weight:700;font-size:.85rem;white-space:nowrap}
+.status.s3{color:var(--good)}
+.status.s2{color:var(--warn)}
+.status.s1{color:var(--ink-2)}
+.bigscore{font-size:3rem;font-weight:700;line-height:1;color:var(--accent)}
+.sum-top{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end;margin-bottom:12px}
+.st-nav{display:flex;justify-content:space-between;gap:10px;margin-top:30px;flex-wrap:wrap}
+.foot{font-size:.85rem;color:var(--ink-2);margin-top:40px}
+
+#toast{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--good);color:#fff;font-weight:700;padding:10px 18px;border-radius:10px;opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;pointer-events:none;z-index:40}
+#toast.show{opacity:1;transform:none}
+.banner{background:var(--bad-tint);color:var(--bad);padding:12px 16px;border-radius:10px;margin-bottom:16px;display:none}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr;gap:16px;padding-top:14px}
+  .rail ol{position:static;flex-direction:row;overflow-x:auto;padding-bottom:6px}
+  .rail button{min-width:190px}
+  .hero,.grid2,.chain,.trust-grid{grid-template-columns:1fr}
+  .ksa-grid{grid-template-columns:1fr}
+  .certview{grid-template-columns:1fr}
+  .certview dt{border-bottom:0}
+}
+@media (max-width:560px){
+  .brand span{display:none}
+  .meter-text{font-size:.8rem}
+  .keybox{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  #innerRing,.meter-bar span,#toast{transition:none}
+}
+@media print{
+  :root{padding:0}
+  body{background:#fff;color:#000;font-size:12pt}
+  body::before,.topbar,.rail,#toast,.no-print,.skip{display:none!important}
+  .shell{display:block;padding:0;max-width:none}
+  .station{display:none!important}
+  #st-summary{display:block!important;max-width:none}
+  .card{border:1px solid #999;break-inside:avoid}
+  .sum-table th,.sum-table td{border-bottom:1px solid #bbb}
+  textarea{border:1px solid #999;min-height:0}
+  .bigscore{color:#0047AB}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the activity</a>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#0047AB"/><circle cx="16" cy="16" r="9.5" fill="#00A86B"/><circle cx="16" cy="16" r="4" fill="#fff"/><path d="M16 1v6" stroke="#fff" stroke-width="2"/></svg>
+    <span>Cipher Workbench</span>
+  </div>
+  <div class="meter" aria-label="Progress">
+    <div class="meter-bar"><span id="meterFill"></span></div>
+    <span class="meter-text"><b id="meterPts">0</b> / 100 points</span>
+  </div>
+  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="false">☾ Dark mode</button>
+</header>
+
+<div class="shell">
+  <nav class="rail" aria-label="Stations"><ol id="rail"></ol></nav>
+
+  <main id="main">
+    <div class="banner" id="cryptoBanner">This browser doesn’t expose the Web Crypto API here, so the AES, RSA, signature, and certificate tasks can’t run. Open the page directly in a current browser over HTTPS.</div>
+
+    <!-- ===================== BRIEFING ===================== -->
+    <section class="station" id="st-brief" aria-labelledby="h-brief">
+      <div class="hero">
+        <div>
+          <h1 id="h-brief">Cipher Workbench</h1>
+          <p class="lede">A hands-on review of everything from your cryptography lesson. You’ll break a Caesar cipher, encrypt with AES, build RSA keys by hand and by machine, sign data, and act as a certificate authority.</p>
+        </div>
+        <div class="locked" id="heroCard">
+          <p class="lk-label">This message is locked. Turn the key until it reads clearly.</p>
+          <p class="locked-msg" id="heroMsg" aria-live="polite"></p>
+          <input type="range" min="0" max="25" value="0" id="heroShift" aria-label="Decryption shift">
+          <p class="lk-note" id="heroNote">Shift: 0</p>
+        </div>
+      </div>
+
+      <h2>What you’ll demonstrate</h2>
+      <p class="small">These are the knowledge, skills, and abilities (KSAs) a cybersecurity professional needs in cryptography. Your summary at the end reports progress on each one.</p>
+      <div class="ksa-grid">
+        <div class="card">
+          <h3>Knowledge</h3>
+          <ul>
+            <li><span class="code">K1</span> Classical substitution ciphers, keyspace, and frequency analysis</li>
+            <li><span class="code">K2</span> Symmetric algorithms, modes of operation, and the key distribution problem</li>
+            <li><span class="code">K3</span> Asymmetric cryptography: RSA mathematics, key pairs, and ECC</li>
+            <li><span class="code">K4</span> Hashing, digital signatures, and the security goals they provide</li>
+            <li><span class="code">K5</span> PKI: X.509 fields, chains of trust, and revocation</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Skills</h3>
+          <ul>
+            <li><span class="code">S1</span> Encrypt, decrypt, and cryptanalyze a classical cipher</li>
+            <li><span class="code">S2</span> Apply AES-GCM and interpret keys, IVs, and authentication tags</li>
+            <li><span class="code">S3</span> Generate RSA key pairs and use them for encryption and hybrid key exchange</li>
+            <li><span class="code">S4</span> Sign and verify data; issue and validate digital certificates</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Abilities</h3>
+          <ul>
+            <li><span class="code">A1</span> Select the right cryptographic control for a real-world scenario</li>
+            <li><span class="code">A2</span> Recognize when a cryptographic control has failed (tampering, expired, mismatched, or revoked certificates) and respond correctly</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>How this works</h2>
+      <div class="concept" style="margin-top:10px">
+        <p>Work through the five stations in order. Each task shows its point value, and your progress bar fills as you go (100 points total). All encryption runs inside your browser with the Web Crypto API: no keys or messages leave this page. Your progress is saved in this browser, so you can come back later. When you finish, the Summary station gives you a report to print or save as a PDF.</p>
+      </div>
+      <div class="st-nav"><span></span><button class="btn" data-go="classical">Start Station 1: Classical ciphers</button></div>
+    </section>
+
+    <!-- ===================== CLASSICAL ===================== -->
+    <section class="station" id="st-classical" aria-labelledby="h-classical">
+      <header class="st-head">
+        <p class="st-num">Station 1</p>
+        <h2 id="h-classical">Classical ciphers</h2>
+        <p class="intro">The Caesar cipher shifts every letter by a fixed amount. The shift is the key. Use the wheel to encrypt and decrypt, then attack ciphertext two ways: by trying every key, and by counting letters.</p>
+      </header>
+
+      <div class="grid2">
+        <div class="card wheel-wrap">
+          <svg id="wheel" viewBox="0 0 320 320" role="img" aria-label="Caesar cipher wheel. Outer ring is plaintext, inner ring is ciphertext."></svg>
+          <div class="wheel-ctl">
+            <button class="btn ghost" id="wDown" aria-label="Decrease shift">−</button>
+            <input type="range" min="0" max="25" value="3" id="wRange" aria-label="Shift key">
+            <button class="btn ghost" id="wUp" aria-label="Increase shift">+</button>
+          </div>
+          <p class="mapline" id="mapline"></p>
+        </div>
+        <div class="card">
+          <h3>Cipher machine</h3>
+          <p class="small">Outer ring is plaintext; inner ring is ciphertext. The wheel’s shift is applied to whatever you type.</p>
+          <div class="seg" role="group" aria-label="Mode" style="margin-top:8px">
+            <button type="button" id="modeEnc" aria-pressed="true">Encrypt</button>
+            <button type="button" id="modeDec" aria-pressed="false">Decrypt</button>
+          </div>
+          <label class="label" for="cIn">Input</label>
+          <textarea id="cIn" class="mono" rows="3">Meet me by the server room at noon</textarea>
+          <span class="label">Output</span>
+          <p class="out" id="cOut" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="task" data-task="caesarEnc">
+        <div class="task-head"><h3>Task 1.1: Encrypt a message</h3><span class="pts">5 pts</span></div>
+        <p>Encrypt <strong class="mono">ATTACK AT DAWN</strong> with a shift of <strong>3</strong>. Type the ciphertext.</p>
+        <div class="row"><input type="text" class="mono ans" id="a11" aria-label="Ciphertext" autocomplete="off" spellcheck="false"><button class="btn" id="b11">Check</button></div>
+        <p class="fb" id="f11" aria-live="polite"></p>
+      </div>
+
+      <div class="task" data-task="brute">
+        <div class="task-head"><h3>Task 1.2: Brute-force an intercepted message</h3><span class="pts">5 pts</span></div>
+        <p>You intercepted this ciphertext. Caesar has so few keys that you can simply try them all.</p>
+        <p class="cipherblock" id="bruteCt"></p>
+        <button class="btn ghost" id="bruteBtn">List all 25 shifts</button>
+        <div class="brute-table" id="bruteTable" hidden></div>
+        <label class="label" for="a12">What shift was used to <em>encrypt</em> the message?</label>
+        <div class="row"><input type="number" min="0" max="25" id="a12"><button class="btn" id="b12">Check</button></div>
+        <p class="fb" id="f12" aria-live="polite"></p>
+      </div>
+
+      <div class="task" data-task="freq">
+        <div class="task-head"><h3>Task 1.3: Frequency analysis</h3><span class="pts">5 pts</span></div>
+        <p>Substitution ciphers keep the language’s letter frequencies. Find the tallest bar, assume it stands for the most common English letter, and work out the key.</p>
+        <p class="cipherblock" id="freqCt"></p>
+        <div class="bars" id="bars" aria-label="Letter frequency chart of the ciphertext"></div>
+        <details><summary>Hint</summary><p class="small">In English, <strong>E</strong> is usually the most frequent letter. Count how many positions forward from E the tallest letter sits. That distance is the encryption shift.</p></details>
+        <label class="label" for="a13">Encryption shift</label>
+        <div class="row"><input type="number" min="0" max="25" id="a13"><button class="btn" id="b13">Check</button></div>
+        <p class="fb" id="f13" aria-live="polite"></p>
+      </div>
+
+      <div class="concept">Takeaway: a cipher with 25 keys falls to brute force in seconds, and any monoalphabetic substitution leaks letter patterns. Modern ciphers defeat both attacks with enormous keyspaces and output that looks random.</div>
+      <div class="st-nav"><button class="btn ghost" data-go="brief">Back to briefing</button><button class="btn" data-go="symmetric">Continue to Station 2</button></div>
+    </section>
+
+    <!-- ===================== SYMMETRIC ===================== -->
+    <section class="station" id="st-symmetric" aria-labelledby="h-symmetric">
+      <header class="st-head">
+        <p class="st-num">Station 2</p>
+        <h2 id="h-symmetric">Symmetric encryption with AES</h2>
+        <p class="intro">One shared secret key both encrypts and decrypts. You’ll use AES in Galois/Counter Mode (GCM), an authenticated mode that provides confidentiality and integrity together.</p>
+      </header>
+
+      <div class="task" data-task="aesRound">
+        <div class="task-head"><h3>Task 2.1: Generate a key, encrypt, and decrypt</h3><span class="pts">5 pts</span></div>
+        <div class="row" style="margin-top:6px">
+          <div class="seg" role="group" aria-label="AES key length">
+            <button type="button" data-bits="128" aria-pressed="false">AES-128</button>
+            <button type="button" data-bits="256" aria-pressed="true">AES-256</button>
+          </div>
+          <button class="btn" id="aesGen">Generate key</button>
+        </div>
+        <span class="label">Secret key (hex)</span>
+        <p class="out" id="aesKey"></p>
+        <label class="label" for="aesPt">Plaintext</label>
+        <textarea id="aesPt" rows="2">Final exam answers are in the blue folder on the shared drive.</textarea>
+        <div class="row" style="margin-top:10px"><button class="btn" id="aesEnc">Encrypt</button><button class="btn ghost" id="aesDec">Decrypt</button></div>
+        <span class="label">Initialization vector (96-bit, random each time)</span>
+        <p class="out" id="aesIv"></p>
+        <span class="label">Ciphertext + authentication tag (Base64)</span>
+        <p class="out" id="aesCt"></p>
+        <p class="small" id="aesNote"></p>
+        <span class="label">Decrypted output</span>
+        <p class="out" id="aesOut"></p>
+        <p class="fb" id="f21" aria-live="polite"></p>
+        <p class="small">Try encrypting the same text twice. The ciphertext changes because the IV changes, which is why an IV must never be reused with the same key.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="task" data-task="tamper" style="margin:0">
+          <div class="task-head"><h3>Task 2.2: Tamper with the ciphertext</h3><span class="pts">4 pts</span></div>
+          <p>An attacker on the network flips a single bit. What does GCM do?</p>
+          <button class="btn warn" id="aesTamper">Flip one bit, then decrypt</button>
+          <p class="fb" id="f22" aria-live="polite"></p>
+        </div>
+        <div class="task" data-task="wrongKey" style="margin:0">
+          <div class="task-head"><h3>Task 2.3: Use the wrong key</h3><span class="pts">3 pts</span></div>
+          <p>Someone without your key tries to decrypt. Generate a different key and attempt it.</p>
+          <button class="btn warn" id="aesWrong">Decrypt with a different key</button>
+          <p class="fb" id="f23" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="task" data-task="keyCount">
+        <div class="task-head"><h3>Task 2.4: The key distribution problem</h3><span class="pts">3 pts</span></div>
+        <p>A 12-person incident response team needs a private channel between every pair of members, using only symmetric keys. How many unique keys must be created and securely distributed?</p>
+        <div class="row"><input type="number" min="0" id="a24" aria-label="Number of keys"><button class="btn" id="b24">Check</button></div>
+        <p class="fb" id="f24" aria-live="polite"></p>
+      </div>
+
+      <div class="concept">Takeaway: symmetric ciphers are fast enough for bulk data, and authenticated modes like GCM detect tampering. The hard part is getting the same secret key to everyone safely. That’s the problem asymmetric cryptography solves.</div>
+      <div class="st-nav"><button class="btn ghost" data-go="classical">Back to Station 1</button><button class="btn" data-go="asymmetric">Continue to Station 3</button></div>
+    </section>
+
+    <!-- ===================== ASYMMETRIC ===================== -->
+    <section class="station" id="st-asymmetric" aria-labelledby="h-asymmetric">
+      <header class="st-head">
+        <p class="st-num">Station 3</p>
+        <h2 id="h-asymmetric">Asymmetric encryption with RSA</h2>
+        <p class="intro">Each person has a key pair. The public key is shared with anyone; the private key never leaves its owner. First build a tiny RSA key by hand so the math is visible, then generate a real one.</p>
+      </header>
+
+      <div class="task" data-task="toyRound">
+        <div class="task-head"><h3>Task 3.1: RSA by hand</h3><span class="pts">12 pts across 5 steps</span></div>
+        <div class="rsa-step" data-step="1">
+          <h4>Step 1: Pick two primes and compute n</h4>
+          <div class="row">
+            <label>p <select id="selP"></select></label>
+            <label>q <select id="selQ"></select></label>
+            <span class="formula">n = p × q</span>
+          </div>
+          <div class="row" style="margin-top:8px"><input type="number" id="tN" aria-label="n"><button class="btn" id="bN">Check n</button></div>
+          <p class="fb" id="fN"></p>
+        </div>
+        <div class="rsa-step" data-step="2">
+          <h4>Step 2: Compute Euler’s totient φ(n)</h4>
+          <p class="formula">φ(n) = (p − 1) × (q − 1)</p>
+          <div class="row"><input type="number" id="tPhi" aria-label="phi of n"><button class="btn" id="bPhi">Check φ(n)</button></div>
+          <p class="fb" id="fPhi"></p>
+        </div>
+        <div class="rsa-step" data-step="3">
+          <h4>Step 3: Choose the public exponent e</h4>
+          <p class="formula">1 &lt; e &lt; φ(n), and gcd(e, φ(n)) = 1. Small primes like 3, 5, 7, 11, or 17 are good tries.</p>
+          <div class="row"><input type="number" id="tE" aria-label="e"><button class="btn" id="bE">Check e</button></div>
+          <p class="fb" id="fE"></p>
+        </div>
+        <div class="rsa-step" data-step="4">
+          <h4>Step 4: Compute the private exponent d</h4>
+          <p class="formula">(e × d) mod φ(n) = 1, the modular inverse of e</p>
+          <div class="row"><input type="number" id="tD" aria-label="d"><button class="btn" id="bD">Check d</button><button class="btn ghost" id="bRevealD">Show me with the extended Euclidean algorithm</button></div>
+          <p class="fb" id="fD"></p>
+        </div>
+        <div class="rsa-step" data-step="5">
+          <h4>Step 5: Encrypt and decrypt a number</h4>
+          <div class="keybox"><div class="pub" id="pubBox">Public key (e, n)</div><div class="priv" id="privBox">Private key (d, n)</div></div>
+          <p class="formula">c = m<sup>e</sup> mod n &nbsp;&nbsp; then &nbsp;&nbsp; m = c<sup>d</sup> mod n</p>
+          <div class="row"><label>Message m <input type="number" id="tM" value="65"></label><button class="btn" id="bRun">Encrypt, then decrypt</button></div>
+          <p class="out" id="toyOut" style="margin-top:10px"></p>
+          <p class="fb" id="fRun"></p>
+        </div>
+      </div>
+
+      <div class="task" data-task="rsaGen">
+        <div class="task-head"><h3>Task 3.2: Generate a real RSA key pair</h3><span class="pts">3 pts</span></div>
+        <p>Real RSA uses primes hundreds of digits long. Pick a modulus size and watch how long generation takes.</p>
+        <div class="row">
+          <div class="seg" role="group" aria-label="RSA modulus size">
+            <button type="button" data-rsa="2048" aria-pressed="true">2048-bit</button>
+            <button type="button" data-rsa="3072" aria-pressed="false">3072-bit</button>
+            <button type="button" data-rsa="4096" aria-pressed="false">4096-bit</button>
+          </div>
+          <button class="btn" id="rsaGen">Generate key pair</button>
+        </div>
+        <p class="fb" id="fRsaGen"></p>
+        <span class="label">Public key (PEM, SubjectPublicKeyInfo)</span>
+        <pre class="out tall" id="rsaPem"></pre>
+        <span class="label">SHA-256 fingerprint of the public key</span>
+        <p class="out" id="rsaFp"></p>
+        <p class="small">The private key was generated as non-exportable, so the browser will use it but won’t reveal it. That mirrors how a hardware security module or TPM protects keys.</p>
+      </div>
+
+      <div class="task" data-task="rsaRound">
+        <div class="task-head"><h3>Task 3.3: Encrypt with the public key, decrypt with the private key</h3><span class="pts">3 pts</span></div>
+        <label class="label" for="rsaPt">Short message</label>
+        <input type="text" id="rsaPt" value="Wire transfer code: 7741-ALPHA" style="width:100%">
+        <p class="small" id="rsaLimit"></p>
+        <div class="row" style="margin-top:8px"><button class="btn" id="rsaEnc">Encrypt with public key</button><button class="btn ghost" id="rsaDec">Decrypt with private key</button></div>
+        <span class="label">RSA-OAEP ciphertext (Base64)</span>
+        <pre class="out tall" id="rsaCt"></pre>
+        <span class="label">Decrypted output</span>
+        <p class="out" id="rsaOut"></p>
+        <p class="fb" id="fRsa"></p>
+      </div>
+
+      <div class="task" data-task="hybrid">
+        <div class="task-head"><h3>Task 3.4: Hybrid encryption</h3><span class="pts">2 pts</span></div>
+        <p>RSA is too slow and size-limited for bulk data, so real systems wrap a symmetric key with it. Wrap the AES key you generated in Station 2 using your RSA public key, then unwrap it with the private key.</p>
+        <button class="btn" id="hybridBtn">Wrap and unwrap my AES key</button>
+        <pre class="out tall" id="hybridOut" style="margin-top:10px"></pre>
+        <p class="fb" id="fHybrid"></p>
+      </div>
+
+      <div class="task" data-task="asymKeys">
+        <div class="task-head"><h3>Task 3.5: Revisit the key distribution problem</h3><span class="pts">2 pts</span></div>
+        <p>The same 12-person team switches to asymmetric cryptography. How many <strong>key pairs</strong> does the team need so anyone can send a confidential message to anyone else?</p>
+        <div class="row"><input type="number" min="0" id="a35" aria-label="Number of key pairs"><button class="btn" id="b35">Check</button></div>
+        <p class="fb" id="f35"></p>
+      </div>
+
+      <div class="st-nav"><button class="btn ghost" data-go="symmetric">Back to Station 2</button><button class="btn" data-go="pki">Continue to Station 4</button></div>
+    </section>
+
+    <!-- ===================== PKI ===================== -->
+    <section class="station" id="st-pki" aria-labelledby="h-pki">
+      <header class="st-head">
+        <p class="st-num">Station 4</p>
+        <h2 id="h-pki">Digital signatures and certificates</h2>
+        <p class="intro">A signature proves who sent data and that it hasn’t changed. A certificate is a signed statement from a certificate authority (CA) binding a public key to an identity. Sign data, read a certificate, build a chain of trust, make trust decisions, and finally become a CA yourself.</p>
+      </header>
+
+      <div class="task" data-task="sign">
+        <div class="task-head"><h3>Task 4.1: Sign and verify a message</h3><span class="pts">3 pts</span></div>
+        <label class="label" for="sigMsg">Message</label>
+        <textarea id="sigMsg" rows="2">Approve purchase order #4471 for $2,500.</textarea>
+        <span class="label">SHA-256 digest (updates as you type)</span>
+        <p class="out" id="sigHash"></p>
+        <div class="row" style="margin-top:10px"><button class="btn" id="sigSign">Sign with my private key</button><button class="btn ghost" id="sigVerify">Verify with my public key</button></div>
+        <span class="label">Signature (RSA-PSS, Base64)</span>
+        <pre class="out tall" id="sigOut"></pre>
+        <p class="fb" id="fSig"></p>
+      </div>
+      <div class="task" data-task="sigTamper">
+        <div class="task-head"><h3>Task 4.2: Alter the signed message</h3><span class="pts">2 pts</span></div>
+        <p>After signing, change the amount in the message above (try $25,000) and press <strong>Verify</strong> again. Watch the digest change and the verification fail.</p>
+        <p class="fb" id="fSigT"></p>
+      </div>
+
+      <div class="task" data-task="inspect">
+        <div class="task-head"><h3>Task 4.3: Read a certificate</h3><span class="pts">3 pts</span></div>
+        <p>This is the TLS certificate presented by <span class="mono">portal.example.edu</span>.</p>
+        <dl class="certview" id="certView"></dl>
+        <div id="inspectQs"></div>
+      </div>
+
+      <div class="task" data-task="chain">
+        <div class="task-head"><h3>Task 4.4: Build the chain of trust</h3><span class="pts">4 pts</span></div>
+        <p>Select a certificate to place it in the next open slot. Select a placed certificate to send it back. Each certificate’s issuer must match the subject of the certificate above it.</p>
+        <div class="chain">
+          <div>
+            <span class="label">Certificates received</span>
+            <div id="chainPool"></div>
+          </div>
+          <div>
+            <span class="label">Chain (top to bottom)</span>
+            <div id="chainSlots"></div>
+          </div>
+        </div>
+        <div class="row"><button class="btn" id="chainCheck">Validate chain</button><button class="btn ghost" id="chainReset">Reset</button></div>
+        <p class="fb" id="fChain"></p>
+      </div>
+
+      <div class="task" data-task="trust">
+        <div class="task-head"><h3>Task 4.5: Trust or reject?</h3><span class="pts">6 pts</span></div>
+        <p>You’re the browser. Today is <strong id="todayStr"></strong>. Decide whether each connection should be trusted. Only your first answer on each scores.</p>
+        <div class="trust-grid" id="trustGrid"></div>
+      </div>
+
+      <div class="task" data-task="issue">
+        <div class="task-head"><h3>Task 4.6: Become the certificate authority</h3><span class="pts">6 pts</span></div>
+        <p>Walk through what a real CA does: receive a certificate signing request (CSR), confirm the requester holds the private key, sign the certificate, and let anyone verify it.</p>
+        <div class="row">
+          <label>Common name <input type="text" id="csrCN" value="lab.yourname.example.edu" class="mono" style="min-width:250px"></label>
+          <label>Organization <input type="text" id="csrO" value="Cyber Lab Student"></label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="csrBtn">1. Generate key and CSR</button>
+          <button class="btn" id="caSign" disabled>2. Sign as the CA</button>
+          <button class="btn warn" id="caTamper" disabled>3. Forge the subject and verify</button>
+        </div>
+        <pre class="cert" id="caOut" hidden></pre>
+        <p class="fb" id="fCA"></p>
+      </div>
+
+      <div class="st-nav"><button class="btn ghost" data-go="asymmetric">Back to Station 3</button><button class="btn" data-go="quiz">Continue to Station 5</button></div>
+    </section>
+
+    <!-- ===================== QUIZ ===================== -->
+    <section class="station" id="st-quiz" aria-labelledby="h-quiz">
+      <header class="st-head">
+        <p class="st-num">Station 5</p>
+        <h2 id="h-quiz">Knowledge check</h2>
+        <p class="intro">Twelve scenario questions, 2 points each. Your first answer locks in, and you’ll see why each answer is right or wrong.</p>
+      </header>
+      <div id="quizBox"></div>
+      <p class="fb info" id="quizScore"></p>
+      <div class="st-nav"><button class="btn ghost" data-go="pki">Back to Station 4</button><button class="btn" data-go="summary">See my summary</button></div>
+    </section>
+
+    <!-- ===================== SUMMARY ===================== -->
+    <section class="station" id="st-summary" aria-labelledby="h-summary">
+      <header class="st-head">
+        <p class="st-num no-print">Wrap-up</p>
+        <h2 id="h-summary">Cryptography review summary</h2>
+      </header>
+      <div class="card">
+        <div class="sum-top">
+          <div>
+            <label class="label no-print" for="stuName" style="margin-top:0">Your name</label>
+            <input type="text" id="stuName" placeholder="Type your name" style="width:100%;max-width:360px">
+            <p class="small" id="sumDate"></p>
+          </div>
+          <div style="text-align:right"><div class="bigscore" id="sumScore">0</div><div class="small">of 100 points</div></div>
+        </div>
+
+        <h3>Points by station</h3>
+        <table class="sum-table" id="sumStations"></table>
+
+        <h3>Knowledge, skills, and abilities</h3>
+        <table class="sum-table" id="sumKsa"></table>
+
+        <h3>Evidence of work</h3>
+        <table class="sum-table" id="sumEvidence"></table>
+
+        <label class="label" for="reflect">Reflection: which concept still feels uncertain, and what will you do about it?</label>
+        <textarea id="reflect" rows="3"></textarea>
+      </div>
+      <div class="row no-print" style="margin-top:18px">
+        <button class="btn" id="printBtn">Print or save as PDF</button>
+        <button class="btn ghost" id="copyBtn">Copy summary as text</button>
+        <button class="btn warn" id="resetBtn">Reset all progress</button>
+      </div>
+      <p class="fb" id="fSum"></p>
+      <p class="small no-print">To save a PDF, choose “Save as PDF” as the destination in the print dialog.</p>
+    </section>
+
+    <p class="foot no-print">All cryptographic operations run locally through your browser’s Web Crypto API. The certificates, organizations, and domains in this activity are fictional.</p>
+  </main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const te = new TextEncoder(), td = new TextDecoder();
+const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
+const b64 = b => { const u = new Uint8Array(b); let s=''; for (let i=0;i<u.length;i++) s += String.fromCharCode(u[i]); return btoa(s); };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const colonHex = h => h.toUpperCase().match(/.{2}/g).join(':');
+const pem = (label, buf) => `-----BEGIN ${label}-----\n${b64(buf).match(/.{1,64}/g).join('\n')}\n-----END ${label}-----`;
+const sha256 = async d => hex(await crypto.subtle.digest('SHA-256', typeof d === 'string' ? te.encode(d) : d));
+const hasCrypto = !!(window.crypto && crypto.subtle);
+if (!hasCrypto) $('#cryptoBanner').style.display = 'block';
+
+/* ---------- state ---------- */
+const LS = 'cipherWorkbench.v1', LS_THEME = 'cipherWorkbench.theme';
+let state = { pts:{}, picks:{}, name:'', evidence:{}, reflection:'' };
+try { const s = localStorage.getItem(LS); if (s) state = Object.assign(state, JSON.parse(s)); } catch(e) {}
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(state)); } catch(e) {} };
+
+/* ---------- theme ---------- */
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  const b = $('#themeBtn');
+  b.textContent = t === 'dark' ? '☀ Light mode' : '☾ Dark mode';
+  b.setAttribute('aria-pressed', t === 'dark');
+  try { localStorage.setItem(LS_THEME, t); } catch(e) {}
+}
+let savedTheme = 'light';
+try { savedTheme = localStorage.getItem(LS_THEME) || 'light'; } catch(e) {}
+setTheme(savedTheme);
+$('#themeBtn').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+/* ---------- tasks & stations ---------- */
+const TASKS = {
+  caesarEnc:{p:5,s:'classical',l:'Caesar encryption'},
+  brute:{p:5,s:'classical',l:'Brute-force attack'},
+  freq:{p:5,s:'classical',l:'Frequency analysis'},
+  aesRound:{p:5,s:'symmetric',l:'AES-GCM encrypt and decrypt'},
+  tamper:{p:4,s:'symmetric',l:'Tampering detected'},
+  wrongKey:{p:3,s:'symmetric',l:'Wrong-key decryption'},
+  keyCount:{p:3,s:'symmetric',l:'Symmetric key distribution'},
+  toyN:{p:2,s:'asymmetric',l:'RSA modulus n'},
+  toyPhi:{p:2,s:'asymmetric',l:'Totient φ(n)'},
+  toyE:{p:2,s:'asymmetric',l:'Public exponent e'},
+  toyD:{p:3,s:'asymmetric',l:'Private exponent d'},
+  toyRound:{p:3,s:'asymmetric',l:'Toy RSA round trip'},
+  rsaGen:{p:3,s:'asymmetric',l:'RSA key generation'},
+  rsaRound:{p:3,s:'asymmetric',l:'RSA-OAEP round trip'},
+  hybrid:{p:2,s:'asymmetric',l:'Hybrid key wrap'},
+  asymKeys:{p:2,s:'asymmetric',l:'Asymmetric key count'},
+  sign:{p:3,s:'pki',l:'Sign and verify'},
+  sigTamper:{p:2,s:'pki',l:'Altered message detected'},
+  chain:{p:4,s:'pki',l:'Chain of trust'},
+  issue:{p:4,s:'pki',l:'Certificate issued'},
+  certTamper:{p:2,s:'pki',l:'Forged certificate detected'}
+};
+for (let i=1;i<=3;i++) TASKS['inspect'+i] = {p:1,s:'pki',l:'Certificate question '+i};
+for (let i=1;i<=6;i++) TASKS['trust'+i] = {p:1,s:'pki',l:'Trust decision '+i};
+for (let i=1;i<=12;i++) TASKS['q'+i] = {p:2,s:'quiz',l:'Knowledge check question '+i};
+
+const STATIONS = [
+  {id:'brief',n:'Briefing',sub:'Start here'},
+  {id:'classical',n:'Classical ciphers'},
+  {id:'symmetric',n:'Symmetric encryption'},
+  {id:'asymmetric',n:'Asymmetric encryption'},
+  {id:'pki',n:'Signatures and certificates'},
+  {id:'quiz',n:'Knowledge check'},
+  {id:'summary',n:'Summary',sub:'Print your results'}
+];
+const stPossible = id => Object.values(TASKS).filter(t => t.s===id).reduce((a,t)=>a+t.p,0);
+const stEarned = id => Object.entries(state.pts).filter(([k]) => TASKS[k] && TASKS[k].s===id).reduce((a,[,v])=>a+v,0);
+const total = () => Object.values(state.pts).reduce((a,b)=>a+b,0);
+
+function buildRail() {
+  $('#rail').innerHTML = STATIONS.map((s,i) => `<li><button data-st="${s.id}"><span class="num" id="num-${s.id}">${i+1}</span><span class="nm">${s.n}<span class="sub" id="sub-${s.id}"></span></span></button></li>`).join('');
+  $$('#rail button').forEach(b => b.addEventListener('click', () => go(b.dataset.st)));
+}
+function refresh() {
+  const t = total();
+  $('#meterPts').textContent = t;
+  $('#meterFill').style.width = t + '%';
+  STATIONS.forEach(s => {
+    const sub = $('#sub-'+s.id), num = $('#num-'+s.id);
+    const poss = stPossible(s.id);
+    if (poss) {
+      const e = stEarned(s.id);
+      sub.textContent = `${e} of ${poss} points`;
+      num.classList.toggle('full', e === poss);
+    } else sub.textContent = s.sub || '';
+  });
+  // task cards with group ids
+  const groupDone = (prefix, n) => { for (let i=1;i<=n;i++) if (!(state.picks[prefix+i] !== undefined)) return false; return true; };
+  Object.keys(state.pts).forEach(id => $$(`[data-task="${id}"]`).forEach(el => el.classList.add('done')));
+  if (groupDone('inspect',3)) $('[data-task="inspect"]').classList.add('done');
+  if (groupDone('trust',6)) $('[data-task="trust"]').classList.add('done');
+  if (state.pts.toyN && state.pts.toyPhi && state.pts.toyE && (state.pts.toyD || toy.revealed) && state.pts.toyRound) $('[data-task="toyRound"]').classList.add('done');
+  if (state.pts.issue && state.pts.certTamper) $('[data-task="issue"]').classList.add('done');
+  $('[data-task="toyRound"]').classList.toggle('done', !!state.pts.toyRound);
+  $('[data-task="issue"]').classList.toggle('done', !!(state.pts.issue && state.pts.certTamper));
+}
+let toastT;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function award(id) {
+  if (state.pts[id] !== undefined) return false;
+  state.pts[id] = TASKS[id].p; save(); refresh();
+  toast(`+${TASKS[id].p} points: ${TASKS[id].l}`);
+  return true;
+}
+function fb(id, ok, html) {
+  const el = typeof id === 'string' ? document.getElementById(id) : id;
+  el.className = 'fb ' + (ok === true ? 'ok' : ok === false ? 'bad' : 'info');
+  el.innerHTML = html;
+}
+function go(id) {
+  if (!STATIONS.find(s => s.id === id)) id = 'brief';
+  $$('.station').forEach(s => s.classList.toggle('active', s.id === 'st-'+id));
+  $$('#rail button').forEach(b => b.setAttribute('aria-current', b.dataset.st === id ? 'step' : 'false'));
+  if (location.hash.slice(1) !== id) history.replaceState(null, '', '#'+id);
+  if (id === 'summary') renderSummary();
+  window.scrollTo({top:0});
+}
+$$('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+window.addEventListener('hashchange', () => go(location.hash.slice(1)));
+
+/* ---------- classical ---------- */
+const ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const caesar = (t,k) => { k = ((k%26)+26)%26; return t.replace(/[A-Za-z]/g, c => { const b = c <= 'Z' ? 65 : 97; return String.fromCharCode((c.charCodeAt(0)-b+k)%26+b); }); };
+const norm = s => s.toUpperCase().replace(/\s+/g,' ').trim();
+
+// hero
+const HERO_PLAIN = 'TRUST THE MATH, GUARD THE KEYS';
+const HERO_CT = caesar(HERO_PLAIN, 9);
+function heroUpdate() {
+  const s = +$('#heroShift').value;
+  $('#heroMsg').textContent = caesar(HERO_CT, -s);
+  const solved = s === 9;
+  $('#heroCard').classList.toggle('solved', solved);
+  $('#heroNote').textContent = solved
+    ? 'Unlocked at shift 9. You just did what an attacker does: tried keys until one worked. Station 1 shows why that’s so easy.'
+    : `Shift: ${s}`;
+}
+$('#heroShift').addEventListener('input', heroUpdate); heroUpdate();
+
+// wheel
+let wShift = 3, cMode = 'enc';
+function buildWheel() {
+  const cx=160, cy=160; let s='';
+  s += `<circle cx="${cx}" cy="${cy}" r="152" class="w-outer"/>`;
+  for (let i=0;i<26;i++) {
+    const a = (i*360/26 - 90) * Math.PI/180;
+    s += `<text x="${(cx+134*Math.cos(a)).toFixed(1)}" y="${(cy+134*Math.sin(a)).toFixed(1)}" class="w-plain" text-anchor="middle" dominant-baseline="central">${ABC[i]}</text>`;
+  }
+  s += `<g id="innerRing"><circle cx="${cx}" cy="${cy}" r="114" class="w-inner"/>`;
+  for (let i=0;i<26;i++) {
+    const a = (i*360/26 - 90) * Math.PI/180;
+    s += `<text x="${(cx+97*Math.cos(a)).toFixed(1)}" y="${(cy+97*Math.sin(a)).toFixed(1)}" class="w-cipher" text-anchor="middle" dominant-baseline="central" transform="rotate(${(i*360/26).toFixed(2)} ${(cx+97*Math.cos(a)).toFixed(1)} ${(cy+97*Math.sin(a)).toFixed(1)})">${ABC[i]}</text>`;
+  }
+  s += `</g><circle cx="${cx}" cy="${cy}" r="72" class="w-hub"/>`;
+  s += `<text x="${cx}" y="${cy-4}" class="w-hubnum" text-anchor="middle" dominant-baseline="central" id="wNum">3</text>`;
+  s += `<text x="${cx}" y="${cy+26}" class="w-hublbl" text-anchor="middle">shift key</text>`;
+  s += `<path d="M${cx-7} 2 L${cx+7} 2 L${cx} 14 Z" class="w-pointer"/>`;
+  $('#wheel').innerHTML = s;
+}
+function setShift(k) {
+  wShift = ((k%26)+26)%26;
+  $('#innerRing').style.transform = `rotate(${-wShift*360/26}deg)`;
+  $('#wNum').textContent = wShift;
+  $('#wRange').value = wShift;
+  $('#mapline').textContent = `A→${ABC[wShift]}  B→${ABC[(1+wShift)%26]}  C→${ABC[(2+wShift)%26]}  …  Z→${ABC[(25+wShift)%26]}`;
+  runCaesar();
+}
+function runCaesar() { $('#cOut').textContent = caesar($('#cIn').value, cMode === 'enc' ? wShift : -wShift); }
+buildWheel();
+$('#wRange').addEventListener('input', e => setShift(+e.target.value));
+$('#wUp').addEventListener('click', () => setShift(wShift+1));
+$('#wDown').addEventListener('click', () => setShift(wShift-1));
+$('#cIn').addEventListener('input', runCaesar);
+$('#modeEnc').addEventListener('click', () => { cMode='enc'; $('#modeEnc').setAttribute('aria-pressed','true'); $('#modeDec').setAttribute('aria-pressed','false'); runCaesar(); });
+$('#modeDec').addEventListener('click', () => { cMode='dec'; $('#modeDec').setAttribute('aria-pressed','true'); $('#modeEnc').setAttribute('aria-pressed','false'); runCaesar(); });
+setShift(3);
+
+// 1.1
+$('#b11').addEventListener('click', () => {
+  const want = caesar('ATTACK AT DAWN', 3), got = norm($('#a11').value);
+  if (got === want) { award('caesarEnc'); fb('f11', true, `Correct: <span class="mono">${want}</span>. Each letter moved three places: A→D, T→W, K→N.`); }
+  else if (got === caesar('ATTACK AT DAWN', -3)) fb('f11', false, 'That’s a shift of 3 backward, which decrypts. Encryption moves letters forward.');
+  else fb('f11', false, 'Not yet. Set the wheel to 3, choose Encrypt, and type the plaintext into the cipher machine to check yourself letter by letter.');
+});
+$('#a11').addEventListener('keydown', e => { if (e.key === 'Enter') $('#b11').click(); });
+
+// 1.2
+const BRUTE_PT = 'NEVER ROLL YOUR OWN CRYPTO', BRUTE_K = 7, BRUTE_CT = caesar(BRUTE_PT, BRUTE_K);
+$('#bruteCt').textContent = BRUTE_CT;
+$('#bruteBtn').addEventListener('click', () => {
+  const t = $('#bruteTable');
+  t.innerHTML = Array.from({length:25}, (_,i) => `<div><b>${i+1}</b>${esc(caesar(BRUTE_CT, -(i+1)))}</div>`).join('');
+  t.hidden = false;
+  $('#bruteBtn').textContent = 'Each row decrypts by shifting back that many places';
+  $('#bruteBtn').disabled = true;
+});
+$('#b12').addEventListener('click', () => {
+  const v = parseInt($('#a12').value, 10);
+  if (v === BRUTE_K) { award('brute'); fb('f12', true, `Right. Shifting back 7 reveals “${BRUTE_PT}.” Brute force took at most 25 tries, which is why keyspace size matters.`); }
+  else if (v === 26 - BRUTE_K) fb('f12', false, `Shifting forward 19 does decrypt it, but the question asks for the encryption key. Since 26 − 19 = 7, what key was used to encrypt?`);
+  else fb('f12', false, 'Not that one. Find the readable row in the table: the row number is how far back you shifted, which equals the encryption key.');
+});
+$('#a12').addEventListener('keydown', e => { if (e.key === 'Enter') $('#b12').click(); });
+
+// 1.3
+const FREQ_PT = 'THE ENEMY KNOWS THE SYSTEM. SECURITY MUST DEPEND ONLY ON THE SECRECY OF THE KEY, NEVER ON THE SECRECY OF THE ALGORITHM. THAT IDEA, KERCKHOFFS’S PRINCIPLE, IS WHY MODERN CIPHERS ARE PUBLISHED AND TESTED IN THE OPEN.';
+const FREQ_K = 11, FREQ_CT = caesar(FREQ_PT, FREQ_K);
+$('#freqCt').textContent = FREQ_CT;
+(function bars() {
+  const c = Array(26).fill(0);
+  for (const ch of FREQ_CT) { const i = ABC.indexOf(ch); if (i >= 0) c[i]++; }
+  const mx = Math.max(...c);
+  $('#bars').innerHTML = c.map((n,i) => `<div title="${ABC[i]}: ${n}"><i style="height:${(n/mx*100).toFixed(1)}%"></i><span>${ABC[i]}</span></div>`).join('');
+})();
+$('#b13').addEventListener('click', () => {
+  const v = parseInt($('#a13').value, 10);
+  if (v === FREQ_K) { award('freq'); fb('f13', true, `Correct. The tallest bar is P, and E→P is 11 places. Decrypted: “${FREQ_PT}”`); }
+  else if (v === 26 - FREQ_K) fb('f13', false, '15 is the decryption shift (26 − 11). What shift did the sender use to encrypt?');
+  else fb('f13', false, 'Look again: which letter has the tallest bar? Count forward from E to that letter, wrapping from Z to A if needed.');
+});
+$('#a13').addEventListener('keydown', e => { if (e.key === 'Enter') $('#b13').click(); });
+
+/* ---------- symmetric ---------- */
+const aes = { key:null, bits:256, iv:null, ct:null };
+$$('[data-bits]').forEach(b => b.addEventListener('click', () => {
+  aes.bits = +b.dataset.bits;
+  $$('[data-bits]').forEach(x => x.setAttribute('aria-pressed', x === b));
+}));
+async function genAES() {
+  aes.key = await crypto.subtle.generateKey({name:'AES-GCM', length:aes.bits}, true, ['encrypt','decrypt']);
+  const raw = await crypto.subtle.exportKey('raw', aes.key);
+  $('#aesKey').textContent = hex(raw);
+  aes.ct = null; $('#aesIv').textContent=''; $('#aesCt').textContent=''; $('#aesOut').textContent=''; $('#aesNote').textContent='';
+  state.evidence.aesBits = aes.bits; save();
+  fb('f21', null, `New ${aes.bits}-bit key: ${aes.bits/4} hex characters, ${aes.bits === 256 ? '2²⁵⁶' : '2¹²⁸'} possible keys. Now encrypt.`);
+}
+$('#aesGen').addEventListener('click', () => hasCrypto && genAES());
+$('#aesEnc').addEventListener('click', async () => {
+  if (!hasCrypto) return;
+  if (!aes.key) await genAES();
+  aes.iv = crypto.getRandomValues(new Uint8Array(12));
+  const pt = te.encode($('#aesPt').value);
+  aes.ct = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv:aes.iv}, aes.key, pt));
+  $('#aesIv').textContent = hex(aes.iv);
+  $('#aesCt').textContent = b64(aes.ct);
+  $('#aesOut').textContent = '';
+  $('#aesNote').textContent = `${pt.length} bytes of plaintext became ${aes.ct.length} bytes: the extra 16 bytes are the GCM authentication tag.`;
+  fb('f21', null, 'Encrypted. Now decrypt it with the same key and IV.');
+});
+$('#aesDec').addEventListener('click', async () => {
+  if (!aes.ct) return fb('f21', false, 'Encrypt something first.');
+  try {
+    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:aes.iv}, aes.key, aes.ct);
+    $('#aesOut').textContent = td.decode(pt);
+    award('aesRound');
+    fb('f21', true, 'Decrypted with the same secret key. That’s what makes it symmetric.');
+  } catch(e) { fb('f21', false, 'Decryption failed: ' + esc(e.message || e.name)); }
+});
+$('#aesTamper').addEventListener('click', async () => {
+  if (!aes.ct) return fb('f22', false, 'Complete Task 2.1 first so there’s ciphertext to tamper with.');
+  const bad = aes.ct.slice(); const i = Math.floor(Math.random() * (bad.length - 16));
+  bad[i] ^= 0x01;
+  try {
+    await crypto.subtle.decrypt({name:'AES-GCM', iv:aes.iv}, aes.key, bad);
+    fb('f22', false, 'Unexpectedly decrypted. Try again.');
+  } catch(e) {
+    award('tamper');
+    fb('f22', true, `Byte ${i} was changed by one bit and decryption was <strong>refused</strong> (${esc(e.name)}). The authentication tag no longer matched, so GCM returned nothing rather than corrupted data. That’s integrity protection.`);
+  }
+});
+$('#aesWrong').addEventListener('click', async () => {
+  if (!aes.ct) return fb('f23', false, 'Complete Task 2.1 first so there’s ciphertext to attack.');
+  const other = await crypto.subtle.generateKey({name:'AES-GCM', length:aes.bits}, true, ['encrypt','decrypt']);
+  const raw = hex(await crypto.subtle.exportKey('raw', other));
+  try {
+    await crypto.subtle.decrypt({name:'AES-GCM', iv:aes.iv}, other, aes.ct);
+    fb('f23', false, 'Unexpectedly decrypted. Try again.');
+  } catch(e) {
+    award('wrongKey');
+    fb('f23', true, `The key <span class="mono">${raw.slice(0,16)}…</span> failed. Without the exact shared secret, the ciphertext is useless, so the whole system depends on protecting and distributing that key.`);
+  }
+});
+$('#b24').addEventListener('click', () => {
+  const v = parseInt($('#a24').value, 10);
+  if (v === 66) { award('keyCount'); fb('f24', true, 'Correct: n(n − 1) / 2 = 12 × 11 / 2 = 66 keys. Add a 13th member and you need 12 more. Symmetric keys scale poorly.'); }
+  else if (v === 132) fb('f24', false, 'Close. 12 × 11 counts every pair twice (Ana–Ben and Ben–Ana share one key). Divide by 2.');
+  else fb('f24', false, 'Not quite. Each pair shares one key. Use n(n − 1) / 2.');
+});
+
+/* ---------- toy RSA ---------- */
+const PRIMES = [11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97];
+const gcd = (a,b) => { while (b) [a,b] = [b, a%b]; return a; };
+function modInv(a, m) { let [or, r] = [a, m], [os, s] = [1, 0]; while (r) { const q = Math.floor(or/r); [or, r] = [r, or - q*r]; [os, s] = [s, os - q*s]; } return ((os % m) + m) % m; }
+function modPow(b, e, m) { let r = 1n; b %= m; while (e > 0n) { if (e & 1n) r = r*b % m; e >>= 1n; b = b*b % m; } return r; }
+const toy = { p:61, q:53, n:null, phi:null, e:null, d:null, revealed:false };
+$('#selP').innerHTML = PRIMES.map(p => `<option ${p===61?'selected':''}>${p}</option>`).join('');
+$('#selQ').innerHTML = PRIMES.map(p => `<option ${p===53?'selected':''}>${p}</option>`).join('');
+function toyStage() {
+  const stage = 1 + (toy.n?1:0) + (toy.phi?1:0) + (toy.e?1:0) + (toy.d?1:0);
+  $$('.rsa-step').forEach(el => {
+    const lock = +el.dataset.step > stage;
+    el.classList.toggle('locked', lock);
+    el.querySelectorAll('input,button').forEach(x => x.disabled = lock);
+  });
+  if (toy.e) $('#pubBox').innerHTML = `<strong>Public key</strong> (e, n) = (${toy.e}, ${toy.n})`;
+  if (toy.d) $('#privBox').innerHTML = `<strong>Private key</strong> (d, n) = (${toy.d}, ${toy.n})`;
+}
+function toyReset() {
+  toy.p = +$('#selP').value; toy.q = +$('#selQ').value;
+  toy.n = toy.phi = toy.e = toy.d = null; toy.revealed = false;
+  ['tN','tPhi','tE','tD'].forEach(i => $('#'+i).value = '');
+  ['fN','fPhi','fE','fD','fRun'].forEach(i => { $('#'+i).className='fb'; $('#'+i).innerHTML=''; });
+  $('#toyOut').textContent=''; $('#pubBox').textContent='Public key (e, n)'; $('#privBox').textContent='Private key (d, n)';
+  if (toy.p === toy.q) fb('fN', false, 'p and q must be different primes. If they’re equal, n is a perfect square and trivially factored.');
+  toyStage();
+}
+$('#selP').addEventListener('change', toyReset); $('#selQ').addEventListener('change', toyReset);
+$('#bN').addEventListener('click', () => {
+  if (toy.p === toy.q) return fb('fN', false, 'Choose two different primes first.');
+  const v = parseInt($('#tN').value, 10);
+  if (v === toy.p*toy.q) { toy.n = v; award('toyN'); fb('fN', true, `n = ${toy.p} × ${toy.q} = ${v}. This public modulus is safe to share because recovering p and q from a 600-digit n is infeasible.`); }
+  else fb('fN', false, 'Multiply p by q.');
+  toyStage();
+});
+$('#bPhi').addEventListener('click', () => {
+  const v = parseInt($('#tPhi').value, 10), want = (toy.p-1)*(toy.q-1);
+  if (v === want) { toy.phi = v; award('toyPhi'); fb('fPhi', true, `φ(n) = ${toy.p-1} × ${toy.q-1} = ${v}. Only someone who knows p and q can compute this, which is why it stays secret.`); }
+  else fb('fPhi', false, 'Subtract 1 from each prime, then multiply.');
+  toyStage();
+});
+$('#bE').addEventListener('click', () => {
+  const v = parseInt($('#tE').value, 10);
+  if (!(v > 1 && v < toy.phi)) return fb('fE', false, `e must be greater than 1 and less than φ(n) = ${toy.phi}.`);
+  const g = gcd(v, toy.phi);
+  if (g !== 1) return fb('fE', false, `${v} shares the factor ${g} with ${toy.phi}, so it has no modular inverse. Try another small prime.`);
+  toy.e = v; award('toyE'); fb('fE', true, `gcd(${v}, ${toy.phi}) = 1, so e = ${v} works. Real systems almost always use e = 65537.`);
+  toyStage();
+});
+$('#bD').addEventListener('click', () => {
+  const v = parseInt($('#tD').value, 10);
+  if (v > 0 && v < toy.phi && (toy.e*v) % toy.phi === 1) {
+    toy.d = v; if (!toy.revealed) award('toyD');
+    fb('fD', true, `${toy.e} × ${v} = ${toy.e*v} = ${Math.floor(toy.e*v/toy.phi)} × ${toy.phi} + 1. So d = ${v} is your private exponent.`);
+  } else fb('fD', false, `Find the d between 1 and ${toy.phi} where (${toy.e} × d) mod ${toy.phi} = 1.`);
+  toyStage();
+});
+$('#bRevealD').addEventListener('click', () => {
+  const d = modInv(toy.e, toy.phi);
+  toy.revealed = true; toy.d = d; $('#tD').value = d;
+  fb('fD', null, `The extended Euclidean algorithm gives d = ${d}. Check: ${toy.e} × ${d} = ${toy.e*d} = ${Math.floor(toy.e*d/toy.phi)} × ${toy.phi} + 1. (Revealed, so step 4 earns no points, but you can continue.)`);
+  toyStage();
+});
+$('#bRun').addEventListener('click', () => {
+  const m = parseInt($('#tM').value, 10);
+  if (!(m > 1 && m < toy.n)) return fb('fRun', false, `m must be between 2 and ${toy.n - 1} (less than n).`);
+  const c = modPow(BigInt(m), BigInt(toy.e), BigInt(toy.n));
+  const m2 = modPow(c, BigInt(toy.d), BigInt(toy.n));
+  $('#toyOut').textContent = `Encrypt with public key:  c = ${m}^${toy.e} mod ${toy.n} = ${c}\nDecrypt with private key: m = ${c}^${toy.d} mod ${toy.n} = ${m2}`;
+  if (Number(m2) === m) {
+    award('toyRound');
+    state.evidence.toyKey = `p=${toy.p}, q=${toy.q}, n=${toy.n}, e=${toy.e}, d=${toy.d}`; save();
+    fb('fRun', true, 'The round trip worked: anyone can encrypt with (e, n), but only the holder of d can decrypt.');
+  }
+});
+toyStage();
+
+/* ---------- real RSA ---------- */
+const rsa = { pub:null, priv:null, bits:2048, ct:null };
+$$('[data-rsa]').forEach(b => b.addEventListener('click', () => {
+  rsa.bits = +b.dataset.rsa; $$('[data-rsa]').forEach(x => x.setAttribute('aria-pressed', x === b));
+}));
+const rsaMax = () => rsa.bits/8 - 2*32 - 2;
+$('#rsaLimit').textContent = `RSA-OAEP with SHA-256 and a 2048-bit key can encrypt at most ${2048/8 - 66} bytes at once.`;
+$('#rsaGen').addEventListener('click', async () => {
+  if (!hasCrypto) return;
+  const btn = $('#rsaGen'); btn.disabled = true; btn.textContent = `Generating ${rsa.bits}-bit key…`;
+  fb('fRsaGen', null, 'Searching for two large random primes…');
+  await new Promise(r => setTimeout(r, 30));
+  const t0 = performance.now();
+  try {
+    const kp = await crypto.subtle.generateKey({name:'RSA-OAEP', modulusLength:rsa.bits, publicExponent:new Uint8Array([1,0,1]), hash:'SHA-256'}, false, ['encrypt','decrypt']);
+    const ms = Math.round(performance.now() - t0);
+    rsa.pub = kp.publicKey; rsa.priv = kp.privateKey; rsa.ct = null;
+    const spki = await crypto.subtle.exportKey('spki', rsa.pub);
+    $('#rsaPem').textContent = pem('PUBLIC KEY', spki);
+    const fp = colonHex(await sha256(spki));
+    $('#rsaFp').textContent = fp;
+    $('#rsaLimit').textContent = `RSA-OAEP with SHA-256 and a ${rsa.bits}-bit key can encrypt at most ${rsaMax()} bytes at once.`;
+    $('#rsaCt').textContent=''; $('#rsaOut').textContent='';
+    state.evidence.rsaBits = rsa.bits; state.evidence.rsaFp = fp.slice(0,23) + '…'; state.evidence.rsaMs = ms; save();
+    award('rsaGen');
+    fb('fRsaGen', true, `${rsa.bits}-bit key pair generated in ${ms} ms, with public exponent 65537. Try a larger size and compare the time.`);
+  } catch(e) { fb('fRsaGen', false, 'Key generation failed: ' + esc(e.message || e.name)); }
+  btn.disabled = false; btn.textContent = 'Generate key pair';
+});
+$('#rsaEnc').addEventListener('click', async () => {
+  if (!rsa.pub) return fb('fRsa', false, 'Generate a key pair in Task 3.2 first.');
+  const data = te.encode($('#rsaPt').value);
+  if (data.length > rsaMax()) return fb('fRsa', false, `That’s ${data.length} bytes; this key can only encrypt ${rsaMax()}. This size limit is one reason RSA wraps keys rather than encrypting files.`);
+  rsa.ct = await crypto.subtle.encrypt({name:'RSA-OAEP'}, rsa.pub, data);
+  $('#rsaCt').textContent = b64(rsa.ct); $('#rsaOut').textContent = '';
+  fb('fRsa', null, `A ${data.length}-byte message became ${rsa.ct.byteLength} bytes of ciphertext, always the size of the modulus. Encrypt again and the output changes because OAEP adds randomness.`);
+});
+$('#rsaDec').addEventListener('click', async () => {
+  if (!rsa.ct) return fb('fRsa', false, 'Encrypt with the public key first.');
+  try {
+    $('#rsaOut').textContent = td.decode(await crypto.subtle.decrypt({name:'RSA-OAEP'}, rsa.priv, rsa.ct));
+    award('rsaRound');
+    fb('fRsa', true, 'Decrypted with the private key. Anyone could have encrypted this with your public key, but only you can read it.');
+  } catch(e) { fb('fRsa', false, 'Decryption failed: ' + esc(e.name)); }
+});
+$('#hybridBtn').addEventListener('click', async () => {
+  if (!aes.key) return fb('fHybrid', false, 'Generate an AES key in Station 2, Task 2.1 first.');
+  if (!rsa.pub) return fb('fHybrid', false, 'Generate an RSA key pair in Task 3.2 first.');
+  const raw = await crypto.subtle.exportKey('raw', aes.key);
+  const wrapped = await crypto.subtle.encrypt({name:'RSA-OAEP'}, rsa.pub, raw);
+  const unwrapped = await crypto.subtle.decrypt({name:'RSA-OAEP'}, rsa.priv, wrapped);
+  const match = hex(raw) === hex(unwrapped);
+  $('#hybridOut').textContent = `AES key (sender):      ${hex(raw)}\nWrapped with RSA:      ${b64(wrapped).slice(0,88)}…\nUnwrapped (recipient): ${hex(unwrapped)}\nMatch: ${match ? 'yes' : 'no'}`;
+  if (match) { award('hybrid'); fb('fHybrid', true, 'This is the pattern behind S/MIME, PGP, and encrypted file sharing: RSA solves key distribution, then fast AES encrypts the actual data. (TLS 1.3 uses ephemeral Diffie-Hellman for the same job.)'); }
+});
+$('#b35').addEventListener('click', () => {
+  const v = parseInt($('#a35').value, 10);
+  if (v === 12) { award('asymKeys'); fb('f35', true, 'Correct: one key pair per person (24 keys total). Each member publishes one public key and anyone can use it. Compare that with 66 shared secrets.'); }
+  else if (v === 24) fb('f35', false, '24 is the number of individual keys. How many pairs is that?');
+  else if (v === 66) fb('f35', false, '66 is the symmetric answer. With asymmetric crypto, does each person need a different key for each partner?');
+  else fb('f35', false, 'Think about it: does Ana need a separate key pair for each colleague, or can one public key serve everyone?');
+});
+
+/* ---------- signatures ---------- */
+const sig = { kp:null, sig:null, msg:null };
+let hashT;
+async function updHash() { if (hasCrypto) $('#sigHash').textContent = await sha256($('#sigMsg').value); }
+$('#sigMsg').addEventListener('input', () => { clearTimeout(hashT); hashT = setTimeout(updHash, 120); });
+updHash();
+$('#sigSign').addEventListener('click', async () => {
+  if (!hasCrypto) return;
+  if (!sig.kp) sig.kp = await crypto.subtle.generateKey({name:'RSA-PSS', modulusLength:2048, publicExponent:new Uint8Array([1,0,1]), hash:'SHA-256'}, false, ['sign','verify']);
+  sig.msg = $('#sigMsg').value;
+  sig.sig = await crypto.subtle.sign({name:'RSA-PSS', saltLength:32}, sig.kp.privateKey, te.encode(sig.msg));
+  $('#sigOut').textContent = b64(sig.sig);
+  fb('fSig', null, 'Signed. The digest of the message was encrypted with your private key, producing a 256-byte signature. Now verify it.');
+});
+$('#sigVerify').addEventListener('click', async () => {
+  if (!sig.sig) return fb('fSig', false, 'Sign the message first.');
+  const cur = $('#sigMsg').value;
+  const ok = await crypto.subtle.verify({name:'RSA-PSS', saltLength:32}, sig.kp.publicKey, sig.sig, te.encode(cur));
+  if (ok) {
+    award('sign'); state.evidence.sig = 'RSA-PSS 2048 / SHA-256'; save();
+    fb('fSig', true, 'Valid signature. The public key confirms the message came from the private-key holder (authentication) and is unchanged (integrity). The signer can’t later deny it (non-repudiation).');
+    fb('fSigT', null, 'Now edit the message above and verify again.');
+  } else {
+    fb('fSig', false, '<strong>Invalid signature.</strong> The message no longer matches what was signed.');
+    if (cur !== sig.msg) { award('sigTamper'); fb('fSigT', true, 'Detected. Changing even one character produces a completely different SHA-256 digest, so the signature fails. Restore the original text and it verifies again.'); }
+  }
+});
+
+/* ---------- certificate inspector ---------- */
+const CERT = [
+  ['Version','3 (X.509v3)'],
+  ['Serial number','4A:9C:12:E7:03:B8:5D:61:F0:2C'],
+  ['Signature algorithm','sha256WithRSAEncryption'],
+  ['Issuer','CN=Lakeside Issuing CA G2, O=Lakeside Trust Services, C=US'],
+  ['Validity','Not before 2026-09-01 00:00 UTC\nNot after 2027-03-01 23:59 UTC'],
+  ['Subject','CN=portal.example.edu, O=Example Community College, ST=Illinois, C=US'],
+  ['Subject public key','RSA, 2048 bits, exponent 65537'],
+  ['Subject alternative name','DNS:portal.example.edu, DNS:www.portal.example.edu'],
+  ['Key usage (critical)','Digital Signature, Key Encipherment'],
+  ['Extended key usage','TLS Web Server Authentication'],
+  ['Basic constraints (critical)','CA:FALSE'],
+  ['Authority info access','OCSP: http://ocsp.lakeside-trust.example'],
+  ['CRL distribution point','http://crl.lakeside-trust.example/g2.crl'],
+  ['SHA-256 fingerprint','7F:3A:9E:C1:44:0B:…:D2:18:6A']
+];
+$('#certView').innerHTML = CERT.map(([k,v]) => `<dt>${k}</dt><dd>${esc(v).replace(/\n/g,'<br>')}</dd>`).join('');
+const INSPECT = [
+  {q:'A browser connects to https://www.portal.example.edu. Which field determines whether the hostname matches?', o:['Issuer','Subject alternative name','Serial number','Authority info access'], a:1,
+   e:'Browsers check the hostname against the SAN extension. Here it lists www.portal.example.edu, so the name matches. Modern browsers ignore the subject CN when a SAN is present.'},
+  {q:'What does “Basic constraints: CA:FALSE” tell you?', o:['The certificate is self-signed','This certificate can’t be used to sign other certificates','The certificate was revoked','The private key is non-exportable'], a:1,
+   e:'CA:FALSE marks an end-entity (leaf) certificate. If an attacker stole this server’s key, they still couldn’t issue certificates that browsers would accept.'},
+  {q:'Whose private key created this certificate’s signature?', o:['The portal.example.edu server','Lakeside Issuing CA G2','Lakeside Root CA R1','The visitor’s browser'], a:1,
+   e:'The issuer signs the certificate. Lakeside Issuing CA G2 is named as issuer, so a browser verifies the signature with that CA’s public key, found in the intermediate certificate.'}
+];
+
+/* ---------- generic MCQ ---------- */
+function renderMCQ(box, items, prefix) {
+  box.innerHTML = items.map((it,i) => `
+    <div class="mcq" id="mcq-${prefix}${i+1}">
+      <p class="q">${i+1}. ${it.q}</p>
+      <div class="opts">${it.o.map((o,j) => `<button class="opt" data-q="${prefix}${i+1}" data-i="${j}">${o}</button>`).join('')}</div>
+      <p class="fb" id="fb-${prefix}${i+1}"></p>
+    </div>`).join('');
+  box.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.q, idx = +id.replace(prefix,'') - 1;
+    answerMCQ(id, items[idx], +b.dataset.i, true);
+  }));
+  items.forEach((it,i) => { const id = prefix+(i+1); if (state.picks[id] !== undefined) answerMCQ(id, it, state.picks[id], false); });
+}
+function answerMCQ(id, it, pick, fresh) {
+  const box = document.getElementById('mcq-'+id);
+  if (fresh && state.picks[id] !== undefined) return;
+  box.querySelectorAll('.opt').forEach((o,j) => { o.disabled = true; if (j === it.a) o.classList.add('right'); if (j === pick && pick !== it.a) o.classList.add('wrong'); });
+  const ok = pick === it.a;
+  fb('fb-'+id, ok, `${ok ? '<strong>Correct.</strong> ' : '<strong>Not quite.</strong> '}${it.e}`);
+  if (fresh) { state.picks[id] = pick; if (ok) award(id); else { save(); refresh(); } if (id.startsWith('q')) quizScore(); }
+}
+renderMCQ($('#inspectQs'), INSPECT, 'inspect');
+
+/* ---------- chain of trust ---------- */
+const CHAIN = {
+  root:{n:'Lakeside Root CA R1', s:'CN=Lakeside Root CA R1', i:'CN=Lakeside Root CA R1', b:'CA:TRUE (self-signed, in trust store)'},
+  inter:{n:'Lakeside Issuing CA G2', s:'CN=Lakeside Issuing CA G2', i:'CN=Lakeside Root CA R1', b:'CA:TRUE, pathlen:0'},
+  leaf:{n:'portal.example.edu', s:'CN=portal.example.edu', i:'CN=Lakeside Issuing CA G2', b:'CA:FALSE'}
+};
+const SLOT_LBL = ['Trust anchor (root)','Signed by the certificate above','Presented by the server'];
+let slots = [null,null,null];
+const chip = k => `<button class="chip" data-c="${k}"><strong>${CHAIN[k].n}</strong><span>Subject: ${CHAIN[k].s}</span><span>Issuer: ${CHAIN[k].i}</span><span>${CHAIN[k].b}</span></button>`;
+function renderChain() {
+  const pool = ['inter','leaf','root'].filter(k => !slots.includes(k));
+  $('#chainPool').innerHTML = pool.length ? pool.map(chip).join('') : '<p class="small">All certificates placed.</p>';
+  $('#chainSlots').innerHTML = slots.map((k,i) => `${i ? '<div class="chain-arrow">↓ signs</div>' : ''}<div class="slot"><span class="slot-lbl">${i+1}. ${SLOT_LBL[i]}</span>${k ? chip(k) : ''}</div>`).join('');
+  $('#chainPool').querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { const i = slots.indexOf(null); if (i >= 0) { slots[i] = b.dataset.c; renderChain(); } }));
+  $('#chainSlots').querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { slots[slots.indexOf(b.dataset.c)] = null; renderChain(); }));
+}
+renderChain();
+$('#chainReset').addEventListener('click', () => { slots = [null,null,null]; renderChain(); $('#fChain').className='fb'; $('#fChain').innerHTML=''; });
+$('#chainCheck').addEventListener('click', () => {
+  if (slots.includes(null)) return fb('fChain', false, 'Place all three certificates first.');
+  if (slots[0] !== 'root') return fb('fChain', false, 'The top slot is the trust anchor. It must be self-signed (subject equals issuer) and already in the device’s trust store.');
+  if (slots[1] !== 'inter') return fb('fChain', false, 'Slot 2’s issuer must equal slot 1’s subject. Which certificate was issued by the root?');
+  award('chain');
+  fb('fChain', true, 'Valid chain. The browser verifies each signature with the public key of the certificate above it, all the way up to a root it already trusts. Servers send the leaf and intermediate; the root comes from the trust store.');
+});
+
+/* ---------- trust decisions ---------- */
+const today = new Date(); const d0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+const ds = (n) => { const d = new Date(d0); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+$('#todayStr').textContent = ds(0);
+const ROOT_OK = 'Lakeside Issuing CA G2 (chains to trusted root)';
+const TRUST = [
+  {url:'https://www.example-bank.com', san:'www.example-bank.com, example-bank.com', issuer:ROOT_OK, valid:`${ds(-80)} to ${ds(100)}`, rev:'OCSP: good', ok:true,
+   why:'Every check passes: the hostname is in the SAN, the chain reaches a trusted root, the dates are current, and OCSP reports good.'},
+  {url:'https://hr.example.org', san:'hr.example.org', issuer:ROOT_OK, valid:`${ds(-366)} to ${ds(-1)}`, rev:'OCSP: good', ok:false,
+   why:'The certificate expired yesterday. An expired certificate is no longer vouched for by the CA, so a browser blocks it, even if everything else is fine.'},
+  {url:'https://pay.example.com', san:'mail.example.com, autodiscover.example.com', issuer:ROOT_OK, valid:`${ds(-30)} to ${ds(300)}`, rev:'OCSP: good', ok:false,
+   why:'Hostname mismatch: pay.example.com isn’t in the SAN. This is either a misconfiguration or a sign of an on-path (man-in-the-middle) attacker presenting someone else’s certificate.'},
+  {url:'https://shop.example.net', san:'shop.example.net', issuer:'CN=shop.example.net (self-signed)', valid:`${ds(-10)} to ${ds(355)}`, rev:'No revocation info', ok:false,
+   why:'Self-signed. Nobody trusted vouches for it, so anyone, including an attacker, could create an identical one. Fine for an internal lab; never for a public store.'},
+  {url:'https://vpn.example.com', san:'vpn.example.com', issuer:ROOT_OK, valid:`${ds(-60)} to ${ds(305)}`, rev:'OCSP: revoked (reason: keyCompromise)', ok:false,
+   why:'Revoked for key compromise. Someone else may hold the private key, so the certificate’s dates and chain no longer matter.'},
+  {url:'https://lms.example.edu', san:'*.example.edu', issuer:ROOT_OK, valid:`${ds(-45)} to ${ds(320)}`, rev:'OCSP: good', ok:true,
+   why:'Trusted. A wildcard covers exactly one label, so *.example.edu matches lms.example.edu (but would not match a.lms.example.edu).'}
+];
+$('#trustGrid').innerHTML = TRUST.map((t,i) => `
+  <div class="scn" id="scn${i+1}">
+    <div class="url">${t.url}</div>
+    <dl><dt>SAN</dt><dd>${t.san}</dd><dt>Issuer</dt><dd>${t.issuer}</dd><dt>Valid</dt><dd>${t.valid}</dd><dt>Status</dt><dd>${t.rev}</dd></dl>
+    <div class="row"><button class="btn" data-t="${i}" data-v="1">Trust</button><button class="btn warn" data-t="${i}" data-v="0">Reject</button></div>
+    <p class="fb" id="ft${i+1}"></p>
+  </div>`).join('');
+function trustAnswer(i, v, fresh) {
+  const id = 'trust'+(i+1), t = TRUST[i];
+  if (fresh && state.picks[id] !== undefined) return;
+  const ok = (v === 1) === t.ok;
+  $('#scn'+(i+1)).querySelectorAll('button').forEach(b => b.disabled = true);
+  $('#scn'+(i+1)).classList.add(ok ? 'r-ok' : 'r-bad');
+  fb('ft'+(i+1), ok, `${ok ? '<strong>Right call.</strong> ' : `<strong>The correct call was ${t.ok ? 'Trust' : 'Reject'}.</strong> `}${t.why}`);
+  if (fresh) { state.picks[id] = v; if (ok) award(id); else { save(); refresh(); } }
+}
+$$('#trustGrid [data-t]').forEach(b => b.addEventListener('click', () => trustAnswer(+b.dataset.t, +b.dataset.v, true)));
+TRUST.forEach((_,i) => { const p = state.picks['trust'+(i+1)]; if (p !== undefined) trustAnswer(i, p, false); });
+
+/* ---------- be the CA ---------- */
+const ca = { kp:null, subj:null, csr:null, csrSig:null, cert:null, tbs:null };
+const CA_NAME = 'CN=Workbench Classroom CA, O=Cipher Workbench, C=US';
+$('#csrBtn').addEventListener('click', async () => {
+  if (!hasCrypto) return;
+  const cn = $('#csrCN').value.trim().toLowerCase(), o = $('#csrO').value.trim();
+  if (!/^[a-z0-9*]([a-z0-9-]*\.)+[a-z]{2,}$/.test(cn)) return fb('fCA', false, 'Enter a hostname for the common name, like lab.yourname.example.edu.');
+  ca.subj = await crypto.subtle.generateKey({name:'ECDSA', namedCurve:'P-256'}, true, ['sign','verify']);
+  const spki = await crypto.subtle.exportKey('spki', ca.subj.publicKey);
+  ca.csr = { subject:`CN=${cn}, O=${o}`, subjectAltName:[`DNS:${cn}`], publicKeyAlgorithm:'EC P-256 (ECDSA)', publicKey:b64(spki) };
+  ca.csrSig = await crypto.subtle.sign({name:'ECDSA', hash:'SHA-256'}, ca.subj.privateKey, te.encode(JSON.stringify(ca.csr)));
+  $('#caOut').hidden = false;
+  $('#caOut').textContent = '# Certificate signing request\n' + JSON.stringify(ca.csr, null, 2) + `\n\nCSR signature (by the requester’s own private key):\n${b64(ca.csrSig)}`;
+  $('#caSign').disabled = false; $('#caTamper').disabled = true;
+  fb('fCA', null, 'You generated an elliptic-curve key pair (P-256: security comparable to 3072-bit RSA in a 256-bit key) and a CSR. The CSR is signed with your own private key to prove you hold it. The private key never goes to the CA.');
+});
+$('#caSign').addEventListener('click', async () => {
+  const csrOk = await crypto.subtle.verify({name:'ECDSA', hash:'SHA-256'}, ca.subj.publicKey, ca.csrSig, te.encode(JSON.stringify(ca.csr)));
+  if (!csrOk) return fb('fCA', false, 'CSR proof of possession failed.');
+  if (!ca.kp) ca.kp = await crypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5', modulusLength:2048, publicExponent:new Uint8Array([1,0,1]), hash:'SHA-256'}, false, ['sign','verify']);
+  const serial = colonHex(hex(crypto.getRandomValues(new Uint8Array(10))));
+  ca.tbs = { version:3, serialNumber:serial, signatureAlgorithm:'sha256WithRSAEncryption', issuer:CA_NAME, validity:{notBefore:ds(0), notAfter:ds(90)},
+    subject:ca.csr.subject, subjectAltName:ca.csr.subjectAltName, subjectPublicKey:{algorithm:ca.csr.publicKeyAlgorithm, key:ca.csr.publicKey.slice(0,44)+'…'},
+    keyUsage:['digitalSignature'], extendedKeyUsage:['serverAuth'], basicConstraints:'CA:FALSE' };
+  const sigv = await crypto.subtle.sign({name:'RSASSA-PKCS1-v1_5'}, ca.kp.privateKey, te.encode(JSON.stringify(ca.tbs)));
+  ca.cert = { tbsCertificate:ca.tbs, signatureValue:b64(sigv) };
+  const ok = await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'}, ca.kp.publicKey, sigv, te.encode(JSON.stringify(ca.tbs)));
+  $('#caOut').textContent = '# Issued certificate (fields simplified; real certificates are DER-encoded ASN.1)\n' + JSON.stringify(ca.cert, null, 2) + `\n\nVerify with CA public key: ${ok ? 'VALID' : 'INVALID'}`;
+  if (ok) {
+    award('issue');
+    state.evidence.cert = `${ca.csr.subject.split(',')[0]} (serial ${serial.slice(0,14)}…)`; save();
+    $('#caTamper').disabled = false;
+    fb('fCA', true, 'The CA first verified the CSR signature (proof of possession), then signed the “to be signed” certificate fields with its own private key. Anyone holding the CA’s public key can now verify it. Next, try forging it.');
+  }
+});
+$('#caTamper').addEventListener('click', async () => {
+  const forged = JSON.parse(JSON.stringify(ca.tbs));
+  forged.subject = 'CN=evil.example.com, O=Totally Legit'; forged.subjectAltName = ['DNS:evil.example.com'];
+  const ok = await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'}, ca.kp.publicKey, Uint8Array.from(atob(ca.cert.signatureValue), c => c.charCodeAt(0)), te.encode(JSON.stringify(forged)));
+  $('#caOut').textContent = '# Forged certificate: subject edited, original CA signature kept\n' + JSON.stringify({tbsCertificate:forged, signatureValue:ca.cert.signatureValue}, null, 2) + `\n\nVerify with CA public key: ${ok ? 'VALID' : 'INVALID'}`;
+  if (!ok) { award('certTamper'); fb('fCA', true, 'Verification failed. The attacker changed the subject but can’t re-sign without the CA’s private key. That’s why protecting CA keys (often in offline HSMs) is the foundation of PKI.'); }
+  refresh();
+});
+
+/* ---------- quiz ---------- */
+const QUIZ = [
+  {q:'How many useful keys does a Caesar cipher on the 26-letter English alphabet have?', o:['25','26','2²⁶','Unlimited'], a:0, e:'A shift of 0 leaves the plaintext unchanged, leaving 25 useful keys: few enough to brute-force by hand, as you did in Task 1.2.'},
+  {q:'Kerckhoffs’s principle says a cryptosystem should remain secure even if…', o:['the key is published','everything about the system except the key is public','the attacker has unlimited computing power','the algorithm is kept secret'], a:1, e:'Security must rest on the key alone. That’s why AES and RSA are public standards, scrutinized openly, rather than secret designs.'},
+  {q:'A backup system must encrypt 4 TB of data every night and protect the key for an off-site recipient. Which approach fits best?', o:['RSA-4096 applied directly to the data','AES-256 for the data, with the AES key wrapped by the recipient’s RSA public key','SHA-256 applied to the data','A Vigenère cipher with a very long key'], a:1, e:'Hybrid encryption. Symmetric ciphers are orders of magnitude faster for bulk data; asymmetric encryption solves getting the key to the recipient (Task 3.4).'},
+  {q:'Why is ECB mode a poor choice for encrypting images or structured data?', o:['It requires a 512-bit key','Identical plaintext blocks produce identical ciphertext blocks, leaking patterns','It can only decrypt once','It’s an asymmetric mode'], a:1, e:'ECB encrypts each block independently with no IV, so repeated patterns survive encryption (the famous “ECB penguin”). Use GCM or another mode with a unique IV.'},
+  {q:'In Station 2, flipping a single bit made AES-GCM decryption fail completely. Why?', o:['The IV was reused','The authentication tag no longer matched, so GCM rejected the data','The key length changed','The ciphertext became too long'], a:1, e:'GCM is an AEAD mode: it computes an authentication tag over the ciphertext. Any change breaks the tag, and decryption returns an error instead of corrupted plaintext.'},
+  {q:'Alice wants to send Bob a message that only Bob can read. Which key does she encrypt with?', o:['Alice’s private key','Alice’s public key','Bob’s public key','Bob’s private key'], a:2, e:'Encrypt with the recipient’s public key; only the recipient’s private key can decrypt. (Encrypting with your own private key is signing, which proves origin, not secrecy.)'},
+  {q:'Alice digitally signs a contract. Which key creates the signature, and what does it provide beyond integrity?', o:['Alice’s private key; authentication and non-repudiation','Alice’s public key; confidentiality','Bob’s public key; availability','A shared symmetric key; non-repudiation'], a:0, e:'Only Alice holds her private key, so a valid signature ties the document to her. A shared-key MAC can’t provide non-repudiation, because both parties hold the same key.'},
+  {q:'RSA’s security rests on the difficulty of…', o:['reversing a hash function','factoring the product of two large primes','solving discrete logarithms on elliptic curves','guessing the IV'], a:1, e:'In Task 3.1, knowing p and q let you compute φ(n) and d. With a 2048-bit n, recovering p and q is computationally infeasible today. Large quantum computers would change that, which is driving post-quantum cryptography.'},
+  {q:'Why do mobile and IoT devices often prefer ECC over RSA?', o:['ECC is a symmetric algorithm','ECC gives comparable security with much smaller keys, saving CPU, power, and bandwidth','ECC doesn’t need certificates','ECC keys never expire'], a:1, e:'A 256-bit ECC key (like the P-256 key in Task 4.6) offers security comparable to 3072-bit RSA, with faster operations and smaller signatures.'},
+  {q:'Which TLS 1.3 feature ensures that a stolen server private key can’t decrypt previously recorded sessions?', o:['Certificate pinning','Ephemeral (EC)DHE key exchange, providing perfect forward secrecy','Larger RSA keys','OCSP stapling'], a:1, e:'Each session uses a fresh, discarded Diffie-Hellman key. The server’s long-term key only signs the handshake, so stealing it later reveals nothing about past sessions.'},
+  {q:'A browser needs a real-time answer about whether a certificate has been revoked. What does it query?', o:['A CSR','An OCSP responder','The SAN extension','A PEM file'], a:1, e:'OCSP (Online Certificate Status Protocol) returns good, revoked, or unknown for one certificate. CRLs are the older alternative: a periodically published list of revoked serial numbers.'},
+  {q:'How does hashing differ from encryption?', o:['Hashing is reversible with the right key','Hashing is one-way and produces a fixed-length digest used to verify integrity','Hashing requires a public key','A hash is always the same length as its input'], a:1, e:'Hashing has no key and can’t be reversed. You saw SHA-256 produce a fixed 64-hex-character digest in Task 4.1, and change completely when one character changed.'}
+];
+renderMCQ($('#quizBox'), QUIZ, 'q');
+function quizScore() {
+  let ans = 0, right = 0;
+  QUIZ.forEach((it,i) => { const p = state.picks['q'+(i+1)]; if (p !== undefined) { ans++; if (p === it.a) right++; } });
+  if (ans) fb('quizScore', null, `${right} of ${ans} answered correctly${ans < QUIZ.length ? ` (${QUIZ.length - ans} remaining)` : ''}.`);
+  return {ans, right};
+}
+quizScore();
+
+/* ---------- summary ---------- */
+const KSA = [
+  ['K1','Knowledge','Classical substitution ciphers, keyspace, and frequency analysis',['caesarEnc','brute','freq','q1','q2']],
+  ['K2','Knowledge','Symmetric algorithms, modes of operation, and the key distribution problem',['aesRound','keyCount','q3','q4','q5']],
+  ['K3','Knowledge','Asymmetric cryptography: RSA mathematics, key pairs, and ECC',['toyN','toyPhi','toyE','toyD','q8','q9']],
+  ['K4','Knowledge','Hashing, digital signatures, and the security goals they provide',['sign','q7','q12']],
+  ['K5','Knowledge','PKI: X.509 fields, chains of trust, and revocation',['inspect1','inspect2','inspect3','chain','q11']],
+  ['S1','Skill','Encrypt, decrypt, and cryptanalyze a classical cipher',['caesarEnc','brute','freq']],
+  ['S2','Skill','Apply AES-GCM and interpret keys, IVs, and authentication tags',['aesRound','tamper','wrongKey']],
+  ['S3','Skill','Generate RSA key pairs and use them for encryption and hybrid key exchange',['toyRound','rsaGen','rsaRound','hybrid']],
+  ['S4','Skill','Sign and verify data; issue and validate digital certificates',['sign','sigTamper','chain','issue']],
+  ['A1','Ability','Select the right cryptographic control for a scenario',['keyCount','asymKeys','q3','q6','q10']],
+  ['A2','Ability','Recognize failed cryptographic controls and respond correctly',['tamper','sigTamper','certTamper','trust1','trust2','trust3','trust4','trust5','trust6']]
+];
+function ksaStatus(tasks) {
+  const poss = tasks.reduce((a,t)=>a+TASKS[t].p,0), got = tasks.reduce((a,t)=>a+(state.pts[t]||0),0);
+  const r = got/poss;
+  return r >= .75 ? ['Demonstrated','s3',r] : r > 0 ? ['Developing','s2',r] : ['Not yet attempted','s1',r];
+}
+const fmtDate = () => new Date().toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'});
+function evidenceRows() {
+  const e = state.evidence, q = quizScore();
+  return [
+    ['AES key generated', e.aesBits ? `AES-${e.aesBits} (GCM)` : 'Not completed'],
+    ['Toy RSA key built by hand', e.toyKey || 'Not completed'],
+    ['RSA key pair generated', e.rsaBits ? `${e.rsaBits}-bit in ${e.rsaMs} ms, fingerprint ${e.rsaFp}` : 'Not completed'],
+    ['Digital signature verified', e.sig || 'Not completed'],
+    ['Certificate issued as CA', e.cert || 'Not completed'],
+    ['Knowledge check', q.ans ? `${q.right} of ${QUIZ.length} correct${q.ans < QUIZ.length ? ` (${QUIZ.length - q.ans} unanswered)` : ''}` : 'Not started']
+  ];
+}
+function renderSummary() {
+  $('#stuName').value = state.name || '';
+  $('#reflect').value = state.reflection || '';
+  $('#sumDate').textContent = 'Completed ' + fmtDate();
+  $('#sumScore').textContent = total();
+  $('#sumStations').innerHTML = '<tr><th>Station</th><th style="text-align:right">Points</th></tr>' +
+    STATIONS.filter(s => stPossible(s.id)).map((s,i) => `<tr><td>${i+1}. ${s.n}</td><td class="num">${stEarned(s.id)} / ${stPossible(s.id)}</td></tr>`).join('') +
+    `<tr><td><strong>Total</strong></td><td class="num"><strong>${total()} / 100</strong></td></tr>`;
+  $('#sumKsa').innerHTML = '<tr><th>KSA</th><th>Description</th><th>Status</th></tr>' +
+    KSA.map(([c,,d,t]) => { const [lbl,cls,r] = ksaStatus(t); return `<tr><td><strong>${c}</strong></td><td>${d}</td><td><span class="status ${cls}">${lbl}</span><br><span class="small">${Math.round(r*100)}%</span></td></tr>`; }).join('');
+  $('#sumEvidence').innerHTML = evidenceRows().map(([k,v]) => `<tr><td style="width:38%">${k}</td><td class="mono" style="font-size:.82rem">${esc(v)}</td></tr>`).join('');
+}
+$('#stuName').addEventListener('input', e => { state.name = e.target.value; save(); });
+$('#reflect').addEventListener('input', e => { state.reflection = e.target.value; save(); });
+$('#printBtn').addEventListener('click', () => { renderSummary(); window.print(); });
+$('#copyBtn').addEventListener('click', async () => {
+  const lines = [`Cipher Workbench: Cryptography Review Summary`, `Name: ${state.name || '(not entered)'}`, `Date: ${fmtDate()}`, `Score: ${total()} / 100`, '', 'Points by station:'];
+  STATIONS.filter(s => stPossible(s.id)).forEach(s => lines.push(`  ${s.n}: ${stEarned(s.id)} / ${stPossible(s.id)}`));
+  lines.push('', 'KSAs:'); KSA.forEach(([c,,d,t]) => lines.push(`  ${c} ${d}: ${ksaStatus(t)[0]}`));
+  lines.push('', 'Evidence:'); evidenceRows().forEach(([k,v]) => lines.push(`  ${k}: ${v}`));
+  lines.push('', `Reflection: ${state.reflection || '(none)'}`);
+  const text = lines.join('\n');
+  try { await navigator.clipboard.writeText(text); fb('fSum', true, 'Summary copied. Paste it into your LMS submission or an email.'); }
+  catch(e) { fb('fSum', null, `Your browser blocked clipboard access. Select and copy the text below:<pre class="cert">${esc(text)}</pre>`); }
+});
+let resetArmed = false;
+$('#resetBtn').addEventListener('click', () => {
+  if (!resetArmed) { resetArmed = true; $('#resetBtn').textContent = 'Select again to erase everything'; setTimeout(() => { resetArmed = false; $('#resetBtn').textContent = 'Reset all progress'; }, 4000); return; }
+  try { localStorage.removeItem(LS); } catch(e) {}
+  location.hash = 'brief'; location.reload();
+});
+
+/* ---------- init ---------- */
+buildRail();
+refresh();
+go(location.hash.slice(1) || 'brief');
+})();
+</script>
+</body>
+</html>
