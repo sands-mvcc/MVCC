@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speech GPS: Speech 115 outline builder</title>
+<style>
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --ink:#13233A; --muted:#566275; --line:#D3D9E1;
+  --navy:#0047AB; --green:#00a86b; --sign:#006B45; --sign-ink:#FFFFFF;
+  --poi:#0047AB; --scenic:#6B4423; --amber:#F2A900; --amber-ink:#2A1C00;
+  --road:#3A3F48; --stripe:#F2C230; --okbg:#E2F5EC; --okink:#0B5E3D;
+  --warnbg:#FFF3D1; --warnink:#6A4A00; --overbg:#FFE7C2; --overink:#7A3B00;
+  --field:#FFFFFF; --focus:#0047AB;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151D; --surface:#17202B; --ink:#E6EBF2; --muted:#9AA6B6; --line:#2A3544;
+    --navy:#7AA7F2; --green:#2FCB8C; --sign:#0A7A4F; --poi:#2457B8; --scenic:#7A5232;
+    --road:#262B33; --okbg:#10301F; --okink:#7FE0B4; --warnbg:#33290E; --warnink:#F5D27A;
+    --overbg:#3D2508; --overink:#FFC27A; --field:#111821; --focus:#8DB4FF; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F151D; --surface:#17202B; --ink:#E6EBF2; --muted:#9AA6B6; --line:#2A3544;
+  --navy:#7AA7F2; --green:#2FCB8C; --sign:#0A7A4F; --poi:#2457B8; --scenic:#7A5232;
+  --road:#262B33; --okbg:#10301F; --okink:#7FE0B4; --warnbg:#33290E; --warnink:#F5D27A;
+  --overbg:#3D2508; --overink:#FFC27A; --field:#111821; --focus:#8DB4FF; color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;font-size:16px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+
+header.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand svg{flex:none}
+.brand h1{font-size:1.25rem;margin:0;line-height:1.2;font-weight:800;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--muted);font-size:.85rem}
+.tbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:.88rem}
+.tbtn[aria-pressed="true"]{border-color:var(--green);background:var(--okbg);color:var(--okink)}
+
+/* GPS banner: the one loud element */
+.banner{display:flex;align-items:center;gap:16px;background:var(--sign);color:var(--sign-ink);border-radius:12px;padding:16px 20px;box-shadow:inset 0 0 0 3px rgba(255,255,255,.85);margin-bottom:16px;transition:background .25s}
+.banner .arrow{flex:none;width:52px;height:52px}
+.banner .b-main{font-size:clamp(1.2rem,2.6vw,1.65rem);font-weight:800;line-height:1.15;margin:0}
+.banner .b-sub{margin:4px 0 0;opacity:.92}
+.banner.recalc{background:var(--amber);color:var(--amber-ink);box-shadow:inset 0 0 0 3px var(--amber-ink)}
+
+.layout{display:grid;grid-template-columns:250px 1fr;gap:20px;align-items:start}
+
+/* Route rail drawn as a road */
+.rail{position:sticky;top:calc(12px + env(safe-area-inset-top,0px));background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 12px}
+.rail h2{font-size:.95rem;margin:0 0 2px}
+.rail .rnote{font-size:.8rem;color:var(--muted);margin:0 0 10px}
+.rail ol{list-style:none;margin:0;padding:0 0 0 30px;position:relative}
+.rail ol::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:14px;border-radius:7px;background:var(--road)}
+.rail ol::after{content:"";position:absolute;left:15px;top:12px;bottom:12px;width:2px;background:repeating-linear-gradient(var(--stripe) 0 8px,transparent 8px 16px)}
+.rail li{position:relative;margin:2px 0}
+.rail button{width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:7px 8px;cursor:pointer;display:block}
+.rail button:hover{background:var(--bg)}
+.rail button[aria-current="step"]{background:var(--okbg);font-weight:700}
+.rail button:disabled{cursor:not-allowed;opacity:.55}
+.rail .dot{position:absolute;left:-27px;top:9px;width:20px;height:20px;border-radius:50%;background:var(--surface);border:3px solid var(--muted);z-index:1;display:grid;place-items:center;font-size:11px;font-weight:800;line-height:1}
+.rail .s-done .dot{border-color:var(--green);background:var(--green);color:#fff}
+.rail .s-partial .dot{border-color:var(--green)}
+.rail .s-warn .dot{border-color:var(--amber);background:var(--amber);color:var(--amber-ink)}
+.rail .s-current .dot{box-shadow:0 0 0 4px rgba(0,168,107,.35)}
+.rail .grp{display:block;font-size:.75rem;color:var(--muted);font-weight:600}
+.rail .lbl{display:block;font-size:.92rem}
+
+main.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 24px;min-width:0}
+h2.title{font-size:1.5rem;margin:0 0 4px;line-height:1.2}
+.lede{color:var(--muted);margin:0 0 18px;max-width:68ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.chip{display:inline-block;font-size:.85rem;padding:3px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+
+/* Sign-plated sections */
+.sec{border:1px solid var(--line);border-radius:10px;margin:0 0 18px;overflow:hidden}
+.plate{display:flex;align-items:center;gap:10px;padding:9px 14px;color:#fff;font-weight:700}
+.plate svg{flex:none}
+.plate small{font-weight:500;opacity:.9;margin-left:auto;font-size:.82rem}
+.p-guide{background:var(--sign)} .p-poi{background:var(--poi)} .p-scenic{background:var(--scenic)} .p-dest{background:#1F2A37}
+:root[data-theme="dark"] .p-dest{background:#3A4656}
+.sec-body{padding:14px}
+.sec-body > p.explain{margin:0 0 12px;color:var(--muted);max-width:68ch}
+
+.field{margin:0 0 14px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-weight:650;margin-bottom:3px}
+.field .hint{margin:0 0 6px;font-size:.86rem;color:var(--muted)}
+.field input,.field textarea,.field select{width:100%;border:1.5px solid var(--line);background:var(--field);border-radius:8px;padding:9px 11px}
+.field textarea{resize:vertical;min-height:62px}
+.field.st-over input,.field.st-over textarea{border-color:var(--amber)}
+.fb{font-size:.84rem;margin-top:5px;padding:4px 9px;border-radius:6px;display:inline-block}
+.fb.ok{background:var(--okbg);color:var(--okink)}
+.fb.warn{background:var(--warnbg);color:var(--warnink)}
+.fb.over{background:var(--overbg);color:var(--overink);font-weight:600}
+.fb.empty{color:var(--muted);padding-left:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px}
+.row{display:flex;gap:8px;align-items:flex-start}
+.row .field{flex:1}
+.x{border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 10px;cursor:pointer;margin-top:28px}
+.poi{border:1px dashed var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
+.poi-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700}
+.poi-h button{margin-top:0}
+.add{border:1.5px dashed var(--navy);color:var(--navy);background:transparent;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600}
+.fill{border:1px solid var(--green);color:var(--okink);background:var(--okbg);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.88rem;margin-bottom:6px}
+.check{display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:10px;cursor:pointer}
+.check input{width:18px;height:18px}
+.note{background:var(--bg);border-left:4px solid var(--green);padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 16px;max-width:72ch}
+.note.lock{border-left-color:var(--amber)}
+.emerge{background:var(--okbg);color:var(--ink);border-radius:10px;padding:14px 16px;margin-bottom:18px}
+.emerge h3{margin:0 0 6px;font-size:1rem}
+.emerge ol,.emerge ul{margin:4px 0 0;padding-left:22px}
+
+/* Build order vs speaking order */
+.order{margin:0 0 20px}
+.order .orow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.order .olbl{width:150px;flex:none;font-size:.88rem;color:var(--muted)}
+.order .bar{display:flex;flex:1;gap:4px;min-width:0}
+.order .seg{border-radius:6px;padding:6px 8px;font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg.b{background:var(--sign);flex:8} .seg.c{background:#1F2A37;flex:1.4} .seg.i{background:var(--navy);flex:1.4}
+:root[data-theme="dark"] .seg.c{background:#3A4656}
+.eta{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:6px}
+.eta div{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:.86rem}
+.eta strong{display:block;font-size:1.05rem}
+
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:11px 18px;font-weight:700;cursor:pointer}
+.btn.go{background:var(--sign);color:#fff}
+.btn.ghost{background:transparent;border:1.5px solid var(--line)}
+.msg{margin-top:10px;color:var(--overink);background:var(--overbg);padding:8px 12px;border-radius:8px;display:none}
+.msg.show{display:block}
+
+/* Summary */
+.checklist{list-style:none;padding:0;margin:0 0 20px}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}
+.checklist .ic{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800}
+.checklist .ok .ic{background:var(--green);color:#fff}
+.checklist .no .ic{background:var(--amber);color:var(--amber-ink)}
+.checklist .t{flex:1}
+.checklist button{border:1px solid var(--line);background:transparent;border-radius:6px;padding:2px 10px;cursor:pointer;font-size:.84rem}
+.outline{border:1px solid var(--line);border-radius:10px;padding:20px 22px;font-family:Georgia,"Times New Roman",serif;line-height:1.65;overflow-x:auto}
+.outline h3{font-family:"Segoe UI",system-ui,sans-serif;font-size:1rem;margin:18px 0 6px;padding:4px 10px;border-radius:6px;color:#fff;display:inline-block}
+.outline h3.hi{background:var(--navy)} .outline h3.hb{background:var(--sign)} .outline h3.hc{background:#1F2A37} .outline h3.hr{background:var(--muted)}
+.outline .ln{margin:2px 0}
+.outline .l1{padding-left:0} .outline .l2{padding-left:2em} .outline .l3{padding-left:4em}
+.outline .tr{font-style:italic;color:var(--okink);background:var(--okbg);padding:2px 8px;border-radius:4px;display:inline-block;margin:4px 0}
+.outline .ci{color:var(--navy)}
+.outline .va{color:var(--scenic)}
+:root[data-theme="dark"] .outline .va{color:#E0B58C}
+.outline .miss{color:var(--overink);background:var(--overbg);padding:0 4px;border-radius:3px;font-family:"Segoe UI",system-ui,sans-serif;font-size:.85em}
+.outline .head{margin:0 0 4px}
+.sumbtns{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.legend{font-size:.84rem;color:var(--muted);margin:0 0 12px}
+
+@media (max-width:820px){
+  .layout{grid-template-columns:1fr}
+  .rail{position:static;padding:10px}
+  .rail ol{display:flex;overflow-x:auto;padding:0 0 14px;gap:4px}
+  .rail ol::before{left:6px;right:6px;top:auto;bottom:2px;width:auto;height:10px}
+  .rail ol::after{left:12px;right:12px;top:auto;bottom:6px;width:auto;height:2px;background:repeating-linear-gradient(90deg,var(--stripe) 0 8px,transparent 8px 16px)}
+  .rail li{flex:none}
+  .rail button{padding:6px 10px 6px 30px;white-space:nowrap}
+  .rail .dot{left:6px;top:10px}
+  .rail .grp{display:none}
+  .grid2,.grid3{grid-template-columns:1fr}
+  main.panel{padding:18px 16px}
+  .order .olbl{width:96px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{
+  body{background:#fff;color:#000}
+  header.top,.banner,.rail,.nav,.checklist,.sumbtns,.legend,.lede,h2.title,.meta,#printhide{display:none!important}
+  .layout{display:block} main.panel{border:0;padding:0}
+  .outline{border:0;padding:0;color:#000}
+  .outline h3{color:#000;background:none!important;padding:0;border-bottom:1px solid #000;border-radius:0}
+  .outline .tr{background:none;color:#000}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="2" width="36" height="36" rx="9" fill="#006B45"/><rect x="4.5" y="4.5" width="31" height="31" rx="7" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M20 9l8 20-8-4.5-8 4.5z" fill="#fff"/></svg>
+      <div>
+        <h1>Speech GPS</h1>
+        <p>Speech 115 Public Speaking · outline builder</p>
+      </div>
+    </div>
+    <button class="tbtn" id="voiceBtn" data-act="voice" aria-pressed="false">GPS voice: off</button>
+    <button class="tbtn" data-act="sample">Load a sample trip</button>
+    <button class="tbtn" data-act="theme" id="themeBtn">Dark mode</button>
+    <button class="tbtn" data-act="reset">Start over</button>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite">
+    <svg class="arrow" viewBox="0 0 52 52" aria-hidden="true" id="bannerIcon"></svg>
+    <div><p class="b-main" id="bMain"></p><p class="b-sub" id="bSub"></p></div>
+  </div>
+
+  <div class="layout">
+    <nav class="rail" aria-label="Your route">
+      <h2>Your route</h2>
+      <p class="rnote">Built inside out: body first, intro last.</p>
+      <ol id="rail"></ol>
+    </nav>
+    <main class="panel" id="panel" tabindex="-1"></main>
+  </div>
+</div>
+
+<script>
+/* ===== Instructor settings: word limits for each outline line ===== */
+const LIMITS = {
+  topic:10, title:10, specific:25, central:25, audience:20,
+  main:15, sub:12, trans:12,
+  poiWho:8, poiCred:15, poiSaid:35, poiSource:15, poiDate:6, visualDesc:15,
+  signal:10, clincher:25,
+  attention:30, reveal:25, cred:20, introTrans:12,
+  perPointRecap:12   /* preview & review limit = this × number of main points + 8 */
+};
+const KEY = 'speechgps-v1';
+const ROMAN = ['I','II','III','IV','V','VI'];
+const LET = ['A','B','C','D'];
+
+const ICONS = {
+  arrow:'<path d="M26 6l14 18h-9v20H21V24h-9z" fill="currentColor"/>',
+  merge:'<path d="M14 44V30c0-6 4-9 9-12l5-3h-7V9h16v16h-6v-6l-5 3c-3 2-6 4-6 8v14z" fill="currentColor"/><path d="M36 44V30" stroke="currentColor" stroke-width="6" fill="none"/>',
+  flag:'<path d="M14 6v40" stroke="currentColor" stroke-width="4"/><path d="M16 8h24l-6 8 6 8H16z" fill="currentColor"/>',
+  pin:'<path d="M26 4c-8 0-14 6-14 14 0 11 14 28 14 28s14-17 14-28c0-8-6-14-14-14zm0 19a5 5 0 110-10 5 5 0 010 10z" fill="currentColor"/>',
+  key:'<circle cx="16" cy="26" r="9" fill="none" stroke="currentColor" stroke-width="5"/><path d="M24 26h22M38 26v8M44 26v6" stroke="currentColor" stroke-width="5"/>',
+  recalc:'<path d="M26 8a18 18 0 1017 12" fill="none" stroke="currentColor" stroke-width="5"/><path d="M44 6v14H30z" fill="currentColor"/>',
+  scenic:'<path d="M4 42l14-20 8 10 6-8 16 18z" fill="currentColor"/><circle cx="38" cy="12" r="5" fill="currentColor"/>'
+};
+function svg(name,size){ return `<svg width="${size||20}" height="${size||20}" viewBox="0 0 52 52" aria-hidden="true" style="color:#fff">${ICONS[name]}</svg>`; }
+
+function newPoint(){ return {main:'', subs:['',''], pois:[], visual:{on:false,type:'Photo or image',desc:''}, trans:''}; }
+function fresh(){
+  return {step:'coords', voice:false,
+    coords:{name:'',title:'',topic:'',purpose:'inform',specific:'',central:'',audience:'',minutes:6,pattern:'Topical',n:3},
+    points:[newPoint(),newPoint(),newPoint(),newPoint(),newPoint()],
+    concl:{signal:'',review:'',clincher:''},
+    intro:{attention:'',reveal:'',cred:'',preview:'',trans:''}};
+}
+function load(){
+  try{ const r = localStorage.getItem(KEY); if(!r) return null; const d = JSON.parse(r); const f = fresh();
+    return Object.assign(f,d,{coords:Object.assign(f.coords,d.coords||{}),concl:Object.assign(f.concl,d.concl||{}),intro:Object.assign(f.intro,d.intro||{}),points:(d.points&&d.points.length)?d.points:f.points});
+  }catch(e){ return null; }
+}
+let S = load() || fresh();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+function P(){ while(S.points.length < S.coords.n) S.points.push(newPoint()); return S.points.slice(0, S.coords.n); }
+function get(p){ return p.split('.').reduce((o,k)=> o==null ? o : o[k], S); }
+function set(p,v){ const k=p.split('.'); let o=S; for(let i=0;i<k.length-1;i++) o=o[k[i]]; o[k[k.length-1]]=v; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function t(s){ return (s||'').trim(); }
+function wc(s){ return t(s) ? t(s).split(/\s+/).length : 0; }
+function fmt(sec){ sec=Math.round(sec); const m=Math.floor(sec/60), s=sec%60; return m ? `${m} min ${s} s` : `${s} s`; }
+function recapLimit(){ return LIMITS.perPointRecap * S.coords.n + 8; }
+
+/* ===== Field rules: limit + mode per path ===== */
+function spec(path){
+  const r = (l,m)=>({limit:l,mode:m||'free'});
+  const map = {
+    'coords.topic':r(LIMITS.topic,'phrase'),'coords.title':r(LIMITS.title,'phrase'),'coords.specific':r(LIMITS.specific,'phrase'),
+    'coords.central':r(LIMITS.central,'phrase'),'coords.audience':r(LIMITS.audience),
+    'concl.signal':r(LIMITS.signal,'signpost'),'concl.review':r(recapLimit()),'concl.clincher':r(LIMITS.clincher),
+    'intro.attention':r(LIMITS.attention),'intro.reveal':r(LIMITS.reveal,'phrase'),'intro.cred':r(LIMITS.cred),
+    'intro.preview':r(recapLimit()),'intro.trans':r(LIMITS.introTrans,'signpost')
+  };
+  if(map[path]) return map[path];
+  if(/\.main$/.test(path)) return r(LIMITS.main,'phrase');
+  if(/\.subs\.\d+$/.test(path)) return r(LIMITS.sub,'phrase');
+  if(/points\.\d+\.trans$/.test(path)) return r(LIMITS.trans,'signpost');
+  if(/\.who$/.test(path)) return r(LIMITS.poiWho);
+  if(/\.cred$/.test(path)) return r(LIMITS.poiCred);
+  if(/\.said$/.test(path)) return r(LIMITS.poiSaid);
+  if(/\.source$/.test(path)) return r(LIMITS.poiSource);
+  if(/\.date$/.test(path)) return r(LIMITS.poiDate);
+  if(/visual\.desc$/.test(path)) return r(LIMITS.visualDesc,'phrase');
+  return null;
+}
+function analyze(text, sp){
+  const w = wc(text);
+  if(!w) return {st:'empty', msg: sp ? `Up to ${sp.limit} words` : ''};
+  const sentences = (t(text).match(/[.!?]+(\s|$)/g)||[]).length;
+  if(w > sp.limit) return {st:'over', msg:`Recalculating… ${w} words. Trim to ${sp.limit} or fewer. An outline holds key phrases, not paragraphs.`};
+  if(sp.mode==='phrase' && sentences > 1) return {st:'over', msg:'Recalculating… this reads like more than one sentence. Keep one idea per line.'};
+  if(sp.mode==='signpost' && (sentences >= 1 && w > 7)) return {st:'warn', msg:'Transitions are road signs, not sentences. Try a short bridge such as “From causes to effects.”'};
+  if(w > sp.limit*0.85) return {st:'warn', msg:`${w} of ${sp.limit} words. You’re close to the limit.`};
+  return {st:'ok', msg:`On route · ${w} of ${sp.limit} words`};
+}
+
+/* ===== Steps, locks, status ===== */
+function steps(){
+  const s=[{id:'coords',grp:'Before you drive',lbl:'Enter coordinates'}];
+  P().forEach((p,i)=>s.push({id:'mp'+i,grp:'Body · 80%',lbl:`Main point ${i+1}`}));
+  s.push({id:'concl',grp:'Conclusion',lbl:'Arrive at the close'});
+  s.push({id:'intro',grp:'Introduction',lbl:'Back to the starting line'});
+  s.push({id:'summary',grp:'Finished outline',lbl:'Trip summary'});
+  return s;
+}
+const coordsOK = ()=> t(S.coords.topic) && t(S.coords.central);
+const bodyOK = ()=> coordsOK() && P().every(p=>t(p.main) && p.subs.some(x=>t(x)));
+const conclOK = ()=> bodyOK() && t(S.concl.clincher);
+function lockReason(id){
+  if(id==='coords') return '';
+  if(id.startsWith('mp') && !coordsOK()) return 'Enter your topic and central idea first. A GPS can’t route you without a destination.';
+  if(id==='concl' && !bodyOK()) return 'Drive every main point first (a main point plus at least one subpoint). The conclusion recaps a route you’ve already driven.';
+  if(id==='intro' && !conclOK()) return 'Finish the conclusion first, including your final statement. The introduction is written last because it previews a route you now know.';
+  if(id==='summary' && !conclOK()) return 'The trip summary opens once the body and conclusion are in place.';
+  return '';
+}
+function pathsFor(id){
+  const out=[];
+  if(id==='coords') ['topic','title','specific','central','audience'].forEach(k=>out.push('coords.'+k));
+  else if(id.startsWith('mp')){
+    const i=+id.slice(2), p=S.points[i], base='points.'+i;
+    out.push(base+'.main'); p.subs.forEach((x,j)=>out.push(`${base}.subs.${j}`));
+    p.pois.forEach((x,k)=>['who','cred','said','source','date'].forEach(f=>out.push(`${base}.pois.${k}.${f}`)));
+    if(p.visual.on) out.push(base+'.visual.desc');
+    if(i < S.coords.n-1) out.push(base+'.trans');
+  }
+  else if(id==='concl') ['signal','review','clincher'].forEach(k=>out.push('concl.'+k));
+  else if(id==='intro') ['attention','reveal','cred','preview','trans'].forEach(k=>out.push('intro.'+k));
+  return out;
+}
+function overCount(id){ return pathsFor(id).filter(p=>analyze(get(p),spec(p)).st==='over').length; }
+function filled(id){ return pathsFor(id).filter(p=>t(get(p))).length; }
+function stepDone(id){
+  if(id==='coords') return !!coordsOK();
+  if(id.startsWith('mp')){ const i=+id.slice(2), p=S.points[i];
+    return t(p.main) && p.subs.filter(x=>t(x)).length>=2 && p.pois.some(poiComplete) && (i===S.coords.n-1 || t(p.trans)); }
+  if(id==='concl') return ['signal','review','clincher'].every(k=>t(S.concl[k]));
+  if(id==='intro') return ['attention','reveal','cred','preview','trans'].every(k=>t(S.intro[k]));
+  return false;
+}
+function poiComplete(q){ return ['who','cred','said','source','date'].every(f=>t(q[f])); }
+
+/* ===== Banner ===== */
+function bannerText(){
+  const id=S.step, n=S.coords.n;
+  if(id==='coords') return {icon:'pin',main:'Enter your coordinates to begin.',sub:'Set the destination: topic, purpose and central idea. The introduction waits until the end.'};
+  if(id.startsWith('mp')){ const i=+id.slice(2);
+    return {icon:'arrow',main:`Drive main point ${i+1} of ${n}.`,
+      sub: i<n-1 ? `In 0.5 miles, merge onto main point ${i+2}. Plan your transition before you leave this stretch.` : 'Your exit is ahead: the conclusion. No merge needed on this last stretch.'}; }
+  if(id==='concl') return {icon:'flag',main:'Approaching your destination.',sub:'Signal the close, review each point of the route, then arrive with a strong final statement.'};
+  if(id==='intro') return {icon:'key',main:'Return to the starting line.',sub:'Your introduction emerges from the route you just drove. Use what you built.'};
+  return {icon:'flag',main:'You have arrived.',sub:'Here is your outline in speaking order: introduction, body, conclusion.'};
+}
+function renderBanner(){
+  const b=bannerText(), oc = S.step!=='summary' ? overCount(S.step) : 0;
+  const el=document.getElementById('banner');
+  el.classList.toggle('recalc', oc>0);
+  document.getElementById('bannerIcon').innerHTML = ICONS[oc>0?'recalc':b.icon];
+  document.getElementById('bMain').textContent = oc>0 ? 'Recalculating…' : b.main;
+  document.getElementById('bSub').textContent = oc>0 ? `${oc} line${oc>1?'s are':' is'} carrying too much text. Trim to key phrases to get back on route.` : b.sub;
+}
+function speak(txt){
+  if(!S.voice || !('speechSynthesis' in window)) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(txt); u.rate=1.02; speechSynthesis.speak(u); }catch(e){}
+}
+
+/* ===== Rail ===== */
+function renderRail(){
+  const cur=S.step;
+  document.getElementById('rail').innerHTML = steps().map((s,idx)=>{
+    const locked = !!lockReason(s.id);
+    let cls = 's-todo', mark='';
+    if(s.id!=='summary'){
+      if(overCount(s.id)>0){cls='s-warn';mark='!';}
+      else if(stepDone(s.id)){cls='s-done';mark='✓';}
+      else if(filled(s.id)>0){cls='s-partial';}
+    }
+    if(s.id===cur) cls+=' s-current';
+    return `<li class="${cls}"><span class="dot" aria-hidden="true">${mark}</span>
+      <button data-act="go" data-to="${s.id}" ${locked?'disabled':''} ${s.id===cur?'aria-current="step"':''}>
+        <span class="grp">${s.grp}</span><span class="lbl">${s.lbl}${locked?' (locked)':''}</span></button></li>`;
+  }).join('');
+}
+
+/* ===== Field builders ===== */
+function field(path, label, hint, opts){
+  opts=opts||{}; const sp=spec(path), v=get(path)||''; const id='f_'+path.replace(/\./g,'_');
+  const a = sp ? analyze(v,sp) : null;
+  const attrs = `id="${id}" data-path="${path}" placeholder="${esc(opts.ph||'')}" ${opts.req?'aria-required="true"':''} ${a?`aria-describedby="fb_${id}"`:''}`;
+  const ctrl = opts.area ? `<textarea ${attrs} rows="${opts.rows||2}">${esc(v)}</textarea>` : `<input type="text" ${attrs} value="${esc(v)}">`;
+  return `<div class="field ${a?'st-'+a.st:''}" id="wrap_${id}">
+    <label for="${id}">${label}</label>${hint?`<p class="hint">${hint}</p>`:''}${ctrl}
+    ${a?`<div class="fb ${a.st}" id="fb_${id}" aria-live="polite">${esc(a.msg)}</div>`:''}</div>`;
+}
+function select(path,label,options,hint,opts){
+  opts=opts||{}; const v=get(path); const id='f_'+path.replace(/\./g,'_');
+  return `<div class="field"><label for="${id}">${label}</label>${hint?`<p class="hint">${hint}</p>`:''}
+    <select id="${id}" data-path="${path}" ${opts.num?'data-num="1"':''} ${opts.rerender?'data-rerender="1"':''}>
+    ${options.map(o=>{const val=Array.isArray(o)?o[0]:o, lab=Array.isArray(o)?o[1]:o; return `<option value="${esc(val)}" ${String(v)===String(val)?'selected':''}>${esc(lab)}</option>`;}).join('')}
+    </select></div>`;
+}
+function plate(cls,icon,title,small){ return `<div class="plate ${cls}">${svg(icon)}<span>${title}</span>${small?`<small>${small}</small>`:''}</div>`; }
+function updateField(el){
+  const sp=spec(el.dataset.path); if(!sp) return;
+  const a=analyze(el.value,sp), id=el.id;
+  const fb=document.getElementById('fb_'+id), wrap=document.getElementById('wrap_'+id);
+  if(fb){ fb.className='fb '+a.st; fb.textContent=a.msg; }
+  if(wrap){ wrap.className='field st-'+a.st; }
+}
+
+/* ===== Views ===== */
+function eta(){
+  const sec=S.coords.minutes*60, n=S.coords.n;
+  return {intro:sec*.1, body:sec*.8, concl:sec*.1, per:sec*.8/n};
+}
+function orderDiagram(){
+  return `<div class="order" aria-label="Build order compared with speaking order">
+    <div class="orow"><span class="olbl">You build it</span><div class="bar"><span class="seg b">1 · Body (80%)</span><span class="seg c">2 · Close</span><span class="seg i">3 · Intro</span></div></div>
+    <div class="orow"><span class="olbl">Audience hears it</span><div class="bar"><span class="seg i">Intro</span><span class="seg b">Body (80%)</span><span class="seg c">Close</span></div></div>
+  </div>`;
+}
+const PATTERN_HINT = {
+  'Topical':'Each main point is one category or aspect of the topic.',
+  'Chronological':'Main points follow time order: first, then, finally.',
+  'Spatial':'Main points move through space: top to bottom, east to west.',
+  'Cause and effect':'One main point for causes, one for effects.',
+  'Problem and solution':'Main point 1 is the problem, main point 2 is the solution.',
+  'Monroe’s motivated sequence':'Attention, need, satisfaction, visualization, action (persuasive speeches).'
+};
+function viewCoords(){
+  const e=eta();
+  return `<h2 class="title">Enter your coordinates</h2>
+  <p class="lede">A GPS can’t route you until it knows where you’re going. Set your destination here. You won’t write an attention-getter yet. The introduction is the last thing you build, because it previews a route you haven’t driven.</p>
+  ${orderDiagram()}
+  <div class="sec">${plate('p-dest','pin','Destination')}<div class="sec-body">
+    <div class="grid2">${field('coords.name','Your name','',{ph:'First and last name'})}${field('coords.title','Speech title (optional)','You can change this at the end.',{})}</div>
+    ${field('coords.topic','Topic','A few words, not a sentence.',{ph:'e.g. Sleep and college success',req:1})}
+    ${select('coords.purpose','General purpose',[['inform','To inform'],['persuade','To persuade'],['special','Special occasion']])}
+    ${field('coords.specific','Specific purpose','Start with “To inform my audience…” or “To persuade my audience…”',{ph:'To inform my audience about…'})}
+    ${field('coords.central','Central idea (thesis)','One sentence that sums up the whole speech. This is your destination.',{area:1,ph:'e.g. Getting enough sleep improves students’ grades, health and mood.',req:1})}
+    ${field('coords.audience','Who’s riding with you? (audience)','Who are they, and what do they already know?',{})}
+  </div></div>
+  <div class="sec">${plate('p-guide','arrow','Route settings')}<div class="sec-body">
+    <div class="grid3">
+      ${select('coords.minutes','Speech length',[3,4,5,6,7,8,10,12,15].map(m=>[m,m+' minutes']),'',{num:1,rerender:1})}
+      ${select('coords.n','Number of main points',[[2,'2 main points'],[3,'3 main points'],[4,'4 main points'],[5,'5 main points']],'',{num:1,rerender:1})}
+      ${select('coords.pattern','Organizational pattern',Object.keys(PATTERN_HINT),'',{rerender:1})}
+    </div>
+    <p class="hint" style="margin-top:-4px">${PATTERN_HINT[S.coords.pattern]||''}</p>
+    <p style="margin:10px 0 2px;font-weight:650">Estimated drive time</p>
+    <div class="eta">
+      <div>Introduction<strong>${fmt(e.intro)}</strong></div>
+      <div>Body<strong>${fmt(e.body)}</strong></div>
+      <div>Each main point<strong>${fmt(e.per)}</strong></div>
+      <div>Conclusion<strong>${fmt(e.concl)}</strong></div>
+    </div>
+  </div></div>`;
+}
+function viewMP(i){
+  const p=S.points[i], n=S.coords.n, base='points.'+i, e=eta(), last=i===n-1;
+  const subs = p.subs.map((x,j)=>`<div class="row">${field(`${base}.subs.${j}`,`Subpoint ${LET[j]}`,j===0?'Supporting ideas, examples or evidence. Key phrases only.':'',{})}
+      ${p.subs.length>1?`<button class="x" data-act="delSub" data-i="${i}" data-j="${j}" aria-label="Remove subpoint ${LET[j]}">Remove</button>`:''}</div>`).join('');
+  const subOpts = [['main','The main point itself']].concat(p.subs.map((x,j)=>[String(j),`Subpoint ${LET[j]}${t(x)?': '+t(x).slice(0,40):''}`]));
+  const pois = p.pois.map((q,k)=>{const b=`${base}.pois.${k}`; return `<div class="poi">
+      <div class="poi-h"><span>Point of interest ${k+1}</span><button class="x" data-act="delPoi" data-i="${i}" data-k="${k}">Remove</button></div>
+      <div class="grid2">${field(b+'.who','Who are you quoting?','Full name.',{ph:'e.g. Dr. Lena Ortiz'})}${field(b+'.cred','Who are they?','Their credentials: why should we trust them?',{ph:'e.g. sleep researcher at…'})}</div>
+      ${select(b+'.kind','Quote or paraphrase?',[['quote','Direct quote (word for word)'],['para','Paraphrase (in your words)']])}
+      ${field(b+'.said','What did they say?','Short and sharp. Long quotes lose listeners.',{area:1})}
+      <div class="grid2">${field(b+'.source','Source','Publication, website or interview.',{})}${field(b+'.date','Date','Year at minimum.',{ph:'e.g. 2025'})}</div>
+      ${select(b+'.attach','This supports…',subOpts)}
+    </div>`;}).join('');
+  return `<h2 class="title">Main point ${i+1} of ${n}</h2>
+  <p class="lede">Build this stretch of the route: one main idea, the support underneath it, a stop at a point of interest, and maybe a panoramic view along the way.</p>
+  <div class="meta"><span class="chip">Destination: ${esc(t(S.coords.central)||'not set')}</span><span class="chip">Drive time ≈ ${fmt(e.per)}</span><span class="chip">${esc(S.coords.pattern)}</span></div>
+  <div class="sec">${plate('p-guide','arrow',`Main point ${ROMAN[i]}`,`up to ${LIMITS.main} words`)}<div class="sec-body">
+    ${field(base+'.main','State the main point','One clear, declarative idea. It should connect directly back to your central idea.',{area:1,req:1})}
+  </div></div>
+  <div class="sec">${plate('p-guide','arrow','Subpoints',`up to ${LIMITS.sub} words each`)}<div class="sec-body">
+    ${subs}
+    ${p.subs.length<4?`<button class="add" data-act="addSub" data-i="${i}">Add a subpoint</button>`:''}
+  </div></div>
+  <div class="sec">${plate('p-poi','pin','Points of interest','oral citations')}<div class="sec-body">
+    <p class="explain">Make a stop. Every point of interest you cite aloud needs four things: who you’re quoting, who they are, what they said, and the source and date. Aim for at least one per main point.</p>
+    ${pois || '<p class="hint">No stops yet on this stretch.</p>'}
+    <button class="add" data-act="addPoi" data-i="${i}">Add a point of interest</button>
+  </div></div>
+  <div class="sec">${plate('p-scenic','scenic','Panoramic view ahead','visual aid')}<div class="sec-body">
+    <p class="explain">Is there something your audience should see here, like an image, an infographic or a chart? Plan it now so it lands at the right spot on the route.</p>
+    <label class="check"><input type="checkbox" data-path="${base}.visual.on" data-rerender="1" ${p.visual.on?'checked':''}> Show a visual on this stretch</label>
+    ${p.visual.on?`<div class="grid2">${select(base+'.visual.type','Type of visual',['Photo or image','Infographic','Chart or graph','Map','Short video clip','Object or model'])}
+    ${field(base+'.visual.desc','What will they see?','Describe it in a phrase.',{})}</div>`:''}
+  </div></div>
+  ${!last?`<div class="sec">${plate('p-guide','merge','Merge ahead',`up to ${LIMITS.trans} words`)}<div class="sec-body">
+    ${field(base+'.trans',`Transition to main point ${i+2}`,'“In 0.5 miles, merge onto…” Write a short bridge from this point to the next, not a full sentence. Example: “From causes to effects” or “Health covered, now mood.”',{})}
+    ${t(S.points[i+1].main)?`<p class="hint">Next main point: <strong>${esc(S.points[i+1].main)}</strong></p>`:''}
+  </div></div>`:`<div class="note">This is your last stretch, so there’s no merge. Your next turn is the exit to the conclusion, where you’ll signal that the speech is coming to a close.</div>`}`;
+}
+function routeList(){ return `<ol>${P().map(p=>`<li>${esc(t(p.main)||'(main point not written)')}</li>`).join('')}</ol>`; }
+function viewConcl(){
+  return `<h2 class="title">Arrive at the close</h2>
+  <p class="lede">You’ve driven the whole route. Now the conclusion practically writes itself: tell the audience you’re close, recap the route they just traveled, and arrive with a statement they’ll remember.</p>
+  <div class="emerge"><h3>The route you just drove</h3>${routeList()}</div>
+  <div class="sec">${plate('p-dest','flag','1. Approaching destination','signal the end')}<div class="sec-body">
+    ${field('concl.signal','Signal that the speech is ending','Short signpost. Example: “As we near the end of our trip…”',{})}
+  </div></div>
+  <div class="sec">${plate('p-dest','flag','2. Route recap','review each main point')}<div class="sec-body">
+    <button class="fill" data-act="fillReview">Draft from my main points</button>
+    ${field('concl.review','Review your main points','Mention every main point, in order, briefly. It should mirror your preview.',{area:1,rows:3})}
+  </div></div>
+  <div class="sec">${plate('p-dest','flag','3. Arrive','strong concluding statement')}<div class="sec-body">
+    ${field('concl.clincher','Your final statement (clincher)','A memorable last line: a call to action, a powerful image or quote, or a callback. After you write the attention-getter, you can loop this back to it.',{area:1,req:1})}
+  </div></div>`;
+}
+function viewIntro(){
+  const all = P().flatMap(p=>p.pois.filter(q=>t(q.said)));
+  const vis = P().filter(p=>p.visual.on && t(p.visual.desc));
+  return `<h2 class="title">Back to the starting line</h2>
+  <p class="lede">Most students try to write this first and get stuck. You’re writing it last, so you already know exactly what to preview, and you have strong material to open with.</p>
+  <div class="emerge"><h3>What your route already tells you</h3>
+    <p style="margin:0">Your destination: <strong>${esc(t(S.coords.central))}</strong></p>
+    <p style="margin:8px 0 0">The route to preview:</p>${routeList()}
+    ${all.length?`<p style="margin:8px 0 0">Points of interest that might make a strong opening:</p><ul>${all.slice(0,3).map(q=>`<li>${esc(t(q.who))}: “${esc(t(q.said))}”</li>`).join('')}</ul>`:''}
+    ${vis.length?`<p style="margin:8px 0 0">Visuals you could open on: ${vis.map(p=>esc(t(p.visual.desc))).join('; ')}</p>`:''}
+    ${t(S.concl.clincher)?`<p style="margin:8px 0 0">Your closing line, so you can set up a callback: “${esc(t(S.concl.clincher))}”</p>`:''}
+  </div>
+  <div class="sec">${plate('p-poi','key','1. Turn the key','attention-getter')}<div class="sec-body">
+    ${field('intro.attention','Grab attention','A question, a startling statistic, a short story or a quote. Outline it in a line or two.',{area:1})}
+  </div></div>
+  <div class="sec">${plate('p-poi','pin','2. Confirm the destination','reveal the topic')}<div class="sec-body">
+    <button class="fill" data-act="fillReveal">Use my central idea</button>
+    ${field('intro.reveal','Reveal your topic and central idea','Tell the audience where this trip is going.',{area:1})}
+  </div></div>
+  <div class="sec">${plate('p-poi','key','3. Show your license','establish credibility')}<div class="sec-body">
+    ${field('intro.cred','Why should they ride with you?','Your experience, research or personal connection to the topic.',{area:1})}
+  </div></div>
+  <div class="sec">${plate('p-poi','arrow','4. Route overview','preview the main points')}<div class="sec-body">
+    <button class="fill" data-act="fillPreview">Draft from my main points</button>
+    ${field('intro.preview','Preview your main points','Like the GPS showing the whole route before you leave. Name every main point, in order.',{area:1,rows:3})}
+  </div></div>
+  <div class="sec">${plate('p-guide','merge','Begin route','transition into the body')}<div class="sec-body">
+    ${field('intro.trans','Transition into main point I','A short bridge. Example: “Let’s start with memory.”',{})}
+  </div></div>`;
+}
+
+/* ===== Outline assembly ===== */
+function cite(q){
+  const said = t(q.said) ? (q.kind==='para' ? t(q.said) : `“${t(q.said).replace(/^["“]|["”]$/g,'')}”`) : '[what they said]';
+  return `According to ${t(q.who)||'[who]'}, ${t(q.cred)||'[credentials]'}, in ${t(q.source)||'[source]'} (${t(q.date)||'[date]'}): ${said}`;
+}
+function buildOutline(){
+  const L=[], add=(sec,lvl,text,kind)=>L.push({sec,lvl,text,kind:kind||''}), dash=(s)=>t(s)||null;
+  add('intro',1,`I. Attention-getter: `,'');L[L.length-1].v=dash(S.intro.attention);
+  add('intro',1,`II. Reveal topic: `,'');L[L.length-1].v=dash(S.intro.reveal);
+  add('intro',1,`III. Credibility: `,'');L[L.length-1].v=dash(S.intro.cred);
+  add('intro',1,`IV. Preview: `,'');L[L.length-1].v=dash(S.intro.preview);
+  add('intro',0,'Transition: ','tr');L[L.length-1].v=dash(S.intro.trans);
+  const pts=P();
+  pts.forEach((p,i)=>{
+    add('body',1,`${ROMAN[i]}. `,'');L[L.length-1].v=dash(p.main);
+    p.pois.filter(q=>q.attach==='main').forEach(q=>{add('body',2,'Oral citation: ','ci');L[L.length-1].v=cite(q);});
+    p.subs.forEach((s,j)=>{
+      if(!t(s) && j>0) return;
+      add('body',2,`${LET[j]}. `,'');L[L.length-1].v=dash(s);
+      p.pois.filter(q=>String(q.attach||'0')===String(j)).forEach(q=>{add('body',3,'Oral citation: ','ci');L[L.length-1].v=cite(q);});
+    });
+    if(p.visual.on){add('body',2,`Visual aid (${p.visual.type}): `,'va');L[L.length-1].v=dash(p.visual.desc);}
+    if(i<pts.length-1){add('body',0,'Transition: ','tr');L[L.length-1].v=dash(p.trans);}
+  });
+  add('concl',1,'I. Signal the end: ','');L[L.length-1].v=dash(S.concl.signal);
+  add('concl',1,'II. Review of main points: ','');L[L.length-1].v=dash(S.concl.review);
+  add('concl',1,'III. Concluding statement: ','');L[L.length-1].v=dash(S.concl.clincher);
+  return L;
+}
+function sources(){
+  const seen=new Set(), out=[];
+  P().forEach(p=>p.pois.forEach(q=>{ if(!t(q.source)) return; const k=(t(q.who)+'|'+t(q.source)+'|'+t(q.date)).toLowerCase(); if(seen.has(k)) return; seen.add(k);
+    out.push(`${t(q.who)||'[author]'}${t(q.cred)?', '+t(q.cred):''}. (${t(q.date)||'n.d.'}). ${t(q.source)}.`); }));
+  return out;
+}
+function outlineHTML(){
+  const L=buildOutline(), heads={intro:['hi','Introduction'],body:['hb','Body'],concl:['hc','Conclusion']};
+  let h=`<p class="head"><strong>${esc(t(S.coords.title)||t(S.coords.topic)||'Untitled speech')}</strong>${t(S.coords.name)?' · '+esc(t(S.coords.name)):''}</p>
+    <p class="head">Specific purpose: ${esc(t(S.coords.specific))||'<span class="miss">missing</span>'}</p>
+    <p class="head">Central idea: ${esc(t(S.coords.central))||'<span class="miss">missing</span>'}</p>`;
+  let cur='';
+  L.forEach(l=>{
+    if(l.sec!==cur){cur=l.sec;h+=`<h3 class="${heads[cur][0]}">${heads[cur][1]}</h3>`;}
+    const val = l.v ? esc(l.v) : '<span class="miss">not written yet</span>';
+    if(l.kind==='tr') h+=`<div class="ln l2"><span class="tr">Transition: ${val}</span></div>`;
+    else h+=`<div class="ln l${l.lvl} ${l.kind}">${esc(l.text)}${val}</div>`;
+  });
+  const src=sources();
+  h+=`<h3 class="hr">Sources</h3>`+(src.length?src.map(s=>`<div class="ln">${esc(s)}</div>`).join(''):'<div class="ln"><span class="miss">no sources yet</span></div>');
+  return h;
+}
+function outlineText(){
+  const L=buildOutline(), heads={intro:'INTRODUCTION',body:'BODY',concl:'CONCLUSION'};
+  let out=`${t(S.coords.title)||t(S.coords.topic)||'Untitled speech'}${t(S.coords.name)?' | '+t(S.coords.name):''}\nSpecific purpose: ${t(S.coords.specific)}\nCentral idea: ${t(S.coords.central)}\n`;
+  let cur='';
+  L.forEach(l=>{ if(l.sec!==cur){cur=l.sec; out+=`\n${heads[cur]}\n`;}
+    const pad=' '.repeat(l.kind==='tr'?6:(l.lvl-1)*6);
+    out+=`${pad}${l.kind==='tr'?'Transition: ':l.text}${l.v||'[not written yet]'}\n`; });
+  const src=sources(); out+=`\nSOURCES\n${src.length?src.join('\n'):'[none yet]'}\n`;
+  return out;
+}
+function checklist(){
+  const items=[], pts=P();
+  items.push({ok:!!coordsOK(),txt:'Destination set: topic and central idea',to:'coords'});
+  pts.forEach((p,i)=>{
+    items.push({ok:!!t(p.main),txt:`Main point ${ROMAN[i]} is written`,to:'mp'+i});
+    items.push({ok:p.subs.filter(x=>t(x)).length>=2,txt:`Main point ${ROMAN[i]} has at least two subpoints`,to:'mp'+i});
+    items.push({ok:p.pois.some(poiComplete),txt:`Main point ${ROMAN[i]} has a complete point of interest (who, credentials, what, source, date)`,to:'mp'+i});
+    if(i<pts.length-1) items.push({ok:!!t(p.trans),txt:`Merge from main point ${ROMAN[i]} to ${ROMAN[i+1]}`,to:'mp'+i});
+  });
+  items.push({ok:pts.some(p=>p.visual.on&&t(p.visual.desc)),txt:'At least one panoramic view (visual aid) is planned',to:'mp0'});
+  items.push({ok:stepDone('concl'),txt:'Conclusion: signal, review and concluding statement',to:'concl'});
+  items.push({ok:stepDone('intro'),txt:'Introduction: attention-getter, topic, credibility, preview and transition',to:'intro'});
+  const over=steps().filter(s=>s.id!=='summary').reduce((a,s)=>a+overCount(s.id),0);
+  items.push({ok:over===0,txt: over? `${over} line${over>1?'s':''} still over the word limit`:'Every line is within its word limit',to: (steps().find(s=>s.id!=='summary'&&overCount(s.id)>0)||{}).id});
+  return items;
+}
+function viewSummary(){
+  const c=checklist(), done=c.filter(x=>x.ok).length;
+  return `<h2 class="title">Trip summary</h2>
+  <p class="lede">You built this from the inside out. Here it is in the order your audience hears it. Your instructor sees the introduction first, even though you wrote it last.</p>
+  <div class="meta"><span class="chip">${done} of ${c.length} checks passed</span><span class="chip">${S.coords.minutes}-minute speech</span></div>
+  <h3 style="margin:0 0 6px;font-size:1.05rem">Pre-trip inspection</h3>
+  <ul class="checklist">${c.map(x=>`<li class="${x.ok?'ok':'no'}"><span class="ic" aria-hidden="true">${x.ok?'✓':'!'}</span><span class="t">${esc(x.txt)}<span class="sr" style="position:absolute;left:-9999px">${x.ok?' (passed)':' (needs work)'}</span></span>${!x.ok&&x.to?`<button data-act="go" data-to="${x.to}">Fix</button>`:''}</li>`).join('')}</ul>
+  <div class="note">Read your preview and your review side by side. Do they name the same main points in the same order? They should mirror each other, and both should match the body.</div>
+  <div class="sumbtns"><button class="btn go" data-act="copy">Copy outline</button><button class="btn ghost" data-act="print">Print outline</button></div>
+  <p class="legend">Blue lines are oral citations, brown lines are visual aids, and green lines are transitions.</p>
+  <div class="outline" id="outline">${outlineHTML()}</div>
+  <pre id="plain" style="position:absolute;left:-9999px" aria-hidden="true"></pre>`;
+}
+
+/* ===== Render ===== */
+function nextLabel(){
+  const id=S.step, n=S.coords.n;
+  if(id==='coords') return 'Start the route';
+  if(id.startsWith('mp')){ const i=+id.slice(2); return i<n-1?`Merge onto main point ${i+2}`:'Take the exit to the conclusion'; }
+  if(id==='concl') return 'Head back to the starting line';
+  if(id==='intro') return 'Arrive: see my outline';
+  return '';
+}
+function render(focusTop){
+  const id=S.step; let html='';
+  if(id==='coords') html=viewCoords();
+  else if(id.startsWith('mp')) html=viewMP(+id.slice(2));
+  else if(id==='concl') html=viewConcl();
+  else if(id==='intro') html=viewIntro();
+  else html=viewSummary();
+  const list=steps(), idx=list.findIndex(s=>s.id===id);
+  html+=`<div class="nav" id="printhide">${idx>0?`<button class="btn ghost" data-act="back">Back</button>`:'<span></span>'}
+    ${id!=='summary'?`<button class="btn go" data-act="next">${nextLabel()}</button>`:''}</div><div class="msg" id="msg" role="alert"></div>`;
+  const panel=document.getElementById('panel'); panel.innerHTML=html;
+  renderRail(); renderBanner();
+  if(focusTop){ panel.focus({preventScroll:true}); window.scrollTo({top:0,behavior:'auto'}); }
+}
+function go(to){
+  const r=lockReason(to); if(r){ showMsg(r); return; }
+  S.step=to; save(); render(true); const b=bannerText(); speak(b.main+' '+b.sub);
+}
+function showMsg(m){ const el=document.getElementById('msg'); if(el){ el.textContent=m; el.classList.add('show'); } }
+
+/* ===== Events ===== */
+document.addEventListener('input',e=>{
+  const el=e.target; if(!el.dataset || !el.dataset.path) return;
+  let v = el.type==='checkbox' ? el.checked : el.value;
+  if(el.dataset.num) v=Number(v);
+  set(el.dataset.path,v); save();
+  if(el.dataset.rerender){ render(false); return; }
+  updateField(el); renderRail(); renderBanner();
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return;
+  const a=b.dataset.act, i=+b.dataset.i;
+  if(a==='go') go(b.dataset.to);
+  else if(a==='next'){ const l=steps(), k=l.findIndex(s=>s.id===S.step); if(k<l.length-1) go(l[k+1].id); }
+  else if(a==='back'){ const l=steps(), k=l.findIndex(s=>s.id===S.step); if(k>0) go(l[k-1].id); }
+  else if(a==='addSub'){ S.points[i].subs.push(''); save(); render(false); }
+  else if(a==='delSub'){ S.points[i].subs.splice(+b.dataset.j,1); S.points[i].pois.forEach(q=>{ if(q.attach!=='main' && +q.attach>=S.points[i].subs.length) q.attach='main'; }); save(); render(false); }
+  else if(a==='addPoi'){ S.points[i].pois.push({who:'',cred:'',kind:'quote',said:'',source:'',date:'',attach:'0'}); save(); render(false); }
+  else if(a==='delPoi'){ S.points[i].pois.splice(+b.dataset.k,1); save(); render(false); }
+  else if(a==='fillPreview'||a==='fillReview'){
+    const m=P().map(p=>t(p.main).replace(/[.!?]+$/,'')).filter(Boolean).map(x=>/^[A-Z][a-z]/.test(x)?x[0].toLowerCase()+x.slice(1):x);
+    let txt='';
+    if(a==='fillPreview') txt = m.length===2 ? `First, ${m[0]}; then, ${m[1]}.` : m.map((x,k)=> k===0?`First, ${x}`: k===m.length-1?`and finally, ${x}.`:`next, ${x}`).join('; ');
+    else txt = `Today we traveled through ${m.length>1? m.slice(0,-1).join('; ')+'; and '+m[m.length-1] : m[0]||''}.`;
+    set(a==='fillPreview'?'intro.preview':'concl.review',txt); save(); render(false);
+  }
+  else if(a==='fillReveal'){ set('intro.reveal',t(S.coords.central)); save(); render(false); }
+  else if(a==='copy'){
+    const txt=outlineText(); const done=()=>{ b.textContent='Copied'; setTimeout(()=>b.textContent='Copy outline',1800); };
+    const fallback=()=>{ const pre=document.getElementById('plain'); pre.textContent=txt; const r=document.createRange(); r.selectNodeContents(pre); const s=getSelection(); s.removeAllRanges(); s.addRange(r); try{ document.execCommand('copy'); done(); }catch(err){ b.textContent='Select and copy manually'; } s.removeAllRanges(); };
+    try{ navigator.clipboard.writeText(txt).then(done,fallback); }catch(err){ fallback(); }
+  }
+  else if(a==='print'){ try{ window.print(); }catch(err){} }
+  else if(a==='theme'){ const dark = currentTheme()!=='dark'; applyTheme(dark?'dark':'light'); try{ localStorage.setItem(KEY+'-theme',dark?'dark':'light'); }catch(err){} }
+  else if(a==='voice'){ S.voice=!S.voice; save(); syncVoice(); if(S.voice){ const bt=bannerText(); speak(bt.main+' '+bt.sub); } else { try{ speechSynthesis.cancel(); }catch(err){} } }
+  else if(a==='reset'){ if(b.dataset.confirm){ S=fresh(); save(); b.textContent='Start over'; delete b.dataset.confirm; render(true); } else { b.dataset.confirm='1'; b.textContent='Tap again to erase'; setTimeout(()=>{ b.textContent='Start over'; delete b.dataset.confirm; },3000); } }
+  else if(a==='sample'){ S=sample(); save(); render(true); }
+});
+
+/* ===== Theme & voice ===== */
+function currentTheme(){ const a=document.documentElement.getAttribute('data-theme'); if(a) return a; try{ return matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'; }catch(e){ return 'light'; } }
+function applyTheme(th){ document.documentElement.setAttribute('data-theme',th); document.getElementById('themeBtn').textContent = th==='dark'?'Light mode':'Dark mode'; }
+function syncVoice(){ const v=document.getElementById('voiceBtn'); v.setAttribute('aria-pressed',S.voice?'true':'false'); v.textContent='GPS voice: '+(S.voice?'on':'off'); if(!('speechSynthesis' in window)) v.hidden=true; }
+
+/* ===== Sample trip (fictional sources, for demonstration) ===== */
+function sample(){
+  const s=fresh();
+  Object.assign(s.coords,{name:'Sample Student',title:'Sleep: Your Secret Study Tool',topic:'Sleep and college success',purpose:'inform',
+    specific:'To inform my audience how sleep affects college success.',central:'Getting enough sleep improves college students’ grades, health and mood.',
+    audience:'First-year students, most of whom sleep under seven hours',minutes:6,pattern:'Topical',n:3});
+  s.points[0]={main:'Sleep strengthens memory and grades.',subs:['Sleep moves learning into long-term memory','All-nighters lower test scores'],
+    pois:[{who:'Dr. Lena Ortiz',cred:'sleep researcher (fictional example)',kind:'quote',said:'Sleep is when the brain files away what you studied.',source:'Campus Health Review (sample)',date:'2025',attach:'0'}],
+    visual:{on:true,type:'Chart or graph',desc:'GPA by average hours of sleep'},trans:'From the classroom to the body'};
+  s.points[1]={main:'Sleep protects physical health.',subs:['Fewer colds and sick days','Steadier energy and appetite'],
+    pois:[{who:'Marcus Hale',cred:'campus nurse (fictional example)',kind:'para',said:'Students who sleep less visit the health center more often.',source:'Interview with the speaker (sample)',date:'2026',attach:'0'}],
+    visual:{on:false,type:'Photo or image',desc:''},trans:'Body covered, now the mind'};
+  s.points[2]={main:'Sleep steadies mood and stress.',subs:['Less irritability and anxiety','Better focus under pressure'],
+    pois:[],visual:{on:true,type:'Infographic',desc:'Mood on six hours versus eight'},trans:''};
+  return s;
+}
+
+/* ===== Init ===== */
+(function(){
+  let th=null; try{ th=localStorage.getItem(KEY+'-theme'); }catch(e){}
+  if(th) applyTheme(th); else document.getElementById('themeBtn').textContent = currentTheme()==='dark'?'Light mode':'Dark mode';
+  if(lockReason(S.step)) S.step='coords';
+  syncVoice(); render(false);
+})();
+</script>
+</body>
+</html>
