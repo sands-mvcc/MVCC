@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commission the Line — IIoT &amp; Actuators Activity</title>
+<style>
+:root{
+  --bg:#EDF0F3; --panel:#FFFFFF; --panel-2:#F5F7F9; --ink:#17212B; --ink-2:#4B5967;
+  --line:#C9D1DA; --pipe:#A6B2BE; --navy:#0047AB; --navy-tint:#E3ECF8;
+  --green:#00875A; --green-ui:#00a86b; --green-tint:#E1F4EC;
+  --amber:#B86E00; --amber-tint:#FFF2D9; --red:#C0392B; --red-tint:#FBE6E3;
+  --shadow:0 1px 2px rgba(23,33,43,.06), 0 4px 14px rgba(23,33,43,.05);
+  --display:"Bahnschrift","DIN Alternate","D-DIN","Barlow Semi Condensed","Roboto Condensed","Arial Narrow",sans-serif;
+  --body:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;
+}
+[data-theme="dark"]{
+  --bg:#0F1720; --panel:#17222E; --panel-2:#1C2937; --ink:#E4EAF0; --ink-2:#A5B2BF;
+  --line:#2F3E4E; --pipe:#41546A; --navy:#6EA0EA; --navy-tint:#1B2D46;
+  --green:#3CCB92; --green-ui:#00a86b; --green-tint:#143528;
+  --amber:#F2B640; --amber-tint:#3A2C10; --red:#FF7A6B; --red-tint:#3D1D1A;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:light}
+[data-theme="dark"]{color-scheme:dark}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;transition:background .2s,color .2s}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+
+/* Header */
+header.top{background:var(--panel);border-bottom:1px solid var(--line)}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 0}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:38px;height:38px;border-radius:50%;border:2px solid var(--navy);position:relative;flex:none}
+.brand-mark::after{content:"";position:absolute;left:4px;right:4px;top:50%;border-top:2px solid var(--navy)}
+.brand-mark::before{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:var(--green-ui);top:5px;left:12px}
+.brand small{display:block;color:var(--ink-2);font-size:.82rem}
+.brand strong{font-family:var(--display);font-weight:600;font-size:1.02rem;letter-spacing:.01em}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.saved{font-size:.8rem;color:var(--ink-2);margin-right:4px;min-width:9.5em;text-align:right}
+.btn{border:1px solid var(--line);background:var(--panel);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:.92rem;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--navy);color:var(--navy)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+[data-theme="dark"] .btn.primary{color:#0F1720}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+[data-theme="dark"] .btn.primary:hover{color:#0F1720}
+.btn.go{background:var(--green-ui);border-color:var(--green-ui);color:#fff}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Hero + line */
+.hero{padding:30px 0 6px}
+.hero h1{font-family:var(--display);font-weight:700;font-size:clamp(2rem,4.6vw,3.2rem);line-height:1.02;letter-spacing:-.01em;max-width:22ch}
+.hero p{color:var(--ink-2);max-width:62ch;margin-top:10px}
+.line-scroll{overflow-x:auto;margin:22px -20px 0;padding:0 20px 6px;scrollbar-width:thin}
+.line{position:relative;display:flex;min-width:860px;padding:6px 0 4px}
+.pipe,.pipe-fill{position:absolute;left:46px;top:40px;height:6px;border-radius:3px}
+.pipe{right:46px;background:var(--pipe)}
+.pipe-fill{background:var(--green-ui);transition:width .5s ease}
+.node{flex:1;position:relative;background:none;border:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 2px;z-index:1}
+.bubble{width:74px;height:74px;border-radius:50%;background:var(--panel);border:2px solid var(--pipe);display:grid;grid-template-rows:1fr 1fr;place-items:center;position:relative;transition:border-color .2s,transform .2s,background .2s}
+.bubble::after{content:"";position:absolute;left:6px;right:6px;top:50%;border-top:1.5px solid currentColor;opacity:.45}
+.bubble .tag{font-family:var(--display);font-weight:700;font-size:1.05rem;align-self:end;padding-bottom:3px;letter-spacing:.03em}
+.bubble .num{font-size:.78rem;color:var(--ink-2);align-self:start;padding-top:4px;font-variant-numeric:tabular-nums}
+.node .nm{font-size:.84rem;font-weight:600;text-align:center;line-height:1.2}
+.node .sc{font-size:.76rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.node:hover .bubble{border-color:var(--navy)}
+.node.partial .bubble{border-color:var(--navy);border-style:dashed}
+.node.done .bubble{border-color:var(--green-ui);background:var(--green-tint)}
+.node.done .num::before{content:"✓ ";color:var(--green)}
+.node.active .bubble{border-width:4px;border-style:solid;border-color:var(--navy);transform:scale(1.06)}
+.node.report .bubble{border-radius:12px}
+
+/* Station */
+main{padding:26px 0 60px}
+.station{background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.st-head{padding:24px 28px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
+.st-head h2{font-family:var(--display);font-weight:700;font-size:1.9rem;line-height:1.1}
+.st-head p{color:var(--ink-2);max-width:64ch;margin-top:6px}
+.st-score{font-family:var(--display);font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.st-score small{display:block;font-family:var(--body);font-size:.78rem;font-weight:500;color:var(--ink-2);text-align:right}
+.st-body{padding:8px 28px 28px}
+.block{padding:22px 0;border-bottom:1px dashed var(--line)}
+.block:last-child{border-bottom:0}
+.block h3{font-family:var(--display);font-weight:600;font-size:1.22rem;margin-bottom:4px}
+.block .hint{color:var(--ink-2);font-size:.92rem;margin-bottom:12px;max-width:70ch}
+.q-text{font-weight:600;margin-bottom:10px;max-width:72ch}
+.st-nav{display:flex;justify-content:space-between;gap:10px;padding:18px 28px;border-top:1px solid var(--line);background:var(--panel-2)}
+
+/* MCQ */
+.opts{display:grid;gap:8px;max-width:760px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--panel-2);border-radius:6px;padding:10px 14px;cursor:pointer;line-height:1.4}
+.opt:hover:not(:disabled){border-color:var(--navy);background:var(--navy-tint)}
+.opt:disabled{cursor:default}
+.opt.is-right{border-color:var(--green);background:var(--green-tint);font-weight:600}
+.opt.is-wrong{border-color:var(--red);background:var(--red-tint);text-decoration:line-through;text-decoration-thickness:1px}
+.fb{margin-top:12px;padding:10px 14px;border-left:4px solid;border-radius:0 6px 6px 0;max-width:760px;font-size:.95rem}
+.fb.ok{border-color:var(--green);background:var(--green-tint)}
+.fb.no{border-color:var(--red);background:var(--red-tint)}
+
+/* Row sets */
+.rows{display:grid;gap:10px;margin-bottom:14px}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px 16px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.row.ok{border-color:var(--green)}
+.row.no{border-color:var(--red)}
+.row-fb{grid-column:1/-1;font-size:.9rem;color:var(--ink-2)}
+.row.ok .row-fb b{color:var(--green)}
+.row.no .row-fb b{color:var(--red)}
+.row select{padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:var(--panel);min-width:200px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:600;font-size:.88rem}
+.chip:hover:not(:disabled){border-color:var(--navy)}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+[data-theme="dark"] .chip.on{color:#0F1720}
+.chip:disabled{cursor:default}
+.chip.right{background:var(--green-tint);border-color:var(--green);color:var(--ink)}
+.chip.wrong{background:var(--red-tint);border-color:var(--red);color:var(--ink)}
+
+/* Order */
+.order{display:grid;gap:8px;max-width:620px;margin-bottom:14px;counter-reset:o}
+.order li{list-style:none;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.order li::before{counter-increment:o;content:counter(o);font-family:var(--display);font-weight:700;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--navy-tint);color:var(--navy);flex:none}
+.order li span{flex:1}
+.mv{border:1px solid var(--line);background:var(--panel);border-radius:5px;width:32px;height:30px;cursor:pointer}
+.mv:disabled{opacity:.35;cursor:default}
+.order.checked li{border-color:var(--green)}
+.order.checked.wrongset li.bad{border-color:var(--red)}
+
+/* Classify */
+.pool,.bin{border:1.5px dashed var(--line);border-radius:10px;padding:12px;min-height:64px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
+.pool{margin-bottom:14px;background:var(--panel-2)}
+.bins{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.bin{flex-direction:column;flex-wrap:nowrap;cursor:pointer;min-height:150px;background:var(--panel)}
+.bin h4{font-family:var(--display);font-weight:600;font-size:1rem}
+.bin p{font-size:.78rem;color:var(--ink-2);margin-top:-6px}
+.bin.target{border-color:var(--navy);background:var(--navy-tint)}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 11px;cursor:grab;font-weight:600;font-size:.88rem;box-shadow:var(--shadow);text-align:left}
+.card.sel{outline:3px solid var(--navy);outline-offset:1px}
+.card.right{border-color:var(--green);background:var(--green-tint)}
+.card.wrong{border-color:var(--red);background:var(--red-tint)}
+.card small{display:block;font-weight:500;color:var(--ink-2);font-size:.75rem}
+
+/* RFID portal */
+.portal{position:relative;height:150px;border:1px solid var(--line);border-radius:10px;background:repeating-linear-gradient(90deg,var(--panel-2) 0 38px,var(--panel) 38px 40px);overflow:hidden;margin-bottom:12px}
+.antenna{position:absolute;top:14px;bottom:14px;width:14px;left:calc(50% - 50px);background:var(--navy);border-radius:4px}
+.antenna.r{left:calc(50% + 36px)}
+.field{position:absolute;top:24px;bottom:24px;left:calc(50% - 36px);width:72px;background:radial-gradient(ellipse at center,rgba(0,71,171,.20),transparent 70%);opacity:0;transition:opacity .3s}
+.portal.on .field{opacity:1;animation:wave 1s ease-in-out infinite}
+@keyframes wave{50%{opacity:.4}}
+.pallet{position:absolute;left:-120px;top:42px;width:96px;height:66px;background:#B7894F;border-radius:4px;display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:6px;border:2px solid #8B6430}
+.pallet i{background:#D9B47E;border-radius:2px}
+.portal.run .pallet{animation:slide 3.6s linear forwards}
+@keyframes slide{to{left:calc(100% + 20px)}}
+.log{font-family:var(--mono);font-size:.84rem;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:110px;margin-bottom:6px}
+.log div{padding:2px 0}
+.log .unk{color:var(--amber);font-weight:700}
+.manifest{width:100%;max-width:560px;border-collapse:collapse;font-size:.92rem;margin-bottom:14px}
+.manifest th,.manifest td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
+.manifest th{font-weight:600;color:var(--ink-2)}
+.manifest td:first-child{font-family:var(--mono)}
+
+/* Edge latency strip */
+.lat{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.lat div{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel-2)}
+.lat b{font-family:var(--display);font-size:1.25rem;display:block}
+.lat span{font-size:.84rem;color:var(--ink-2)}
+
+/* Modbus frame */
+.frame{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px}
+.fgrp{display:flex;flex-direction:column;align-items:center;gap:4px}
+.fgrp .bytes{display:flex;gap:3px}
+.fgrp .bytes span{font-family:var(--mono);font-weight:700;padding:8px 9px;border:1.5px solid var(--navy);border-radius:5px;background:var(--navy-tint)}
+.fgrp em{font-style:normal;font-family:var(--display);font-weight:700;color:var(--navy)}
+
+/* Ladder */
+.ladder{border:1px solid var(--line);border-radius:10px;padding:18px 14px;background:var(--panel-2);overflow-x:auto;margin-bottom:12px}
+.rung{display:flex;align-items:center;min-width:640px;height:110px}
+.rail{width:6px;height:100%;background:var(--ink-2);border-radius:3px}
+.wire{flex:1;height:4px;background:var(--pipe);transition:background .2s}
+.wire.live{background:var(--green-ui);box-shadow:0 0 8px rgba(0,168,107,.6)}
+.contact,.coil{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:0 4px}
+.coil{cursor:default}
+.csym{width:46px;height:44px;position:relative}
+.csym::before,.csym::after{content:"";position:absolute;top:0;bottom:0;width:4px;background:var(--ink)}
+.csym::before{left:6px}.csym::after{right:6px}
+.contact.closed .csym::before,.contact.closed .csym::after{background:var(--green-ui)}
+.contact.closed .csym{background:linear-gradient(var(--green-ui),var(--green-ui)) center/22px 4px no-repeat}
+.coilsym{width:50px;height:50px;border:4px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700}
+.coil.on .coilsym{border-color:var(--green-ui);background:var(--green-tint);color:var(--green)}
+.contact b,.coil b{font-size:.78rem;font-family:var(--display)}
+.contact small,.coil small{font-size:.72rem;color:var(--ink-2)}
+.plc-readout{display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:.92rem}
+.plc-readout b{font-family:var(--display);font-size:1.2rem;font-variant-numeric:tabular-nums}
+.plc-readout input[type=range]{width:180px;accent-color:var(--navy)}
+.tt{border-collapse:collapse;font-variant-numeric:tabular-nums;margin-bottom:12px}
+.tt th,.tt td{border:1px solid var(--line);padding:6px 14px;text-align:center}
+.tt th{background:var(--panel-2);font-weight:600}
+
+/* HMI — ISA-101 style: gray, colour only for abnormal */
+.hmi{border:1px solid var(--line);border-radius:10px;background:#D4D8DC;color:#1E252B;padding:14px;margin-bottom:14px}
+[data-theme="dark"] .hmi{background:#2A3138;color:#E1E5E9}
+.hmi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.hmi-tile{background:#E6E9EC;border:1px solid #AEB4BA;border-radius:4px;padding:8px 10px}
+[data-theme="dark"] .hmi-tile{background:#343C44;border-color:#4C565F}
+.hmi-tile span{font-size:.74rem;display:block;opacity:.8}
+.hmi-tile b{font-family:var(--display);font-size:1.35rem;font-variant-numeric:tabular-nums}
+.hmi-tile.abn{background:var(--amber-tint);border-color:var(--amber)}
+.hmi-tile.abn b{color:var(--amber)}
+.lamp{display:inline-block;width:14px;height:14px;border-radius:50%;background:#9AA2A9;vertical-align:-2px;margin-right:6px}
+.lamp.unack{background:#E5352B;animation:blink .8s steps(2) infinite}
+.lamp.ack{background:#E5352B}
+@keyframes blink{50%{opacity:.2}}
+.hmi-ctrls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.hbtn{border:1px solid #868E96;background:#F1F3F5;color:#1E252B;border-radius:4px;padding:8px 12px;font-weight:600;cursor:pointer;font-size:.88rem}
+[data-theme="dark"] .hbtn{background:#46505A;color:#F1F3F5;border-color:#6B7680}
+.hbtn:hover:not(:disabled){border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.hbtn.sel{background:#1E252B;color:#fff}
+.hbtn.pick-right{background:var(--green-ui);color:#fff;border-color:var(--green-ui)}
+.hbtn.pick-wrong{background:#C0392B;color:#fff;border-color:#C0392B}
+.hbtn:disabled{cursor:default}
+.hmi-sep{width:1px;height:28px;background:#868E96;margin:0 4px}
+.event{border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 8px 8px 0;padding:12px 14px;background:var(--panel-2);margin-bottom:10px}
+.event .ev-n{font-size:.8rem;color:var(--ink-2)}
+.ev-dots{display:flex;gap:6px;margin-bottom:10px}
+.ev-dots i{width:22px;height:6px;border-radius:3px;background:var(--line)}
+.ev-dots i.ok{background:var(--green-ui)}.ev-dots i.no{background:var(--red)}.ev-dots i.cur{background:var(--navy)}
+
+/* Condition monitoring */
+.explore{display:grid;grid-template-columns:minmax(220px,1fr) 2fr;gap:18px;align-items:center;margin-bottom:6px}
+.explore input[type=range]{width:100%;accent-color:var(--navy)}
+.gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.gauge{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--panel-2)}
+.gauge span{font-size:.78rem;color:var(--ink-2);display:block}
+.gauge b{font-family:var(--display);font-size:1.4rem;font-variant-numeric:tabular-nums}
+.hbar{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.hbar i{display:block;height:100%;transition:width .2s,background .2s}
+.guide{border-collapse:collapse;font-size:.88rem;margin:6px 0 14px}
+.guide th,.guide td{border:1px solid var(--line);padding:6px 12px;text-align:left}
+.guide th{background:var(--panel-2)}
+.mach{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.mach .id{font-family:var(--display);font-weight:700;font-size:1.05rem;min-width:150px}
+.mach .id small{display:block;font-family:var(--body);font-weight:400;color:var(--ink-2);font-size:.8rem}
+.mach .rd{font-size:.88rem;font-variant-numeric:tabular-nums}
+.spark{width:110px;height:34px}
+.spark polyline{fill:none;stroke:var(--navy);stroke-width:2}
+
+/* RTLS */
+.rtls-wrap{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.map{position:relative;aspect-ratio:16/9;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);overflow:hidden;cursor:default;user-select:none}
+.map.placing{cursor:crosshair}
+.zone{position:absolute;border:1.5px solid var(--pipe);border-radius:4px;padding:4px 6px;font-size:.76rem;font-weight:600;color:var(--ink-2);pointer-events:none}
+.zone.restricted{border-color:var(--red);background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(192,57,43,.09) 8px 16px);color:var(--red)}
+.asset{position:absolute;transform:translate(-50%,-50%);border:2px solid var(--panel);border-radius:50%;width:30px;height:30px;font-size:.62rem;font-weight:700;display:grid;place-items:center;cursor:pointer;color:#fff;background:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.35);transition:left .4s,top .4s}
+[data-theme="dark"] .asset{color:#0F1720}
+.asset.t-person{background:#7A4FBF}
+.asset.t-pallet{background:#A0692A}
+.asset.t-cart{background:#2C7A7B}
+.asset.sel{outline:3px solid var(--amber);outline-offset:2px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-2);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.inspector{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2);font-size:.92rem}
+.inspector h4{font-family:var(--display);font-size:1.1rem;margin-bottom:6px}
+.inspector dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin-bottom:10px}
+.inspector dt{color:var(--ink-2)}
+.tasks{display:grid;gap:8px;margin-top:14px}
+.task{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel-2);font-size:.93rem}
+.task.cur{border-color:var(--navy);border-width:2px}
+.task.ok{border-color:var(--green)}
+.task.no{border-color:var(--red)}
+.task .row-fb{margin-top:4px}
+
+/* Report */
+.form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:6px}
+.form label{font-size:.84rem;font-weight:600;display:flex;flex-direction:column;gap:4px}
+.form input,textarea{border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:var(--panel-2)}
+textarea{width:100%;min-height:110px;resize:vertical;line-height:1.5}
+.sum{display:grid;gap:8px;max-width:760px}
+.sum-row{display:grid;grid-template-columns:200px 1fr 70px;gap:12px;align-items:center;font-size:.93rem}
+.sum-row .hbar{height:10px;margin:0}
+.sum-row b{font-variant-numeric:tabular-nums;text-align:right}
+.total{font-family:var(--display);font-size:2.6rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.total small{font-size:1rem;color:var(--ink-2);font-weight:500}
+
+/* Toast + dialog */
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,40px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:.92rem;opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:90vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+dialog{border:1px solid var(--line);border-radius:12px;padding:22px;background:var(--panel);color:var(--ink);max-width:420px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(10,15,20,.5)}
+dialog h3{font-family:var(--display);font-size:1.3rem;margin-bottom:8px}
+dialog p{color:var(--ink-2);margin-bottom:16px}
+.dlg-btns{display:flex;justify-content:flex-end;gap:8px}
+#printArea{display:none}
+
+@media (max-width:860px){
+  .bins{grid-template-columns:repeat(2,1fr)}
+  .hmi-grid{grid-template-columns:repeat(3,1fr)}
+  .gauges{grid-template-columns:repeat(2,1fr)}
+  .explore,.rtls-wrap{grid-template-columns:1fr}
+  .form{grid-template-columns:1fr 1fr}
+}
+@media (max-width:560px){
+  .st-head,.st-body,.st-nav{padding-left:16px;padding-right:16px}
+  .row{grid-template-columns:1fr}
+  .lat{grid-template-columns:1fr}
+  .form{grid-template-columns:1fr}
+  .sum-row{grid-template-columns:110px 1fr 56px}
+  .saved{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+@media print{
+  body{background:#fff;color:#000}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important;font-family:var(--body);color:#000}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div><strong>Industrial IoT &amp; Actuators</strong><small>Reinforcement activity</small></div>
+    </div>
+    <div class="tools">
+      <span class="saved" id="savedNote" aria-live="polite">Progress saves on this device</span>
+      <button class="btn" id="themeBtn" type="button" aria-pressed="false">☾ Dark mode</button>
+      <button class="btn" id="dlBtn" type="button">⤓ Save report</button>
+      <button class="btn" id="printBtn" type="button">⎙ Print</button>
+      <button class="btn danger" id="resetBtn" type="button">↺ Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <h1>Commission the line</h1>
+    <p>Eight stations stand between this plant and its first production run. At each one you’ll put a device from the lesson to work. Clear them all, then save or print your report to turn in.</p>
+    <div class="line-scroll"><nav class="line" id="line" aria-label="Activity stations"></nav></div>
+  </section>
+  <main id="main"></main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<dialog id="resetDlg">
+  <h3>Reset the activity?</h3>
+  <p>This clears every answer and your reflections so you can start over. Your name and student ID stay filled in.</p>
+  <div class="dlg-btns">
+    <button class="btn" type="button" id="resetCancel">Keep my work</button>
+    <button class="btn primary" type="button" id="resetOk">Reset activity</button>
+  </div>
+</dialog>
+<div id="printArea"></div>
+
+<script>
+(function(){
+"use strict";
+const STORE="mvcc-iiot-actuators-activity-v1", THEME="mvcc-iiot-theme";
+const UI={};
+
+/* ---------- storage ---------- */
+function fresh(keepStudent){
+  return {answers:{},flags:{},current:"s1",
+    student:keepStudent||{name:"",id:"",section:"",date:new Date().toISOString().slice(0,10)},
+    reflection:{r1:"",r2:""},updated:null};
+}
+function load(){try{const s=JSON.parse(localStorage.getItem(STORE));if(s&&s.answers)return Object.assign(fresh(),s);}catch(e){}return fresh();}
+let S=load();
+let saveTimer;
+function save(quiet){
+  S.updated=new Date().toISOString();
+  try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}
+  const n=document.getElementById("savedNote");
+  n.textContent="Saved "+new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+  if(!quiet)renderLine();
+}
+
+/* ---------- helpers ---------- */
+function h(tag,attrs,...kids){
+  const el=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs||{})){
+    if(v==null||v===false)continue;
+    if(k==="class")el.className=v;
+    else if(k==="html")el.innerHTML=v;
+    else if(k.startsWith("on")&&typeof v==="function")el.addEventListener(k.slice(2),v);
+    else el.setAttribute(k,v===true?"":v);
+  }
+  for(const c of kids.flat()){if(c==null||c===false)continue;el.append(c.nodeType?c:document.createTextNode(String(c)));}
+  return el;
+}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600);}
+function fb(ok,answer,why){return h("div",{class:"fb "+(ok?"ok":"no"),role:"status"},h("strong",{},ok?"Correct. ":"Not quite. "),ok?"":"Answer: "+answer+". ",why||"");}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function rerender(){const y=window.scrollY;renderStation();window.scrollTo(0,y);}
+
+/* ---------- content ---------- */
+const HMI_ACTIONS={start:"Start production",stop:"Stop production",ack:"Acknowledge alarm",reset:"Reset alarms",manual:"Manual mode",auto:"Automatic mode",maint:"Maintenance mode"};
+const RT_ZONES=[
+  {id:"prod",name:"Production floor",x:2,y:3,w:46,h:94},
+  {id:"store",name:"Storage area",x:52,y:3,w:46,h:42},
+  {id:"robot",name:"Robot cell (restricted)",x:52,y:53,w:21,h:44,restricted:true},
+  {id:"dock",name:"Shipping dock",x:76,y:53,w:22,h:44}
+];
+const RT_ASSETS=[
+  {id:"FLT-001",type:"Forklift",cls:"t-fork",x:22,y:34,dwell:3},
+  {id:"CART-A",type:"Tool cart",cls:"t-cart",x:34,y:72,dwell:6},
+  {id:"P-102",type:"Personnel",cls:"t-person",x:70,y:22,dwell:9},
+  {id:"P-118",type:"Personnel",cls:"t-person",x:62,y:76,dwell:4},
+  {id:"MAT-P009",type:"Material pallet",cls:"t-pallet",x:88,y:68,dwell:52},
+  {id:"MAT-P014",type:"Material pallet",cls:"t-pallet",x:83,y:87,dwell:12}
+];
+function zoneAt(x,y){const z=RT_ZONES.find(z=>x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h);return z?z.name:"Aisle";}
+
+const STATIONS=[
+{id:"s1",tag:"SC",name:"Signal chain",title:"Station 1: The signal chain",
+ role:"Actuators turn a controller’s digital decision into physical action. Rebuild the chain, then sort each device by the job it does.",
+ blocks:[
+  {type:"order",key:"s1order",title:"Put the chain in order",hint:"Use the arrows to arrange the steps from first to last.",
+   items:["A sensor measures a condition (temperature, vibration, position)","A controller such as a PLC or edge device decides what to do","The controller sends a control signal to an actuator","The actuator produces physical action: a valve opens, a motor turns"],
+   start:[2,0,3,1],why:"Sense → decide → signal → act. Without the actuator at the end, the system can observe but never respond."},
+  {type:"classify",key:"s1class",title:"Sort the devices",hint:"Drag each device into a bin, or tap a device and then tap a bin.",
+   bins:[{n:"Sense",d:"Measures or identifies"},{n:"Decide",d:"Runs logic on data"},{n:"Act",d:"Creates physical action"},{n:"Connect & display",d:"Translates or shows data"}],
+   items:[["Vibration sensor","Sense"],["RFID reader","Sense"],["PLC","Decide"],["Edge device","Decide"],["Solenoid valve","Act"],["Servo motor","Act"],["HMI panel","Connect & display"],["Industrial gateway","Connect & display"]],
+   why:{"Vibration sensor":"It measures machine condition.","RFID reader":"It identifies tags; it doesn’t decide or move anything.","PLC":"It runs control logic on input states.","Edge device":"It processes data near the source.","Solenoid valve":"A control signal opens or closes it.","Servo motor":"It turns a command into precise motion.","HMI panel":"It shows operators the process and passes their commands on.","Industrial gateway":"It translates protocols between networks."}}
+ ]},
+{id:"s2",tag:"RF",name:"RFID",title:"Station 2: Dock-door RFID portal",
+ role:"Pallet PAL-2207 is leaving for a customer. Run it through the portal and reconcile what was read against the shipping manifest.",
+ blocks:[
+  {type:"rfid"},
+  {type:"mcq",key:"s2q1",needs:"rfid",q:"Which manifest item did the portal fail to read?",options:["RF001234 · Laptop computer","RF005678 · Tool set #5","RF009012 · Safety equipment","RF004455 · Torque wrench kit"],a:3,
+   why:"RF004455 is on the manifest but absent from the read log. Either the item never made it onto the pallet or its tag is damaged or shielded; someone checks before the truck leaves."},
+  {type:"mcq",key:"s2q2",needs:"rfid",q:"The portal also read RF007731, which isn’t in the asset registry. What should happen?",options:["Ignore it, since the expected tags were read","Flag it as an unregistered tag and investigate before shipping","Add it to the manifest automatically","Mark the pallet shipped and log it later"],a:1,
+   why:"An unknown tag means an untracked item, a mislabeled asset, or a cloned/rogue tag. Auto-trusting it would break inventory accuracy, and in security terms it’s an unverified device on your system."},
+  {type:"mcq",key:"s2q3",needs:"rfid",q:"The pallet is shrink-wrapped and every tag was read in one pass. Why couldn’t a barcode scanner do the same?",options:["Barcodes store less data than RFID tags","RFID uses radio waves, so it needs no line of sight and can read many tags at once","Barcode scanners only work on metal surfaces","RFID tags are always battery powered"],a:1,
+   why:"Radio frequency identification reads through packaging and handles many tags in one pass. Barcodes need a clear optical view of each label, one at a time. Most passive tags have no battery."}
+ ]},
+{id:"s3",tag:"ED",name:"Edge",title:"Station 3: Where should the data be processed?",
+ role:"Edge devices process data near its source. For each workload, decide whether it belongs at the edge, in the cloud, or split between them.",
+ blocks:[
+  {type:"latency"},
+  {type:"rows",key:"s3",chips:true,choices:["Edge","Cloud","Hybrid"],title:"Route each workload",
+   rows:[
+    {q:"Vibration spikes past the trip limit. The motor must stop within milliseconds.",a:"Edge",why:"Only local processing is fast enough; a ~50 ms cloud round trip is too slow for a protective trip."},
+    {q:"Train a predictive-maintenance model on three years of data from 12 plants.",a:"Cloud",why:"Heavy compute on huge, multi-site datasets is what the cloud does well, and nothing about it is time-critical."},
+    {q:"Sample 1,000 readings per second locally and send one-minute averages to a dashboard.",a:"Hybrid",why:"The edge reduces raw data; the cloud stores and displays the summaries. That cuts bandwidth."},
+    {q:"A remote pump station on a cellular link must keep running if the link drops.",a:"Edge",why:"Control has to survive a lost connection, so the logic lives on site."},
+    {q:"A monthly energy-use report comparing every site in the company.",a:"Cloud",why:"Cross-site, non-urgent aggregation belongs in central storage and analytics."},
+    {q:"Detect anomalies on the line and upload only flagged events for engineers to review.",a:"Hybrid",why:"Detection happens at the edge in real time; only the interesting events travel to the cloud."}
+   ]}
+ ]},
+{id:"s4",tag:"GW",name:"Gateway",title:"Station 4: Industrial gateway",
+ role:"Gateways translate legacy field protocols into modern IIoT protocols and act as a security buffer between them.",
+ blocks:[
+  {type:"rows",key:"s4match",title:"Match each description to its protocol",choices:["Modbus RTU","Profibus","EtherNet/IP","MQTT","OPC UA","HTTP/REST"],
+   rows:[
+    {q:"Serial, master/slave, reads and writes numbered registers. Dates to 1979.",a:"Modbus RTU",why:"Simple and everywhere in legacy plants. It has no authentication or encryption."},
+    {q:"Publish/subscribe through a broker using topics like plant/line1/temp.",a:"MQTT",why:"Lightweight messaging built for constrained IIoT devices and unreliable links."},
+    {q:"Rich information model of nodes and namespaces, with built-in security.",a:"OPC UA",why:"Platform-independent, with authentication and encryption designed in."},
+    {q:"Fieldbus long used across the Siemens automation ecosystem.",a:"Profibus",why:"A legacy fieldbus common in European manufacturing."},
+    {q:"Runs the Common Industrial Protocol (CIP) over standard Ethernet.",a:"EtherNet/IP",why:"CIP over TCP/UDP, common in Rockwell/Allen-Bradley plants."},
+    {q:"Request/response calls such as POST /api/sensors with a JSON body.",a:"HTTP/REST",why:"The web’s request model, used by cloud APIs and dashboards."}
+   ]},
+  {type:"frame"},
+  {type:"rows",key:"s4frame",choices:["Slave (unit) address","Function code","Starting register address","Number of registers","Error check (CRC)"],
+   rows:[
+    {q:"A · 01",a:"Slave (unit) address",why:"Device 1 on the serial bus."},
+    {q:"B · 03",a:"Function code",why:"03 = read holding registers."},
+    {q:"C · 40 00",a:"Starting register address",why:"Begin reading at register 0x4000."},
+    {q:"D · 00 01",a:"Number of registers",why:"Read one register."},
+    {q:"E · 91 CA",a:"Error check (CRC)",why:"A CRC-16 catches transmission errors. It is not a security control; anyone can compute it."}
+   ]},
+  {type:"mcq",key:"s4q",q:"Why put a gateway between legacy Modbus devices and the cloud instead of exposing the devices directly?",options:["Modbus is too fast for cloud networks","The gateway translates protocols and acts as a security buffer, since Modbus has no built-in authentication or encryption","Cloud services can only receive Profibus","Gateways increase the voltage on serial lines"],a:1,
+   why:"Anyone who can reach a Modbus device can usually command it. The gateway limits exposure, terminates the legacy protocol locally, and speaks a securable protocol upstream."}
+ ]},
+{id:"s5",tag:"PLC",name:"PLC",title:"Station 5: Read the ladder rung",
+ role:"This PLC rung starts the conveyor motor. Click the contacts to change inputs and watch power flow, then prove you can predict the output.",
+ blocks:[
+  {type:"ladder"},
+  {type:"mcq",key:"s5logic",q:"Which logic does this rung implement?",options:["Motor = Start OR Safety OR Temp_OK","Motor = Start AND Safety AND Temp_OK","Motor = NOT Start AND Safety","Motor = Start XOR Safety"],a:1,
+   why:"Contacts in series form AND logic: power reaches the coil only if every contact is closed."},
+  {type:"rows",key:"s5pred",chips:true,choices:["ON","OFF"],title:"Predict the motor",hint:"Decide each case before you test it on the rung.",
+   rows:[
+    {q:"Start = 1, Safety = 1, Temp OK = 1",a:"ON",why:"All three series contacts are closed."},
+    {q:"Start = 1, Safety = 0, Temp OK = 1",a:"OFF",why:"An open safety switch breaks the rung, as it should."},
+    {q:"Start = 0, Safety = 1, Temp OK = 1",a:"OFF",why:"Ready, but no one has pressed Start."},
+    {q:"Start = 1, Safety = 1, Temp OK = 0",a:"OFF",why:"The temperature permissive blocks the start."}
+   ]},
+  {type:"mcq",key:"s5power",q:"The motor is running with the speed set to 60%. Using the lesson’s model (1,500 W at 100%), what is the output power?",options:["600 W","900 W","1,060 W","1,500 W"],a:1,why:"0.60 × 1,500 W = 900 W."}
+ ]},
+{id:"s6",tag:"HMI",name:"HMI",title:"Station 6: Run the shift from the HMI",
+ role:"You’re the operator. Read each event, then respond by pressing the right control on the HMI itself.",
+ blocks:[{type:"hmi",key:"s6",events:[
+   {short:"Shift start, run hands-off",text:"Shift start. The line is idle in Manual mode. Your supervisor wants it running its programmed sequence without operator stepping.",a:"auto",
+    st:{mode:"Manual",line:"Idle",rate:0,temp:22,alarms:0,lamp:""},
+    why:"Automatic mode lets the PLC run the programmed sequence. Manual is for operator-driven moves; Maintenance blocks production for servicing."},
+   {short:"Temperature high alarm",text:"Mid-shift, temperature reads 47 °C against a 45 °C high limit. The alarm lamp is flashing and nobody has responded.",a:"ack",
+    st:{mode:"Automatic",line:"Running",rate:86,temp:47,alarms:1,lamp:"unack"},
+    why:"Acknowledging tells the system and your team that someone owns the alarm. It stops the flashing but doesn’t clear the condition; next you investigate. At a high-high trip limit, stopping would be right."},
+   {short:"Bearing must be replaced",text:"You find a worn conveyor bearing causing the heat. A technician needs to replace it. What’s your first action?",a:"stop",
+    st:{mode:"Automatic",line:"Running",rate:85,temp:44,alarms:1,lamp:"ack"},
+    why:"Stop the line before anyone works on it. Switching modes on a running line is not a substitute for stopping it."},
+   {short:"Prepare for technician",text:"The line is stopped. Before the technician begins, put the HMI in the right state.",a:"maint",
+    st:{mode:"Automatic",line:"Stopped",rate:0,temp:38,alarms:1,lamp:"ack"},
+    why:"Maintenance mode blocks production commands so the line can’t be restarted from the HMI while someone is in the equipment. Real sites pair this with lockout/tagout."},
+   {short:"Repair complete",text:"The bearing is replaced and temperature is back to normal, but the alarm is still latched on screen.",a:"reset",
+    st:{mode:"Maintenance",line:"Stopped",rate:0,temp:24,alarms:1,lamp:"ack"},
+    why:"Reset clears a latched alarm once the cause is fixed. Resetting earlier would only hide the problem."}
+ ]}]},
+{id:"s7",tag:"CM",name:"Monitoring",title:"Station 7: Condition monitoring triage",
+ role:"Condition monitoring uses sensor data to predict failures before they happen. Explore the health model, then triage four machines.",
+ blocks:[
+  {type:"explore"},
+  {type:"mcq",key:"s7hours",q:"Using the same model, what overall health does a machine show at 6,000 operating hours?",options:["94%","60%","40%","10%"],a:2,why:"100 − 6,000 ÷ 100 = 40%. The model drops one point per 100 operating hours."},
+  {type:"guide"},
+  {type:"rows",key:"s7triage",chips:true,choices:["Normal","Schedule maintenance","Act now"],title:"Triage the machines",hint:"Use the plant guideline above. The worse of the two readings decides.",
+   rows:[
+    {id:"M-12",kind:"Electric motor",vib:1.9,temp:61,trend:[60,61,60,62,61,61],a:"Normal",why:"Both readings are in the normal band and the trend is flat."},
+    {id:"P-04",kind:"Centrifugal pump",vib:3.6,temp:72,trend:[2.4,2.6,2.9,3.1,3.4,3.6],a:"Schedule maintenance",why:"Vibration is in the plan band and rising. Book it before it becomes an emergency."},
+    {id:"C-02",kind:"Air compressor",vib:7.8,temp:91,trend:[4,4.6,5.5,6.4,7.1,7.8],a:"Act now",why:"Both readings are past the act-now limits and climbing fast."},
+    {id:"M-07",kind:"Electric motor",vib:2.4,temp:79,trend:[70,72,74,76,77,79],a:"Schedule maintenance",why:"Vibration is fine, but 79 °C is in the plan band. The worse reading decides."}
+   ]},
+  {type:"mcq",key:"s7pred",q:"What makes this predictive maintenance rather than preventive maintenance?",options:["Machines are serviced on a fixed calendar schedule","Machines are repaired only after they fail","Service is timed by measured condition and trends, not by the calendar","Every machine is replaced at 8,760 hours"],a:2,
+   why:"Preventive maintenance follows a calendar; predictive maintenance acts on what the sensors show, so healthy machines aren’t serviced early and failing ones aren’t missed."}
+ ]},
+{id:"s8",tag:"RT",name:"RTLS",title:"Station 8: Real-time location",
+ role:"The RTLS shows every tagged asset on the floor in real time. Select an asset to inspect it, then complete the tasks.",
+ blocks:[
+  {type:"rtls",key:"s8"},
+  {type:"mcq",key:"s8q",q:"What separates RTLS from the RFID portal at Station 2?",options:["RTLS works only outdoors","RTLS continuously reports where an asset is; a portal records a tag passing a fixed read point","RFID cannot identify assets","RTLS doesn’t use tags"],a:1,
+   why:"A portal tells you a tag crossed a doorway. RTLS gives a live position, which enables geofences, dwell times, and zone utilization."}
+ ]}
+];
+const RT_TASKS=[
+  {key:"t1",text:"A geofence alert is active. Find the asset causing it and mark it as your answer.",a:"P-118",
+   why:"Personnel tag P-118 is inside the restricted robot cell. Geofences trigger when a tag enters a zone it shouldn’t."},
+  {key:"t2",text:"The dock’s dwell limit is 30 minutes. Find the asset that has exceeded it and mark it.",a:"MAT-P009",
+   why:"MAT-P009 has sat at the shipping dock for 52 minutes; MAT-P014 is only at 12."},
+  {key:"t3",text:"Send forklift FLT-001 to pick up that pallet: select it, click a spot inside the shipping dock, then confirm.",a:"Shipping dock",
+   why:"RTLS lets dispatch see exactly where the forklift is and where it needs to go."}
+];
+
+/* ---------- grading ---------- */
+function items(st){
+  const out=[];
+  for(const b of st.blocks){
+    const a=S.answers[b.key];
+    if(b.type==="mcq")out.push({label:b.q,given:a?b.options[a.pick]:"",correct:b.options[b.a],ok:!!a&&a.pick===b.a,done:!!a});
+    else if(b.type==="rows")b.rows.forEach((r,i)=>{const g=a?a.picks[i]:"";out.push({label:r.q||(r.id+" "+r.kind),given:g,correct:r.a,ok:!!a&&g===r.a,done:!!a});});
+    else if(b.type==="order"){const ok=a&&a.order.join("|")===b.items.join("|");out.push({label:b.title,given:a?(ok?"Correct order":"Incorrect order"):"",correct:"Sense → decide → signal → act",ok:!!ok,done:!!a});}
+    else if(b.type==="classify")b.items.forEach(([n,c])=>{const g=a?a.assign[n]:"";out.push({label:n,given:g,correct:c,ok:!!a&&g===c,done:!!a});});
+    else if(b.type==="hmi")b.events.forEach((e,i)=>{const p=a&&a.picks[i];out.push({label:e.short,given:p?HMI_ACTIONS[p]:"",correct:HMI_ACTIONS[e.a],ok:p===e.a,done:!!p});});
+    else if(b.type==="rtls")RT_TASKS.forEach(t=>{const g=a&&a[t.key];out.push({label:t.text,given:g||"",correct:t.a,ok:g===t.a,done:!!g});});
+  }
+  return out;
+}
+function score(st){const it=items(st);return {got:it.filter(i=>i.ok).length,max:it.length,done:it.filter(i=>i.done).length};}
+
+/* ---------- line ---------- */
+function renderLine(){
+  const L=document.getElementById("line");L.innerHTML="";
+  let complete=0;
+  L.append(h("div",{class:"pipe"}));const fill=h("div",{class:"pipe-fill",style:"width:"+(UI.fillW||0)+"px"});L.append(fill);
+  STATIONS.forEach((st,i)=>{
+    const s=score(st);const state=s.done===s.max?"done":s.done>0?"partial":"";
+    if(state==="done")complete++;
+    L.append(h("button",{type:"button",class:"node "+state+(S.current===st.id?" active":""),"aria-current":S.current===st.id?"step":null,onclick:()=>go(st.id)},
+      h("span",{class:"bubble"},h("span",{class:"tag"},st.tag),h("span",{class:"num"},String(i+1))),
+      h("span",{class:"nm"},st.name),h("span",{class:"sc"},s.done?s.got+"/"+s.max:s.max+" pts")));
+  });
+  const t=totals();
+  L.append(h("button",{type:"button",class:"node report"+(S.current==="report"?" active":"")+(complete===STATIONS.length?" done":""),onclick:()=>go("report")},
+    h("span",{class:"bubble"},h("span",{class:"tag"},"RPT"),h("span",{class:"num"},"✎")),
+    h("span",{class:"nm"},"Report"),h("span",{class:"sc"},t.got+"/"+t.max)));
+  requestAnimationFrame(()=>{const nodes=L.querySelectorAll(".node");const pipe=L.querySelector(".pipe");
+    const total=nodes.length-1;const frac=complete/STATIONS.length;
+    UI.fillW=pipe.offsetWidth*complete/total;fill.style.width=UI.fillW+"px";});
+}
+function totals(){let got=0,max=0;STATIONS.forEach(st=>{const s=score(st);got+=s.got;max+=s.max;});return {got,max};}
+function go(id){S.current=id;save(true);renderLine();renderStation();
+  const m=document.getElementById("main");window.scrollTo({top:m.offsetTop-10,behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});}
+
+/* ---------- block renderers ---------- */
+function R_mcq(b){
+  const a=S.answers[b.key];
+  const w=h("div",{class:"block"},h("p",{class:"q-text"},b.q));
+  const g=h("div",{class:"opts",role:"group","aria-label":b.q});
+  b.options.forEach((o,i)=>{
+    const btn=h("button",{type:"button",class:"opt",onclick:()=>{
+      if(S.answers[b.key])return;
+      if(b.needs==="rfid"&&!S.flags.rfid)return toast("Run the pallet through the portal first.");
+      S.answers[b.key]={pick:i};save();rerender();}},o);
+    if(a){btn.disabled=true;if(i===b.a)btn.classList.add("is-right");else if(i===a.pick)btn.classList.add("is-wrong");}
+    g.append(btn);
+  });
+  w.append(g);if(a)w.append(fb(a.pick===b.a,b.options[b.a],b.why));
+  return w;
+}
+function R_rows(b){
+  const a=S.answers[b.key];
+  const picks=a?a.picks:(UI[b.key]||(UI[b.key]=Array(b.rows.length).fill("")));
+  const w=h("div",{class:"block"});
+  if(b.title)w.append(h("h3",{},b.title));
+  if(b.hint)w.append(h("p",{class:"hint"},b.hint));
+  const list=h("div",{class:"rows"});
+  b.rows.forEach((r,i)=>{
+    const label=r.id?machine(r):h("div",{class:"row-q"},r.q);
+    let ctl;
+    if(b.chips){
+      ctl=h("div",{class:"chips",role:"radiogroup","aria-label":r.q||r.id});
+      b.choices.forEach(c=>{
+        const chip=h("button",{type:"button",class:"chip"+(picks[i]===c?" on":""),role:"radio","aria-checked":picks[i]===c?"true":"false",onclick:()=>{
+          picks[i]=c;ctl.querySelectorAll(".chip").forEach(x=>{const on=x.textContent===c;x.classList.toggle("on",on);x.setAttribute("aria-checked",on);});}},c);
+        if(a){chip.disabled=true;chip.classList.remove("on");if(c===r.a)chip.classList.add("right");else if(c===picks[i])chip.classList.add("wrong");}
+        ctl.append(chip);
+      });
+    }else{
+      ctl=h("select",{"aria-label":r.q,onchange:e=>{picks[i]=e.target.value;}},h("option",{value:""},"Choose…"),...b.choices.map(c=>h("option",{value:c,selected:picks[i]===c},c)));
+      if(a)ctl.disabled=true;
+    }
+    const row=h("div",{class:"row"+(a?(picks[i]===r.a?" ok":" no"):"")},label,ctl);
+    if(a)row.append(h("div",{class:"row-fb"},h("b",{},picks[i]===r.a?"✓ ":"✗ Answer: "+r.a+". "),r.why));
+    list.append(row);
+  });
+  w.append(list);
+  if(!a)w.append(h("button",{type:"button",class:"btn primary",onclick:()=>{
+    if(picks.some(p=>!p))return toast("Make a choice for every row first.");
+    S.answers[b.key]={picks:picks.slice()};delete UI[b.key];save();rerender();}},"Check answers"));
+  else{const n=b.rows.filter((r,i)=>picks[i]===r.a).length;w.append(h("p",{class:"hint",style:"margin:0"},n+" of "+b.rows.length+" correct."));}
+  return w;
+}
+function machine(r){
+  const max=Math.max(...r.trend),min=Math.min(...r.trend),rng=(max-min)||1;
+  const pts=r.trend.map((v,i)=>(i*20+5)+","+(30-((v-min)/rng)*24)).join(" ");
+  const sp=document.createElementNS("http://www.w3.org/2000/svg","svg");sp.setAttribute("class","spark");sp.setAttribute("viewBox","0 0 110 34");sp.setAttribute("aria-hidden","true");
+  const pl=document.createElementNS("http://www.w3.org/2000/svg","polyline");pl.setAttribute("points",pts);sp.append(pl);
+  const trendWord=r.trend[5]-r.trend[0]>(r.vib>5?2:1)?"rising":"steady";
+  return h("div",{class:"mach"},h("div",{class:"id"},r.id,h("small",{},r.kind)),
+    h("div",{class:"rd"},"Vibration ",h("b",{},r.vib.toFixed(1))," mm/s RMS",h("br"),"Temperature ",h("b",{},r.temp)," °C"),
+    h("div",{},sp,h("div",{class:"hint",style:"margin:0;font-size:.75rem"},"6-week trend: "+trendWord)));
+}
+function R_order(b){
+  const a=S.answers[b.key];
+  let order=a?a.order:(UI[b.key]||(UI[b.key]=b.start.map(i=>b.items[i])));
+  const w=h("div",{class:"block"},h("h3",{},b.title),h("p",{class:"hint"},b.hint));
+  const ok=a&&order.join("|")===b.items.join("|");
+  const ol=h("ol",{class:"order"+(a?" checked":"")+(a&&!ok?" wrongset":"")});
+  order.forEach((t,i)=>{
+    const li=h("li",{class:a&&order[i]!==b.items[i]?"bad":""},h("span",{},t));
+    if(!a){
+      li.append(h("button",{type:"button",class:"mv","aria-label":"Move up: "+t,disabled:i===0,onclick:()=>{[order[i-1],order[i]]=[order[i],order[i-1]];rerender();}},"▲"),
+                h("button",{type:"button",class:"mv","aria-label":"Move down: "+t,disabled:i===order.length-1,onclick:()=>{[order[i+1],order[i]]=[order[i],order[i+1]];rerender();}},"▼"));
+    }
+    ol.append(li);
+  });
+  w.append(ol);
+  if(!a)w.append(h("button",{type:"button",class:"btn primary",onclick:()=>{S.answers[b.key]={order:order.slice()};delete UI[b.key];save();rerender();}},"Check order"));
+  else w.append(fb(ok,b.items.map((x,i)=>(i+1)+") "+x.split(" ").slice(0,3).join(" ")+"…").join("  "),b.why));
+  return w;
+}
+function R_classify(b){
+  const a=S.answers[b.key];
+  const assign=a?a.assign:(UI[b.key]||(UI[b.key]={}));
+  const w=h("div",{class:"block"},h("h3",{},b.title),h("p",{class:"hint"},b.hint));
+  const order=[5,2,0,7,3,6,1,4].map(i=>b.items[i]);
+  function card(name,inBin){
+    const c=h("button",{type:"button",class:"card"+(UI.sel===name?" sel":""),draggable:a?"false":"true",
+      onclick:e=>{e.stopPropagation();if(a)return;
+        if(UI.sel&&UI.sel!==name&&inBin)return drop(inBin,UI.sel);
+        UI.sel=UI.sel===name?null:name;rerender();},
+      ondragstart:e=>{e.dataTransfer.setData("text/plain",name);}},name);
+    if(a){const right=b.items.find(x=>x[0]===name)[1];const ok=assign[name]===right;c.classList.add(ok?"right":"wrong");
+      c.append(h("small",{},ok?b.why[name]:"Belongs in "+right+". "+b.why[name]));}
+    return c;
+  }
+  function drop(target,name){if(a||!name)return;if(target)assign[name]=target;else delete assign[name];UI.sel=null;rerender();}
+  function zone(el,target){
+    el.addEventListener("dragover",e=>{e.preventDefault();el.classList.add("target");});
+    el.addEventListener("dragleave",()=>el.classList.remove("target"));
+    el.addEventListener("drop",e=>{e.preventDefault();drop(target,e.dataTransfer.getData("text/plain"));});
+    el.addEventListener("click",()=>{if(UI.sel)drop(target,UI.sel);});
+  }
+  const pool=h("div",{class:"pool","aria-label":"Unsorted devices"});
+  order.filter(([n])=>!assign[n]).forEach(([n])=>pool.append(card(n)));
+  if(!pool.children.length)pool.append(h("span",{class:"hint",style:"margin:0"},a?"All devices sorted.":"All devices placed. Check your sort, or tap a card to move it."));
+  if(!a)zone(pool,null);
+  const bins=h("div",{class:"bins"});
+  b.bins.forEach(bn=>{
+    const el=h("div",{class:"bin"+(UI.sel&&!a?" target":""),role:"button",tabindex:a?null:"0","aria-label":"Bin: "+bn.n},h("h4",{},bn.n),h("p",{},bn.d));
+    order.filter(([n])=>assign[n]===bn.n).forEach(([n])=>el.append(card(n,bn.n)));
+    if(!a){zone(el,bn.n);el.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&UI.sel){e.preventDefault();drop(bn.n,UI.sel);}});}
+    bins.append(el);
+  });
+  w.append(pool,bins);
+  if(!a)w.append(h("button",{type:"button",class:"btn primary",onclick:()=>{
+    if(Object.keys(assign).length<b.items.length)return toast("Place all eight devices first.");
+    S.answers[b.key]={assign:Object.assign({},assign)};delete UI[b.key];UI.sel=null;save();rerender();}},"Check sort"));
+  else{const n=b.items.filter(([x,c])=>assign[x]===c).length;w.append(h("p",{class:"hint",style:"margin:0"},n+" of "+b.items.length+" sorted correctly."));}
+  return w;
+}
+function R_rfid(){
+  const w=h("div",{class:"block"},h("h3",{},"Shipping manifest · PAL-2207"));
+  w.append(h("table",{class:"manifest",html:"<thead><tr><th>Tag ID</th><th>Asset</th></tr></thead><tbody><tr><td>RF001234</td><td>Laptop computer</td></tr><tr><td>RF005678</td><td>Tool set #5</td></tr><tr><td>RF009012</td><td>Safety equipment</td></tr><tr><td>RF004455</td><td>Torque wrench kit</td></tr></tbody>"}));
+  const portal=h("div",{class:"portal","aria-hidden":"true"},h("div",{class:"field"}),h("div",{class:"antenna"}),h("div",{class:"antenna r"}),h("div",{class:"pallet"},h("i"),h("i"),h("i"),h("i")));
+  const log=h("div",{class:"log",role:"log","aria-label":"Portal read log"});
+  const reads=[["RF001234","Laptop computer"],["RF009012","Safety equipment"],["RF007731",null],["RF005678","Tool set #5"]];
+  function fill(){log.innerHTML="";log.append(h("div",{},"Portal DOCK-3 · pallet PAL-2207 · "+reads.length+" tags read"));
+    reads.forEach(([id,n])=>log.append(h("div",{class:n?"":"unk"},"READ  "+id+"  "+(n||"UNREGISTERED — not in asset registry"))));}
+  if(S.flags.rfid)fill();else log.append(h("div",{},"Portal idle. Waiting for pallet…"));
+  const btn=h("button",{type:"button",class:"btn go",onclick:()=>{
+    btn.disabled=true;log.innerHTML="";log.append(h("div",{},"Pallet entering read field…"));
+    portal.classList.remove("run");void portal.offsetWidth;portal.classList.add("run","on");
+    const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+    reads.forEach(([id,n],i)=>setTimeout(()=>log.append(h("div",{class:n?"":"unk"},"READ  "+id+"  "+(n||"UNREGISTERED — not in asset registry"))),reduce?0:1200+i*380));
+    setTimeout(()=>{portal.classList.remove("on");S.flags.rfid=true;save(true);btn.disabled=false;btn.textContent="Run it again";},reduce?50:3500);
+  }},S.flags.rfid?"Run it again":"Run pallet through portal");
+  w.append(portal,btn,h("div",{style:"height:12px"}),log);
+  return w;
+}
+function R_latency(){
+  return h("div",{class:"block"},h("h3",{},"From the lesson"),
+    h("div",{class:"lat"},
+      h("div",{},h("b",{},"< 1 ms"),h("span",{},"Edge: processed on site, keeps working offline")),
+      h("div",{},h("b",{},"~ 50 ms"),h("span",{},"Cloud: unlimited compute and storage, needs the link")),
+      h("div",{},h("b",{},"~ 25 ms"),h("span",{},"Hybrid: act locally, send summaries up"))));
+}
+function R_frame(){
+  const g=[["A",["01"]],["B",["03"]],["C",["40","00"]],["D",["00","01"]],["E",["91","CA"]]];
+  return h("div",{class:"block"},h("h3",{},"Decode the Modbus RTU frame"),
+    h("p",{class:"hint"},"The gateway captured this request from the legacy line. Label each group of bytes (hex) in the rows below."),
+    h("div",{class:"frame"},g.map(([l,bs])=>h("div",{class:"fgrp"},h("div",{class:"bytes"},bs.map(x=>h("span",{},x))),h("em",{},l)))));
+}
+function R_ladder(){
+  const L=UI.ladder||(UI.ladder={i1:false,i2:true,i3:true,speed:60});
+  const w=h("div",{class:"block"},h("h3",{},"Conveyor start rung"),h("p",{class:"hint"},"Click a contact to toggle its input."));
+  const box=h("div",{class:"ladder"});w.append(box);
+  const out=h("div",{class:"plc-readout"});w.append(out);
+  function draw(){
+    box.innerHTML="";const r=h("div",{class:"rung"});
+    const c=[["i1","I:0/0","Start PB"],["i2","I:0/1","Safety SW"],["i3","I:0/2","Temp OK"]];
+    let live=true;r.append(h("div",{class:"rail"}));
+    c.forEach(([k,addr,nm])=>{
+      r.append(h("div",{class:"wire"+(live?" live":"")}));
+      r.append(h("button",{type:"button",class:"contact"+(L[k]?" closed":""),"aria-pressed":L[k]?"true":"false","aria-label":nm+" "+(L[k]?"closed (1)":"open (0)"),onclick:()=>{L[k]=!L[k];draw();}},
+        h("b",{},addr),h("div",{class:"csym"}),h("small",{},nm+" = "+(L[k]?1:0))));
+      live=live&&L[k];
+    });
+    r.append(h("div",{class:"wire"+(live?" live":"")}));
+    r.append(h("div",{class:"coil"+(live?" on":"")},h("b",{},"O:0/0"),h("div",{class:"coilsym"},"M"),h("small",{},"Motor "+(live?"ON":"OFF"))));
+    r.append(h("div",{class:"wire"+(live?" live":"")}),h("div",{class:"rail"}));
+    box.append(r);
+    updOut(live);
+  }
+  const mB=h("b",{}),spB=h("b",{}),pB=h("b",{}),sB=h("b",{});
+  const sl=h("input",{type:"range",min:"0",max:"100",value:String(L.speed),"aria-label":"Motor speed percent",oninput:e=>{L.speed=+e.target.value;updOut(L.i1&&L.i2&&L.i3);}});
+  out.append(h("span",{},"Motor ",mB),h("label",{},"Speed ",sl," ",spB),h("span",{},"Power ",pB),h("span",{},"Safety ",sB));
+  function updOut(live){
+    mB.textContent=live?"RUNNING":"STOPPED";spB.textContent=L.speed+"%";
+    pB.textContent=(live?Math.round(L.speed/100*1500):0)+" W";
+    sB.textContent=L.i2?"OK":"FAULT";sB.style.color=L.i2?"var(--green)":"var(--red)";
+  }
+  draw();
+  return w;
+}
+function R_hmi(b){
+  const a=S.answers[b.key]||{picks:[]};
+  const n=b.events.length;
+  if(UI.hmiView==null||UI.hmiView>a.picks.length)UI.hmiView=Math.min(a.picks.length,n-1);
+  const v=UI.hmiView,ev=b.events[v],pick=a.picks[v];
+  const st=Object.assign({},ev.st);
+  if(pick){ // show the state after the correct action
+    if(ev.a==="auto"){st.mode="Automatic";st.line="Running";st.rate=84;}
+    if(ev.a==="ack")st.lamp="ack";
+    if(ev.a==="stop"){st.line="Stopped";st.rate=0;}
+    if(ev.a==="maint")st.mode="Maintenance";
+    if(ev.a==="reset"){st.alarms=0;st.lamp="";}
+  }
+  const w=h("div",{class:"block"});
+  const dots=h("div",{class:"ev-dots","aria-hidden":"true"});
+  b.events.forEach((e,i)=>dots.append(h("i",{class:a.picks[i]?(a.picks[i]===e.a?"ok":"no"):(i===v?"cur":"")})));
+  w.append(dots);
+  w.append(h("div",{class:"event"},h("div",{class:"ev-n"},"Event "+(v+1)+" of "+n),h("div",{},ev.text)));
+  const tile=(lab,val,abn)=>h("div",{class:"hmi-tile"+(abn?" abn":"")},h("span",{},lab),h("b",{},val));
+  const hmi=h("div",{class:"hmi",role:"group","aria-label":"HMI operator panel"},
+    h("div",{class:"hmi-grid"},
+      tile("Mode",st.mode),tile("Line",st.line),tile("Rate (units/h)",st.rate),
+      tile("Temperature · limit 45 °C",st.temp+" °C",st.temp>45),
+      h("div",{class:"hmi-tile"+(st.lamp?" abn":"")},h("span",{},"Alarms"),h("b",{},h("i",{class:"lamp "+st.lamp}),st.alarms))));
+  const ctr=h("div",{class:"hmi-ctrls"});
+  const groups=[["start","stop"],["ack","reset"],["manual","auto","maint"]];
+  groups.forEach((g,gi)=>{if(gi)ctr.append(h("span",{class:"hmi-sep"}));
+    g.forEach(k=>{
+      const isMode=["manual","auto","maint"].includes(k);
+      const modeName={manual:"Manual",auto:"Automatic",maint:"Maintenance"}[k];
+      const btn=h("button",{type:"button",class:"hbtn"+(isMode&&st.mode===modeName&&!pick?" sel":""),onclick:()=>{
+        if(pick)return;const ans=S.answers[b.key]||{picks:[]};ans.picks[v]=k;S.answers[b.key]=ans;save();rerender();}},HMI_ACTIONS[k]);
+      if(pick){btn.disabled=true;if(k===ev.a)btn.classList.add("pick-right");else if(k===pick)btn.classList.add("pick-wrong");}
+      ctr.append(btn);
+    });
+  });
+  hmi.append(ctr);w.append(hmi);
+  if(pick){
+    w.append(fb(pick===ev.a,HMI_ACTIONS[ev.a],ev.why));
+    const nav=h("div",{style:"display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"});
+    if(v>0)nav.append(h("button",{type:"button",class:"btn",onclick:()=>{UI.hmiView=v-1;rerender();}},"Previous event"));
+    if(v<n-1)nav.append(h("button",{type:"button",class:"btn primary",onclick:()=>{UI.hmiView=v+1;rerender();}},a.picks[v+1]?"Next event":"Next event"));
+    else nav.append(h("span",{class:"hint",style:"margin:0;align-self:center"},"Shift complete: "+b.events.filter((e,i)=>a.picks[i]===e.a).length+" of "+n+" handled correctly."));
+    w.append(nav);
+  }else if(v>0){w.append(h("button",{type:"button",class:"btn",style:"margin-top:4px",onclick:()=>{UI.hmiView=v-1;rerender();}},"Previous event"));}
+  return w;
+}
+function R_explore(){
+  const X=UI.cm||(UI.cm={hours:1000});
+  const w=h("div",{class:"block"},h("h3",{},"Explore the health model"),h("p",{class:"hint"},"This is the same model as the lesson simulation. Slide through a year of operating hours and watch the readings change."));
+  const g=h("div",{class:"gauges"});
+  const lab=h("b",{});
+  const sl=h("input",{type:"range",min:"0",max:"8760",step:"10",value:String(X.hours),"aria-label":"Operating hours",oninput:e=>{X.hours=+e.target.value;upd();}});
+  w.append(h("div",{class:"explore"},h("label",{style:"display:flex;flex-direction:column;gap:6px;font-weight:600"},h("span",{},"Operating hours: ",lab),sl),g));
+  function upd(){
+    const hr=X.hours,health=Math.max(10,100-hr/100),vib=1.5+hr/5000,temp=50+hr/200,days=Math.max(1,90-Math.floor(hr/100));
+    lab.textContent=hr.toLocaleString()+" h";
+    const col=health>70?"var(--green-ui)":health>40?"var(--amber)":"var(--red)";
+    g.innerHTML="";
+    g.append(h("div",{class:"gauge"},h("span",{},"Overall health"),h("b",{},Math.round(health)+"%"),h("div",{class:"hbar"},h("i",{style:"width:"+health+"%;background:"+col}))),
+      h("div",{class:"gauge"},h("span",{},"Vibration"),h("b",{},vib.toFixed(1)),h("span",{},"mm/s RMS")),
+      h("div",{class:"gauge"},h("span",{},"Temperature"),h("b",{},Math.round(temp)+" °C")),
+      h("div",{class:"gauge"},h("span",{},"Next maintenance"),h("b",{},days),h("span",{},"days")));
+  }
+  upd();return w;
+}
+function R_guide(){
+  return h("div",{class:"block"},h("h3",{},"Plant guideline"),
+    h("table",{class:"guide",html:"<thead><tr><th>Reading</th><th>Normal</th><th>Schedule maintenance</th><th>Act now</th></tr></thead><tbody><tr><td>Vibration (mm/s RMS)</td><td>under 2.8</td><td>2.8 – 7.0</td><td>over 7.0</td></tr><tr><td>Temperature (°C)</td><td>under 75</td><td>75 – 85</td><td>over 85</td></tr></tbody>"}));
+}
+function R_rtls(b){
+  const a=S.answers[b.key]||{};
+  const cur=RT_TASKS.findIndex(t=>!a[t.key]);
+  const pos=UI.flt||(UI.flt=a.fltPos||{x:22,y:34});
+  const w=h("div",{class:"block"});
+  const map=h("div",{class:"map"+(cur===2&&UI.rsel==="FLT-001"?" placing":""),role:"application","aria-label":"Facility map"});
+  RT_ZONES.forEach(z=>map.append(h("div",{class:"zone"+(z.restricted?" restricted":""),style:`left:${z.x}%;top:${z.y}%;width:${z.w}%;height:${z.h}%`},z.name)));
+  RT_ASSETS.forEach(as=>{
+    const p=as.id==="FLT-001"?pos:as;
+    map.append(h("button",{type:"button",class:"asset "+as.cls+(UI.rsel===as.id?" sel":""),style:`left:${p.x}%;top:${p.y}%`,"aria-label":as.type+" "+as.id,title:as.id,
+      onclick:e=>{e.stopPropagation();UI.rsel=as.id;rerender();}},as.id.split("-")[0].slice(0,3)));
+  });
+  map.addEventListener("click",e=>{
+    if(cur!==2||UI.rsel!=="FLT-001"){if(UI.rsel){UI.rsel=null;rerender();}return;}
+    const r=map.getBoundingClientRect();
+    UI.flt={x:Math.round((e.clientX-r.left)/r.width*100),y:Math.round((e.clientY-r.top)/r.height*100)};rerender();
+  });
+  const legend=h("div",{class:"legend"},
+    h("span",{},h("i",{style:"background:var(--navy)"}),"Forklift"),h("span",{},h("i",{style:"background:#7A4FBF"}),"Personnel"),
+    h("span",{},h("i",{style:"background:#A0692A"}),"Pallet"),h("span",{},h("i",{style:"background:#2C7A7B"}),"Tool cart"));
+  const insp=h("div",{class:"inspector",role:"region","aria-label":"Asset inspector","aria-live":"polite"});
+  const sel=RT_ASSETS.find(x=>x.id===UI.rsel);
+  if(!sel)insp.append(h("h4",{},"Asset inspector"),h("p",{class:"hint",style:"margin:0"},"Select a tag on the map to see its live data."));
+  else{
+    const p=sel.id==="FLT-001"?pos:sel;
+    insp.append(h("h4",{},sel.id),h("dl",{},h("dt",{},"Type"),h("dd",{},sel.type),h("dt",{},"Zone"),h("dd",{},zoneAt(p.x,p.y)),
+      h("dt",{},"Dwell"),h("dd",{},sel.dwell+" min"),h("dt",{},"Position"),h("dd",{},p.x+", "+p.y)));
+    if(cur===0||cur===1)insp.append(h("button",{type:"button",class:"btn primary",onclick:()=>{const ans=S.answers[b.key]||{};ans[RT_TASKS[cur].key]=sel.id;S.answers[b.key]=ans;UI.rsel=null;save();rerender();}},"Mark as answer to task "+(cur+1)));
+    if(cur===2&&sel.id==="FLT-001")insp.append(h("p",{class:"hint",style:"margin:0 0 8px"},"Click inside the shipping dock to move it."),
+      h("button",{type:"button",class:"btn primary",onclick:()=>{const ans=S.answers[b.key]||{};ans.t3=zoneAt(pos.x,pos.y);ans.fltPos=Object.assign({},pos);S.answers[b.key]=ans;UI.rsel=null;save();rerender();}},"Confirm position"));
+  }
+  w.append(h("div",{class:"rtls-wrap"},h("div",{},map,legend),insp));
+  const tasks=h("div",{class:"tasks"});
+  RT_TASKS.forEach((t,i)=>{
+    const g=a[t.key];const cls=g?(g===t.a?" ok":" no"):(i===cur?" cur":"");
+    const el=h("div",{class:"task"+cls},h("strong",{},"Task "+(i+1)+". "),t.text);
+    if(g)el.append(h("div",{class:"row-fb"},h("b",{style:"color:"+(g===t.a?"var(--green)":"var(--red)")},g===t.a?"✓ "+g+". ":"✗ You chose "+g+"; answer: "+t.a+". "),t.why));
+    tasks.append(el);
+  });
+  w.append(tasks);return w;
+}
+const RENDER={mcq:R_mcq,rows:R_rows,order:R_order,classify:R_classify,rfid:R_rfid,latency:R_latency,frame:R_frame,ladder:R_ladder,hmi:R_hmi,explore:R_explore,guide:R_guide,rtls:R_rtls};
+
+/* ---------- station + report ---------- */
+function renderStation(){
+  const M=document.getElementById("main");M.innerHTML="";
+  if(S.current==="report")return M.append(renderReport());
+  const idx=STATIONS.findIndex(s=>s.id===S.current);const st=STATIONS[idx<0?0:idx];
+  const s=score(st);
+  const sec=h("section",{class:"station","aria-labelledby":"stTitle"},
+    h("div",{class:"st-head"},h("div",{},h("h2",{id:"stTitle"},st.title),h("p",{},st.role)),
+      h("div",{class:"st-score"},s.got+" / "+s.max,h("small",{},s.done+" of "+s.max+" answered"))));
+  const body=h("div",{class:"st-body"});st.blocks.forEach(b=>body.append(RENDER[b.type](b)));sec.append(body);
+  const prev=STATIONS[idx-1],next=STATIONS[idx+1];
+  sec.append(h("div",{class:"st-nav"},
+    prev?h("button",{type:"button",class:"btn",onclick:()=>go(prev.id)},"Back to "+prev.name):h("span"),
+    next?h("button",{type:"button",class:"btn primary",onclick:()=>go(next.id)},"Next: "+next.name):h("button",{type:"button",class:"btn primary",onclick:()=>go("report")},"Go to report")));
+  M.append(sec);
+}
+function renderReport(){
+  const t=totals();
+  const sec=h("section",{class:"station","aria-labelledby":"stTitle"},
+    h("div",{class:"st-head"},h("div",{},h("h2",{id:"stTitle"},"Your commissioning report"),h("p",{},"Fill in your details and reflections, then save the report file or print it to PDF to turn in.")),
+      h("div",{class:"total"},t.got,h("small",{}," / "+t.max))));
+  const body=h("div",{class:"st-body"});
+  const f=h("div",{class:"form"});
+  [["name","Name"],["id","Student ID"],["section","Course & section"],["date","Date"]].forEach(([k,l])=>{
+    f.append(h("label",{},l,h("input",{type:k==="date"?"date":"text",value:S.student[k]||"",oninput:e=>{S.student[k]=e.target.value;clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(true),400);}})));
+  });
+  body.append(h("div",{class:"block"},h("h3",{},"Student"),f));
+  const sum=h("div",{class:"sum"});
+  STATIONS.forEach((st,i)=>{const s=score(st);const pct=s.max?s.got/s.max*100:0;
+    sum.append(h("div",{class:"sum-row"},h("button",{type:"button",class:"opt",style:"padding:6px 10px",onclick:()=>go(st.id)},(i+1)+". "+st.name),
+      h("div",{class:"hbar"},h("i",{style:`width:${pct}%;background:${pct>=80?"var(--green-ui)":pct>=50?"var(--amber)":"var(--red)"}`})),h("b",{},s.got+"/"+s.max)));});
+  const unanswered=STATIONS.reduce((n,st)=>{const s=score(st);return n+(s.max-s.done);},0);
+  body.append(h("div",{class:"block"},h("h3",{},"Scores by station"),
+    unanswered?h("p",{class:"hint"},unanswered+" item"+(unanswered>1?"s are":" is")+" still unanswered. Select a station to finish it."):h("p",{class:"hint"},"Every station is complete."),sum));
+  const refl=[["r1","Pick one device from this activity. If an attacker gained control of it, what physical consequence could follow, and which control from the lesson would limit the damage?"],
+              ["r2","Which station was hardest for you, and what will you review before the next class?"]];
+  const rb=h("div",{class:"block"},h("h3",{},"Reflection"));
+  refl.forEach(([k,q])=>rb.append(h("label",{style:"display:block;margin-bottom:14px"},h("span",{class:"q-text",style:"display:block"},q),
+    h("textarea",{oninput:e=>{S.reflection[k]=e.target.value;clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(true),400);}},S.reflection[k]||""))));
+  body.append(rb);
+  body.append(h("div",{class:"block"},h("div",{style:"display:flex;gap:10px;flex-wrap:wrap"},
+    h("button",{type:"button",class:"btn primary",onclick:downloadReport},"⤓ Save report file"),
+    h("button",{type:"button",class:"btn",onclick:printReport},"⎙ Print or save as PDF"))));
+  sec.append(body);return sec;
+}
+
+/* ---------- report export ---------- */
+function reportHTML(){
+  const t=totals(),st=S.student;
+  let rows="";
+  STATIONS.forEach((s,i)=>{const sc=score(s);
+    rows+=`<h2>${i+1}. ${esc(s.title.replace(/^Station \d+: /,""))} <span>${sc.got}/${sc.max}</span></h2><table><thead><tr><th>Item</th><th>Your answer</th><th>Correct answer</th><th></th></tr></thead><tbody>`;
+    items(s).forEach(it=>{rows+=`<tr><td>${esc(it.label)}</td><td>${it.done?esc(it.given):"<em>Not answered</em>"}</td><td>${esc(it.correct)}</td><td class="${it.ok?"y":"n"}">${it.ok?"✓":"✗"}</td></tr>`;});
+    rows+="</tbody></table>";});
+  return `<div class="rp"><header><div><h1>Commission the Line: IIoT &amp; Actuators Activity Report</h1>
+<p><b>Name:</b> ${esc(st.name)||"________"} &nbsp; <b>Student ID:</b> ${esc(st.id)||"________"} &nbsp; <b>Course:</b> ${esc(st.section)||"________"} &nbsp; <b>Date:</b> ${esc(st.date)}</p></div>
+<div class="score">${t.got}/${t.max}<small>${t.max?Math.round(t.got/t.max*100):0}%</small></div></header>
+${rows}
+<h2>Reflection</h2><p class="rq">If an attacker gained control of one device, what physical consequence could follow, and which control would limit the damage?</p><div class="ra">${esc(S.reflection.r1)||"<em>No response</em>"}</div>
+<p class="rq">Hardest station and review plan:</p><div class="ra">${esc(S.reflection.r2)||"<em>No response</em>"}</div>
+<p class="foot">Generated ${new Date().toLocaleString()}</p></div>`;
+}
+const REPORT_CSS=`.rp{font-family:"Segoe UI",system-ui,Arial,sans-serif;color:#111;max-width:900px;margin:0 auto;padding:24px;font-size:12.5px;line-height:1.45}
+.rp header{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #0047AB;padding-bottom:10px;margin-bottom:8px}
+.rp h1{font-size:20px;color:#0047AB;margin:0 0 6px}.rp .score{font-size:30px;font-weight:700;color:#00875A;text-align:right}.rp .score small{display:block;font-size:12px;color:#555}
+.rp h2{font-size:14px;margin:16px 0 6px;display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding-bottom:3px;page-break-after:avoid}
+.rp table{width:100%;border-collapse:collapse;page-break-inside:auto}.rp tr{page-break-inside:avoid}
+.rp th,.rp td{border:1px solid #ccc;padding:4px 6px;text-align:left;vertical-align:top}.rp th{background:#eef2f7}
+.rp td.y{color:#00875A;font-weight:700}.rp td.n{color:#C0392B;font-weight:700}
+.rp .rq{font-weight:600;margin:10px 0 4px}.rp .ra{border:1px solid #ccc;padding:8px;min-height:50px;white-space:pre-wrap}.rp .foot{color:#777;margin-top:16px;font-size:11px}`;
+function downloadReport(){
+  const doc=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>IIoT Activity Report</title><style>body{margin:0;background:#fff}${REPORT_CSS}</style></head><body>${reportHTML()}</body></html>`;
+  const blob=new Blob([doc],{type:"text/html"});const url=URL.createObjectURL(blob);
+  const nm=(S.student.name||"student").trim().replace(/[^\w-]+/g,"_");
+  const a=document.createElement("a");a.href=url;a.download=`IIoT-Activity-Report_${nm}_${S.student.date||"date"}.html`;
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  toast("Report saved to your downloads.");
+}
+function printReport(){
+  const p=document.getElementById("printArea");p.innerHTML=`<style>${REPORT_CSS}</style>`+reportHTML();
+  window.print();
+}
+window.addEventListener("beforeprint",()=>{const p=document.getElementById("printArea");if(!p.innerHTML)p.innerHTML=`<style>${REPORT_CSS}</style>`+reportHTML();});
+window.addEventListener("afterprint",()=>{document.getElementById("printArea").innerHTML="";});
+
+/* ---------- theme, reset ---------- */
+const themeBtn=document.getElementById("themeBtn");
+function setTheme(t){document.documentElement.setAttribute("data-theme",t);themeBtn.textContent=t==="dark"?"☀ Light mode":"☾ Dark mode";themeBtn.setAttribute("aria-pressed",t==="dark");try{localStorage.setItem(THEME,t);}catch(e){}}
+let saved="light";try{saved=localStorage.getItem(THEME)||"light";}catch(e){}
+setTheme(saved);
+themeBtn.addEventListener("click",()=>setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark"));
+document.getElementById("dlBtn").addEventListener("click",downloadReport);
+document.getElementById("printBtn").addEventListener("click",printReport);
+const dlg=document.getElementById("resetDlg");
+document.getElementById("resetBtn").addEventListener("click",()=>{if(dlg.showModal)dlg.showModal();else if(confirm("Reset the activity? All answers will be cleared."))doReset();});
+document.getElementById("resetCancel").addEventListener("click",()=>dlg.close());
+document.getElementById("resetOk").addEventListener("click",()=>{dlg.close();doReset();});
+function doReset(){
+  const keep={name:S.student.name,id:S.student.id,section:S.student.section,date:new Date().toISOString().slice(0,10)};
+  S=fresh(keep);for(const k in UI)delete UI[k];UI.fillW=0;save();renderStation();
+  window.scrollTo({top:0});toast("Activity reset. Start again at Station 1.");
+}
+
+renderLine();renderStation();
+})();
+</script>
+</body>
+</html>
