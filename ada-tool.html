@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Accessibility Repair Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js" defer></script>
+<style>
+:root{
+  --bg:#ffffff; --surface:#ffffff; --soft:#eef8f3; --line:#c9d6cf; --ink:#000000; --muted:#3d4a44;
+  --green:#00a86b; --green-ink:#006b45; --green-deep:#004d32;
+  --rail:#000000; --rail-ink:#ffffff; --rail-muted:#c4d3cb;
+  --err:#b3261e; --err-bg:#fdeceb; --warn:#7a4a00; --warn-bg:#fff4dc; --tip:#1d4f91; --tip-bg:#e9f0fb;
+  --font:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#000;--surface:#0d1511;--soft:#10261c;--line:#2f4a3d;--ink:#fff;--muted:#c4d3cb;--green-ink:#4fd6a0;--green-deep:#7fe6bd;--err-bg:#3a1513;--err:#ff9c94;--warn-bg:#352300;--warn:#ffc966;--tip-bg:#0f2240;--tip:#9cc2ff;color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#000;--surface:#0d1511;--soft:#10261c;--line:#2f4a3d;--ink:#fff;--muted:#c4d3cb;--green-ink:#4fd6a0;--green-deep:#7fe6bd;--err-bg:#3a1513;--err:#ff9c94;--warn-bg:#352300;--warn:#ffc966;--tip-bg:#0f2240;--tip:#9cc2ff;color-scheme:dark; }
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:1.0625rem;line-height:1.55}
+a{color:var(--green-ink)}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:-999px;top:0;background:var(--ink);color:var(--bg);padding:.6rem 1rem;z-index:20}
+.skip:focus{left:.5rem;top:.5rem}
+
+.app{display:grid;grid-template-columns:17.5rem 1fr;height:100%}
+.rail{background:var(--rail);color:var(--rail-ink);display:flex;flex-direction:column;padding:1.5rem 1rem 1rem;overflow-y:auto}
+.brand{display:flex;gap:.7rem;align-items:center;padding:0 .4rem 1.4rem;border-bottom:1px solid #2b3a33}
+.brand svg{flex:none}
+.brand b{display:block;font-size:1.08rem;line-height:1.2}
+.brand span{color:var(--rail-muted);font-size:.85rem}
+.steps{list-style:none;margin:1.2rem 0 0;padding:0;position:relative}
+.steps::before{content:"";position:absolute;left:1.55rem;top:1.4rem;bottom:1.4rem;width:2px;background:#2b3a33}
+.steps li{position:relative;margin:0 0 .25rem}
+.steps button{all:unset;box-sizing:border-box;display:flex;gap:.85rem;align-items:flex-start;width:100%;padding:.65rem .55rem;border-radius:.5rem;cursor:pointer;color:var(--rail-ink)}
+.steps button:focus-visible{outline:3px solid var(--green);outline-offset:0}
+.steps button:hover:not([disabled]){background:#122019}
+.steps button[disabled]{cursor:not-allowed;color:#9aaba2}
+.steps .num{flex:none;width:2rem;height:2rem;border-radius:50%;display:grid;place-items:center;font-weight:700;background:#000;border:2px solid #4a5f55;position:relative;z-index:1}
+.steps button[aria-current="step"]{background:#10261c}
+.steps button[aria-current="step"] .num{background:var(--green);border-color:var(--green);color:#000}
+.steps button.done .num{border-color:var(--green);color:var(--green)}
+.steps b{display:block;font-size:1rem}
+.steps small{display:block;color:var(--rail-muted);font-size:.84rem;line-height:1.35}
+.steps button[disabled] small{color:#8a9b92}
+.filecard{margin-top:auto;padding:1rem .6rem 0;border-top:1px solid #2b3a33}
+.filecard .fname{font-weight:700;word-break:break-all}
+.filecard .ftype{color:var(--rail-muted);font-size:.85rem}
+.filecard .fscore{display:flex;align-items:baseline;gap:.4rem;margin:.6rem 0}
+.filecard .fscore strong{font-size:2rem;color:var(--green);line-height:1}
+.btn-ghost-rail{all:unset;cursor:pointer;color:var(--rail-ink);text-decoration:underline;font-size:.9rem}
+.btn-ghost-rail:focus-visible{outline:3px solid var(--green)}
+
+main{overflow-y:auto;padding:2.2rem clamp(1rem,4vw,3.2rem) 4rem}
+main:focus{outline:none}
+.top{max-width:62rem;border-bottom:3px solid var(--ink);padding-bottom:1rem;margin-bottom:1.6rem}
+.top .stepno{color:var(--green-ink);font-weight:700;margin:0 0 .2rem}
+h1{font-size:clamp(1.7rem,3vw,2.3rem);line-height:1.15;margin:0}
+h1:focus{outline:none}
+.top p.lede{margin:.5rem 0 0;color:var(--muted);max-width:60ch}
+#view{max-width:62rem}
+h2{font-size:1.35rem;margin:2rem 0 .8rem}
+h3{font-size:1.08rem;margin:0}
+p{max-width:70ch}
+
+.btn{font:inherit;font-weight:700;border:2px solid var(--green-ink);background:var(--green-ink);color:#fff;padding:.6rem 1.1rem;border-radius:.45rem;cursor:pointer;display:inline-flex;align-items:center;gap:.5rem;min-height:2.75rem}
+.btn:hover{background:var(--green-deep);border-color:var(--green-deep)}
+.btn.secondary{background:transparent;color:var(--ink);border-color:var(--ink)}
+.btn.secondary:hover{background:var(--soft)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center}
+
+.drop{border:2px dashed var(--green-ink);border-radius:.8rem;padding:2.4rem 1.5rem;text-align:center;background:var(--soft)}
+.drop.over{background:#d9f1e5;border-style:solid}
+.drop p{margin:.4rem auto}
+.types{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:1rem;margin:1.6rem 0}
+.type{border-left:4px solid var(--green);padding:.2rem 0 .2rem .9rem}
+.type b{display:block}
+.type span{color:var(--muted);font-size:.93rem}
+label.lbl{display:block;font-weight:700;margin:.2rem 0 .35rem}
+textarea,input[type=text],select{font:inherit;color:var(--ink);background:var(--surface);border:2px solid #5b6b63;border-radius:.4rem;padding:.5rem .65rem;width:100%;max-width:100%}
+textarea{min-height:9rem;font-family:var(--mono);font-size:.9rem}
+.hint{color:var(--muted);font-size:.92rem;margin:.3rem 0 .8rem}
+.error-box{border-left:5px solid var(--err);background:var(--err-bg);padding:.8rem 1rem;margin:1rem 0}
+.info-box{border-left:5px solid var(--green);background:var(--soft);padding:.8rem 1rem;margin:1rem 0}
+.info-box p{margin:.3rem 0}
+.busy{display:flex;gap:.8rem;align-items:center;padding:1.2rem 0}
+.spinner{width:1.6rem;height:1.6rem;border:3px solid var(--line);border-top-color:var(--green-ink);border-radius:50%;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:3s}}
+
+.summary{display:grid;grid-template-columns:auto 1fr;gap:2rem;align-items:center;padding:1.4rem;border:2px solid var(--ink);border-radius:.8rem}
+.ring{position:relative;width:9rem;height:9rem}
+.ring svg{transform:rotate(-90deg)}
+.ring .val{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring .val strong{font-size:2.6rem;line-height:1}
+.ring .val span{display:block;font-size:.8rem;color:var(--muted)}
+.counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:.7rem}
+.count{padding:.6rem .8rem;border-radius:.45rem;background:var(--soft)}
+.count strong{display:block;font-size:1.6rem;line-height:1.1}
+.count span{font-size:.9rem}
+.count.err{background:var(--err-bg)} .count.err strong{color:var(--err)}
+.count.warn{background:var(--warn-bg)} .count.warn strong{color:var(--warn)}
+.count.tip{background:var(--tip-bg)} .count.tip strong{color:var(--tip)}
+
+table.cats{border-collapse:collapse;width:100%;margin:.4rem 0}
+table.cats th,table.cats td{text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--line)}
+table.cats thead th{border-bottom:2px solid var(--ink)}
+table.cats thead th:not(:first-child){text-align:right}
+table.cats td.n{text-align:right;font-variant-numeric:tabular-nums}
+
+.badge{display:inline-block;font-size:.8rem;font-weight:700;padding:.12rem .5rem;border-radius:1rem;white-space:nowrap}
+.badge.error{background:var(--err-bg);color:var(--err);border:1px solid var(--err)}
+.badge.warning{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+.badge.tip{background:var(--tip-bg);color:var(--tip);border:1px solid var(--tip)}
+.badge.spec{background:#000;color:#fff}
+.badge.fixed{background:var(--green-ink);color:#fff}
+
+details.issue{border:1px solid var(--line);border-radius:.5rem;margin:.5rem 0;background:var(--surface)}
+details.issue summary{cursor:pointer;padding:.7rem .9rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center}
+details.issue summary .t{font-weight:700}
+details.issue summary .w{color:var(--muted);font-size:.92rem}
+details.issue .body{padding:0 .9rem .9rem}
+.kv{margin:.4rem 0}
+.kv b{display:inline}
+pre.snip{background:#f3f6f4;color:#000;border:1px solid var(--line);padding:.6rem .8rem;border-radius:.4rem;overflow-x:auto;font-family:var(--mono);font-size:.85rem;white-space:pre-wrap;word-break:break-word;max-height:12rem}
+.preview{max-width:16rem;max-height:11rem;border:1px solid var(--line);border-radius:.3rem;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/16px 16px}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;padding:1rem;border:2px solid var(--ink);border-radius:.7rem;margin-bottom:1rem;position:sticky;top:0;background:var(--bg);z-index:2}
+fieldset.filters{border:0;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.4rem}
+fieldset.filters legend{font-weight:700;margin-right:.4rem;float:left;padding-top:.35rem}
+.filters label{border:2px solid var(--ink);border-radius:2rem;padding:.25rem .8rem;cursor:pointer;font-size:.92rem}
+.filters input{position:absolute;opacity:0}
+.filters input:checked+span{font-weight:700}
+.filters label:has(input:checked){background:var(--ink);color:var(--bg)}
+.filters label:has(input:focus-visible){outline:3px solid var(--green);outline-offset:2px}
+.progress{min-width:14rem}
+.progress .bar{height:.7rem;background:var(--line);border-radius:1rem;overflow:hidden;margin-top:.3rem}
+.progress .bar i{display:block;height:100%;background:var(--green-ink)}
+
+article.card{border:1px solid var(--line);border-left:6px solid var(--line);border-radius:.5rem;padding:1rem 1.1rem;margin:0 0 .9rem;background:var(--surface)}
+article.card[data-sev=error]{border-left-color:var(--err)}
+article.card[data-sev=warning]{border-left-color:#c98a00}
+article.card[data-sev=tip]{border-left-color:var(--tip)}
+article.card.is-fixed{border-left-color:var(--green-ink);background:var(--soft)}
+.card header{display:flex;flex-wrap:wrap;gap:.4rem .7rem;align-items:center;margin-bottom:.4rem}
+.card .where{color:var(--muted);font-size:.92rem;width:100%}
+.card .why{margin:.4rem 0}
+.card .how{margin:.4rem 0;padding:.5rem .7rem;background:var(--soft);border-radius:.35rem}
+.fix{margin-top:.8rem;padding-top:.8rem;border-top:1px dashed var(--line);display:grid;gap:.6rem}
+.fix .inline{display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end}
+.fix .inline>div{flex:1 1 16rem}
+.check{display:flex;gap:.5rem;align-items:center}
+.check input{width:1.2rem;height:1.2rem;accent-color:var(--green-ink)}
+.swatch{display:inline-flex;align-items:center;gap:.6rem;padding:.4rem .7rem;border:1px solid var(--line);border-radius:.4rem}
+input[type=color]{width:3rem;height:2.4rem;border:2px solid #5b6b63;border-radius:.3rem;padding:0;background:none}
+.ratio-ok{color:var(--green-ink);font-weight:700}
+.ratio-bad{color:var(--err);font-weight:700}
+.fixed-note{color:var(--green-ink);font-weight:700;margin:.6rem 0 0}
+.spec-box{border:2px solid #000;border-radius:.6rem;padding:1rem 1.2rem;margin:1rem 0}
+.spec-box ol{margin:.4rem 0;padding-left:1.3rem}
+
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:1rem;margin:1rem 0}
+.compare .box{border:2px solid var(--ink);border-radius:.7rem;padding:1rem 1.2rem}
+.compare .box strong{font-size:2.4rem;display:block;line-height:1.1}
+.compare .box.after{border-color:var(--green-ink);background:var(--soft)}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:1rem}
+.dl section{border:1px solid var(--line);border-top:4px solid var(--green);border-radius:.5rem;padding:1rem 1.1rem}
+.dl section h3{margin-bottom:.3rem}
+.dl section p{margin:.2rem 0 .8rem;color:var(--muted);font-size:.95rem}
+.log li{margin:.25rem 0}
+
+@media (max-width:52rem){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto;min-height:100%}
+  .rail{padding:1rem}
+  .brand{padding-bottom:.8rem}
+  .steps{display:flex;overflow-x:auto;gap:.3rem;margin-top:.8rem}
+  .steps::before{display:none}
+  .steps li{flex:none}
+  .steps small{display:none}
+  .filecard{display:none}
+  main{overflow:visible}
+  .summary{grid-template-columns:1fr;justify-items:start}
+  .toolbar{position:static}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<div class="app">
+  <nav class="rail" aria-label="Accessibility workflow">
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#00a86b"/><circle cx="20" cy="10" r="3.4" fill="#000"/><path d="M10 15.5h20M20 15.5v8.5l-5 9.5M20 24l5 9.5" stroke="#000" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <div><b>Accessibility Repair Studio</b><span>Assess, repair, recheck</span></div>
+    </div>
+    <ol class="steps" id="steps"></ol>
+    <div class="filecard" id="fileCard" hidden></div>
+  </nav>
+  <main id="main" tabindex="-1">
+    <header class="top">
+      <p class="stepno" id="stepNo"></p>
+      <h1 id="stepTitle" tabindex="-1"></h1>
+      <p class="lede" id="stepLede"></p>
+    </header>
+    <div id="view"></div>
+  </main>
+</div>
+<div id="live" class="sr" role="status" aria-live="polite"></div>
+
+<script>
+/* ===================== Core state & helpers ===================== */
+const STEPS=[
+ {id:'upload',name:'Upload',sub:'Add a file or paste a page',title:'Upload course content',lede:'Add an HTML page, Word document, PDF, or PowerPoint file, or paste the HTML from a Canvas page. Files are processed in your browser and are not uploaded anywhere.'},
+ {id:'assess',name:'Assessment',sub:'Find accessibility issues',title:'Assessment',lede:'Each issue explains why it matters for students using assistive technology and what correction is recommended.'},
+ {id:'repair',name:'Guided repairs',sub:'Fix issues one at a time',title:'Guided repairs',lede:'Apply corrections one at a time, or apply every automatic fix at once. Issues that this tool cannot repair include the steps for specialized remediation.'},
+ {id:'reassess',name:'Reassessment',sub:'Recheck the repaired file',title:'Reassessment',lede:'The repaired file is rebuilt and scanned again from scratch, so the results reflect exactly what you will download.'},
+ {id:'download',name:'Download',sub:'Repaired file and alternative formats',title:'Download and alternative formats',lede:'Download the repaired file, an assessment report, and alternative formats that students can choose from.'}
+];
+const KIND_LABEL={html:'HTML page',docx:'Word document',pdf:'PDF',pptx:'PowerPoint presentation'};
+const S={step:'upload',kind:null,name:'',model:null,baseline:null,current:null,after:null,log:[],rounds:0,filter:'open',busy:false};
+
+const $=(s,r=document)=>r.querySelector(s);
+function el(tag,props={},...kids){
+  const n=document.createElement(tag);
+  for(const [k,v] of Object.entries(props||{})){
+    if(v==null||v===false) continue;
+    if(k==='class') n.className=v;
+    else if(k==='text') n.textContent=v;
+    else if(k.startsWith('on')) n.addEventListener(k.slice(2),v);
+    else if(k==='checked'||k==='value'||k==='disabled'||k==='selected') n[k]=v;
+    else n.setAttribute(k,v===true?'':v);
+  }
+  for(const k of kids.flat()){ if(k==null||k===false) continue; n.append(k.nodeType?k:document.createTextNode(String(k))); }
+  return n;
+}
+const announce=msg=>{const l=$('#live');l.textContent='';setTimeout(()=>l.textContent=msg,50);};
+const escXML=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const escHTML=escXML;
+const trunc=(s,n=90)=>{s=(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1)+'…':s;};
+const plural=(n,w,p)=>n+' '+(n===1?w:(p||w+'s'));
+const isLang=v=>/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test((v||'').trim());
+
+/* contrast math */
+function lum(rgb){const f=c=>{c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4)};return 0.2126*f(rgb[0])+0.7152*f(rgb[1])+0.0722*f(rgb[2]);}
+function cratio(a,b){const A=lum(a),B=lum(b);return (Math.max(A,B)+0.05)/(Math.min(A,B)+0.05);}
+const toHex=rgb=>'#'+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const fromHex=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16));};
+function suggestColor(fg,bg,need){
+  const darken=lum(bg)>0.179;
+  for(let i=1;i<=100;i++){const t=i/100;const c=darken?fg.map(v=>v*(1-t)):fg.map(v=>v+(255-v)*t);if(cratio(c,bg)>=need+0.1)return c.map(Math.round);}
+  return darken?[0,0,0]:[255,255,255];
+}
+function parseRGB(s){const m=s&&s.match(/rgba?\(([^)]+)\)/);if(!m)return null;const p=m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);if(p.length<3)return null;return {rgb:p.slice(0,3).map(Math.round),a:p.length>3?p[3]:1};}
+
+/* issue context */
+function makeCtx(){
+  const c={issues:[],total:0,notes:[],
+    check(n=1){c.total+=n;},
+    add(i){i.id='i'+(c.issues.length+1);i.status='open';i.weight=i.weight||1;c.issues.push(i);return i;},
+    note(t){if(!c.notes.includes(t))c.notes.push(t);}};
+  return c;
+}
+function scoreOf(ctx){
+  const w=ctx.issues.reduce((s,i)=>s+(i.sev==='error'?i.weight:i.sev==='warning'?i.weight*0.5:0),0);
+  if(!ctx.total) return 100;
+  return Math.max(0,Math.min(100,Math.round(100*(1-w/Math.max(ctx.total,w)))));
+}
+const SEV_LABEL={error:'Must fix',warning:'Should fix',tip:'Review'};
+
+/* XML namespaces */
+const NS={w:'http://schemas.openxmlformats.org/wordprocessingml/2006/main',wp:'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',a:'http://schemas.openxmlformats.org/drawingml/2006/main',r:'http://schemas.openxmlformats.org/officeDocument/2006/relationships',p:'http://schemas.openxmlformats.org/presentationml/2006/main',dc:'http://purl.org/dc/elements/1.1/',cp:'http://schemas.openxmlformats.org/package/2006/metadata/core-properties',rel:'http://schemas.openxmlformats.org/package/2006/relationships'};
+const all=(n,ns,tag)=>n?[...n.getElementsByTagNameNS(NS[ns],tag)]:[];
+const kid=(n,ns,tag)=>n?[...n.children].find(c=>c.namespaceURI===NS[ns]&&c.localName===tag):null;
+const mk=(doc,ns,tag)=>doc.createElementNS(NS[ns],ns+':'+tag);
+const wval=n=>n?n.getAttributeNS(NS.w,'val'):null;
+function xfrag(doc,xml){const d=new DOMParser().parseFromString(`<x xmlns:a="${NS.a}" xmlns:p="${NS.p}" xmlns:r="${NS.r}" xmlns:w="${NS.w}">${xml}</x>`,'application/xml');return doc.importNode(d.documentElement.firstElementChild,true);}
+const parseXML=s=>new DOMParser().parseFromString(s,'application/xml');
+function serXML(doc){let s=new XMLSerializer().serializeToString(doc);if(!s.startsWith('<?xml'))s='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'+s;return s;}
+function resolvePath(base,t){if(t.startsWith('/'))return t.slice(1);const out=[];for(const p of (base+t).split('/')){if(p==='..')out.pop();else if(p&&p!=='.')out.push(p);}return out.join('/');}
+async function relsMap(zip,path){const f=zip.file(path);if(!f)return {};const d=parseXML(await f.async('string'));const m={};all(d,'rel','Relationship').forEach(r=>m[r.getAttribute('Id')]={target:r.getAttribute('Target'),mode:r.getAttribute('TargetMode')});return m;}
+const MIME={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',svg:'image/svg+xml',webp:'image/webp',bmp:'image/bmp'};
+async function zipImage(zip,path){const ext=path.split('.').pop().toLowerCase();const f=zip.file(path);if(!f||!MIME[ext])return null;return 'data:'+MIME[ext]+';base64,'+await f.async('base64');}
+const coreTitleEl=core=>all(core,'dc','title')[0]||null;
+function setCoreTitle(core,val){let t=coreTitleEl(core);if(!t){t=mk(core,'dc','title');core.documentElement.appendChild(t);}t.textContent=val;}
+function decorativeMark(docPr){return [...docPr.getElementsByTagName('*')].some(n=>n.localName==='decorative'&&n.getAttribute('val')==='1');}
+function markDecorative(docPr){const doc=docPr.ownerDocument;docPr.setAttribute('descr','');docPr.appendChild(xfrag(doc,'<a:extLst><a:ext uri="{C183D7F6-B498-43B3-948B-1728B52AA6E4}"><adec:decorative xmlns:adec="http://schemas.microsoft.com/office/drawing/2017/decorative" val="1"/></a:ext></a:extLst>'));}
+function altProblem(alt,name){
+  const a=(alt||'').trim();
+  if(/\.(png|jpe?g|gif|svg|webp|bmp|tiff?|emf|wmf)$/i.test(a)||/^(img|image|dsc|screenshot|picture)[\s_-]?\d+/i.test(a)) return 'The description is a file name, which tells students nothing about the image.';
+  if(/^(image|picture|photo|graphic|img|figure|icon|logo|chart|diagram)( of)?\.?$/i.test(a)) return 'The description is a generic word rather than a description of what the image shows.';
+  if(name&&a&&a===name.trim()&&/^(picture|image|graphic|content placeholder)\s*\d*/i.test(a)) return 'The description is the default object name assigned by Office.';
+  if(a.length>180) return 'The description is very long. Keep alt text brief and move long explanations into the surrounding text.';
+  return null;
+}
+const VAGUE=['click here','click','here','read more','more','learn more','link','this link','go','this','page','website','details','info','download','click this'];
+
+/* ===================== HTML ===================== */
+const HTMLX={
+  async load(text){
+    const fragment=!/<html[\s>]/i.test(text);
+    const doc=new DOMParser().parseFromString(text,'text/html');
+    let i=0;doc.querySelectorAll('*').forEach(e=>e.setAttribute('data-axid',i++));
+    return {doc,fragment};
+  },
+  serialize(m,keepIds){
+    const root=m.doc.documentElement.cloneNode(true);
+    if(!keepIds){root.removeAttribute('data-axid');root.querySelectorAll('[data-axid]').forEach(e=>e.removeAttribute('data-axid'));}
+    if(m.fragment&&!keepIds){const b=root.querySelector('body');return b?b.innerHTML.trim()+'\n':'';}
+    return '<!DOCTYPE html>\n'+root.outerHTML;
+  },
+  async export(m){return new Blob([HTMLX.serialize(m,false)],{type:'text/html'});},
+  snip(e){return trunc(e.outerHTML.replace(/ data-axid="\d+"/g,''),320);},
+  async scan(m,ctx){
+    const d=m.doc, body=d.body;
+    if(m.fragment) ctx.note('This is page content without its own <html> wrapper, as in a Canvas page. Canvas supplies the page language and title, and shows the page title as the Heading 1.');
+    ctx.note('Color contrast is measured from inline and embedded styles. External style sheets and text over images are not measured.');
+    /* language & title */
+    if(!m.fragment){
+      ctx.check();
+      const lang=d.documentElement.getAttribute('lang');
+      if(!isLang(lang)) ctx.add({sev:'error',cat:'Language',title:lang?'Page language code is not valid':'Page language is not set',where:'<html> element',
+        why:'Screen readers use the page language to choose the correct pronunciation. Without it, text may be read with the wrong voice and accent.',
+        how:'Add a valid language code to the html element, such as en for English or es for Spanish.',wcag:'3.1.1 Language of Page',
+        repair:{kind:'text',label:'Language code',value:'en',placeholder:'en',apply:v=>d.documentElement.setAttribute('lang',v.trim())}});
+      ctx.check();
+      if(!(d.title||'').trim()) ctx.add({sev:'error',cat:'Document properties',title:'Page has no title',where:'<head> element',
+        why:'The page title is the first thing a screen reader announces and is how students tell browser tabs apart.',
+        how:'Add a short, descriptive title that identifies the page.',wcag:'2.4.2 Page Titled',
+        repair:{kind:'text',label:'Page title',placeholder:'Week 3: Securing the network perimeter',apply:v=>{let t=d.querySelector('title');if(!t){t=d.createElement('title');d.head.appendChild(t);}t.textContent=v.trim();}}});
+    }
+    /* headings */
+    const hs=[...body.querySelectorAll('h1,h2,h3,h4,h5,h6')];
+    const textLen=(body.textContent||'').trim().length;
+    ctx.check();
+    if(!hs.length&&textLen>400) ctx.add({sev:'error',cat:'Headings',title:'Content has no headings',where:'Whole page',
+      why:'Screen reader users jump between headings to understand and navigate a page. Without headings, they must listen to everything in order.',
+      how:'Mark section titles as headings. Look for bold "fake headings" flagged below and convert them.',wcag:'1.3.1 Info and Relationships'});
+    let prev=m.fragment?1:0;
+    hs.forEach((h,idx)=>{
+      ctx.check();
+      const lvl=+h.tagName[1], txt=(h.textContent||'').trim();
+      if(!txt&&!h.querySelector('img[alt]:not([alt=""])')){
+        ctx.add({sev:'error',cat:'Headings',title:'Empty heading',where:`Heading ${idx+1} (H${lvl})`,snippet:HTMLX.snip(h),
+          why:'An empty heading is announced as "heading" with nothing after it, which is confusing.',how:'Type the heading text, or remove the heading if it is only used for spacing.',wcag:'2.4.6 Headings and Labels',
+          repair:{kind:'text',label:'Heading text',apply:v=>{h.textContent=v.trim();}}});
+      }
+      if(m.fragment&&lvl===1){
+        ctx.add({sev:'warning',cat:'Headings',title:'Heading 1 used inside a Canvas page',where:`"${trunc(txt,60)}"`,snippet:HTMLX.snip(h),
+          why:'Canvas already displays the page title as Heading 1. A second H1 makes the outline confusing.',how:'Change this heading to Heading 2, and nest sub-sections below it.',wcag:'1.3.1 Info and Relationships',
+          repair:{kind:'choice',label:'Change to',value:'h2',options:[['h2','Heading 2'],['h3','Heading 3']],apply:v=>retag(h,v)}});
+        prev=1;return;
+      }
+      if(lvl>prev+1){
+        const opts=[];for(let k=Math.max(m.fragment?2:1,1);k<=prev+1;k++)opts.push(['h'+k,'Heading '+k]);
+        ctx.add({sev:'warning',cat:'Headings',title:`Heading level skipped (H${prev||'—'} to H${lvl})`,where:`"${trunc(txt,60)}"`,snippet:HTMLX.snip(h),
+          why:'Headings form an outline. Skipping a level suggests missing content to screen reader users who navigate by heading level.',
+          how:`Change this to Heading ${prev+1} so levels increase one step at a time. Use styles, not heading levels, to change size.`,wcag:'1.3.1 Info and Relationships',
+          repair:{kind:'choice',label:'Change to',value:'h'+(prev+1),options:opts,apply:v=>retag(h,v)}});
+        prev=prev+1;return;
+      }
+      prev=lvl;
+    });
+    /* fake headings */
+    body.querySelectorAll('p').forEach(p=>{
+      const t=(p.textContent||'').trim();
+      if(t.length<3||t.length>80||/[.:,;]$/.test(t)) return;
+      const kids=[...p.children];
+      if(kids.length===1&&/^(STRONG|B)$/.test(kids[0].tagName)&&(kids[0].textContent||'').trim()===t){
+        ctx.check();
+        ctx.add({sev:'warning',cat:'Headings',title:'Bold text looks like a heading',where:`"${trunc(t,60)}"`,snippet:HTMLX.snip(p),
+          why:'Bold paragraphs look like headings but are not announced as headings, so screen reader users cannot navigate to them.',
+          how:'Convert this paragraph to a real heading at the correct level.',wcag:'1.3.1 Info and Relationships',
+          repair:{kind:'choice',label:'Convert to',value:m.fragment?'h3':'h2',options:[['h2','Heading 2'],['h3','Heading 3'],['h4','Heading 4']],apply:v=>{const n=retag(p,v);n.textContent=t;}}});
+      }
+    });
+    /* images */
+    [...body.querySelectorAll('img')].forEach((img,idx)=>{
+      ctx.check();
+      const src=img.getAttribute('src')||'';
+      const prev=src.startsWith('data:image')?src:null;
+      const where=`Image ${idx+1}${src&&!prev?` (${trunc(src.split('/').pop(),40)})`:''}`;
+      const inLink=img.closest('a');
+      const apply=(v,dec)=>{img.setAttribute('alt',dec?'':v.trim());if(dec)img.setAttribute('role','presentation');else img.removeAttribute('role');};
+      if(!img.hasAttribute('alt')){
+        ctx.add({sev:'error',cat:'Image descriptions',title:'Image has no alternative text',where,preview:prev,snippet:prev?null:HTMLX.snip(img),
+          why:'Screen readers cannot see images. Without alt text they may read the file name or skip the image, and students lose its meaning.',
+          how:inLink?'This image is inside a link, so its alt text must describe where the link goes.':'Describe what the image shows and why it matters, in about one sentence. If it is purely decorative, mark it as decorative.',wcag:'1.1.1 Non-text Content',
+          repair:{kind:'text',label:'Alt text',placeholder:'Diagram of a firewall between the internet and a DMZ',toggle:inLink?null:'This image is decorative',apply}});
+      } else {
+        const why=altProblem(img.getAttribute('alt'));
+        if(why) ctx.add({sev:'warning',cat:'Image descriptions',title:'Alt text needs improvement',where:`${where}: "${trunc(img.getAttribute('alt'),50)}"`,preview:prev,
+          why,how:'Replace it with a short description of the image content and purpose.',wcag:'1.1.1 Non-text Content',
+          repair:{kind:'text',label:'Alt text',value:'',placeholder:'Describe the image',toggle:inLink?null:'This image is decorative',apply}});
+      }
+    });
+    /* links */
+    [...body.querySelectorAll('a[href]')].forEach((a,idx)=>{
+      ctx.check();
+      const imgAlt=[...a.querySelectorAll('img')].map(i=>i.getAttribute('alt')||'').join(' ');
+      const name=((a.getAttribute('aria-label')||'')||((a.textContent||'')+' '+imgAlt)).replace(/\s+/g,' ').trim();
+      const href=a.getAttribute('href');
+      const hasEls=a.children.length>0;
+      const apply=v=>{if(hasEls)a.setAttribute('aria-label',v.trim());else a.textContent=v.trim();};
+      const where=`Link ${idx+1} to ${trunc(href,60)}`;
+      if(!name){
+        ctx.add({sev:'error',cat:'Links',title:'Link has no text',where,snippet:HTMLX.snip(a),
+          why:'A link with no text is announced only as "link", so students cannot tell where it goes.',how:'Give the link text that describes its destination.',wcag:'2.4.4 Link Purpose',
+          repair:{kind:'text',label:'Link text',apply}});
+      } else if(VAGUE.includes(name.toLowerCase().replace(/[.!]$/,''))){
+        ctx.add({sev:'warning',cat:'Links',title:`Link text "${name}" is not descriptive`,where,snippet:HTMLX.snip(a),
+          why:'Screen reader users often pull up a list of links. "Click here" repeated in that list gives no clue about the destination.',
+          how:'Rewrite the link text to name the destination, such as "Firewall configuration guide (PDF)".',wcag:'2.4.4 Link Purpose',
+          repair:{kind:'text',label:'Descriptive link text',placeholder:'Firewall configuration guide (PDF)',apply}});
+      } else if(/^(https?:\/\/|www\.)/i.test(name)&&name.length>35){
+        ctx.add({sev:'warning',cat:'Links',title:'Link text is a long web address',where,snippet:HTMLX.snip(a),
+          why:'Screen readers read long URLs character by character, which is slow and hard to follow.',how:'Replace the URL with a short description of the destination.',wcag:'2.4.4 Link Purpose',
+          repair:{kind:'text',label:'Descriptive link text',apply}});
+      }
+    });
+    /* tables */
+    [...body.querySelectorAll('table')].forEach((t,idx)=>{
+      if(/presentation|none/.test(t.getAttribute('role')||'')) return;
+      ctx.check();
+      const where=`Table ${idx+1}`;
+      const first=t.rows[0]?[...t.rows[0].cells].map(c=>trunc(c.textContent,20)).join(' | '):'';
+      if(!t.querySelector('th')){
+        ctx.add({sev:'error',cat:'Tables',title:'Table has no header cells',where:`${where}: ${first}`,
+          why:'Without header cells, screen readers cannot announce which column or row a data cell belongs to.',how:'Mark the first row (and the first column, if it labels rows) as headers.',wcag:'1.3.1 Info and Relationships',
+          repair:{kind:'choice',label:'Header cells',value:'row',options:[['row','First row is the header'],['col','First column is the header'],['both','First row and first column']],apply:v=>makeHeaders(t,v)}});
+      } else {
+        const noScope=[...t.querySelectorAll('th:not([scope])')];
+        if(noScope.length) ctx.add({sev:'tip',cat:'Tables',title:'Header cells have no scope',where,
+          why:'The scope attribute tells assistive technology whether a header applies to a column or a row.',how:'Add scope="col" to column headers and scope="row" to row headers.',wcag:'1.3.1 Info and Relationships',
+          repair:{kind:'auto',label:'Add scope automatically',apply:()=>noScope.forEach(th=>{const row=th.parentElement;th.setAttribute('scope',row&&row.rowIndex===0||th.closest('thead')?'col':'row');})}});
+      }
+      ctx.check();
+      if(!t.querySelector('caption')) ctx.add({sev:'warning',cat:'Tables',title:'Table has no caption',where:`${where}: ${first}`,
+        why:'A caption announces what the table is about before a student hears the data.',how:'Add a short caption such as "Common ports and protocols".',wcag:'1.3.1 Info and Relationships',
+        repair:{kind:'text',label:'Caption',placeholder:'Common ports and protocols',apply:v=>{const c=d.createElement('caption');c.textContent=v.trim();t.insertBefore(c,t.firstChild);}}});
+    });
+    /* form labels */
+    const ctrls=[...body.querySelectorAll('input,select,textarea')].filter(e=>!/^(hidden|submit|button|reset|image)$/i.test(e.getAttribute('type')||''));
+    ctrls.forEach((c,idx)=>{
+      ctx.check();
+      const id=c.getAttribute('id');
+      const labelled=c.getAttribute('aria-label')||c.getAttribute('aria-labelledby')||c.getAttribute('title')||c.closest('label')||(id&&d.querySelector(`label[for="${CSS.escape(id)}"]`));
+      if(!labelled) ctx.add({sev:'error',cat:'Form labels',title:`Form field has no label`,where:`${c.tagName.toLowerCase()}${c.getAttribute('type')?' type='+c.getAttribute('type'):''}${c.getAttribute('name')?' name="'+c.getAttribute('name')+'"':''}`,snippet:HTMLX.snip(c),
+        why:'Without a label, a screen reader announces only "edit text" and the student cannot tell what to enter.',how:'Add a visible label connected to the field.',wcag:'1.3.1, 3.3.2 Labels or Instructions',
+        repair:{kind:'text',label:'Label text',placeholder:'Your answer',apply:v=>addLabel(c,v.trim())}});
+    });
+    [...body.querySelectorAll('button,input[type=image]')].forEach(b=>{
+      ctx.check();
+      const nm=(b.textContent||'').trim()||b.getAttribute('aria-label')||b.getAttribute('alt')||b.getAttribute('title')||b.getAttribute('value');
+      if(!nm) ctx.add({sev:'error',cat:'Form labels',title:'Button has no accessible name',where:HTMLX.snip(b).slice(0,80),
+        why:'A button with no name is announced only as "button".',how:'Give the button text that says what it does.',wcag:'4.1.2 Name, Role, Value',
+        repair:{kind:'text',label:'Button name',apply:v=>{if(b.tagName==='INPUT')b.setAttribute('alt',v.trim());else if(b.children.length)b.setAttribute('aria-label',v.trim());else b.textContent=v.trim();}}});
+    });
+    await HTMLX.contrast(m,ctx);
+  },
+  async contrast(m,ctx){
+    const f=document.createElement('iframe');
+    f.setAttribute('sandbox','allow-same-origin');f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.title='Contrast measurement';
+    f.style.cssText='position:absolute;left:-10000px;top:0;width:1100px;height:900px;border:0;visibility:visible';
+    document.body.appendChild(f);
+    await new Promise(res=>{f.addEventListener('load',res,{once:true});f.srcdoc=HTMLX.serialize(m,true);setTimeout(res,5000);});
+    const w=f.contentWindow,d=f.contentDocument;const groups=new Map();let overImage=0;
+    try{
+      if(d&&d.body) for(const e of d.body.querySelectorAll('*')){
+        if(/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|OPTION)$/.test(e.tagName))continue;
+        if(![...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim()))continue;
+        const cs=w.getComputedStyle(e);
+        if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0)continue;
+        const fg=parseRGB(cs.color);if(!fg)continue;
+        let n=e,bg=null,img=false;
+        while(n&&n.nodeType===1){const s=w.getComputedStyle(n);if(s.backgroundImage&&s.backgroundImage!=='none')img=true;const c=parseRGB(s.backgroundColor);if(c&&c.a>0.5){bg=c.rgb;break;}n=n.parentElement;}
+        bg=bg||[255,255,255];
+        if(img){overImage++;continue;}
+        const f2=fg.a<1?fg.rgb.map((v,i)=>v*fg.a+bg[i]*(1-fg.a)):fg.rgb;
+        ctx.check();
+        const size=parseFloat(cs.fontSize)||16,bold=(parseInt(cs.fontWeight)||400)>=700;
+        const large=size>=24||(size>=18.66&&bold),need=large?3:4.5;
+        const r=cratio(f2,bg);
+        if(r<need){const key=toHex(f2)+'|'+toHex(bg)+'|'+need;if(!groups.has(key))groups.set(key,{fg:f2.map(Math.round),bg,need,r,ids:[],sample:''});const g=groups.get(key);g.ids.push(e.getAttribute('data-axid'));if(!g.sample)g.sample=trunc(e.textContent,70);}
+      }
+    }catch(err){console.warn(err);ctx.note('Color contrast could not be measured for this page.');}
+    f.remove();
+    [...groups.values()].slice(0,30).forEach(g=>{
+      const sug=suggestColor(g.fg,g.bg,g.need);
+      ctx.add({sev:'error',cat:'Color contrast',weight:g.ids.length,title:`Low contrast text (${g.r.toFixed(2)}:1, needs ${g.need}:1)`,
+        where:`${plural(g.ids.length,'element')} with ${toHex(g.fg)} text on ${toHex(g.bg)}, e.g. "${g.sample}"`,
+        why:'Low contrast text is hard to read for students with low vision or color blindness, and for anyone on a phone in bright light.',
+        how:`Darken or lighten the text color until it reaches at least ${g.need}:1. Suggested: ${toHex(sug)}.`,wcag:'1.4.3 Contrast (Minimum)',
+        repair:{kind:'color',label:'New text color',value:toHex(sug),bg:g.bg,need:g.need,apply:v=>g.ids.forEach(id=>{const e=m.doc.querySelector(`[data-axid="${id}"]`);if(e)e.style.color=v;})}});
+    });
+    if(overImage) ctx.add({sev:'tip',cat:'Color contrast',title:'Text placed over background images',where:plural(overImage,'element'),
+      why:'Contrast of text over images cannot be measured automatically and often varies across the image.',how:'Check it visually, or add a solid background color behind the text.',wcag:'1.4.3 Contrast (Minimum)'});
+  },
+  outline(m){
+    const b=[];const body=m.doc.body;
+    if(m.doc.title&&!m.fragment)b.push({t:'h',l:1,x:m.doc.title});
+    body.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,img,table,pre,blockquote').forEach(e=>{
+      if(e.tagName!=='TABLE'&&e.parentElement&&e.parentElement.closest('table,li,blockquote,pre'))return;
+      if(e.tagName==='P'&&e.closest('li'))return;
+      if(/^H\d$/.test(e.tagName))b.push({t:'h',l:+e.tagName[1],x:e.textContent});
+      else if(e.tagName==='IMG'){const a=e.getAttribute('alt');if(a)b.push({t:'img',x:a});}
+      else if(e.tagName==='LI')b.push({t:'li',x:e.textContent});
+      else if(e.tagName==='TABLE')b.push({t:'table',rows:[...e.rows].map(r=>[...r.cells].map(c=>c.textContent.trim()))});
+      else{const imgs=[...e.querySelectorAll('img[alt]')].map(i=>i.getAttribute('alt')).filter(Boolean);if(e.textContent.trim())b.push({t:'p',x:e.textContent});imgs.forEach(a=>b.push({t:'img',x:a}));}
+    });
+    return b;
+  }
+};
+function retag(e,tag){const n=e.ownerDocument.createElement(tag);for(const a of e.attributes)n.setAttribute(a.name,a.value);while(e.firstChild)n.appendChild(e.firstChild);e.replaceWith(n);return n;}
+function makeHeaders(t,mode){
+  const rows=[...t.rows];if(!rows.length)return;
+  if(mode!=='col')[...rows[0].cells].forEach(c=>{const th=c.tagName==='TH'?c:retag(c,'th');th.setAttribute('scope','col');});
+  if(mode!=='row')rows.forEach((r,i)=>{if(i===0&&mode==='both')return;const c=r.cells[0];if(c){const th=c.tagName==='TH'?c:retag(c,'th');th.setAttribute('scope','row');}});
+  if(mode!=='col'&&!t.tHead){const th=t.createTHead();th.appendChild(rows[0]);}
+}
+function addLabel(c,text){const d=c.ownerDocument;if(!c.id)c.id='field-'+Math.random().toString(36).slice(2,8);const l=d.createElement('label');l.setAttribute('for',c.id);l.textContent=text;const t=(c.getAttribute('type')||'').toLowerCase();if(t==='checkbox'||t==='radio')c.after(l);else{c.before(l);l.after(d.createTextNode(' '));}}
+
+/* ===================== WORD ===================== */
+const DOCX={
+  async load(buf){
+    const zip=await JSZip.loadAsync(buf);
+    const files={};
+    for(const p of ['word/document.xml','word/styles.xml','docProps/core.xml']){const f=zip.file(p);if(f)files[p]=parseXML(await f.async('string'));}
+    if(!files['word/document.xml'])throw new Error('This file does not contain a Word document body.');
+    const rels=await relsMap(zip,'word/_rels/document.xml.rels');
+    return {zip,files,rels,doc:files['word/document.xml'],styles:files['word/styles.xml'],core:files['docProps/core.xml']};
+  },
+  async export(m){for(const [p,d] of Object.entries(m.files))m.zip.file(p,serXML(d));return m.zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});},
+  styleNames(m){const s={};all(m.styles,'w','style').forEach(st=>{const id=st.getAttributeNS(NS.w,'styleId');const nm=kid(st,'w','name');s[id]=(nm?wval(nm):id||'').toLowerCase();});return s;},
+  level(p,names){const pPr=kid(p,'w','pPr');const ps=pPr&&kid(pPr,'w','pStyle');if(!ps)return 0;const id=wval(ps);const nm=names[id]||(id||'').toLowerCase();const mm=nm.match(/^heading\s*(\d)$/);if(mm)return +mm[1];if(nm==='title')return 1;return 0;},
+  ptext:p=>all(p,'w','t').map(t=>t.textContent).join(''),
+  ensureHeading(m,n){
+    const names=DOCX.styleNames(m);
+    for(const [id,nm] of Object.entries(names))if(nm==='heading '+n)return id;
+    const id='Heading'+n, sz=[0,32,26,24,22,22,22][n]||22;
+    if(m.styles)m.styles.documentElement.appendChild(xfrag(m.styles,`<w:style w:type="paragraph" w:styleId="${id}"><w:name w:val="heading ${n}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:uiPriority w:val="9"/><w:qFormat/><w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="240" w:after="80"/><w:outlineLvl w:val="${n-1}"/></w:pPr><w:rPr><w:b/><w:sz w:val="${sz}"/></w:rPr></w:style>`));
+    return id;
+  },
+  setStyle(m,p,n){
+    const id=DOCX.ensureHeading(m,n);const d=p.ownerDocument;
+    let pPr=kid(p,'w','pPr');if(!pPr){pPr=mk(d,'w','pPr');p.insertBefore(pPr,p.firstChild);}
+    let ps=kid(pPr,'w','pStyle');if(!ps){ps=mk(d,'w','pStyle');pPr.insertBefore(ps,pPr.firstChild);}
+    ps.setAttributeNS(NS.w,'w:val',id);
+  },
+  async scan(m,ctx){
+    const names=DOCX.styleNames(m);
+    const bodyEl=all(m.doc,'w','body')[0];
+    const paras=all(bodyEl,'w','p');
+    ctx.note('Word checks cover the document body. Headers, footers, text boxes, and comments are not checked.');
+    /* properties */
+    ctx.check();
+    if(!m.core) ctx.add({sev:'error',cat:'Document properties',title:'Document has no properties file',where:'File > Info',
+      why:'The title property is what screen readers announce when the document opens.',how:'In Word, open File > Info and type a Title, then save.',wcag:'2.4.2 Page Titled'});
+    else if(!(coreTitleEl(m.core)?.textContent||'').trim()) ctx.add({sev:'error',cat:'Document properties',title:'Document title property is empty',where:'File > Info > Title',
+      why:'Assistive technology announces the title property when the document opens. Without it, students hear only the file name.',
+      how:'Add a descriptive title. This is separate from the text at the top of the page.',wcag:'2.4.2 Page Titled',
+      repair:{kind:'text',label:'Document title',value:trunc(S.name.replace(/\.\w+$/,'').replace(/[_-]+/g,' '),80),apply:v=>setCoreTitle(m.core,v.trim())}});
+    /* language */
+    ctx.check();
+    const dd=all(m.styles,'w','docDefaults')[0];const langEl=dd&&all(dd,'w','lang')[0];
+    if(!m.styles){}else if(!langEl||!isLang(wval(langEl))) ctx.add({sev:'warning',cat:'Language',title:'Default document language is not set',where:'Default text style',
+      why:'Screen readers use the language setting to pronounce words correctly.',how:'Set the default language, such as en-US.',wcag:'3.1.1 Language of Page',
+      repair:{kind:'text',label:'Language code',value:'en-US',apply:v=>{
+        const s=m.styles;let d2=all(s,'w','docDefaults')[0];if(!d2){d2=mk(s,'w','docDefaults');s.documentElement.insertBefore(d2,s.documentElement.firstChild);}
+        let rpd=kid(d2,'w','rPrDefault');if(!rpd){rpd=mk(s,'w','rPrDefault');d2.insertBefore(rpd,d2.firstChild);}
+        let rpr=kid(rpd,'w','rPr');if(!rpr){rpr=mk(s,'w','rPr');rpd.appendChild(rpr);}
+        let l=kid(rpr,'w','lang');if(!l){l=mk(s,'w','lang');rpr.appendChild(l);}l.setAttributeNS(NS.w,'w:val',v.trim());}}});
+    /* headings */
+    const heads=paras.map((p,i)=>({p,i,l:DOCX.level(p,names)})).filter(x=>x.l);
+    const textParas=paras.filter(p=>DOCX.ptext(p).trim()).length;
+    ctx.check();
+    if(!heads.length&&textParas>8) ctx.add({sev:'error',cat:'Headings',title:'Document uses no heading styles',where:'Whole document',
+      why:'Headings built with Word heading styles let screen reader users navigate by section and generate the navigation pane.',
+      how:'Apply Heading 1, Heading 2, and so on to section titles. Convert any bold "fake headings" flagged below.',wcag:'1.3.1 Info and Relationships'});
+    let prev=0;
+    heads.forEach(({p,l})=>{
+      ctx.check();const t=DOCX.ptext(p).trim();
+      if(!t){ctx.add({sev:'warning',cat:'Headings',title:'Empty heading paragraph',where:`Heading ${l}`,why:'An empty heading is announced with no text.',how:'Remove the empty heading or type its text in Word.',wcag:'2.4.6 Headings and Labels'});return;}
+      if(l>prev+1){
+        const opts=[];for(let k=1;k<=prev+1;k++)opts.push([String(k),'Heading '+k]);
+        ctx.add({sev:'warning',cat:'Headings',title:`Heading level skipped (${prev?'Heading '+prev:'start'} to Heading ${l})`,where:`"${trunc(t,60)}"`,
+          why:'Skipped heading levels break the document outline that screen reader users rely on.',how:`Change this to Heading ${prev+1}.`,wcag:'1.3.1 Info and Relationships',
+          repair:{kind:'choice',label:'Change to',value:String(prev+1),options:opts,apply:v=>DOCX.setStyle(m,p,+v)}});
+        prev=prev+1;return;
+      }
+      prev=l;
+    });
+    let fake=0;
+    paras.forEach(p=>{
+      if(fake>=20||DOCX.level(p,names)||p.parentNode.localName==='tc')return;
+      const t=DOCX.ptext(p).trim();if(t.length<3||t.length>80||/[.,;:]$/.test(t))return;
+      const runs=all(p,'w','r').filter(r=>all(r,'w','t').some(x=>x.textContent.trim()));if(!runs.length)return;
+      const bold=runs.every(r=>{const b=kid(kid(r,'w','rPr'),'w','b');return b&&!/^(0|false)$/.test(wval(b)||'');});
+      const big=runs.every(r=>{const sz=kid(kid(r,'w','rPr'),'w','sz');return sz&&+wval(sz)>=28;});
+      if(bold||big){fake++;ctx.check();
+        ctx.add({sev:'warning',cat:'Headings',title:'Formatted text looks like a heading',where:`"${trunc(t,60)}"`,
+          why:'This paragraph is formatted to look like a heading but uses a normal style, so it is not announced or listed as a heading.',
+          how:'Apply a heading style at the correct level.',wcag:'1.3.1 Info and Relationships',
+          repair:{kind:'choice',label:'Apply style',value:heads.length?'2':'1',options:[['1','Heading 1'],['2','Heading 2'],['3','Heading 3']],apply:v=>DOCX.setStyle(m,p,+v)}});}
+    });
+    /* images */
+    const prs=all(m.doc,'wp','docPr');
+    for(const [idx,dp] of prs.entries()){
+      if(decorativeMark(dp))continue;
+      ctx.check();
+      const descr=dp.getAttribute('descr')||'';const nm=dp.getAttribute('name')||'';
+      let drawing=dp.parentNode;while(drawing&&drawing.localName!=='drawing')drawing=drawing.parentNode;
+      let preview=null;const blip=drawing&&all(drawing,'a','blip')[0];
+      if(blip){const rel=m.rels[blip.getAttributeNS(NS.r,'embed')];if(rel)preview=await zipImage(m.zip,resolvePath('word/',rel.target));}
+      const apply=(v,dec)=>{if(dec)markDecorative(dp);else dp.setAttribute('descr',v.trim());};
+      const near=(()=>{let p=dp;while(p&&p.localName!=='p')p=p.parentNode;return p?trunc(DOCX.ptext(p),60):'';})();
+      if(!descr.trim()) ctx.add({sev:'error',cat:'Image descriptions',title:'Image has no alt text',where:`Image ${idx+1}${near?` near "${near}"`:''}`,preview,
+        why:'Screen readers announce only "picture" for images without alt text.',how:'Describe what the image shows and its purpose, or mark it decorative.',wcag:'1.1.1 Non-text Content',
+        repair:{kind:'text',label:'Alt text',placeholder:'Describe the image',toggle:'Mark as decorative',apply}});
+      else{const w=altProblem(descr,nm);if(w)ctx.add({sev:'warning',cat:'Image descriptions',title:'Alt text needs improvement',where:`Image ${idx+1}: "${trunc(descr,50)}"`,preview,why:w,how:'Write a short, meaningful description.',wcag:'1.1.1 Non-text Content',
+        repair:{kind:'text',label:'Alt text',placeholder:'Describe the image',toggle:'Mark as decorative',apply}});}
+    }
+    /* tables */
+    all(m.doc,'w','tbl').forEach((t,idx)=>{
+      ctx.check();
+      const tr=kid(t,'w','tr');if(!tr)return;
+      const trPr=kid(tr,'w','trPr');
+      if(trPr&&kid(trPr,'w','tblHeader'))return;
+      const rows=[...t.children].filter(c=>c.localName==='tr').length;
+      const first=all(tr,'w','tc').map(c=>trunc(DOCX.ptext(c),18)).join(' | ');
+      ctx.add({sev:'error',cat:'Tables',title:'Table has no header row',where:`Table ${idx+1} (${plural(rows,'row')}): ${first}`,
+        why:'A marked header row lets screen readers announce column headings as students move through cells, and repeats the header on each printed page.',
+        how:'Mark the first row as a header row (Table Properties > Row > Repeat as header row).',wcag:'1.3.1 Info and Relationships',
+        repair:{kind:'auto',label:'Mark first row as header',apply:()=>{const d=t.ownerDocument;let pr=kid(tr,'w','trPr');if(!pr){pr=mk(d,'w','trPr');const ex=kid(tr,'w','tblPrEx');tr.insertBefore(pr,ex?ex.nextSibling:tr.firstChild);}if(!kid(pr,'w','tblHeader'))pr.appendChild(mk(d,'w','tblHeader'));}}});
+    });
+  },
+  outline(m){
+    const names=DOCX.styleNames(m);const b=[];const body=all(m.doc,'w','body')[0];if(!body)return b;
+    const t=coreTitleEl(m.core)?.textContent;if(t)b.push({t:'h',l:1,x:t});
+    for(const c of body.children){
+      if(c.localName==='p'){const l=DOCX.level(c,names);const x=DOCX.ptext(c);if(x.trim())b.push(l?{t:'h',l:Math.min(6,l+(t?1:0)),x}:{t:'p',x});all(c,'wp','docPr').forEach(dp=>{const a=dp.getAttribute('descr');if(a)b.push({t:'img',x:a});});}
+      else if(c.localName==='tbl')b.push({t:'table',rows:[...c.children].filter(r=>r.localName==='tr').map(r=>all(r,'w','tc').map(tc=>DOCX.ptext(tc)))});
+    }
+    return b;
+  }
+};
+
+/* ===================== POWERPOINT ===================== */
+const PPTX={
+  async load(buf){
+    const zip=await JSZip.loadAsync(buf);
+    const files={};
+    const presF=zip.file('ppt/presentation.xml');if(!presF)throw new Error('This file does not contain a PowerPoint presentation.');
+    const pres=parseXML(await presF.async('string'));
+    const prels=await relsMap(zip,'ppt/_rels/presentation.xml.rels');
+    let paths=all(pres,'p','sldId').map(s=>prels[s.getAttributeNS(NS.r,'id')]).filter(Boolean).map(r=>resolvePath('ppt/',r.target));
+    if(!paths.length)paths=Object.keys(zip.files).filter(p=>/^ppt\/slides\/slide\d+\.xml$/.test(p)).sort((a,b)=>+a.match(/\d+/)[0]-+b.match(/\d+/)[0]);
+    const slides=[];
+    for(const p of paths){const f=zip.file(p);if(!f)continue;const doc=parseXML(await f.async('string'));files[p]=doc;const rp=p.replace(/slides\/(slide\d+\.xml)$/,'slides/_rels/$1.rels');slides.push({path:p,doc,rels:await relsMap(zip,rp)});}
+    const cf=zip.file('docProps/core.xml');if(cf)files['docProps/core.xml']=parseXML(await cf.async('string'));
+    const sz=all(pres,'p','sldSz')[0];
+    return {zip,files,slides,core:files['docProps/core.xml'],width:sz?+sz.getAttribute('cx'):12192000};
+  },
+  async export(m){for(const [p,d] of Object.entries(m.files))m.zip.file(p,serXML(d));return m.zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});},
+  txt:n=>all(n,'a','t').map(t=>t.textContent).join(''),
+  titleShape(doc){return all(doc,'p','sp').find(sp=>{const ph=all(sp,'p','ph')[0];const t=ph&&ph.getAttribute('type');return t==='title'||t==='ctrTitle';});},
+  shapes(doc){const tree=all(doc,'p','spTree')[0];return tree?[...tree.children].filter(c=>/^(sp|pic|graphicFrame|grpSp|cxnSp|contentPart)$/.test(c.localName)):[];},
+  shapeName(sh){const c=all(sh,'p','cNvPr')[0];return c?c.getAttribute('name')||'Unnamed':'Unnamed';},
+  moveFirst(doc,sp){const tree=all(doc,'p','spTree')[0];const g=kid(tree,'p','grpSpPr');tree.insertBefore(sp,g?g.nextSibling:tree.firstChild);},
+  setText(sp,text){
+    const d=sp.ownerDocument;let tx=kid(sp,'p','txBody');
+    if(!tx){tx=xfrag(d,'<p:txBody><a:bodyPr/><a:lstStyle/></p:txBody>');sp.appendChild(tx);}
+    all(tx,'a','p').forEach(p=>p.remove());
+    tx.appendChild(xfrag(d,`<a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>${escXML(text)}</a:t></a:r></a:p>`));
+  },
+  addTitle(m,s,text,hidden){
+    const d=s.doc;const id=Math.max(0,...all(d,'p','cNvPr').map(c=>+c.getAttribute('id')||0))+1;
+    const y=hidden?-1143000:228600;
+    const sp=xfrag(d,`<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Title ${id}"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x="457200" y="${y}"/><a:ext cx="${Math.max(914400,m.width-914400)}" cy="914400"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US" dirty="0"/><a:t>${escXML(text)}</a:t></a:r></a:p></p:txBody></p:sp>`);
+    PPTX.moveFirst(d,sp);
+  },
+  async scan(m,ctx){
+    ctx.note('Contrast is measured for text with explicit RGB colors. Theme colors and text over pictures should be checked in PowerPoint’s Accessibility Checker.');
+    ctx.check();
+    if(m.core&&!(coreTitleEl(m.core)?.textContent||'').trim()) ctx.add({sev:'warning',cat:'Document properties',title:'Presentation title property is empty',where:'File > Info > Title',
+      why:'The title property is announced when the file opens and is used when the file is converted to PDF.',how:'Add a descriptive title.',wcag:'2.4.2 Page Titled',
+      repair:{kind:'text',label:'Presentation title',value:trunc(S.name.replace(/\.\w+$/,'').replace(/[_-]+/g,' '),80),apply:v=>setCoreTitle(m.core,v.trim())}});
+    const seen={};
+    for(const [i,s] of m.slides.entries()){
+      const n=i+1,d=s.doc;const shapes=PPTX.shapes(d);const tsp=PPTX.titleShape(d);const tt=tsp?PPTX.txt(tsp).trim():'';
+      ctx.check();
+      if(!tt){
+        ctx.add({sev:'error',cat:'Slide titles',title:'Slide has no title',where:`Slide ${n}`,snippet:'Reading order: '+shapes.map(PPTX.shapeName).join(', '),
+          why:'Screen reader users navigate a presentation by slide title. A slide without one is announced only as "Slide '+n+'".',
+          how:'Add a unique title. If the design has no room, the title can be placed just above the slide, where it is read but not shown.',wcag:'2.4.6 Headings and Labels',
+          repair:{kind:'text',label:'Slide title',toggle:tsp?null:'Place the title off-slide (read aloud but not visible)',apply:(v,hid)=>{if(tsp)PPTX.setText(tsp,v.trim());else PPTX.addTitle(m,s,v.trim(),hid);}}});
+      } else {
+        const key=tt.toLowerCase();
+        if(seen[key]){ctx.add({sev:'warning',cat:'Slide titles',title:'Duplicate slide title',where:`Slide ${n} repeats slide ${seen[key]}: "${trunc(tt,50)}"`,
+          why:'Identical titles make slides indistinguishable when students navigate by title.',how:'Make the title unique, for example by adding "(continued)" or a part number.',wcag:'2.4.6 Headings and Labels',
+          repair:{kind:'text',label:'Slide title',value:tt+' (continued)',apply:v=>PPTX.setText(tsp,v.trim())}});}
+        else seen[key]=n;
+        if(shapes.length>1&&tsp.parentNode===all(d,'p','spTree')[0]){ctx.check();
+          if(shapes[0]!==tsp)ctx.add({sev:'warning',cat:'Reading order',title:'Title is not read first',where:`Slide ${n}`,snippet:'Current reading order: '+shapes.map((sh,k)=>`${k+1}. ${PPTX.shapeName(sh)}`).join('  '),
+            why:'Screen readers read objects in the order they were added, not the order they appear. Students may hear body text before the slide title.',
+            how:'Move the title to the top of the reading order (Home > Arrange > Selection Pane, where the list is read bottom to top).',wcag:'1.3.2 Meaningful Sequence',
+            repair:{kind:'auto',label:'Move title to first in reading order',apply:()=>PPTX.moveFirst(d,tsp)}});}
+      }
+      /* images */
+      for(const pic of all(d,'p','pic')){
+        const c=all(pic,'p','cNvPr')[0];if(!c||decorativeMark(c))continue;
+        ctx.check();
+        const descr=c.getAttribute('descr')||'';const nm=c.getAttribute('name')||'';
+        const blip=all(pic,'a','blip')[0];let preview=null;
+        if(blip){const r=s.rels[blip.getAttributeNS(NS.r,'embed')];if(r)preview=await zipImage(m.zip,resolvePath('ppt/slides/',r.target));}
+        const apply=(v,dec)=>{if(dec)markDecorative(c);else c.setAttribute('descr',v.trim());};
+        if(!descr.trim())ctx.add({sev:'error',cat:'Image descriptions',title:'Picture has no alt text',where:`Slide ${n}: ${nm}`,preview,
+          why:'Without alt text, screen readers announce only "picture" and the image’s meaning is lost.',how:'Describe the image content and purpose, or mark it decorative.',wcag:'1.1.1 Non-text Content',
+          repair:{kind:'text',label:'Alt text',placeholder:'Describe the picture',toggle:'Mark as decorative',apply}});
+        else{const w=altProblem(descr,nm);if(w)ctx.add({sev:'warning',cat:'Image descriptions',title:'Alt text needs improvement',where:`Slide ${n}: "${trunc(descr,50)}"`,preview,why:w,how:'Write a short, meaningful description.',wcag:'1.1.1 Non-text Content',
+          repair:{kind:'text',label:'Alt text',placeholder:'Describe the picture',toggle:'Mark as decorative',apply}});}
+      }
+      /* links */
+      all(d,'a','hlinkClick').forEach(h=>{
+        const rPr=h.parentNode;if(!rPr||rPr.localName!=='rPr')return;const run=rPr.parentNode;const tEl=kid(run,'a','t');if(!tEl)return;
+        ctx.check();const t=tEl.textContent.trim();const href=(s.rels[h.getAttributeNS(NS.r,'id')]||{}).target||'';
+        const vague=VAGUE.includes(t.toLowerCase().replace(/[.!]$/,''));const url=/^(https?:\/\/|www\.)/i.test(t)&&t.length>35;
+        if(vague||url)ctx.add({sev:'warning',cat:'Links',title:vague?`Link text "${t}" is not descriptive`:'Link text is a long web address',where:`Slide ${n}${href?' to '+trunc(href,50):''}`,
+          why:'Link text should make sense on its own, since screen reader users often browse a list of links.',how:'Rewrite the link text to name the destination.',wcag:'2.4.4 Link Purpose',
+          repair:{kind:'text',label:'Descriptive link text',apply:v=>{tEl.textContent=v.trim();}}});
+      });
+      /* contrast */
+      const bgEl=all(d,'p','bg')[0];const bgClr=bgEl&&all(bgEl,'a','srgbClr')[0];const slideBg=bgClr?fromHex(bgClr.getAttribute('val')):[255,255,255];
+      const groups=new Map();
+      all(d,'a','r').forEach(r=>{
+        const rPr=kid(r,'a','rPr');const sf=kid(rPr,'a','solidFill');const clr=kid(sf,'a','srgbClr');if(!clr)return;
+        const t=PPTX.txt(r).trim();if(!t)return;
+        let sp=r.parentNode;while(sp&&sp.localName!=='sp')sp=sp.parentNode;
+        const spFill=sp&&kid(kid(kid(sp,'p','spPr'),'a','solidFill'),'a','srgbClr');
+        const bg=spFill?fromHex(spFill.getAttribute('val')):slideBg;const fg=fromHex(clr.getAttribute('val'));
+        const szv=+(rPr.getAttribute('sz')||0)/100;const b=rPr.getAttribute('b')==='1';const need=(szv>=18||(szv>=14&&b))?3:4.5;
+        ctx.check();const ratio=cratio(fg,bg);
+        if(ratio<need){const k=toHex(fg)+toHex(bg)+need;if(!groups.has(k))groups.set(k,{fg,bg,need,ratio,els:[],sample:t});groups.get(k).els.push(clr);}
+      });
+      groups.forEach(g=>{const sug=suggestColor(g.fg,g.bg,g.need);
+        ctx.add({sev:'error',cat:'Color contrast',weight:g.els.length,title:`Low contrast text (${g.ratio.toFixed(2)}:1, needs ${g.need}:1)`,where:`Slide ${n}: ${plural(g.els.length,'text run')}, ${toHex(g.fg)} on ${toHex(g.bg)}, e.g. "${trunc(g.sample,50)}"`,
+          why:'Low contrast is hard to read on projectors and for students with low vision.',how:`Change the text color. Suggested: ${toHex(sug)}.`,wcag:'1.4.3 Contrast (Minimum)',
+          repair:{kind:'color',label:'New text color',value:toHex(sug),bg:g.bg,need:g.need,apply:v=>g.els.forEach(e=>e.setAttribute('val',v.replace('#','').toUpperCase()))}});});
+    }
+  },
+  outline(m){
+    const b=[];const t=coreTitleEl(m.core)?.textContent;if(t)b.push({t:'h',l:1,x:t});
+    m.slides.forEach((s,i)=>{const tsp=PPTX.titleShape(s.doc);b.push({t:'h',l:2,x:`Slide ${i+1}: ${tsp?PPTX.txt(tsp):'Untitled'}`});
+      PPTX.shapes(s.doc).forEach(sh=>{if(sh===tsp)return;if(sh.localName==='pic'){const c=all(sh,'p','cNvPr')[0];const a=c&&c.getAttribute('descr');if(a)b.push({t:'img',x:a});return;}
+        all(sh,'a','p').forEach(p=>{const x=PPTX.txt(p);if(x.trim())b.push({t:'li',x});});all(sh,'p','pic').forEach(pc=>{const c=all(pc,'p','cNvPr')[0];const a=c&&c.getAttribute('descr');if(a)b.push({t:'img',x:a});});});});
+    return b;
+  }
+};
+
+/* ===================== PDF ===================== */
+const PDFX={
+  async load(buf){
+    const bytes=new Uint8Array(buf);
+    const pdf=await pdfjsLib.getDocument({data:bytes.slice(0)}).promise;
+    let lib=null;try{lib=await PDFLib.PDFDocument.load(bytes.slice(0),{ignoreEncryption:true,updateMetadata:false});}catch(e){console.warn(e);}
+    return {bytes,pdf,lib,pages:[]};
+  },
+  async export(m){if(m.lib&&!m.lib.isEncrypted){const out=await m.lib.save();return new Blob([out],{type:'application/pdf'});}return new Blob([m.bytes],{type:'application/pdf'});},
+  async scan(m,ctx){
+    const {pdf,lib}=m;const P=PDFLib;const n=pdf.numPages;const cat=lib&&lib.catalog;
+    ctx.note('PDF repairs here cover metadata, language, and form field descriptions. Tags, reading order, and figure alt text need a PDF remediation tool or a fix in the source document.');
+    const spec=[];
+    if(lib&&lib.isEncrypted){ctx.check();ctx.add({sev:'error',cat:'Security',title:'PDF is encrypted',where:'Document security settings',specialist:true,
+      why:'Some security settings stop screen readers from extracting text, and encrypted files cannot be repaired here.',how:'Remove the security restrictions in the authoring tool or Acrobat, then assess the file again.',wcag:'4.1.2 Name, Role, Value'});}
+    /* text availability */
+    const limit=Math.min(n,100);const empty=[];m.pages=[];
+    for(let i=1;i<=limit;i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();let s='';tc.items.forEach(it=>{s+=it.str+(it.hasEOL?'\n':' ');});m.pages.push(s);if(s.replace(/\s/g,'').length<20)empty.push(i);}
+    ctx.check(limit);
+    if(empty.length===limit) ctx.add({sev:'error',cat:'Text availability',weight:limit,specialist:true,title:'No selectable text found (scanned image)',where:'All pages',
+      why:'This PDF appears to be pictures of pages. Screen readers, search, translation, and text-to-speech find nothing to read.',
+      how:'Run optical character recognition (OCR) in Acrobat Pro (Scan & OCR > Recognize text) and check the result, or replace it with the original digital document.',wcag:'1.1.1 Non-text Content, 1.4.5 Images of Text'});
+    else if(empty.length) ctx.add({sev:'error',cat:'Text availability',weight:empty.length,specialist:true,title:`${plural(empty.length,'page')} with no selectable text`,where:'Pages '+empty.slice(0,25).join(', ')+(empty.length>25?'…':''),
+      why:'These pages are likely scanned images or contain only graphics. Their content is invisible to assistive technology.',how:'Run OCR on these pages, or confirm they are intentionally blank or image-only and add alt text.',wcag:'1.1.1 Non-text Content'});
+    if(n>limit)ctx.note(`Only the first ${limit} of ${n} pages were checked for text.`);
+    if(!lib){ctx.note('The file structure could not be read, so metadata checks were skipped.');return;}
+    /* metadata */
+    ctx.check();
+    const title=lib.getTitle();
+    if(!(title||'').trim()) ctx.add({sev:'error',cat:'Metadata',title:'Document title is missing',where:'Document properties',
+      why:'Screen readers and browsers announce the title. Without it, students hear only the file name.',how:'Add a descriptive title and show it in the window title bar.',wcag:'2.4.2 Page Titled',
+      repair:lib.isEncrypted?null:{kind:'text',label:'Document title',value:trunc(S.name.replace(/\.\w+$/,'').replace(/[_-]+/g,' '),80),apply:v=>lib.setTitle(v.trim(),{showInWindowTitleBar:true})}});
+    else{ctx.check();const vp=cat.lookup(P.PDFName.of('ViewerPreferences'));const ddt=vp&&vp.get&&vp.get(P.PDFName.of('DisplayDocTitle'));
+      if(String(ddt)!=='true')ctx.add({sev:'warning',cat:'Metadata',title:'Title is not shown in the title bar',where:'Initial view settings',
+        why:'Viewers show the file name instead of the title unless "Display document title" is turned on.',how:'Turn on Display Document Title.',wcag:'2.4.2 Page Titled',
+        repair:lib.isEncrypted?null:{kind:'auto',label:'Show the document title',apply:()=>lib.setTitle(title,{showInWindowTitleBar:true})}});}
+    ctx.check();
+    const langObj=cat.lookup(P.PDFName.of('Lang'));const lang=langObj?(langObj.decodeText?langObj.decodeText():String(langObj)):'';
+    if(!isLang(lang)) ctx.add({sev:'error',cat:'Metadata',title:'Document language is not set',where:'Document properties > Advanced',
+      why:'Screen readers need the language to pronounce text correctly.',how:'Set the document language, such as en-US.',wcag:'3.1.1 Language of Page',
+      repair:lib.isEncrypted?null:{kind:'text',label:'Language code',value:'en-US',apply:v=>lib.setLanguage(v.trim())}});
+    /* tags */
+    ctx.check();
+    let mark=null;try{mark=await pdf.getMarkInfo();}catch(e){}
+    const tagged=!!(cat.get(P.PDFName.of('StructTreeRoot')))&&(!mark||mark.Marked!==false);
+    if(!tagged){ctx.add({sev:'error',cat:'Tags and structure',weight:3,specialist:true,title:'PDF is not tagged',where:'Whole document',
+      why:'Tags tell screen readers what each piece of content is — heading, paragraph, list, table, figure — and the order to read it in. Untagged PDFs are read as one unstructured stream, if at all.',
+      how:'Best fix: open the source file (Word or PowerPoint), repair it, and re-export with "Document structure tags for accessibility" turned on. Otherwise, use Acrobat Pro: Accessibility > Autotag Document, then review tags and reading order.',wcag:'1.3.1 Info and Relationships, 1.3.2 Meaningful Sequence'});}
+    else{
+      const acc={roles:{},figNoAlt:[],tables:0,th:0};
+      const walk=(node,pg)=>{if(!node)return;if(node.role){acc.roles[node.role]=(acc.roles[node.role]||0)+1;if(node.role==='Figure'&&!(node.alt||'').trim())acc.figNoAlt.push(pg);if(node.role==='Table')acc.tables++;if(node.role==='TH')acc.th++;}(node.children||[]).forEach(c=>walk(c,pg));};
+      const sl=Math.min(n,60);
+      for(let i=1;i<=sl;i++){try{const pg=await pdf.getPage(i);walk(await pg.getStructTree(),i);}catch(e){}}
+      const headings=Object.keys(acc.roles).filter(r=>/^H\d?$/.test(r)).reduce((s,r)=>s+acc.roles[r],0);
+      ctx.check();
+      if(!headings&&n>2)ctx.add({sev:'warning',cat:'Tags and structure',specialist:true,title:'No heading tags found',where:`Pages 1–${sl}`,
+        why:'Without heading tags, students cannot jump between sections.',how:'Tag section titles as H1–H6 in Acrobat’s Tags panel, or apply heading styles in the source document and re-export.',wcag:'1.3.1 Info and Relationships'});
+      if(acc.figNoAlt.length){ctx.check(acc.figNoAlt.length);ctx.add({sev:'error',cat:'Image descriptions',weight:acc.figNoAlt.length,specialist:true,title:`${plural(acc.figNoAlt.length,'figure')} without alternate text`,where:'Pages '+[...new Set(acc.figNoAlt)].slice(0,25).join(', '),
+        why:'Figures without alternate text are skipped or announced only as "graphic".',how:'Add alt text in Acrobat (Accessibility > Set Alternate Text) or in the source document before exporting.',wcag:'1.1.1 Non-text Content'});}
+      if(acc.tables&&!acc.th){ctx.check();ctx.add({sev:'error',cat:'Tables',specialist:true,title:'Tables have no header cells',where:plural(acc.tables,'table'),
+        why:'Data tables need TH tags so screen readers can announce column headers.',how:'Use Acrobat’s Table Editor to mark header cells, or mark header rows in the source document.',wcag:'1.3.1 Info and Relationships'});}
+      ctx.add({sev:'tip',cat:'Tags and structure',title:'Verify the reading order',where:'Whole document',specialist:true,weight:0,
+        why:'Tags can exist but still be in the wrong order, especially in multi-column layouts, sidebars, and headers or footers.',how:'Check the order in Acrobat’s Reading Order tool or Tags panel, or test with a screen reader such as NVDA.',wcag:'1.3.2 Meaningful Sequence'});
+    }
+    /* bookmarks */
+    if(n>=10){ctx.check();let ol=null;try{ol=await pdf.getOutline();}catch(e){}
+      if(!ol||!ol.length)ctx.add({sev:'warning',cat:'Navigation',specialist:true,title:'Long document has no bookmarks',where:`${n} pages`,
+        why:'Bookmarks give everyone, and especially screen reader users, a fast way to move through long documents.',how:'Create bookmarks from headings in Acrobat, or turn on "Create bookmarks using headings" when exporting from Word.',wcag:'2.4.5 Multiple Ways'});}
+    /* form fields */
+    if(cat.get(P.PDFName.of('AcroForm'))&&!lib.isEncrypted){
+      let fields=[];try{fields=lib.getForm().getFields();}catch(e){}
+      fields.forEach(f=>{const dict=f.acroField.dict;const tu=dict.lookup(P.PDFName.of('TU'));ctx.check();
+        if(!tu||!(tu.decodeText?tu.decodeText():String(tu)).trim()){const nm=f.getName();
+          ctx.add({sev:'error',cat:'Form labels',title:'Form field has no description',where:`Field "${trunc(nm,50)}"`,
+            why:'Screen readers announce a field’s tooltip as its label. Without one, students hear the internal field name or nothing.',how:'Add a tooltip that says what to enter.',wcag:'1.3.1, 4.1.2 Name, Role, Value',
+            repair:{kind:'text',label:'Field description',value:nm.replace(/[_.]+/g,' '),apply:v=>dict.set(P.PDFName.of('TU'),P.PDFHexString.fromText(v.trim()))}});}});
+    }
+  },
+  outline(m){const b=[];const t=m.lib&&m.lib.getTitle();if(t)b.push({t:'h',l:1,x:t});
+    m.pages.forEach((s,i)=>{b.push({t:'h',l:2,x:'Page '+(i+1)});s.split(/\n\s*\n|\n/).map(x=>x.trim()).filter(Boolean).forEach(x=>b.push({t:'p',x}));});return b;}
+};
+const ENGINES={html:HTMLX,docx:DOCX,pptx:PPTX,pdf:PDFX};
+
+/* ===================== Runtime capabilities (downloads, tts) ===================== */
+let dlNS=null,ttsNS=null;
+if(window.claude&&typeof window.claude.use==='function'){
+  window.claude.use('downloads').then(n=>{dlNS=n;}).catch(()=>{});
+  window.claude.use('tts').then(n=>{ttsNS=n;}).catch(()=>{});
+}
+async function saveFile(filename,data){
+  if(dlNS){
+    try{await dlNS.save({filename,data});announce(filename+' saved.');}
+    catch(e){if(e&&e.code==='declined')announce('Download canceled.');else if(e&&e.code==='rate_limited')announce('A download prompt is already open.');else{announce('Download is not available here.');}}
+    return;
+  }
+  const blob=data instanceof Blob?data:new Blob([data]);const url=URL.createObjectURL(blob);
+  const a=el('a',{href:url,download:filename});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+  announce(filename+' downloaded.');
+}
+
+/* ===================== Workflow ===================== */
+function libsReady(kind){
+  if(kind==='docx'||kind==='pptx')return !!window.JSZip;
+  if(kind==='pdf')return !!(window.pdfjsLib&&window.PDFLib);
+  return true;
+}
+async function waitLibs(kind){for(let i=0;i<60&&!libsReady(kind);i++)await new Promise(r=>setTimeout(r,250));if(!libsReady(kind))throw new Error('The file readers did not load. Check your connection and reload the page.');
+  if(kind==='pdf'&&pdfjsLib.GlobalWorkerOptions&&!pdfjsLib.GlobalWorkerOptions.workerSrc)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+async function scanModel(){const ctx=makeCtx();await ENGINES[S.kind].scan(S.model,ctx);return {issues:ctx.issues,total:ctx.total,notes:ctx.notes,score:scoreOf(ctx)};}
+
+async function startAssessment(kind,name,data){
+  showBusy('Assessing '+name+'…');
+  try{
+    await waitLibs(kind);
+    S.kind=kind;S.name=name;S.log=[];S.after=null;S.rounds=0;S.filter='open';
+    S.model=await ENGINES[kind].load(data);
+    S.baseline=await scanModel();S.current=S.baseline;
+    go('assess');
+    announce(`Assessment complete. Score ${S.current.score}. ${plural(S.current.issues.length,'issue')} found.`);
+  }catch(e){console.error(e);S.kind=null;renderRail();renderUpload(e.message||'The file could not be read.');}
+}
+async function handleFile(file){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  const kind={html:'html',htm:'html',docx:'docx',pdf:'pdf',pptx:'pptx'}[ext];
+  if(!kind){renderUpload(ext==='doc'||ext==='ppt'?`Older .${ext} files can’t be read. Open the file in Office and save it as .${ext}x, then upload it again.`:'That file type isn’t supported. Upload a .html, .docx, .pdf, or .pptx file.');return;}
+  const data=kind==='html'?await file.text():await file.arrayBuffer();
+  startAssessment(kind,file.name,data);
+}
+async function reassess(){
+  showBusy('Rebuilding the repaired file and scanning it again…');
+  try{
+    const blob=await ENGINES[S.kind].export(S.model);
+    const data=S.kind==='html'?await blob.text():await blob.arrayBuffer();
+    S.model=await ENGINES[S.kind].load(data);
+    const r=await scanModel();S.rounds++;S.after=r;S.current=r;S.filter='open';
+    renderStep();
+    announce(`Reassessment complete. Score went from ${S.baseline.score} to ${r.score}.`);
+  }catch(e){console.error(e);$('#view').replaceChildren(el('div',{class:'error-box',role:'alert'},el('p',{text:'The repaired file could not be rebuilt: '+e.message})));}
+}
+function applyFix(issue,value,toggled){
+  try{issue.repair.apply(value,toggled);}catch(e){console.error(e);announce('That fix could not be applied.');return false;}
+  issue.status='fixed';
+  const action=issue.repair.kind==='auto'?issue.repair.label:issue.repair.kind==='choice'?`${issue.repair.label} ${(issue.repair.options.find(o=>o[0]===value)||[,value])[1]}`:toggled&&/decorative/i.test(issue.repair.toggle||'')?'Marked as decorative':toggled?`${issue.repair.label}: "${value}" (off-slide)`:`${issue.repair.label}: "${trunc(value,80)}"`;
+  issue.action=action;
+  S.log.push({cat:issue.cat,title:issue.title,where:issue.where,action,round:S.rounds});
+  return true;
+}
+
+/* ===================== Rendering ===================== */
+function go(step){S.step=step;renderRail();renderStep();const h=$('#stepTitle');h.focus();$('#main').scrollTop=0;}
+function renderRail(){
+  const ol=$('#steps');ol.replaceChildren();
+  const idx=STEPS.findIndex(s=>s.id===S.step);
+  STEPS.forEach((s,i)=>{
+    const locked=i>0&&!S.current;
+    const b=el('button',{type:'button','aria-current':s.id===S.step?'step':null,disabled:locked,class:i<idx&&!locked?'done':null,onclick:()=>go(s.id)},
+      el('span',{class:'num','aria-hidden':'true',text:String(i+1)}),el('span',{},el('b',{text:s.name}),el('small',{text:s.sub})));
+    if(locked)b.setAttribute('aria-describedby','lockedNote');
+    ol.append(el('li',{},b));
+  });
+  if(!$('#lockedNote'))document.body.append(el('span',{id:'lockedNote',class:'sr',text:'Available after you upload a file.'}));
+  const fc=$('#fileCard');
+  if(S.current){fc.hidden=false;fc.replaceChildren(el('div',{class:'fname',text:S.name}),el('div',{class:'ftype',text:KIND_LABEL[S.kind]}),
+    el('div',{class:'fscore'},el('strong',{text:String(S.current.score)}),el('span',{text:'accessibility score'})),
+    el('button',{class:'btn-ghost-rail',type:'button',onclick:()=>{S.current=null;S.baseline=null;S.kind=null;S.model=null;go('upload');}},'Start over with a new file'));}
+  else fc.hidden=true;
+}
+function renderStep(){
+  const i=STEPS.findIndex(s=>s.id===S.step);const s=STEPS[i];
+  $('#stepNo').textContent=`Step ${i+1} of ${STEPS.length}`;$('#stepTitle').textContent=s.title;$('#stepLede').textContent=s.lede;
+  document.title=s.title+' – Accessibility Repair Studio';
+  ({upload:()=>renderUpload(),assess:renderAssess,repair:renderRepair,reassess:renderReassess,download:renderDownload})[S.step]();
+}
+function showBusy(msg){$('#view').replaceChildren(el('div',{class:'busy',role:'status'},el('span',{class:'spinner','aria-hidden':'true'}),el('span',{text:msg})));}
+
+function renderUpload(err){
+  const v=$('#view');v.replaceChildren();
+  if(err)v.append(el('div',{class:'error-box',role:'alert'},el('p',{text:err})));
+  const input=el('input',{type:'file',id:'fileIn',accept:'.html,.htm,.docx,.pdf,.pptx',class:'sr',tabindex:'-1',onchange:e=>e.target.files[0]&&handleFile(e.target.files[0])});
+  const drop=el('div',{class:'drop'},
+    el('span',{class:'upicon','aria-hidden':'true'}),
+    el('p',{},el('b',{text:'Drag a file here'})),el('p',{class:'hint',text:'or'}),
+    el('label',{for:'fileIn',class:'btn',tabindex:'0',onkeydown:e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click();}}},'Choose a file'),input,
+    el('p',{class:'hint',text:'Accepted: .html, .docx, .pdf, .pptx'}));
+  drop.querySelector('.upicon').innerHTML='<svg width="48" height="48" viewBox="0 0 24 24" style="color:var(--green-ink)"><path d="M12 16V4m0 0l-4.5 4.5M12 4l4.5 4.5M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  ['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over');}));
+  ['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over');}));
+  drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)handleFile(f);});
+  v.append(drop);
+  v.append(el('div',{class:'types'},
+    ...[['HTML pages','Headings, image descriptions, links, tables, language, form labels, color contrast'],
+        ['Word documents','Structure, headings, image descriptions, table headers, document properties'],
+        ['PDFs','Text availability, metadata, tags, reading structure, form fields'],
+        ['PowerPoint','Slide titles, image descriptions, reading order, links, contrast']].map(([a,b])=>el('div',{class:'type'},el('b',{text:a}),el('span',{text:b})))));
+  v.append(el('h2',{text:'Paste a Canvas page'}));
+  v.append(el('p',{class:'hint',text:'In the Canvas page editor, select the HTML editor button (</>) at the bottom right, copy everything, and paste it here.'}));
+  const ta=el('textarea',{id:'pasteHTML','aria-describedby':'pasteHint'});
+  v.append(el('label',{class:'lbl',for:'pasteHTML',text:'Canvas page HTML'}),ta,el('p',{id:'pasteHint',class:'hint',text:'Repairs are returned as HTML you can paste back into the Canvas HTML editor.'}));
+  v.append(el('div',{class:'row'},
+    el('button',{class:'btn',type:'button',onclick:()=>{const t=ta.value.trim();if(!t){ta.focus();announce('Paste HTML first.');return;}startAssessment('html','canvas-page.html',t);}},'Assess pasted HTML'),
+    el('button',{class:'btn secondary',type:'button',onclick:()=>startAssessment('html','week-3-sample-page.html',SAMPLE())},'Try a sample Canvas page')));
+}
+
+function ring(score){
+  const r=56,c=2*Math.PI*r,off=c*(1-score/100);
+  const w=el('div',{class:'ring'});
+  w.innerHTML=`<svg width="144" height="144" viewBox="0 0 144 144" aria-hidden="true"><circle cx="72" cy="72" r="${r}" fill="none" stroke="var(--line)" stroke-width="14"/><circle cx="72" cy="72" r="${r}" fill="none" stroke="${score>=90?'var(--green)':score>=70?'#c98a00':'var(--err)'}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>`;
+  w.append(el('div',{class:'val'},el('div',{},el('strong',{text:String(score)}),el('span',{text:'out of 100'}))));
+  return w;
+}
+function countsFor(issues){
+  const open=issues.filter(i=>i.status!=='fixed');
+  return {err:open.filter(i=>i.sev==='error').length,warn:open.filter(i=>i.sev==='warning').length,tip:open.filter(i=>i.sev==='tip').length,
+    spec:open.filter(i=>i.specialist&&!i.repair).length,fix:open.filter(i=>i.repair).length,fixed:issues.filter(i=>i.status==='fixed').length,open:open.length};
+}
+function issueDetail(i){
+  const body=el('div',{class:'body'},
+    el('p',{class:'kv'},el('b',{text:'Why it matters: '}),i.why),
+    el('p',{class:'kv'},el('b',{text:'Recommended correction: '}),i.how),
+    i.wcag?el('p',{class:'kv'},el('b',{text:'WCAG 2.1 AA: '}),i.wcag):null,
+    i.preview?el('img',{class:'preview',src:i.preview,alt:'Preview of the image being described'}):null,
+    i.snippet?el('pre',{class:'snip'},el('code',{text:i.snippet})):null);
+  return body;
+}
+function badges(i){
+  return [el('span',{class:'badge '+i.sev,text:SEV_LABEL[i.sev]}),i.specialist&&!i.repair?el('span',{class:'badge spec',text:'Specialist'}):null,i.status==='fixed'?el('span',{class:'badge fixed',text:'Fixed'}):null];
+}
+function renderAssess(){
+  const v=$('#view');v.replaceChildren();const r=S.current;const c=countsFor(r.issues);
+  v.append(el('section',{class:'summary','aria-label':'Assessment summary'},ring(r.score),
+    el('div',{},el('p',{style:'margin:0 0 .8rem'},el('b',{text:S.name}),` · ${KIND_LABEL[S.kind]} · ${plural(r.total,'item')} checked`),
+      el('div',{class:'counts'},
+        el('div',{class:'count err'},el('strong',{text:String(c.err)}),el('span',{text:'Must fix'})),
+        el('div',{class:'count warn'},el('strong',{text:String(c.warn)}),el('span',{text:'Should fix'})),
+        el('div',{class:'count tip'},el('strong',{text:String(c.tip)}),el('span',{text:'Review'})),
+        el('div',{class:'count'},el('strong',{text:String(c.fix)}),el('span',{text:'Repairable here'})),
+        c.spec?el('div',{class:'count'},el('strong',{text:String(c.spec)}),el('span',{text:'Need specialist'})):null))));
+  r.notes.forEach(n=>v.append(el('div',{class:'info-box'},el('p',{text:n}))));
+  if(!r.issues.length){v.append(el('div',{class:'info-box'},el('p',{},el('b',{text:'No issues found. '}),'Automated checks catch many but not all barriers. Review meaning, reading order, and alt text quality by hand.')),el('div',{class:'row'},el('button',{class:'btn',type:'button',onclick:()=>go('download')},'Go to download')));return;}
+  const cats={};r.issues.forEach(i=>{(cats[i.cat]=cats[i.cat]||[]).push(i);});
+  v.append(el('h2',{text:'Issues by category'}));
+  const tb=el('tbody');
+  Object.entries(cats).forEach(([k,list])=>tb.append(el('tr',{},el('th',{scope:'row',text:k}),el('td',{class:'n',text:String(list.filter(i=>i.sev==='error').length)}),el('td',{class:'n',text:String(list.filter(i=>i.sev==='warning').length)}),el('td',{class:'n',text:String(list.filter(i=>i.repair).length)}))));
+  v.append(el('table',{class:'cats'},el('caption',{class:'sr',text:'Issue counts by category'}),el('thead',{},el('tr',{},el('th',{scope:'col',text:'Category'}),el('th',{scope:'col',text:'Must fix'}),el('th',{scope:'col',text:'Should fix'}),el('th',{scope:'col',text:'Repairable here'}))),tb));
+  v.append(el('div',{class:'row',style:'margin:1.2rem 0'},el('button',{class:'btn',type:'button',onclick:()=>go('repair')},'Start guided repairs')));
+  Object.entries(cats).forEach(([k,list])=>{
+    v.append(el('h2',{text:`${k} (${list.length})`}));
+    list.forEach(i=>v.append(el('details',{class:'issue'},el('summary',{},...badges(i),el('span',{class:'t',text:i.title}),el('span',{class:'w',text:i.where||''})),issueDetail(i))));
+  });
+}
+
+function fixControls(i,rerender){
+  const box=el('div',{class:'fix'});const r=i.repair;
+  if(i.status==='fixed'){box.append(el('p',{class:'fixed-note',text:'Fixed: '+(i.action||'')}));return box;}
+  if(!r){
+    box.append(el('p',{style:'margin:0'},el('b',{text:i.specialist?'Needs specialized remediation. ':'Review manually. '}),i.specialist?'This tool can’t make this change safely. Follow the recommended correction above.':'Check this in the source file.'));
+    return box;
+  }
+  const fid='fx-'+i.id;let input=null,tog=null,sel=null,col=null;
+  if(r.kind==='text'){
+    input=el('input',{type:'text',id:fid,value:r.value||'',placeholder:r.placeholder||'',autocomplete:'off'});
+    box.append(el('div',{class:'inline'},el('div',{},el('label',{class:'lbl',for:fid,text:r.label}),input)));
+    if(r.toggle){tog=el('input',{type:'checkbox',id:fid+'-t',onchange:()=>{if(/decorative/i.test(r.toggle))input.disabled=tog.checked;}});box.append(el('div',{class:'check'},tog,el('label',{for:fid+'-t',text:r.toggle})));}
+  } else if(r.kind==='choice'){
+    sel=el('select',{id:fid},...r.options.map(([v,t])=>el('option',{value:v,selected:v===r.value},t)));
+    box.append(el('div',{class:'inline'},el('div',{},el('label',{class:'lbl',for:fid,text:r.label}),sel)));
+  } else if(r.kind==='color'){
+    col=el('input',{type:'color',id:fid,value:r.value});
+    const out=el('output',{for:fid});
+    const prevText=el('span',{text:'Sample text',style:`padding:.2rem .5rem;background:${toHex(r.bg)};color:${r.value};border-radius:.2rem`});
+    const upd=()=>{const rt=cratio(fromHex(col.value),r.bg);out.textContent=`${rt.toFixed(2)}:1 ${rt>=r.need?'passes':'still too low'}`;out.className=rt>=r.need?'ratio-ok':'ratio-bad';prevText.style.color=col.value;};
+    col.addEventListener('input',upd);upd();
+    box.append(el('div',{class:'inline'},el('div',{},el('label',{class:'lbl',for:fid,text:r.label}),el('span',{class:'swatch'},col,prevText,out))));
+  }
+  const err=el('p',{class:'ratio-bad',role:'alert',style:'margin:0'});
+  const btn=el('button',{class:'btn',type:'button',onclick:()=>{
+    let val=null,t=tog?tog.checked:false;err.textContent='';
+    if(input){val=input.value.trim();if(!val&&!(t&&/decorative/i.test(r.toggle||''))){err.textContent='Enter '+r.label.toLowerCase()+' first.';input.focus();return;}}
+    if(sel)val=sel.value;
+    if(col){val=col.value;if(cratio(fromHex(val),r.bg)<r.need){err.textContent='That color still doesn’t meet the contrast requirement.';col.focus();return;}}
+    if(applyFix(i,val,t)){announce('Fixed: '+i.title);rerender(true);}
+  }},r.kind==='auto'?r.label:'Apply fix');
+  box.append(el('div',{class:'row'},btn),err);
+  return box;
+}
+function renderRepair(){
+  const v=$('#view');v.replaceChildren();const issues=S.current.issues;
+  if(!issues.length){v.append(el('div',{class:'info-box'},el('p',{text:'There are no issues to repair.'})),el('button',{class:'btn',type:'button',onclick:()=>go('download')},'Go to download'));return;}
+  const c=countsFor(issues);
+  const autos=issues.filter(i=>i.status!=='fixed'&&i.repair&&(i.repair.kind==='auto'||i.repair.kind==='color'));
+  const filters=[['open','Open',c.open],['fixable','Repairable here',c.fix],['specialist','Needs specialist',c.spec],['fixed','Fixed',c.fixed]];
+  const fs=el('fieldset',{class:'filters'},el('legend',{text:'Show'}),...filters.map(([k,t,n])=>el('label',{},el('input',{type:'radio',name:'flt',value:k,checked:S.filter===k,onchange:()=>{S.filter=k;renderRepair();$('input[name=flt]:checked').focus();}}),el('span',{text:`${t} (${n})`}))));
+  const pct=issues.length?Math.round(100*c.fixed/issues.length):0;
+  v.append(el('div',{class:'toolbar'},fs,
+    el('div',{class:'progress'},el('span',{id:'progLbl',text:`Fixed ${c.fixed} of ${issues.length}`}),el('div',{class:'bar',role:'progressbar','aria-labelledby':'progLbl','aria-valuemin':'0','aria-valuemax':'100','aria-valuenow':String(pct)},el('i',{style:`width:${pct}%`}))),
+    el('div',{class:'row'},
+      el('button',{class:'btn secondary',type:'button',disabled:!autos.length,onclick:()=>{let n=0;autos.forEach(i=>{if(applyFix(i,i.repair.value,false))n++;});announce(plural(n,'automatic fix')+' applied.');renderRepair();}},`Apply automatic fixes (${autos.length})`),
+      el('button',{class:'btn',type:'button',onclick:()=>{S.after=null;go('reassess');}},'Reassess'))));
+  const list=issues.filter(i=>S.filter==='open'?i.status!=='fixed':S.filter==='fixable'?i.status!=='fixed'&&i.repair:S.filter==='specialist'?i.status!=='fixed'&&i.specialist&&!i.repair:i.status==='fixed');
+  const specOpen=issues.filter(i=>i.specialist&&!i.repair&&i.status!=='fixed');
+  if(specOpen.length&&(S.filter==='specialist'||S.filter==='open')&&S.kind==='pdf')v.append(el('div',{class:'spec-box'},el('h2',{style:'margin-top:0',text:'Specialized PDF remediation'}),
+    el('p',{text:'The most reliable fix is usually in the source file. If you have the original Word or PowerPoint file, assess and repair it here, then export to PDF with accessibility tags turned on.'}),
+    el('ol',{},el('li',{text:'Word: File > Save As > PDF > Options > check "Document structure tags for accessibility" and "Create bookmarks using headings".'}),
+      el('li',{text:'Without a source file: in Acrobat Pro, open All tools > Prepare for accessibility, run Autotag, then fix reading order, figure alt text, and table headers.'}),
+      el('li',{text:'Verify the result with the free PDF Accessibility Checker (PAC) and a screen reader such as NVDA.'}))));
+  if(!list.length)v.append(el('p',{text:S.filter==='fixed'?'Nothing has been fixed yet.':'Nothing in this view. Choose another filter or reassess the file.'}));
+  list.forEach(i=>{
+    const card=el('article',{class:'card'+(i.status==='fixed'?' is-fixed':''),'data-sev':i.sev,'aria-labelledby':'h-'+i.id});
+    const fill=(after)=>{card.className='card'+(i.status==='fixed'?' is-fixed':'');card.replaceChildren(...[
+      el('header',{},...badges(i),el('h3',{id:'h-'+i.id,text:i.title}),el('span',{class:'where',text:`${i.cat}${i.where?' · '+i.where:''}`})),
+      el('p',{class:'why',text:i.why}),el('p',{class:'how'},el('b',{text:'Recommended correction: '}),i.how),
+      i.preview?el('img',{class:'preview',src:i.preview,alt:'The image that needs a description'}):null,
+      i.snippet?el('pre',{class:'snip'},el('code',{text:i.snippet})):null,
+      fixControls(i,a=>{fill(a);updateToolbar();})].filter(Boolean));
+      if(after){const n=card.querySelector('.fixed-note');if(n){n.tabIndex=-1;n.focus();}}};
+    fill(false);v.append(card);
+  });
+  function updateToolbar(){const c2=countsFor(issues);const p=Math.round(100*c2.fixed/issues.length);$('#progLbl').textContent=`Fixed ${c2.fixed} of ${issues.length}`;const bar=$('.progress .bar');bar.setAttribute('aria-valuenow',p);bar.firstChild.style.width=p+'%';renderRail();}
+}
+
+function renderReassess(){
+  const v=$('#view');
+  if(!S.after){reassess();return;}
+  v.replaceChildren();const a=S.after,b=S.baseline;
+  const before=b.issues.length,now=a.issues.length;
+  v.append(el('div',{class:'compare'},
+    el('div',{class:'box'},el('span',{text:'Original score'}),el('strong',{text:String(b.score)}),el('span',{text:plural(before,'issue')})),
+    el('div',{class:'box after'},el('span',{text:'Score after repairs'}),el('strong',{text:String(a.score)}),el('span',{text:plural(now,'issue')+' remaining'})),
+    el('div',{class:'box'},el('span',{text:'Repairs applied'}),el('strong',{text:String(S.log.length)}),el('span',{text:`over ${plural(S.rounds,'recheck')}`}))));
+  const c=countsFor(a.issues);
+  if(!now)v.append(el('div',{class:'info-box'},el('p',{},el('b',{text:'All automated checks pass. '}),'Finish with a quick manual review: read the alt text in context and confirm the reading order makes sense.')));
+  else v.append(el('p',{text:`${plural(c.fix,'remaining issue')} can be repaired here. ${c.spec?plural(c.spec,'issue')+' need specialized remediation. ':''}${c.tip?plural(c.tip,'item')+' should be reviewed by hand.':''}`}));
+  v.append(el('div',{class:'row',style:'margin:1rem 0'},c.fix?el('button',{class:'btn',type:'button',onclick:()=>go('repair')},'Continue repairs'):null,el('button',{class:c.fix?'btn secondary':'btn',type:'button',onclick:()=>go('download')},'Go to download')));
+  if(now){v.append(el('h2',{text:'Remaining issues'}));a.issues.forEach(i=>v.append(el('details',{class:'issue'},el('summary',{},...badges(i),el('span',{class:'t',text:i.title}),el('span',{class:'w',text:`${i.cat} · ${i.where||''}`})),issueDetail(i))));}
+}
+
+function outName(suffix,ext){const base=S.name.replace(/\.\w+$/,'');return `${base}${suffix}.${ext}`;}
+function blocksToText(bl){return bl.map(b=>b.t==='h'?'\n'+b.x.trim().toUpperCase()+'\n':b.t==='img'?`[Image: ${b.x.trim()}]`:b.t==='li'?'• '+b.x.trim():b.t==='table'?b.rows.map(r=>r.join(' | ')).join('\n'):b.x.trim()).join('\n').replace(/\n{3,}/g,'\n\n').trim()+'\n';}
+function blocksToHTML(bl,title){
+  let out='',inList=false;
+  bl.forEach(b=>{if(b.t!=='li'&&inList){out+='</ul>\n';inList=false;}
+    if(b.t==='h')out+=`<h${b.l}>${escHTML(b.x.trim())}</h${b.l}>\n`;
+    else if(b.t==='li'){if(!inList){out+='<ul>\n';inList=true;}out+=`<li>${escHTML(b.x.trim())}</li>\n`;}
+    else if(b.t==='img')out+=`<p class="img"><span>Image:</span> ${escHTML(b.x.trim())}</p>\n`;
+    else if(b.t==='table'){out+='<div class="t"><table>\n';b.rows.forEach((r,i)=>{out+='<tr>'+r.map(c=>i===0?`<th scope="col">${escHTML(c)}</th>`:`<td>${escHTML(c)}</td>`).join('')+'</tr>\n';});out+='</table></div>\n';}
+    else out+=`<p>${escHTML(b.x.trim())}</p>\n`;});
+  if(inList)out+='</ul>\n';
+  if(!/^<h1/.test(out))out=`<h1>${escHTML(title)}</h1>\n`+out;
+  return `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${escHTML(title)}</title>\n<style>body{font-family:"Atkinson Hyperlegible",Verdana,sans-serif;font-size:1.25rem;line-height:1.7;max-width:42rem;margin:2rem auto;padding:0 1rem;color:#000;background:#fff}h1,h2,h3{line-height:1.25}.img{border-left:4px solid #006b45;padding-left:.8rem}.img span{font-weight:700}.t{overflow-x:auto}table{border-collapse:collapse}th,td{border:1px solid #444;padding:.4rem .6rem;text-align:left}@media (prefers-color-scheme:dark){body{background:#000;color:#fff}th,td{border-color:#aaa}.img{border-color:#4fd6a0}}</style>\n</head>\n<body>\n<main>\n${out}</main>\n</body>\n</html>\n`;
+}
+let speaking=false;
+function renderDownload(){
+  const v=$('#view');v.replaceChildren();const ext=S.kind==='html'?(S.name.match(/\.htm$/i)?'htm':'html'):S.kind;
+  const docTitle=S.name.replace(/\.\w+$/,'').replace(/[_-]+/g,' ');
+  if(S.log.length&&!S.after)v.append(el('div',{class:'info-box'},el('p',{},`You have ${plural(S.log.length,'repair')} that haven’t been rechecked. `,el('button',{class:'btn secondary',type:'button',style:'margin-left:.4rem',onclick:()=>{S.after=null;go('reassess');}},'Reassess first'))));
+  const ext2=ext==='htm'?'html':ext;
+  const mk3=(title,desc,btnLabel,fn)=>el('section',{},el('h3',{text:title}),el('p',{text:desc}),el('button',{class:'btn',type:'button',onclick:fn},btnLabel));
+  v.append(el('h2',{text:'Repaired file'}));
+  v.append(el('div',{class:'dl'},
+    mk3(S.name.replace(/\.\w+$/,'')+'-accessible.'+ext2,S.kind==='html'?(S.model.fragment?'HTML to paste back into the Canvas HTML editor.':'The corrected HTML page.'):S.kind==='pdf'?'Metadata, language, and form field repairs. Tag-level issues still need remediation.':'Supported corrections saved in the original format.',
+      'Download repaired file',async()=>{const b=await ENGINES[S.kind].export(S.model);saveFile(outName('-accessible',ext2),b);}),
+    mk3('Assessment report (CSV)','Every issue with its location, status, WCAG reference, and recommended correction.','Download report',()=>saveFile(outName('-accessibility-report','csv'),reportCSV())),
+    S.kind==='html'&&S.model.fragment?mk3('Copy repaired HTML','Copies the repaired page HTML for pasting into Canvas.','Copy HTML',async()=>{try{await navigator.clipboard.writeText(HTMLX.serialize(S.model,false));announce('Repaired HTML copied.');}catch(e){announce('Copy failed. Use Download repaired file instead.');}}):null));
+  v.append(el('h2',{text:'Alternative formats for students'}));
+  v.append(el('p',{class:'hint',text:'Alternative formats are generated from the repaired content, including headings, image descriptions, and table headers.'}));
+  const blocks=()=>ENGINES[S.kind].outline(S.model);
+  const play=el('button',{class:'btn',type:'button','aria-pressed':'false'},'Read aloud');
+  play.addEventListener('click',()=>toggleSpeech(blocks,play));
+  const canSpeak=ttsNS||('speechSynthesis' in window);
+  v.append(el('div',{class:'dl'},
+    mk3('Plain text','Works with any device, Braille display, or translation tool.','Download text',()=>saveFile(outName('-text','txt'),blocksToText(blocks()))),
+    mk3('Readable HTML','Large, high-legibility text that reflows on phones and adapts to dark mode.','Download HTML',()=>saveFile(outName('-readable','html'),blocksToHTML(blocks(),docTitle))),
+    canSpeak?el('section',{},el('h3',{text:'Audio'}),el('p',{text:'Listen to the content, with image descriptions read in place.'}),play):null));
+  if(S.log.length){v.append(el('h2',{text:'Repair log'}));v.append(el('ol',{class:'log'},...S.log.map(l=>el('li',{},el('b',{text:l.cat+': '}),`${l.action}`,l.where?` (${trunc(l.where,70)})`:''))));}
+}
+function toggleSpeech(blocks,btn){
+  const set=on=>{speaking=on;btn.textContent=on?'Stop reading':'Read aloud';btn.setAttribute('aria-pressed',String(on));};
+  if(speaking){if(ttsNS)ttsNS.stop();else speechSynthesis.cancel();set(false);return;}
+  const text=blocksToText(blocks()).split(/\n+/).map(s=>s.replace(/^• /,'').trim()).filter(Boolean);
+  const lines=[];let cur='';text.forEach(t=>{if((cur+' '+t).length>1500){if(cur)lines.push(cur);cur=t.slice(0,1900);}else cur=cur?cur+'\n'+t:t;});if(cur)lines.push(cur);
+  set(true);
+  if(ttsNS){ttsNS.speak(lines.slice(0,60).map(t=>({text:t}))).then(()=>set(false)).catch(()=>set(false));return;}
+  speechSynthesis.cancel();lines.forEach((t,i)=>{const u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(i===lines.length-1)u.onend=()=>set(false);speechSynthesis.speak(u);});
+}
+function reportCSV(){
+  const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+  const rows=[['File','Type','Original score','Current score'].map(q).join(','),[S.name,KIND_LABEL[S.kind],S.baseline.score,S.current.score].map(q).join(','),'',
+    ['Severity','Category','Issue','Location','Status','WCAG','Recommended correction','Repair applied'].map(q).join(',')];
+  const seen=new Set();
+  S.baseline.issues.forEach(i=>{seen.add(i.cat+i.title+i.where);rows.push([SEV_LABEL[i.sev]+(i.specialist&&!i.repair?' (specialist)':''),i.cat,i.title,i.where,i.status==='fixed'?'Fixed':(S.after&&!S.after.issues.some(x=>x.cat===i.cat&&x.title===i.title&&x.where===i.where))?'Resolved':'Open',i.wcag,i.how,i.action||''].map(q).join(','));});
+  if(S.after&&S.after!==S.baseline)S.after.issues.forEach(i=>{if(!seen.has(i.cat+i.title+i.where))rows.push([SEV_LABEL[i.sev],i.cat,i.title,i.where,i.status==='fixed'?'Fixed':'Open',i.wcag,i.how,i.action||''].map(q).join(','));});
+  return rows.join('\r\n');
+}
+
+/* ===================== Sample ===================== */
+function SAMPLE(){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="420" height="160" viewBox="0 0 420 160"><rect width="420" height="160" fill="#fff"/><rect x="10" y="55" width="100" height="50" rx="6" fill="#dfe7ff" stroke="#000"/><text x="60" y="85" font-size="14" text-anchor="middle" font-family="sans-serif">Internet</text><rect x="160" y="40" width="100" height="80" rx="6" fill="#ffe3d6" stroke="#000"/><text x="210" y="85" font-size="14" text-anchor="middle" font-family="sans-serif">Firewall</text><rect x="310" y="20" width="100" height="45" rx="6" fill="#d9f1e5" stroke="#000"/><text x="360" y="47" font-size="14" text-anchor="middle" font-family="sans-serif">DMZ</text><rect x="310" y="95" width="100" height="45" rx="6" fill="#d9f1e5" stroke="#000"/><text x="360" y="122" font-size="14" text-anchor="middle" font-family="sans-serif">Internal LAN</text><path d="M110 80h50M260 70l50-25M260 90l50 25" stroke="#000" stroke-width="2"/></svg>`;
+  const uri='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  return `<h1>Week 3: Securing the Network Perimeter</h1>
+<p>This week we examine how firewalls, segmentation, and monitoring work together to protect an organization's network.</p>
+<p><strong>Learning objectives</strong></p>
+<ul><li>Compare stateful and stateless firewalls</li><li>Design a DMZ for public-facing services</li><li>Write a basic firewall rule set</li></ul>
+<h4>Required reading</h4>
+<p>Read chapter 7 in the textbook. For the vendor configuration guide, <a href="https://www.example.edu/firewall-guide.pdf">click here</a>.</p>
+<p>Lab instructions: <a href="https://www.example.edu/labs/week3/perimeter-lab-instructions-v2.docx">https://www.example.edu/labs/week3/perimeter-lab-instructions-v2.docx</a></p>
+<p><img src="${uri}" width="420" height="160"></p>
+<p><a href="https://www.example.edu/labs"><img src="lab-portal-button.png"></a></p>
+<p><img src="IMG_2041.jpg" alt="IMG_2041.jpg"></p>
+<h2>Port reference</h2>
+<table border="1"><tr><td>Port</td><td>Service</td><td>Protocol</td></tr><tr><td>22</td><td>SSH</td><td>TCP</td></tr><tr><td>53</td><td>DNS</td><td>TCP/UDP</td></tr><tr><td>443</td><td>HTTPS</td><td>TCP</td></tr></table>
+<p style="color:#9ad3b8">Reminder: Quiz 3 closes Sunday at 11:59 p.m. Late submissions are not accepted.</p>
+<h3>Check your understanding</h3>
+<p>Which port does HTTPS use by default? <input type="text" name="q1"></p>`;
+}
+
+renderRail();renderStep();
+</script>
+</body>
+</html>
