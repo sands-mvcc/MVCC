@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speech GPS: Map Your Speech Route</title>
+<style>
+:root{
+  --app:#e8eaed; --surface:#ffffff; --surface-2:#f1f3f4; --surface-3:#e8f0fe;
+  --text:#202124; --text-2:#5f6368; --line:#dadce0;
+  --accent:#1a73e8; --accent-text:#1a73e8; --accent-weak:#e8f0fe; --on-accent:#ffffff;
+  --land:#f3f1ec; --block:#e8e5de; --park:#c5e5c3; --water:#a9d3f0; --road:#ffffff; --road-c:#d8d3c9;
+  --art:#ffffff; --art-c:#cbc5b8; --hw:#fde293; --hw-c:#efc35a; --area-lbl:#5f7a60; --water-lbl:#2f6a99;
+  --route:#1a73e8; --route-c:#174ea6;
+  --t-ok:#1e8e3e; --t-tip:#1e8e3e; --t-warn:#f29900; --t-crit:#d93025;
+  --ok-text:#137333; --warn-text:#a35200; --crit-text:#c5221f; --ok-bg:#e6f4ea; --warn-bg:#fef7e0; --crit-bg:#fce8e6;
+  --pin:#ea4335; --pin-c:#a50e0e; --end:#202124; --origin-ring:#202124;
+  --label:#202124; --halo:#ffffff;
+  --poi-visual:#8430ce; --poi-quote:#c5590a; --poi-stat:#0f7f8c; --poi-story:#c2185b; --haz:#fbbc04;
+  --nav:#137333; --nav-2:#0d5226;
+  --c-intro:#34a853; --c-p1:#1a73e8; --c-p2:#4f8ff0; --c-concl:#ea4335;
+  --shadow:0 1px 2px rgba(60,64,67,.3),0 2px 6px 2px rgba(60,64,67,.15);
+  --shadow-sm:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
+  --panel-w:408px;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --app:#202124; --surface:#202124; --surface-2:#303134; --surface-3:#2a3550;
+    --text:#e8eaed; --text-2:#bdc1c6; --line:#3c4043;
+    --accent:#8ab4f8; --accent-text:#8ab4f8; --accent-weak:#2a3550; --on-accent:#202124;
+    --land:#242f3e; --block:#2b3748; --park:#25423f; --water:#17263c; --road:#3a4452; --road-c:#1d2531;
+    --art:#4a5566; --art-c:#1d2531; --hw:#7a6a4f; --hw-c:#1d2531; --area-lbl:#8fb89a; --water-lbl:#7ea9d8;
+    --route:#669df6; --route-c:#0b3d91;
+    --t-ok:#34a853; --t-tip:#34a853; --t-warn:#fbbc04; --t-crit:#f28b82;
+    --ok-text:#81c995; --warn-text:#fdd663; --crit-text:#f28b82; --ok-bg:#1e3a2a; --warn-bg:#3d3418; --crit-bg:#45201d;
+    --label:#e8eaed; --halo:#242f3e; --end:#e8eaed; --origin-ring:#e8eaed;
+    --nav:#1e7b3c; --nav-2:#0f4d24;
+    --shadow:0 1px 3px rgba(0,0,0,.6),0 4px 8px 3px rgba(0,0,0,.3);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.6),0 1px 3px 1px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --app:#202124; --surface:#202124; --surface-2:#303134; --surface-3:#2a3550;
+  --text:#e8eaed; --text-2:#bdc1c6; --line:#3c4043;
+  --accent:#8ab4f8; --accent-text:#8ab4f8; --accent-weak:#2a3550; --on-accent:#202124;
+  --land:#242f3e; --block:#2b3748; --park:#25423f; --water:#17263c; --road:#3a4452; --road-c:#1d2531;
+  --art:#4a5566; --art-c:#1d2531; --hw:#7a6a4f; --hw-c:#1d2531; --area-lbl:#8fb89a; --water-lbl:#7ea9d8;
+  --route:#669df6; --route-c:#0b3d91;
+  --t-ok:#34a853; --t-tip:#34a853; --t-warn:#fbbc04; --t-crit:#f28b82;
+  --ok-text:#81c995; --warn-text:#fdd663; --crit-text:#f28b82; --ok-bg:#1e3a2a; --warn-bg:#3d3418; --crit-bg:#45201d;
+  --label:#e8eaed; --halo:#242f3e; --end:#e8eaed; --origin-ring:#e8eaed;
+  --nav:#1e7b3c; --nav-2:#0f4d24;
+  --shadow:0 1px 3px rgba(0,0,0,.6),0 4px 8px 3px rgba(0,0,0,.3);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.6),0 1px 3px 1px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{position:relative;overflow:hidden;background:var(--app);color:var(--text);
+  font-family:"Google Sans",Roboto,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic .f{fill:currentColor;stroke:none}
+
+.app{position:absolute;inset:0;overflow:hidden}
+.map{position:absolute;inset:0}
+#svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#svg.dragging{cursor:grabbing}
+#svg:focus-visible{outline-offset:-4px}
+
+/* base map */
+.land{fill:var(--land)} .block{fill:var(--block)} .park{fill:var(--park)}
+.river{fill:none;stroke:var(--water);stroke-width:78;stroke-linecap:round}
+.st-c{fill:none;stroke:var(--road-c);stroke-width:12} .st{fill:none;stroke:var(--road);stroke-width:8}
+.art-c{fill:none;stroke:var(--art-c);stroke-width:19} .art{fill:none;stroke:var(--art);stroke-width:14}
+.hw-c{fill:none;stroke:var(--hw-c);stroke-width:28;stroke-linecap:round} .hw{fill:none;stroke:var(--hw);stroke-width:20;stroke-linecap:round}
+.area-lbl{fill:var(--area-lbl);font-size:24px;font-style:italic;font-weight:500;paint-order:stroke;stroke:var(--land);stroke-width:4px;pointer-events:none}
+.water-lbl{fill:var(--water-lbl);font-size:24px;font-style:italic;pointer-events:none}
+.street-lbl{fill:var(--text-2);font-size:20px;paint-order:stroke;stroke:var(--road);stroke-width:5px;pointer-events:none;font-weight:500}
+
+/* route */
+.rt-c{fill:none;stroke:var(--route-c);stroke-width:11;stroke-linecap:round;stroke-linejoin:round}
+.rt{fill:none;stroke:var(--route);stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+
+/* markers */
+.mk{cursor:pointer;outline:none}
+.mk .lbl{font-size:13px;font-weight:600;fill:var(--label);paint-order:stroke;stroke:var(--halo);stroke-width:3.5px;stroke-linejoin:round}
+.mk-poi .lbl,.mk-tr .lbl,.mk-hz .lbl{display:none;font-weight:500}
+.mk:hover .lbl,.mk:focus-visible .lbl,.mk.sel .lbl{display:block}
+.mk:focus-visible .ring{stroke:var(--accent);stroke-width:3;fill:none}
+.mk .ring{fill:none;stroke:none}
+.mk.sel .sc>.body{transform:scale(1.22)}
+.mk .body{transition:transform .15s}
+.hide-stops .mk-stop,.hide-pois .mk-poi,.hide-trans .mk-tr,.hide-haz .mk-hz{display:none}
+
+/* floating search */
+.search{position:absolute;top:12px;left:12px;width:calc(var(--panel-w) - 24px);height:48px;z-index:20;background:var(--surface);
+  border-radius:24px;box-shadow:var(--shadow);display:flex;align-items:center;padding:0 8px 0 4px;gap:4px}
+.search input{flex:1;min-width:0;border:0;background:transparent;height:44px;font-size:15px;outline:none}
+.search input:focus-visible{outline:none}
+.search:focus-within{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
+.search .ic{color:var(--text-2)}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;color:var(--text-2)}
+.icon-btn:hover{background:var(--surface-2)}
+.q-results{position:absolute;top:52px;left:0;right:0;background:var(--surface);border-radius:12px;box-shadow:var(--shadow);padding:6px 0;max-height:320px;overflow:auto}
+.q-results button{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:9px 16px}
+.q-results button:hover,.q-results button:focus-visible{background:var(--surface-2);outline:none}
+.q-results .qr-t{display:block;font-weight:500}
+.q-results .qr-s{display:block;color:var(--text-2);font-size:12px}
+.q-results .empty{padding:10px 16px;color:var(--text-2)}
+
+/* chips */
+.chips{position:absolute;top:14px;left:calc(var(--panel-w) + 12px);right:150px;z-index:15;display:flex;gap:8px;flex-wrap:wrap;transition:left .25s}
+.chip{height:32px;border-radius:16px;border:0;background:var(--surface);box-shadow:var(--shadow-sm);padding:0 12px 0 10px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--text)}
+.chip .ic{width:18px;height:18px}
+.chip[aria-pressed="true"]{background:var(--accent-weak);color:var(--accent-text)}
+.chip[aria-pressed="false"] .ic{opacity:.6}
+.chip:hover{filter:brightness(.97)}
+
+.theme-btn{position:absolute;top:12px;right:12px;z-index:20;height:40px;border-radius:20px;border:0;background:var(--surface);box-shadow:var(--shadow);
+  display:inline-flex;align-items:center;gap:8px;padding:0 14px 0 10px;font-weight:500;color:var(--text)}
+.theme-btn .ic{color:var(--accent-text)}
+
+/* panel */
+.panel{position:absolute;left:0;top:0;bottom:0;width:var(--panel-w);z-index:10;background:var(--surface);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;padding-top:72px;transition:transform .25s}
+.app.panel-off .panel{transform:translateX(-100%)}
+.app.panel-off .chips{left:12px}
+.app.panel-off .search{box-shadow:var(--shadow)}
+.panel-toggle{position:absolute;z-index:11;left:var(--panel-w);top:50%;transform:translateY(-50%);width:23px;height:48px;border:0;border-radius:0 8px 8px 0;
+  background:var(--surface);box-shadow:var(--shadow-sm);display:grid;place-items:center;color:var(--text-2);transition:left .25s}
+.app.panel-off .panel-toggle{left:0}
+.app.panel-off .panel-toggle .ic{transform:rotate(180deg)}
+.sheet-handle{display:none}
+.ph{padding:6px 24px 4px}
+.ph h1{font-size:22px;line-height:1.25;font-weight:400;margin:0 0 2px;overflow-wrap:anywhere}
+.ph-sub{margin:0;color:var(--text-2);font-size:14px}
+.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;margin-top:6px}
+.tab{flex:1;border:0;background:none;padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:500;
+  color:var(--text-2);border-bottom:3px solid transparent;position:relative;min-width:0}
+.tab[aria-selected="true"]{color:var(--accent-text);border-bottom-color:var(--accent)}
+.tab:hover{background:var(--surface-2)}
+.tab .badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:var(--t-crit);color:#fff;font-size:11px;line-height:18px;text-align:center;padding:0 5px}
+:root[data-theme="dark"] .tab .badge{color:#202124}
+.panel-body{flex:1;overflow:auto;padding:16px 24px 32px;overscroll-behavior:contain}
+.panel-body h2{font-size:16px;font-weight:500;margin:0 0 4px}
+.panel-body h3{font-size:14px;font-weight:500;margin:0 0 4px}
+.lead{color:var(--text-2);margin:0 0 14px}
+.sec{padding:16px 0;border-top:1px solid var(--line)}
+.sec:first-child{border-top:0;padding-top:0}
+.help{color:var(--text-2);font-size:13px;margin:0 0 6px}
+.credit{color:var(--text-2);font-size:12px;margin-top:18px}
+
+/* fields */
+.fld{margin:12px 0}
+.fld label,.lbl-txt{display:block;font-weight:500;margin-bottom:4px}
+.fld textarea,.fld input,.fld select{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:8px 10px;line-height:1.4}
+.fld textarea{resize:vertical;min-height:44px}
+.fld textarea:focus,.fld input:focus,.fld select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.fld.inline{display:flex;align-items:center;gap:10px}
+.fld.inline label{margin:0;flex:1}
+.fld.inline input{width:90px}
+.meter{margin:4px 0 0;font-size:12px;display:flex}
+.meter span{display:inline-flex;gap:5px;align-items:flex-start}
+.meter .ic{width:15px;height:15px;margin-top:1px}
+.m-ok{color:var(--ok-text)} .m-warn{color:var(--warn-text)} .m-crit{color:var(--crit-text)} .m-empty{color:var(--text-2)}
+.check{display:flex;gap:12px;align-items:flex-start;padding:8px 0}
+.check input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--accent);flex:none}
+.q4{margin:14px 0;padding-left:14px;border-left:3px solid var(--line)}
+.q4 .fld{margin:6px 0 0}
+
+/* buttons */
+.btn{height:36px;border-radius:18px;border:1px solid var(--line);background:var(--surface);padding:0 16px;font-weight:500;color:var(--accent-text);display:inline-flex;align-items:center;gap:8px}
+.btn:hover{background:var(--accent-weak)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--crit-text)}
+.btn .ic{width:18px;height:18px}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.link-btn{border:0;background:none;color:var(--accent-text);font-weight:500;padding:6px 0;text-align:left}
+.link-btn:hover{text-decoration:underline}
+.banner{background:var(--accent-weak);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+.banner p{margin:0 0 8px}
+
+/* route list */
+.rl{list-style:none;margin:0;padding:0;position:relative}
+.rl::before{content:"";position:absolute;left:13px;top:20px;bottom:24px;border-left:2px dotted var(--text-2);opacity:.55}
+.rl>li{position:relative;display:flex;gap:14px;align-items:flex-start;padding:4px 0}
+.dot{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;position:relative;z-index:1;margin-top:6px}
+.dot-start{background:var(--surface);border:4px solid var(--origin-ring)}
+.dot-pin{background:var(--pin);color:#fff}
+.dot-end{background:var(--pin-c);color:#fff}
+.dot-end .ic{width:16px;height:16px}
+.dot-add{background:var(--surface);border:2px solid var(--line);color:var(--text-2)}
+.dot-add .ic{width:16px;height:16px}
+.rl-main{flex:1;min-width:0;border-bottom:1px solid var(--line);padding-bottom:4px}
+.rl-head{width:100%;border:0;background:none;text-align:left;padding:8px 0;display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:center}
+.rl-head:hover .rl-title{color:var(--accent-text)}
+.rl-title{font-size:15px;font-weight:500;overflow-wrap:anywhere}
+.rl-meta{grid-column:1;color:var(--text-2);font-size:13px}
+.rl-sev{grid-column:2;grid-row:1 / span 2}
+.rl-body{padding:0 0 14px}
+.rl-add{align-items:center!important}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sev{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;border-radius:12px;padding:2px 8px}
+.sev .ic{width:14px;height:14px}
+.sev-ok{background:var(--ok-bg);color:var(--ok-text)} .sev-warn{background:var(--warn-bg);color:var(--warn-text)} .sev-crit{background:var(--crit-bg);color:var(--crit-text)}
+
+.poi-block{margin:16px 0 4px;padding:12px;border-radius:12px;background:var(--surface-2)}
+.poi-ed{border:1px solid var(--line);border-radius:10px;padding:4px 12px 10px;margin:10px 0;background:var(--surface)}
+.poi-ed legend{display:flex;gap:6px;align-items:center;font-weight:500;padding:0 4px}
+.poi-ed .fld{margin:8px 0}
+.poi-ed .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.poi-add{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.poi-add .btn{height:32px;padding:0 12px 0 10px;font-size:13px}
+.qprev{font-size:12px;color:var(--text-2);margin:6px 0 0}
+.qprev b{color:var(--text);font-weight:500}
+.tag{width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;flex:none}
+.tag .ic{width:15px;height:15px}
+.tag.visual{background:var(--poi-visual)} .tag.quote{background:var(--poi-quote)} .tag.stat{background:var(--poi-stat)} .tag.story{background:var(--poi-story)}
+.tag.haz{background:var(--haz);color:#202124;border-radius:4px;transform:rotate(45deg)} .tag.haz .ic{transform:rotate(-45deg)}
+.tag.turn{background:var(--surface);color:var(--text);border:2px solid var(--route)}
+
+/* directions */
+.dir-sum{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.dir-sum .big{font-size:28px;color:var(--ok-text);font-weight:400}
+.dir-sum .big.over{color:var(--crit-text)}
+.tbar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:10px 0 6px;background:var(--surface-2)}
+.tbar span{display:block;height:100%}
+.tleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--text-2);margin:0 0 6px;padding:0;list-style:none}
+.tleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.steps{list-style:none;padding:0;margin:8px 0 0}
+.step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.step-ic{flex:none;width:32px;display:grid;justify-items:center;color:var(--text)}
+.step-ic .ic{width:24px;height:24px}
+.step-main{flex:1;min-width:0}
+.step-t{border:0;background:none;padding:0;text-align:left;font-size:15px;font-weight:500;color:var(--text)}
+.step-t:hover{color:var(--accent-text);text-decoration:underline}
+.step ul{margin:4px 0 0;padding:0;list-style:none;color:var(--text-2)}
+.step ul li{padding:1px 0}
+.step-time{flex:none;color:var(--text-2);font-size:13px;font-variant-numeric:tabular-nums}
+.sub-poi{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:13px;color:var(--text)}
+.sub-poi .tag{width:22px;height:22px} .sub-poi .tag .ic{width:13px;height:13px}
+.empty-txt{color:var(--text-2);font-style:italic}
+
+/* check */
+.score{display:flex;gap:16px;align-items:center;margin-bottom:8px}
+.ring-wrap{position:relative;width:84px;height:84px;flex:none}
+.ring-wrap svg{width:84px;height:84px;transform:rotate(-90deg)}
+.ring-wrap .num{position:absolute;inset:0;display:grid;place-items:center;font-size:22px;font-weight:500}
+.iss-group{margin:14px 0 6px}
+.iss-group h3{display:flex;gap:8px;align-items:center}
+.iss{display:flex;gap:10px;width:100%;text-align:left;border:0;background:none;padding:9px 8px;border-radius:8px;align-items:flex-start}
+.iss:hover{background:var(--surface-2)}
+.iss .ic{width:18px;height:18px;margin-top:1px}
+.iss.crit .ic{color:var(--crit-text)} .iss.warn .ic{color:var(--warn-text)} .iss.tip .ic{color:var(--accent-text)}
+.iss small{display:block;color:var(--accent-text);font-weight:500}
+.haz-ed{border:1px solid var(--line);border-radius:10px;padding:4px 12px 10px;margin:10px 0}
+.reh{list-style:none;padding:0;margin:8px 0}
+.reh li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+
+/* place card */
+.place-hero{height:120px;margin:-16px -24px 14px;display:flex;align-items:flex-end;padding:14px 24px;color:#fff;position:relative}
+.place-hero .big-ic{position:absolute;right:20px;top:18px;width:84px;height:84px;opacity:.28}
+.place-hero .big-ic .ic{width:84px;height:84px;stroke-width:1.5}
+.place-hero .back{position:absolute;left:12px;top:10px;background:rgba(0,0,0,.28);color:#fff;border:0;border-radius:18px;height:34px;padding:0 12px 0 8px;display:inline-flex;gap:4px;align-items:center;font-weight:500}
+.place-hero .kicker{font-size:13px;font-weight:500;opacity:.95}
+.hero-start{background:#1e7b3c} .hero-pin{background:#c5221f} .hero-end{background:#5f2120}
+.hero-visual{background:var(--poi-visual)} .hero-quote{background:#a84a07} .hero-stat{background:var(--poi-stat)} .hero-story{background:var(--poi-story)}
+.hero-haz{background:#8a5a00} .hero-tr{background:#174ea6}
+.place-title{font-size:22px;font-weight:400;margin:0 0 2px}
+.acts{display:flex;justify-content:space-around;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:6px}
+.act{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--accent-text);font-size:12px;font-weight:500;min-width:64px}
+.act span.c{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center}
+.act:hover span.c{background:var(--accent-weak)}
+.act.primary span.c{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.prow{display:flex;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.prow>.ic{color:var(--accent-text);margin-top:1px}
+.prow ul{margin:0;padding:0;list-style:none}
+.prow .k{color:var(--text-2);font-size:12px;display:block}
+
+/* trip card */
+.trip-card{position:absolute;z-index:12;bottom:22px;left:calc(var(--panel-w) + (100% - var(--panel-w)) / 2);transform:translateX(-50%);
+  background:var(--surface);border-radius:28px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;padding:8px 8px 8px 22px;white-space:nowrap;transition:left .25s}
+.app.panel-off .trip-card{left:50%}
+.trip-card .tt{font-size:18px;color:var(--ok-text)} .trip-card .tt.over{color:var(--crit-text)}
+.trip-card .ts{color:var(--text-2);font-size:13px}
+.start-btn{height:40px;border-radius:20px;border:0;background:var(--accent);color:var(--on-accent);padding:0 18px 0 14px;font-weight:500;display:inline-flex;align-items:center;gap:8px}
+.start-btn:hover{filter:brightness(1.07)}
+
+/* map controls */
+.map-ctrls{position:absolute;right:12px;bottom:24px;z-index:12;display:flex;flex-direction:column;gap:10px;align-items:center}
+.zoom{display:flex;flex-direction:column;background:var(--surface);border-radius:8px;box-shadow:var(--shadow-sm);overflow:hidden}
+.zoom button,.fab{width:40px;height:40px;border:0;background:var(--surface);display:grid;place-items:center;color:var(--text-2)}
+.zoom button+button{border-top:1px solid var(--line)}
+.zoom button:hover,.fab:hover{background:var(--surface-2);color:var(--text)}
+.fab{border-radius:50%;box-shadow:var(--shadow-sm)}
+
+/* nav (rehearsal) */
+.nav{position:absolute;inset:0;z-index:30;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between}
+.nav>*{pointer-events:auto}
+.nav-top{padding:12px;max-width:620px;width:100%}
+.nav-banner{background:var(--nav);color:#fff;border-radius:12px 12px 0 0;padding:14px 18px;display:flex;gap:16px;box-shadow:var(--shadow)}
+.nav-banner:last-child{border-radius:12px}
+.nav-ic .ic{width:44px;height:44px;stroke-width:2.4}
+.nav-title{font-size:22px;font-weight:500;margin:2px 0 6px;line-height:1.25}
+.nav-keys{margin:0;padding:0;list-style:none;font-size:19px;line-height:1.4}
+.nav-keys li{padding:2px 0}
+.nav-keys li::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;opacity:.8;margin:0 10px 3px 0}
+.nav-then{background:var(--nav-2);color:#fff;border-radius:0 0 12px 12px;padding:8px 18px;display:flex;gap:8px;align-items:center;font-weight:500;width:max-content;max-width:100%;box-shadow:var(--shadow)}
+.nav-then .ic{width:18px;height:18px}
+.nav-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.nav-chip{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);border-radius:18px;padding:6px 12px 6px 6px;display:inline-flex;gap:8px;align-items:center;font-size:14px;font-weight:500}
+.nav-bottom{background:var(--surface);box-shadow:var(--shadow);border-radius:16px 16px 0 0;padding:14px 20px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.nav-time{display:flex;flex-direction:column;min-width:120px}
+.nav-el{font-size:30px;font-weight:500;font-variant-numeric:tabular-nums;color:var(--ok-text)}
+.nav-el.slow{color:var(--warn-text)} .nav-el.over{color:var(--crit-text)}
+.nav-stat{font-size:13px;color:var(--text-2)}
+.nav-info{flex:1;min-width:180px;color:var(--text-2)}
+.nav-info b{color:var(--text);font-weight:500}
+.nav-btns{display:flex;gap:8px;align-items:center}
+.nav-btns .btn{height:44px;border-radius:22px}
+.nav-end{background:var(--crit-text)!important;border-color:var(--crit-text)!important;color:var(--surface)!important}
+.app.navving .panel,.app.navving .panel-toggle,.app.navving .search,.app.navving .chips,.app.navving .trip-card{display:none}
+.app.navving .map-ctrls{bottom:120px}
+
+/* toast */
+.toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:#323232;color:#fff;padding:12px 18px;border-radius:8px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+/* dialogs */
+dialog{border:0;border-radius:16px;padding:0;background:var(--surface);color:var(--text);box-shadow:var(--shadow);width:min(680px,94vw);max-height:88vh}
+dialog::backdrop{background:rgba(32,33,36,.5)}
+.dlg-h{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px 24px;position:sticky;top:0;background:var(--surface)}
+.dlg-h h2{margin:0;font-size:20px;font-weight:400}
+.dlg-b{padding:0 24px 24px}
+.dlg-b h3{font-size:15px;font-weight:500;margin:18px 0 6px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cmp>div{border-radius:12px;padding:12px 14px}
+.cmp .old{background:var(--crit-bg)} .cmp .new{background:var(--ok-bg)}
+.cmp h4{margin:0 0 6px;font-size:14px;font-weight:500;display:flex;gap:6px;align-items:center}
+.cmp ul{margin:0;padding-left:18px}
+.legend{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.legend li{display:flex;gap:10px;align-items:center}
+.lg-pin{width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--pin);flex:none}
+.lg-start{width:20px;height:20px;border-radius:50%;border:4px solid var(--origin-ring);flex:none}
+.lg-line{width:26px;height:6px;border-radius:3px;flex:none}
+.howto{margin:0;padding-left:20px}
+.howto li{margin:4px 0}
+.quote-ex{border-radius:10px;padding:10px 12px;margin:6px 0;font-size:13px}
+.sheet-txt{width:100%;min-height:340px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface-2);color:var(--text)}
+#print{display:none}
+
+/* mobile: bottom sheet */
+@media (max-width:760px){
+  .search{left:12px;right:64px;width:auto}
+  .theme-btn{width:44px;height:44px;padding:0;justify-content:center;border-radius:50%}
+  .theme-btn .theme-lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .chips{top:68px;left:12px!important;right:0;flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+  .chip{flex:none}
+  .panel{top:auto;left:0;right:0;width:auto;height:var(--sheet-h);border-radius:16px 16px 0 0;padding-top:0;transition:height .25s}
+  .app{--sheet-h:46%}
+  .app[data-sheet="peek"]{--sheet-h:150px}
+  .app[data-sheet="full"]{--sheet-h:86%}
+  .app.panel-off .panel{transform:none}
+  .panel-toggle,.trip-card{display:none}
+  .sheet-handle{display:block;border:0;background:none;width:100%;height:24px;flex:none;padding:0}
+  .sheet-handle span{display:block;width:36px;height:4px;border-radius:2px;background:var(--line);margin:10px auto}
+  .ph{padding:0 20px}
+  .panel-body{padding:14px 20px 28px}
+  .place-hero{margin:-14px -20px 14px}
+  .map-ctrls{bottom:calc(var(--sheet-h) + 12px)}
+  .nav-title{font-size:19px} .nav-keys{font-size:17px}
+  .nav-bottom{gap:10px}
+  .legend,.cmp{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  :root{padding:0}
+  html,body{height:auto;overflow:visible;background:#fff;color:#000}
+  .app,dialog{display:none!important}
+  #print{display:block;font-family:Arial,sans-serif;font-size:12pt;color:#000;padding:0.4in}
+  #print h1{font-size:18pt;margin:0 0 4pt} #print h2{font-size:13pt;margin:12pt 0 3pt;border-bottom:1px solid #999}
+  #print ul{margin:2pt 0 2pt 0;padding-left:16pt} #print p{margin:2pt 0}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app" data-sheet="half">
+  <div class="map" id="map">
+    <svg id="svg" tabindex="0" role="application" aria-label="Speech route map. Drag or use arrow keys to move, plus and minus keys to zoom. Select a marker to see its details." xmlns="http://www.w3.org/2000/svg">
+      <g id="base"></g><g id="route"></g><g id="streetlbl"></g><g id="markers"></g>
+    </svg>
+  </div>
+
+  <div class="search" role="search">
+    <button class="icon-btn" data-action="help" aria-label="How Speech GPS works and map legend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <label for="q" class="sr">Search your speech route</label>
+    <input id="q" type="text" placeholder="Search your speech route" autocomplete="off" role="combobox" aria-controls="q-results" aria-expanded="false" aria-autocomplete="list">
+    <svg class="ic" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:6px"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+    <div id="q-results" class="q-results" role="listbox" aria-label="Matching stops" hidden></div>
+  </div>
+
+  <div class="chips" id="chips" role="group" aria-label="Map layers"></div>
+  <button class="theme-btn" id="theme-btn" data-action="theme" aria-label="Switch to dark mode"></button>
+
+  <aside class="panel" id="panel" aria-label="Trip planner">
+    <button class="sheet-handle" data-action="sheet-cycle" aria-label="Resize the planner sheet"><span></span></button>
+    <div id="panel-head"></div>
+    <div id="panel-tabs" class="tabs" role="tablist" aria-label="Planner sections"></div>
+    <div id="panel-body" class="panel-body" role="tabpanel" tabindex="-1"></div>
+  </aside>
+  <button class="panel-toggle" id="panel-toggle" data-action="panel-toggle" aria-label="Hide the planner" aria-expanded="true"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+
+  <div class="map-ctrls">
+    <button class="fab" data-action="fit" aria-label="Show the whole route"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg></button>
+    <div class="zoom">
+      <button data-action="zoom-in" aria-label="Zoom in"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button data-action="zoom-out" aria-label="Zoom out"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+    </div>
+  </div>
+
+  <div class="trip-card" id="trip-card"></div>
+  <div class="nav" id="nav" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<dialog id="dlg-help" aria-labelledby="help-title">
+  <div class="dlg-h"><h2 id="help-title">How Speech GPS works</h2><button class="icon-btn" data-close aria-label="Close"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="dlg-b">
+    <p>Your outline is a GPS for your speech. Use this tool after you have your outline and research. It turns them into a route you can see, check, and rehearse.</p>
+    <h3>Old GPS versus modern GPS</h3>
+    <div class="cmp">
+      <div class="old"><h4>Printed directions = manuscript outline</h4><ul><li>Fully written, word for word</li><li>Eyes off the road</li><li>Driving distraction</li></ul></div>
+      <div class="new"><h4>Modern GPS = keyword outline</h4><ul><li>More graphics, fewer words</li><li>Eyes on the road</li><li>Less distraction</li></ul></div>
+    </div>
+    <p>The same rules apply to your outline: fewer words, more images, never read word for word, keep eye contact and move about, and use a conversational style.</p>
+    <h3>Plan your trip in four steps</h3>
+    <ol class="howto">
+      <li><b>Plan:</b> set your destination (what the audience will remember) and finish the pre-trip check.</li>
+      <li><b>Route:</b> start with your introduction, add each main point as a stop, add points of interest, and signal every turn with a transition.</li>
+      <li><b>Road check:</b> fix red closures and orange slowdowns. Long lines mean your eyes leave the road.</li>
+      <li><b>Directions:</b> press Start to rehearse with turn-by-turn prompts and a timer. Arrow keys, Space, or a presentation clicker move to the next turn.</li>
+    </ol>
+    <h3>Quotations: less is more</h3>
+    <p>You can say more than the audience sees. Put only the key words on your card.</p>
+    <div class="quote-ex" style="background:var(--ok-bg)"><b>On your card:</b> Dr. David Stout, BCC Pres. “Brookdale committed: affordable/accessible education. All Mon Cty residents” Brookdalecc.edu 11/26</div>
+    <div class="quote-ex" style="background:var(--crit-bg)"><b>Not on your card:</b> the full sentence, word for word, with the full web address and update date.</div>
+    <h3>Map legend</h3>
+    <ul class="legend">
+      <li><span class="lg-start"></span>Start: your introduction</li>
+      <li><span class="lg-pin"></span>Numbered stop: a main point</li>
+      <li><span class="tag turn"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20v-7a3 3 0 0 1 3-3h7"/><path d="M14 6l4 4-4 4"/></svg></span>Turn: a transition</li>
+      <li><span class="tag visual"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l2-3h4l2 3"/></svg></span>Scenic view: a visual aid</li>
+      <li><span class="tag quote"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H10l-6 4z"/></svg></span>Landmark: a quotation</li>
+      <li><span class="tag stat"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-7"/></svg></span>Evidence: a fact or statistic</li>
+      <li><span class="tag story"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z"/></svg></span>Story or example</li>
+      <li><span class="tag haz"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/></svg></span>Challenge ahead: your backup plan</li>
+      <li><span class="lg-line" style="background:var(--t-ok)"></span>Road clear</li>
+      <li><span class="lg-line" style="background:var(--t-warn)"></span>Slow traffic: something to fix</li>
+      <li><span class="lg-line" style="background:var(--t-crit)"></span>Road closed: must fix</li>
+    </ul>
+    <p class="credit">Adapted from “Outlines: Personal GPS for Speaking” by Professor Barbara Baron, Brookdale Community College.</p>
+    <div class="btn-row"><button class="btn primary" data-close>Plan my route</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-sheet" aria-labelledby="sheet-title">
+  <div class="dlg-h"><h2 id="sheet-title">Trip sheet: your keyword outline</h2><button class="icon-btn" data-close aria-label="Close"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="dlg-b">
+    <p class="help">This is your speaking outline in GPS order. Copy it into your notes or print it for the podium.</p>
+    <label for="sheet-txt" class="sr">Trip sheet text</label>
+    <textarea id="sheet-txt" class="sheet-txt" readonly></textarea>
+    <div class="btn-row"><button class="btn primary" data-action="copy-sheet">Copy trip sheet</button><button class="btn" data-action="print">Print trip sheet</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-confirm" aria-labelledby="cf-title">
+  <div class="dlg-b" style="padding-top:20px"><h2 id="cf-title" style="font-size:18px;font-weight:400;margin:0 0 8px">Are you sure?</h2><p id="cf-msg"></p>
+    <div class="btn-row" style="justify-content:flex-end"><button class="btn" id="cf-no">Cancel</button><button class="btn primary" id="cf-yes">Confirm</button></div></div>
+</dialog>
+
+<div id="print"></div>
+
+<script>
+(() => {
+'use strict';
+const W = 2400, H = 1500, G = 120;
+const KEY = 'speechgps-v1', TKEY = 'speechgps-theme', HKEY = 'speechgps-helped';
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+};
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 9);
+const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
+const wc = s => (String(s || '').trim().match(/\S+/g) || []).length;
+const num = v => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; };
+const fmtSec = sec => { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+const fmt = min => fmtSec(min * 60);
+const trunc = (s, n=34) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = () => matchMedia('(max-width: 760px)').matches;
+
+/* ---------- icons ---------- */
+const ICONS = {
+  search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  trash:'<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',
+  up:'<path d="M6 14l6-6 6 6"/>', down:'<path d="M6 10l6 6 6-6"/>',
+  back:'<path d="M15 6l-6 6 6 6"/>', fwd:'<path d="M9 6l6 6-6 6"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  left:'<path d="M16 20v-7a3 3 0 0 0-3-3H6"/><path d="M10 6l-4 4 4 4"/>',
+  right:'<path d="M8 20v-7a3 3 0 0 1 3-3h7"/><path d="M14 6l4 4-4 4"/>',
+  straight:'<path d="M12 20V5"/><path d="M7 10l5-5 5 5"/>',
+  start:'<circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8"/>',
+  pin:'<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  flag:'<path d="M6 21V4"/><path d="M6 4h11l-2 4 2 4H6"/>',
+  nav:'<path class="f" d="M12 2.5l7.5 18.5-7.5-4.2-7.5 4.2z"/>',
+  camera:'<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l2-3h4l2 3"/>',
+  quote:'<path d="M4 5h16v11H10l-6 4z"/>',
+  chart:'<path d="M5 20V11M12 20V4M19 20v-7"/>',
+  book:'<path d="M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z"/>',
+  warning:'<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.2v.3"/>',
+  bang:'<path d="M12 8v5M12 16.5v.5"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>',
+  moon:'<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  people:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14c2.7 0 4.5 2 4.5 5"/>',
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  route:'<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/>',
+  turn:'<path d="M12 2.5l9.5 9.5-9.5 9.5L2.5 12z"/><path d="M9 15v-2.5a2 2 0 0 1 2-2h4"/><path d="M13 8.5l2 2-2 2"/>',
+  play:'<path class="f" d="M7 4.5l13 7.5-13 7.5z"/>',
+  pause:'<path d="M8 5v14M16 5v14"/>',
+  stop:'<rect class="f" x="6" y="6" width="12" height="12" rx="1.5"/>',
+  print:'<path d="M7 8V3h10v5"/><path d="M7 17H4v-7h16v7h-3"/><path d="M7 14h10v7H7z"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+  doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  layers:'<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  traffic:'<rect x="8" y="2.5" width="8" height="19" rx="3"/><circle cx="12" cy="7" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="17" r="1.4"/>',
+  scale:'<path d="M12 4v16M5 20h14M6 8h12M6 8l-3 6h6zM18 8l-3 6h6z"/>'
+};
+const icon = (n, c='') => `<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[n] || ''}</svg>`;
+
+const POI = {
+  visual:{ name:'Visual aid', map:'Scenic view', icon:'camera', hint:'What will the audience see? A slide, prop, or image.' },
+  quote:{ name:'Quotation', map:'Landmark quote', icon:'quote', hint:'Key words only. You can say more than they see.' },
+  stat:{ name:'Evidence', map:'Evidence', icon:'chart', hint:'A statistic or finding in keywords, with its source.' },
+  story:{ name:'Story or example', map:'Story', icon:'book', hint:'A short cue that reminds you of the story.' }
+};
+const HAZ = { tech:'Technology fails', nerves:'Nerves or a blank moment', time:'Running long', question:'Tough audience question', room:'Distraction in the room', other:'Other challenge' };
+const CHECK = [
+  { k:'topic', label:'Approved, researched topic' },
+  { k:'outline', label:'Complete outline with quotations' },
+  { k:'visuals', label:'Visual components ready (props or slides)' },
+  { k:'rehearse', label:'Time set aside for full rehearsals' }
+];
+const PURPOSE = { inform:'Informative', persuade:'Persuasive', demo:'Demonstration', special:'Special occasion' };
+
+/* ---------- state ---------- */
+const blankPoint = () => ({ id:uid(), title:'', keywords:'', minutes:1.25, transition:'', pois:[] });
+const blankPoi = type => ({ id:uid(), type, label:'', detail:'', speaker:'', credential:'', source:'', date:'' });
+function blankState(){
+  return { v:1, sample:false,
+    meta:{ title:'', speaker:'', purpose:'inform', audience:'', limit:5, reason:'', learn:'', takeaway:'' },
+    checklist:{ topic:false, outline:false, visuals:false, rehearse:false },
+    intro:{ attention:'', reason:'', credibility:'', preview:'', minutes:0.75 },
+    points:[blankPoint(), blankPoint(), blankPoint()],
+    conclusion:{ review:'', clincher:'', minutes:0.5 },
+    hazards:[], rehearsals:[] };
+}
+function sampleState(){
+  const P = (title, keywords, minutes, transition, pois) => ({ id:uid(), title, keywords, minutes, transition, pois:pois.map(p => Object.assign(blankPoi(p.type), p)) });
+  const pts = [
+    P('Classroom problem', 'Phone confiscated mid-lesson\nSame phone needed for assignment\nRules differ class to class', 1.1,
+      'So why does this keep happening?', [{ type:'visual', label:'Photo: phone basket by the classroom door', detail:'Show while describing the hook story' }]),
+    P('Causes', 'Notifications built to grab attention\nNo shared school policy\nStudents never taught phone habits', 1.2,
+      'Now that we know the causes, what can schools do?', [{ type:'stat', label:'Systematic review findings on phone bans', source:'Campbell Systematic Reviews', date:'2024' }]),
+    P('Solutions', 'Clear school-wide policy\nPhone parking during tests\nTeach digital responsibility', 1.3,
+      'Of course, not everyone agrees.', [{ type:'visual', label:'Slide: three-part policy graphic', detail:'Click to slide 3 on “Clear policy”' }, { type:'story', label:'My cousin’s school: phones as calculators' }]),
+    P('Opposition', '“Ban them all” argument\nSome people believe that phones should be completely banned from every classroom because they distract students.\nBans don’t teach habits', 1.0,
+      'Let’s look back at the road we traveled.', [])
+  ];
+  return { v:1, sample:true,
+    meta:{ title:'Phones in the Classroom', speaker:'', purpose:'persuade', audience:'Classmates', limit:6,
+      reason:'Every student deals with phone rules', learn:'Why bans fail and what works better', takeaway:'Teach responsible phone use instead of banning phones' },
+    checklist:{ topic:true, outline:true, visuals:true, rehearse:false },
+    intro:{ attention:'Phone confiscated\nNeeded for assignment?\nEveryday classroom reality',
+      reason:'Every high school student affected\nTechnology in every career\nEducation changing\nDigital learning increasing',
+      credibility:'Campbell Systematic Reviews (2024)\nEducation Sciences (2024)\nEducation & Information Technologies (2025)\nProQuest (2024)',
+      preview:'Classroom problem\nCauses\nSolutions\nOpposition', minutes:0.8 },
+    points:pts,
+    conclusion:{ review:'Problem, causes, solutions, opposition', clincher:'Phones in pockets, learning in hand', minutes:0.6 },
+    hazards:[ { id:uid(), type:'tech', at:pts[2].id, plan:'Slides fail: describe the graphic and keep driving' }, { id:uid(), type:'time', at:'end', plan:'Running long: cut the story at Solutions' } ],
+    rehearsals:[] };
+}
+function normalize(s){
+  const b = blankState();
+  if (!s || typeof s !== 'object' || !s.meta) return null;
+  const out = Object.assign({}, b, s);
+  ['meta','checklist','intro','conclusion'].forEach(k => out[k] = Object.assign({}, b[k], s[k] || {}));
+  out.points = (Array.isArray(s.points) ? s.points : []).map(p => Object.assign(blankPoint(), p, { pois:(p.pois || []).map(q => Object.assign(blankPoi(q.type || 'visual'), q)) }));
+  out.hazards = Array.isArray(s.hazards) ? s.hazards.map(h => Object.assign({ id:uid(), type:'other', at:'start', plan:'' }, h)) : [];
+  out.rehearsals = Array.isArray(s.rehearsals) ? s.rehearsals : [];
+  return out;
+}
+let S = null;
+try { S = normalize(JSON.parse(store.get(KEY))); } catch(e) { S = null; }
+if (!S) S = sampleState();
+const UI = { tab:'plan', open:'start', place:null, hl:null, panel:true,
+  layers:{ stops:true, pois:true, trans:true, haz:true, traffic:true } };
+
+let saveT = null;
+function save(){ clearTimeout(saveT); saveT = setTimeout(() => store.set(KEY, JSON.stringify(S)), 250); }
+
+/* ---------- analysis ---------- */
+const findPoint = id => S.points.find(p => p.id === id);
+const pointIndex = id => S.points.findIndex(p => p.id === id);
+const stopName = id => id === 'start' ? 'Introduction' : id === 'end' ? 'Conclusion' : (() => { const i = pointIndex(id); return i < 0 ? '' : (S.points[i].title || `Main point ${i+1}`); })();
+function times(){
+  const intro = num(S.intro.minutes), concl = num(S.conclusion.minutes);
+  const pts = S.points.reduce((a, p) => a + num(p.minutes), 0);
+  return { intro, concl, pts, total:intro + concl + pts };
+}
+let ISS = [];
+function analyze(){
+  const I = [];
+  const add = (sev, stop, msg, o={}) => I.push(Object.assign({ sev, stop, msg }, o));
+  const lineCheck = (text, max, stop, label, o={}) => lines(text).forEach(l => {
+    const n = wc(l);
+    if (n >= max + 5 || (n > max && /[.!?]$/.test(l))) add('crit', stop, `${label}: “${trunc(l, 40)}” reads like a manuscript (${n} words). Eyes off the road.`, o);
+    else if (n > max) add('warn', stop, `${label}: one line has ${n} words. Trim it to keywords.`, o);
+  });
+  const m = S.meta;
+  if (!m.title.trim()) add('warn', 'start', 'Name your trip: add a speech title.', { tab:'plan' });
+  if (!m.takeaway.trim()) add('crit', 'end', 'No destination set. What should the audience remember?', { tab:'plan' });
+  [['attention','Attention grab'],['reason','Reason to listen'],['credibility','Credibility'],['preview','Preview']].forEach(([k, l]) => {
+    if (!lines(S.intro[k]).length) add('crit', 'start', `Introduction is missing: ${l.toLowerCase()}.`);
+    else lineCheck(S.intro[k], k === 'credibility' ? 12 : 9, 'start', l);
+  });
+  const pv = lines(S.intro.preview).length;
+  if (pv && S.points.length && pv !== S.points.length) add('warn', 'start', `Your preview lists ${pv} stops, but the route has ${S.points.length} main points.`);
+  if (S.points.length < 2) add('warn', null, 'Add at least two main points to build a route.', { tab:'route' });
+  if (S.points.length > 5) add('warn', null, 'More than five main points makes a long trip. Combine some stops.', { tab:'route' });
+  S.points.forEach((p, i) => {
+    const nm = `Point ${i+1}`;
+    if (!p.title.trim()) add('warn', p.id, `${nm} needs a street name (a short title).`);
+    if (!lines(p.keywords).length) add('crit', p.id, `${nm} has no keywords yet.`);
+    else lineCheck(p.keywords, 9, p.id, nm);
+    if (!p.pois.length) add('warn', p.id, `${nm} has no points of interest. Add a visual, quotation, evidence, or story.`);
+    p.pois.forEach(q => {
+      if (q.type === 'quote'){
+        const miss = [];
+        if (!q.speaker.trim()) miss.push('who said it');
+        if (!q.credential.trim()) miss.push('their credentials');
+        if (!q.source.trim()) miss.push('the source');
+        if (!q.date.trim()) miss.push('the date');
+        if (!q.label.trim()) miss.push('the key words');
+        if (miss.length) add('warn', p.id, `Quotation on ${nm} is missing ${miss.join(', ')}.`);
+        if (wc(q.label) > 15) add('warn', p.id, `Quotation on ${nm} has ${wc(q.label)} words. Less is more: keep only key words.`);
+      } else {
+        if (!q.label.trim()) add('warn', p.id, `A ${POI[q.type].name.toLowerCase()} on ${nm} is blank.`);
+        else if (wc(q.label) > 14) add('warn', p.id, `A ${POI[q.type].name.toLowerCase()} on ${nm} is wordy. Shorten it to a cue.`);
+        if (q.type === 'stat' && !q.source.trim()) add('warn', p.id, `Evidence on ${nm} needs a source.`);
+      }
+    });
+    const nextName = i === S.points.length - 1 ? 'the conclusion' : `point ${i+2}`;
+    if (!p.transition.trim()) add('warn', p.id, `No turn signal after ${nm}. Write a transition to ${nextName}.`, { trans:true });
+    else if (wc(p.transition) > 18) add('warn', p.id, `The transition after ${nm} is long. Aim for one short sentence.`, { trans:true });
+  });
+  if (!lines(S.conclusion.review).length) add('crit', 'end', 'Conclusion needs a review of your main points.');
+  else lineCheck(S.conclusion.review, 10, 'end', 'Review');
+  if (!lines(S.conclusion.clincher).length) add('warn', 'end', 'Add a memorable final line (your clincher).');
+  else lineCheck(S.conclusion.clincher, 15, 'end', 'Final line');
+  const t = times(), lim = num(m.limit);
+  if (lim){
+    if (t.total > lim * 1.1) add('crit', null, `Planned trip is ${fmt(t.total)}, over your ${fmt(lim)} time limit.`, { tab:'directions' });
+    else if (t.total < lim * 0.75) add('warn', null, `Planned trip is ${fmt(t.total)}, well under your ${fmt(lim)} time limit.`, { tab:'directions' });
+  }
+  if (t.total && t.intro / t.total > 0.2) add('warn', 'start', 'Introduction uses more than 20% of your time.');
+  if (t.total && t.concl / t.total > 0.15) add('warn', 'end', 'Conclusion uses more than 15% of your time.');
+  const pm = S.points.map(p => num(p.minutes)).filter(Boolean);
+  if (pm.length > 1 && Math.max(...pm) > 2.5 * Math.min(...pm)) add('warn', null, 'Main points are unbalanced: one stop is far longer than another.', { tab:'directions' });
+  CHECK.forEach(c => { if (!S.checklist[c.k]) add('warn', null, `Pre-trip check: “${c.label}” is not confirmed.`, { tab:'plan' }); });
+  if (!S.hazards.length) add('tip', null, 'Plan for challenges ahead: add at least one backup plan.', { tab:'check', anchor:'haz' });
+  if (!S.rehearsals.length) add('tip', null, 'No rehearsals logged yet. Press Start to practice with the timer.', { tab:'directions' });
+  ISS = I;
+  return I;
+}
+const sevRank = { ok:0, tip:0, warn:1, crit:2 };
+function worst(list){ let w = 'ok'; list.forEach(i => { if (sevRank[i.sev] > sevRank[w]) w = i.sev; }); return w; }
+const stopSev = id => worst(ISS.filter(i => i.stop === id));
+function score(){
+  const c = ISS.filter(i => i.sev === 'crit').length, w = ISS.filter(i => i.sev === 'warn').length, t = ISS.filter(i => i.sev === 'tip').length;
+  return Math.max(0, Math.min(100, 100 - c * 12 - w * 5 - t * 2));
+}
+
+/* ---------- layout ---------- */
+const snap = v => Math.round(v / G) * G;
+function stopSeq(){ return [{ id:'start' }].concat(S.points.map(p => ({ id:p.id })), [{ id:'end' }]); }
+let LAY = null, MPOS = {};
+function layout(){
+  const seq = stopSeq(), n = seq.length, pos = {};
+  const ys = [900, 540, 1020, 420, 780, 1140, 600];
+  seq.forEach((s, i) => { pos[s.id] = { x: snap(240 + i * (W - 480) / (n - 1)), y: ys[i % ys.length] }; });
+  const segs = [];
+  for (let i = 0; i < n - 1; i++){
+    const a = pos[seq[i].id], b = pos[seq[i+1].id];
+    let pts, turn = null, mid;
+    if (a.y === b.y){ pts = [a, b]; mid = { x:(a.x + b.x) / 2, y:a.y }; }
+    else {
+      let xm = snap((a.x + b.x) / 2);
+      if (xm <= a.x || xm >= b.x) xm = (a.x + b.x) / 2;
+      pts = [a, { x:xm, y:a.y }, { x:xm, y:b.y }, b];
+      turn = b.y < a.y ? 'left' : 'right';
+      mid = { x:xm, y:(a.y + b.y) / 2 };
+    }
+    segs.push({ i, from:seq[i].id, to:seq[i+1].id, pts, turn, mid });
+  }
+  return { seq, pos, segs };
+}
+function rpath(p, r=40){
+  if (p.length < 3) return `M${p[0].x} ${p[0].y}L${p[1].x} ${p[1].y}`;
+  const d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const tow = (a, b, t) => { const L = d2(a, b) || 1; return { x:a.x + (b.x - a.x) * t / L, y:a.y + (b.y - a.y) * t / L }; };
+  let d = `M${p[0].x} ${p[0].y}`;
+  for (let i = 1; i < p.length - 1; i++){
+    const a = p[i-1], b = p[i], c = p[i+1];
+    const rr = Math.min(r, d2(a, b) / 2, d2(b, c) / 2);
+    const p1 = tow(b, a, rr), p2 = tow(b, c, rr);
+    d += `L${p1.x} ${p1.y}Q${b.x} ${b.y} ${p2.x} ${p2.y}`;
+  }
+  const l = p[p.length - 1];
+  return d + `L${l.x} ${l.y}`;
+}
+function segSev(g){ return worst(ISS.filter(i => i.stop === g.to || (i.trans && i.stop === g.from))); }
+
+/* ---------- base map ---------- */
+function buildBase(){
+  let s = `<rect class="land" x="-3000" y="-3000" width="${W + 6000}" height="${H + 6000}"/>`;
+  for (let i = -8; i < W / G + 8; i++) for (let j = -8; j < H / G + 8; j++)
+    s += `<rect class="block" x="${i*G + 9}" y="${j*G + 9}" width="${G - 18}" height="${G - 18}" rx="4"/>`;
+  s += `<path class="river" d="M-1200 230 C 200 160, 520 560, 980 610 S 1700 690, 2000 1040 S 2700 1600, 3600 1700"/>`;
+  let st = '', art = '';
+  for (let i = -8; i < W / G + 8; i++){ const x = i * G; const d = `M${x} -1200V${H + 1200}`; (i % 4 === 0 ? (art += d) : (st += d)); }
+  for (let j = -8; j < H / G + 8; j++){ const y = j * G; const d = `M-1200 ${y}H${W + 1200}`; (j % 4 === 0 ? (art += d) : (st += d)); }
+  s += `<path class="st-c" d="${st}"/><path class="st" d="${st}"/>`;
+  [[3,2,2,2],[12,9,3,2],[16,2,2,1],[7,11,2,2],[0,7,1,2],[19,6,2,3]].forEach(([x,y,w,h]) => {
+    s += `<rect class="park" x="${x*G + 9}" y="${y*G + 9}" width="${w*G - 18}" height="${h*G - 18}" rx="10"/>`;
+  });
+  s += `<path class="art-c" d="${art}"/><path class="art" d="${art}"/>`;
+  const hw = 'M-1200 1360 C 300 1290, 900 1440, 1400 1330 S 2300 940, 3600 640';
+  s += `<path class="hw-c" d="${hw}"/><path class="hw" d="${hw}"/>`;
+  s += `<text class="area-lbl" x="${3*G + 24}" y="${2*G + 52}">Rehearsal Park</text>`;
+  s += `<text class="area-lbl" x="${12*G + 30}" y="${10*G + 10}">Eye Contact Commons</text>`;
+  s += `<text class="water-lbl" x="1290" y="700" transform="rotate(16 1290 700)">Audience River</text>`;
+  s += `<text class="area-lbl" x="1700" y="130">Keyword Heights</text>`;
+  s += `<text class="area-lbl" x="${7*G + 20}" y="${12*G + 10}">Podium Square</text>`;
+  $('#base').innerHTML = s;
+}
+
+/* ---------- dynamic map ---------- */
+const svg = $('#svg');
+const OFF = [[-62,-96],[62,-96],[-62,96],[62,96],[0,-160],[0,160],[-124,-150],[124,150]];
+function mk(id, type, x, y, inner, label, aria, labelPos=[16,5]){
+  const sel = (UI.place === id || UI.hl === id) ? ' sel' : '';
+  return `<g class="mk mk-${type}${sel}" data-id="${esc(id)}" transform="translate(${x} ${y})" tabindex="0" role="button" aria-label="${esc(aria)}"><g class="sc"><g class="body">${inner}</g>${label ? `<text class="lbl" x="${labelPos[0]}" y="${labelPos[1]}">${esc(trunc(label, 30))}</text>` : ''}</g></g>`;
+}
+const badge = (sev, x, y) => sev === 'warn' || sev === 'crit' ? `<circle cx="${x}" cy="${y}" r="6" fill="var(--t-${sev})" stroke="var(--halo)" stroke-width="2"/>` : '';
+const ico = (n, s=14, color='#fff') => `<g transform="translate(${-s/2} ${-s/2}) scale(${s/24})" style="color:${color}"><svg width="24" height="24" viewBox="0 0 24 24" class="ic" overflow="visible">${ICONS[n]}</svg></g>`;
+function renderMap(){
+  LAY = layout(); MPOS = {};
+  const L = LAY;
+  let r = '';
+  L.segs.forEach(g => {
+    const d = rpath(g.pts);
+    const col = UI.layers.traffic ? `var(--t-${segSev(g)})` : 'var(--route)';
+    r += `<path class="rt-c" d="${d}" vector-effect="non-scaling-stroke"/><path class="rt" d="${d}" vector-effect="non-scaling-stroke" style="stroke:${col}"/>`;
+  });
+  $('#route').innerHTML = r;
+  let sl = '';
+  L.segs.forEach(g => {
+    if (g.to === 'end') return;
+    const a = g.pts[g.pts.length - 2], b = g.pts[g.pts.length - 1];
+    if (Math.abs(b.x - a.x) < 200) return;
+    const name = stopName(g.to);
+    sl += `<text class="street-lbl" x="${(a.x + b.x) / 2}" y="${b.y - 16}" text-anchor="middle">${esc(trunc(name + ' Ave', 26))}</text>`;
+  });
+  $('#streetlbl').innerHTML = sl;
+
+  let tr = '', hz = '', po = '', stp = '';
+  L.segs.forEach((g, i) => {
+    const id = 'tr:' + g.from; MPOS[id] = g.mid;
+    const txt = g.from === 'start' ? 'Preview, then head to point 1' : (findPoint(g.from) ? findPoint(g.from).transition : '');
+    const dir = g.turn || 'straight';
+    const sev = worst(ISS.filter(x => x.trans && x.stop === g.from));
+    tr += mk(id, 'tr', g.mid.x, g.mid.y,
+      `<circle class="ring" r="15"/><circle r="12" fill="var(--surface)" stroke="var(--route)" stroke-width="2.5"/>${ico(dir, 15, 'var(--text)')}${badge(sev, 9, -9)}`,
+      txt ? trunc(txt, 30) : 'Transition needed', `Turn ${dir === 'straight' ? 'straight' : dir}: transition from ${stopName(g.from)} to ${stopName(g.to)}`);
+  });
+  const hzCount = {};
+  S.hazards.forEach(h => {
+    let at = h.at; if (at !== 'start' && at !== 'end' && !findPoint(at)) at = 'start';
+    const k = hzCount[at] = (hzCount[at] || 0) + 1;
+    let p;
+    if (at === 'end'){ const g = L.segs[L.segs.length - 1]; const a = g.pts[g.pts.length - 2], b = g.pts[g.pts.length - 1]; p = { x:b.x - Math.min(110, Math.abs(b.x - a.x) * .45) - (k - 1) * 46, y:b.y }; if (a.x === b.x) p = { x:b.x, y:b.y + (a.y > b.y ? 100 : -100) }; }
+    else { const g = L.segs.find(s => s.from === at); const a = g.pts[0], b = g.pts[1]; p = { x:a.x + Math.max(70, Math.abs(b.x - a.x) * .45) + (k - 1) * 46, y:a.y }; if (a.x === b.x) p = { x:a.x, y:a.y + 90 }; }
+    const id = 'hz:' + h.id; MPOS[id] = p;
+    hz += mk(id, 'hz', p.x, p.y,
+      `<rect class="ring" x="-15" y="-15" width="30" height="30" transform="rotate(45)"/><rect x="-11" y="-11" width="22" height="22" rx="2.5" transform="rotate(45)" fill="var(--haz)" stroke="#202124" stroke-width="1.5"/>${ico('bang', 16, '#202124')}`,
+      HAZ[h.type] || 'Challenge', `Challenge ahead near ${stopName(at)}: ${HAZ[h.type] || 'challenge'}`);
+  });
+  S.points.forEach(p => {
+    const base = L.pos[p.id];
+    p.pois.forEach((q, k) => {
+      const o = OFF[k % OFF.length]; const pos = { x:base.x + o[0], y:base.y + o[1] };
+      const id = 'poi:' + q.id; MPOS[id] = pos;
+      const lbl = q.type === 'quote' ? (q.speaker || 'Quotation') : (q.label || POI[q.type].name);
+      po += mk(id, 'poi', pos.x, pos.y,
+        `<circle class="ring" r="16"/><circle r="13" fill="var(--poi-${q.type})" stroke="var(--halo)" stroke-width="2"/>${ico(POI[q.type].icon, 15)}`,
+        lbl, `${POI[q.type].map} at ${stopName(p.id)}: ${lbl}`);
+    });
+  });
+  const st = L.pos.start; MPOS.start = st;
+  stp += mk('start', 'stop', st.x, st.y,
+    `<circle class="ring" r="16"/><circle r="11" fill="var(--surface)" stroke="var(--origin-ring)" stroke-width="5"/>${badge(stopSev('start'), 10, -10)}`,
+    'Start: Introduction', 'Start: Introduction', [-20, 34]);
+  S.points.forEach((p, i) => {
+    const pp = L.pos[p.id]; MPOS[p.id] = pp;
+    stp += mk(p.id, 'stop', pp.x, pp.y,
+      `<path class="ring" d="M0 2 C-5 -9 -16 -15 -16 -28 A16 16 0 1 1 16 -28 C16 -15 5 -9 0 2Z"/><path d="M0 0 C-4 -10 -14 -16 -14 -27 A14 14 0 1 1 14 -27 C14 -16 4 -10 0 0Z" fill="var(--pin)" stroke="var(--pin-c)" stroke-width="1.2"/><text y="-22.5" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">${i+1}</text>${badge(stopSev(p.id), 12, -38)}`,
+      p.title || `Main point ${i+1}`, `Stop ${i+1}: ${p.title || 'Main point ' + (i+1)}`, [18, -22]);
+  });
+  const en = L.pos.end; MPOS.end = en;
+  stp += mk('end', 'stop', en.x, en.y,
+    `<path class="ring" d="M0 2 C-5 -9 -16 -15 -16 -28 A16 16 0 1 1 16 -28 C16 -15 5 -9 0 2Z"/><path d="M0 0 C-4 -10 -14 -16 -14 -27 A14 14 0 1 1 14 -27 C14 -16 4 -10 0 0Z" fill="var(--pin-c)" stroke="#5f0a0a" stroke-width="1.2"/><g transform="translate(0 -27)">${ico('flag', 15)}</g>${badge(stopSev('end'), 12, -38)}`,
+    'Destination: Conclusion', 'Destination: Conclusion', [18, -22]);
+  $('#markers').innerHTML = tr + hz + po + stp;
+  svg.classList.toggle('hide-stops', !UI.layers.stops);
+  svg.classList.toggle('hide-pois', !UI.layers.pois);
+  svg.classList.toggle('hide-trans', !UI.layers.trans);
+  svg.classList.toggle('hide-haz', !UI.layers.haz);
+  applyVB();
+}
+
+/* ---------- view box ---------- */
+let VB = { x:0, y:0, w:W, h:H };
+function applyVB(){
+  const cw = svg.clientWidth || 1, ch = svg.clientHeight || 1;
+  VB.h = VB.w * ch / cw;
+  svg.setAttribute('viewBox', `${VB.x} ${VB.y} ${VB.w} ${VB.h}`);
+  const k = VB.w / cw;
+  $$('.sc', svg).forEach(g => g.setAttribute('transform', `scale(${k})`));
+}
+function visRect(){
+  const cw = svg.clientWidth, ch = svg.clientHeight;
+  const nav = $('#app').classList.contains('navving');
+  if (nav) return { L:16, T:Math.min(ch * .45, 300), R:cw - 64, B:ch - 140 };
+  if (isMobile()){ const ph = $('#panel').getBoundingClientRect().height; return { L:24, T:124, R:cw - 96, B:ch - ph - 16 }; }
+  return { L:(UI.panel ? 408 : 0) + 40, T:80, R:cw - 190, B:ch - 100 };
+}
+function animateTo(t){
+  const from = Object.assign({}, VB);
+  if (reduced()){ Object.assign(VB, t); applyVB(); return; }
+  const t0 = performance.now(), dur = 380;
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    VB.x = from.x + (t.x - from.x) * e; VB.y = from.y + (t.y - from.y) * e; VB.w = from.w + (t.w - from.w) * e;
+    applyVB(); if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function fitBounds(bx, by, bw, bh, animate=true){
+  const cw = svg.clientWidth, ch = svg.clientHeight, v = visRect();
+  const aw = Math.max(80, v.R - v.L), ah = Math.max(80, v.B - v.T);
+  const s = Math.max(bw / aw, bh / ah);
+  const t = { w:cw * s };
+  t.x = bx - v.L * s - (aw * s - bw) / 2;
+  t.y = by - v.T * s - (ah * s - bh) / 2;
+  animate ? animateTo(t) : (Object.assign(VB, t), applyVB());
+}
+function fitRoute(animate=true){
+  const ps = Object.values(MPOS);
+  if (!ps.length) return;
+  const xs = ps.map(p => p.x), ys = ps.map(p => p.y);
+  const x0 = Math.min(...xs) - 60, x1 = Math.max(...xs) + 60, y0 = Math.min(...ys) - 110, y1 = Math.max(...ys) + 60;
+  fitBounds(x0, y0, x1 - x0, y1 - y0, animate);
+}
+function centerOn(p, w){
+  if (!p) return;
+  const cw = svg.clientWidth, v = visRect();
+  const nw = w || Math.min(VB.w, 1500); const s = nw / cw;
+  animateTo({ w:nw, x:p.x - ((v.L + v.R) / 2) * s, y:p.y - ((v.T + v.B) / 2) * s + 20 * s });
+}
+function zoomAt(cx, cy, f){
+  const r = svg.getBoundingClientRect();
+  const wx = VB.x + (cx - r.left) * VB.w / r.width, wy = VB.y + (cy - r.top) * VB.h / r.height;
+  const nw = Math.max(350, Math.min(6000, VB.w * f)), ratio = nw / VB.w;
+  VB.x = wx - (wx - VB.x) * ratio; VB.y = wy - (wy - VB.y) * ratio; VB.w = nw; applyVB();
+}
+
+/* map pointer interaction */
+const pointers = new Map();
+let drag = null, suppressClick = false, pinch = null;
+svg.addEventListener('pointerdown', e => {
+  pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (pointers.size === 2){ const [a, b] = [...pointers.values()]; pinch = { d:Math.hypot(a.x - b.x, a.y - b.y) }; drag = null; return; }
+  if (e.button !== 0) return;
+  drag = { x:e.clientX, y:e.clientY, vx:VB.x, vy:VB.y, moved:false, id:e.pointerId };
+});
+svg.addEventListener('pointermove', e => {
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (pinch && pointers.size === 2){
+    const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinch.d > 0) zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, pinch.d / d);
+    pinch.d = d; suppressClick = true; return;
+  }
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 5){ drag.moved = true; svg.classList.add('dragging'); try { svg.setPointerCapture(drag.id); } catch(err){} }
+  if (drag.moved){ const k = VB.w / svg.clientWidth; VB.x = drag.vx - dx * k; VB.y = drag.vy - dy * k; applyVB(); }
+});
+const endPointer = e => {
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinch = null;
+  if (drag){ if (drag.moved) suppressClick = true; drag = null; svg.classList.remove('dragging'); }
+};
+svg.addEventListener('pointerup', endPointer);
+svg.addEventListener('pointercancel', endPointer);
+svg.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(e.deltaY * 0.0015)); }, { passive:false });
+svg.addEventListener('click', e => {
+  if (suppressClick){ suppressClick = false; return; }
+  const m = e.target.closest('.mk'); if (m) selectPlace(m.dataset.id, true);
+});
+svg.addEventListener('keydown', e => {
+  const m = e.target.closest && e.target.closest('.mk');
+  if (m && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); selectPlace(m.dataset.id, true); return; }
+  const step = VB.w * 0.08;
+  const moves = { ArrowLeft:[-step,0], ArrowRight:[step,0], ArrowUp:[0,-step], ArrowDown:[0,step] };
+  if (moves[e.key] && !$('#app').classList.contains('navving')){ e.preventDefault(); VB.x += moves[e.key][0]; VB.y += moves[e.key][1]; applyVB(); }
+  else if (e.key === '+' || e.key === '='){ e.preventDefault(); const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 0.8); }
+  else if (e.key === '-' || e.key === '_'){ e.preventDefault(); const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.25); }
+});
+
+/* ---------- fields ---------- */
+const fid = path => 'f_' + path.replace(/[^\w]/g, '_');
+function meter(text, max){
+  const ls = lines(text);
+  if (!ls.length) return `<span class="m-empty">One cue per line. Keywords, not sentences.</span>`;
+  const lw = Math.max(...ls.map(wc));
+  const over = ls.filter(l => wc(l) > max).length;
+  if (over) return `<span class="${lw >= max + 5 ? 'm-crit' : 'm-warn'}">${icon('warning')}${over} line${over > 1 ? 's' : ''} over ${max} words (longest ${lw}). Eyes off the road: trim to keywords.</span>`;
+  return `<span class="m-ok">${icon('check')}${ls.length} cue${ls.length > 1 ? 's' : ''}, longest ${lw} word${lw === 1 ? '' : 's'}. Eyes on the road.</span>`;
+}
+function fText(label, path, val, o={}){
+  const id = fid(path), rows = o.rows || 3;
+  const desc = [o.help ? id + '_h' : '', o.max ? id + '_m' : ''].filter(Boolean).join(' ');
+  return `<div class="fld"><label for="${id}">${label}</label>${o.help ? `<p class="help" id="${id}_h">${o.help}</p>` : ''}<textarea id="${id}" rows="${rows}" data-bind="${path}"${o.max ? ` data-max="${o.max}"` : ''} placeholder="${esc(o.ph || '')}"${desc ? ` aria-describedby="${desc}"` : ''}>${esc(val)}</textarea>${o.max ? `<p class="meter" id="${id}_m">${meter(val, o.max)}</p>` : ''}</div>`;
+}
+function fInput(label, path, val, o={}){
+  const id = fid(path);
+  const extra = o.type === 'number' ? ` inputmode="decimal" step="${o.step || 0.25}" min="${o.min ?? 0}" max="${o.maxv || 60}"` : '';
+  return `<div class="fld${o.inline ? ' inline' : ''}"><label for="${id}">${label}</label>${o.help ? `<p class="help" id="${id}_h">${o.help}</p>` : ''}<input id="${id}" type="${o.type || 'text'}" data-bind="${path}" value="${esc(val)}" placeholder="${esc(o.ph || '')}"${extra}${o.help ? ` aria-describedby="${id}_h"` : ''}></div>`;
+}
+function fSelect(label, path, val, opts){
+  const id = fid(path);
+  return `<div class="fld"><label for="${id}">${label}</label><select id="${id}" data-bind="${path}">${Object.entries(opts).map(([k, v]) => `<option value="${esc(k)}"${k === val ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></div>`;
+}
+function setPath(path, val){
+  const p = path.split('.');
+  const numeric = ['minutes', 'limit'].includes(p[p.length - 1]);
+  if (numeric) val = parseFloat(val) || 0;
+  if (p[0] === 'points'){
+    const pt = findPoint(p[1]); if (!pt) return;
+    if (p[2] === 'pois'){ const q = pt.pois.find(x => x.id === p[3]); if (q) q[p[4]] = val; }
+    else pt[p[2]] = val;
+  } else if (p[0] === 'hazards'){ const h = S.hazards.find(x => x.id === p[1]); if (h) h[p[2]] = val; }
+  else if (S[p[0]]) S[p[0]][p[1]] = val;
+}
+
+/* ---------- panel ---------- */
+const panelBody = $('#panel-body');
+const TABS = [
+  { k:'plan', label:'Plan', icon:'target' },
+  { k:'route', label:'Route', icon:'route' },
+  { k:'directions', label:'Directions', icon:'turn' },
+  { k:'check', label:'Road check', icon:'traffic' }
+];
+function subLine(){
+  const t = times();
+  return `${PURPOSE[S.meta.purpose] || 'Speech'}${S.meta.audience ? ' for ' + esc(S.meta.audience) : ''}: ${fmt(t.total)} planned, ${fmt(num(S.meta.limit))} limit`;
+}
+function renderHead(){
+  $('#panel-head').innerHTML = `<div class="ph"><h1 data-live="title">${esc(S.meta.title || 'Untitled speech')}</h1><p class="ph-sub" data-live="sub">${subLine()}</p></div>`;
+}
+function critBadge(){ const c = ISS.filter(i => i.sev === 'crit').length; return c ? `<span class="badge" aria-label="${c} road closures">${c}</span>` : ''; }
+function renderTabs(){
+  $('#panel-tabs').hidden = !!UI.place;
+  $('#panel-tabs').innerHTML = TABS.map(t => `<button class="tab" role="tab" id="tab-${t.k}" aria-selected="${UI.tab === t.k}" aria-controls="panel-body" tabindex="${UI.tab === t.k ? 0 : -1}" data-action="tab" data-tab="${t.k}">${icon(t.icon)}<span>${t.label}</span>${t.k === 'check' ? `<span data-live="badge">${critBadge()}</span>` : ''}</button>`).join('');
+  panelBody.setAttribute('aria-labelledby', 'tab-' + UI.tab);
+}
+const sevBadge = sev => sev === 'crit' ? `<span class="sev sev-crit">${icon('warning')}Closed</span>` : sev === 'warn' ? `<span class="sev sev-warn">${icon('warning')}Slow</span>` : `<span class="sev sev-ok">${icon('check')}Clear</span>`;
+
+function renderPanel(){
+  const scroll = panelBody.scrollTop;
+  renderHead(); renderTabs();
+  let h = '';
+  if (UI.place) h = placeCard(UI.place);
+  else if (UI.tab === 'plan') h = planTab();
+  else if (UI.tab === 'route') h = routeTab();
+  else if (UI.tab === 'directions') h = directionsTab();
+  else h = checkTab();
+  panelBody.innerHTML = h;
+  panelBody.scrollTop = scroll;
+  renderTrip();
+}
+
+/* plan tab */
+function planTab(){
+  const m = S.meta;
+  let h = '';
+  if (S.sample) h += `<div class="banner"><p>You’re viewing a sample route built from the keyword outline in the workshop slides. Explore it, then start your own.</p><button class="btn primary" data-action="new-route">${icon('plus')}Start my own route</button></div>`;
+  h += `<section class="sec"><h2>Trip details</h2>
+    ${fInput('Speech title', 'meta.title', m.title, { ph:'e.g., Phones in the Classroom' })}
+    ${fInput('Your name', 'meta.speaker', m.speaker, { ph:'Speaker name' })}
+    ${fSelect('Type of speech', 'meta.purpose', m.purpose, PURPOSE)}
+    ${fInput('Passengers (your audience)', 'meta.audience', m.audience, { ph:'e.g., Classmates' })}
+    ${fInput('Time limit in minutes', 'meta.limit', m.limit, { type:'number', step:0.5, min:1, inline:true })}
+  </section>
+  <section class="sec"><h2>Every speech answers four questions</h2>
+    <p class="help">Answer these before you drive. They become your reason for the trip and your destination.</p>
+    <div class="q4">${fText('Why are you speaking? (reason for the trip)', 'meta.reason', m.reason, { rows:2, ph:'Keywords' })}</div>
+    <div class="q4">${fText('What will the audience learn?', 'meta.learn', m.learn, { rows:2, ph:'Keywords' })}</div>
+    <div class="q4"><span class="lbl-txt">Where will you start, develop, and end?</span><p class="help">That’s your route: introduction, main points, conclusion.</p><button class="btn" data-action="tab" data-tab="route">${icon('route')}Build the route</button></div>
+    <div class="q4">${fText('Destination: what will the audience remember?', 'meta.takeaway', m.takeaway, { rows:2, max:15, ph:'One clear takeaway' })}</div>
+  </section>
+  <section class="sec"><h2>Pre-trip check</h2><p class="help">Before you begin, confirm each item.</p>
+    ${CHECK.map(c => `<label class="check"><input type="checkbox" data-bind="checklist.${c.k}"${S.checklist[c.k] ? ' checked' : ''}><span>${c.label}</span></label>`).join('')}
+  </section>
+  <section class="sec"><h2>Save or move your route</h2>
+    <p class="help">Your route saves automatically in this browser. To move it to another computer, copy the backup code and paste it there.</p>
+    <div class="btn-row"><button class="btn" data-action="copy-backup">${icon('copy')}Copy backup code</button><button class="btn" data-action="show-restore">Restore from code</button></div>
+    <div id="restore-box" hidden><div class="fld"><label for="restore-txt">Paste a backup code</label><textarea id="restore-txt" rows="3"></textarea></div><button class="btn primary" data-action="restore">Restore route</button></div>
+    <div class="btn-row"><button class="btn danger" data-action="new-route">Start a new route</button><button class="btn" data-action="load-sample">Load the sample route</button></div>
+  </section>
+  <p class="credit">Adapted from “Outlines: Personal GPS for Speaking” by Professor Barbara Baron, Brookdale Community College.</p>`;
+  return h;
+}
+
+/* route tab */
+function introMeta(){ const n = ['attention','reason','credibility','preview'].filter(k => lines(S.intro[k]).length).length; return `${fmt(num(S.intro.minutes))} min, ${n} of 4 parts`; }
+function pointMeta(p){ return `${fmt(num(p.minutes))} min, ${lines(p.keywords).length} cues, ${p.pois.length} point${p.pois.length === 1 ? '' : 's'} of interest`; }
+function conclMeta(){ const n = ['review','clincher'].filter(k => lines(S.conclusion[k]).length).length; return `${fmt(num(S.conclusion.minutes))} min, ${n} of 2 parts`; }
+function rlItem(id, dot, title, meta, body){
+  const open = UI.open === id;
+  return `<li class="rl-item" id="rl-${id}">${dot}<div class="rl-main"><button class="rl-head" data-action="toggle" data-id="${id}" aria-expanded="${open}" aria-controls="rlb-${id}"><span class="rl-title" data-live="t-${id}">${esc(title)}</span><span class="rl-meta" data-live="m-${id}">${meta}</span><span class="rl-sev" data-live="s-${id}">${sevBadge(stopSev(id))}</span></button><div class="rl-body" id="rlb-${id}"${open ? '' : ' hidden'}>${body}</div></div></li>`;
+}
+function introBody(){
+  const n = S.points.length;
+  return `${fText('Attention grab (your hook)', 'intro.attention', S.intro.attention, { max:9, ph:'One cue per line', help:'Start the route: a question, story, or surprising fact.' })}
+  ${fText('Reason to listen', 'intro.reason', S.intro.reason, { max:9, ph:'Why this matters to them' })}
+  ${fText('Establish credibility', 'intro.credibility', S.intro.credibility, { max:12, ph:'Source (year)', help:'Your research and experience. Source names and years are enough.' })}
+  ${fText('Preview each point', 'intro.preview', S.intro.preview, { max:9, ph:'One stop per line', help:`List each main point, one per line. Your route has ${n} main point${n === 1 ? '' : 's'}.` })}
+  ${fInput('Minutes for the introduction', 'intro.minutes', S.intro.minutes, { type:'number', inline:true })}`;
+}
+function poiEditor(p, q){
+  const base = `points.${p.id}.pois.${q.id}`;
+  let f = '';
+  if (q.type === 'quote'){
+    f = `<div class="grid2">${fInput('Who said it', base + '.speaker', q.speaker, { ph:'Dr. David Stout' })}${fInput('Credentials', base + '.credential', q.credential, { ph:'BCC Pres.' })}</div>
+      ${fText('Key words of the quote', base + '.label', q.label, { rows:2, max:12, ph:'Only the words you need to see' })}
+      <div class="grid2">${fInput('Source', base + '.source', q.source, { ph:'Brookdalecc.edu' })}${fInput('Date', base + '.date', q.date, { ph:'11/26' })}</div>
+      <p class="qprev" data-live="qp-${q.id}">${quotePreview(q)}</p>`;
+  } else if (q.type === 'visual'){
+    f = `${fText('What will they see?', base + '.label', q.label, { rows:2, max:12, ph:'Slide, prop, or image' })}${fInput('When will you show it?', base + '.detail', q.detail, { ph:'e.g., During the second cue' })}`;
+  } else if (q.type === 'stat'){
+    f = `${fText('Evidence in keywords', base + '.label', q.label, { rows:2, max:12, ph:'e.g., 3 of 4 teachers report…' })}<div class="grid2">${fInput('Source', base + '.source', q.source)}${fInput('Year', base + '.date', q.date)}</div>`;
+  } else {
+    f = `${fText('Story cue', base + '.label', q.label, { rows:2, max:10, ph:'A few words to trigger the story' })}`;
+  }
+  return `<fieldset class="poi-ed"><legend><span class="tag ${q.type}">${icon(POI[q.type].icon)}</span>${POI[q.type].name}</legend><p class="help">${POI[q.type].hint}</p>${f}<button class="btn danger" data-action="del-poi" data-id="${p.id}" data-qid="${q.id}">${icon('trash')}Remove ${POI[q.type].name.toLowerCase()}</button></fieldset>`;
+}
+function quotePreview(q){
+  if (!q.label && !q.speaker) return 'Your card will show: name, credentials, key words, source, date.';
+  return `<b>On your card:</b> ${esc([q.speaker, q.credential].filter(Boolean).join(', '))} “${esc(q.label)}” ${esc([q.source, q.date].filter(Boolean).join(' '))}`;
+}
+function pointBody(p, i){
+  const last = i === S.points.length - 1;
+  return `${fInput('Street name (a short title for this point)', `points.${p.id}.title`, p.title, { ph:'e.g., Causes' })}
+  ${fText('Keywords for this stretch', `points.${p.id}.keywords`, p.keywords, { rows:4, max:9, ph:'One cue per line' })}
+  ${fInput('Minutes on this stretch', `points.${p.id}.minutes`, p.minutes, { type:'number', inline:true })}
+  <div class="poi-block"><h3>Points of interest</h3><p class="help">Scenic views keep the audience with you. Fewer words, more images.</p>
+    ${p.pois.map(q => poiEditor(p, q)).join('')}
+    <div class="poi-add" role="group" aria-label="Add a point of interest to ${esc(p.title || 'this point')}">${Object.entries(POI).map(([k, v]) => `<button class="btn" data-action="add-poi" data-id="${p.id}" data-type="${k}">${icon('plus')}${v.name}</button>`).join('')}</div>
+  </div>
+  ${fText(last ? 'Turn signal: transition to your conclusion' : 'Turn signal: transition to the next point', `points.${p.id}.transition`, p.transition, { rows:2, max:15, ph:'e.g., Now that we know the causes, what can schools do?', help:'Complete one segment, then signal the turn so the audience can follow.' })}
+  <div class="row-actions">
+    <button class="btn" data-action="move" data-dir="-1" data-id="${p.id}"${i === 0 ? ' disabled' : ''}>${icon('up')}Move earlier</button>
+    <button class="btn" data-action="move" data-dir="1" data-id="${p.id}"${last ? ' disabled' : ''}>${icon('down')}Move later</button>
+    <button class="btn danger" data-action="del-point" data-id="${p.id}">${icon('trash')}Remove stop</button>
+  </div>`;
+}
+function conclBody(){
+  return `${fText('Review the route (summary of main points)', 'conclusion.review', S.conclusion.review, { max:10, ph:'Point 1, point 2, point 3', help:'The route is ending. Remind them where you’ve been.' })}
+  ${fText('Final memorable line (clincher)', 'conclusion.clincher', S.conclusion.clincher, { rows:2, max:15, ph:'The line they’ll remember' })}
+  ${fInput('Minutes for the conclusion', 'conclusion.minutes', S.conclusion.minutes, { type:'number', inline:true })}`;
+}
+function routeTab(){
+  let h = `<p class="lead">Drive in order: start, each main point with its points of interest, then arrive at your destination. Open a stop to edit it.</p><ol class="rl">`;
+  h += rlItem('start', `<span class="dot dot-start" aria-hidden="true"></span>`, 'Start: Introduction', introMeta(), introBody());
+  S.points.forEach((p, i) => { h += rlItem(p.id, `<span class="dot dot-pin" aria-hidden="true">${i+1}</span>`, p.title || `Main point ${i+1}`, pointMeta(p), pointBody(p, i)); });
+  h += `<li class="rl-add"><span class="dot dot-add" aria-hidden="true">${icon('plus')}</span><button class="link-btn" data-action="add-point">Add a main point</button></li>`;
+  h += rlItem('end', `<span class="dot dot-end" aria-hidden="true">${icon('flag')}</span>`, 'Destination: Conclusion', conclMeta(), conclBody());
+  return h + '</ol>';
+}
+
+/* steps (directions + nav) */
+function buildSteps(){
+  const L = LAY || layout(), st = [];
+  const im = num(S.intro.minutes);
+  const hz = at => S.hazards.filter(h => h.at === at);
+  [['attention','Start the trip: grab their attention','start',.3],['reason','Give them a reason to listen','straight',.25],['credibility','Establish your credibility','straight',.2],['preview','Preview the route','straight',.25]]
+    .forEach(([k, t, ic, f], j) => st.push({ kind:'intro', icon:ic, title:t, body:lines(S.intro[k]), min:im * f, stop:'start', pos:L.pos.start, haz:j === 0 ? hz('start') : [] }));
+  S.points.forEach((p, i) => {
+    const g = L.segs[i], prev = S.points[i-1], dir = g.turn || 'straight';
+    const name = p.title || `Main point ${i+1}`;
+    st.push({ kind:'turn', icon:dir, title:dir === 'straight' ? `Continue to ${name}` : `Turn ${dir} onto ${name}`, body:prev ? lines(prev.transition) : ['Preview done. Head to your first point.'], min:0, stop:p.id, pos:g.mid, id:'tr:' + g.from });
+    st.push({ kind:'point', icon:'pin', title:`Point ${i+1}: ${name}`, body:lines(p.keywords), min:num(p.minutes), stop:p.id, pos:L.pos[p.id], pois:p.pois, haz:hz(p.id) });
+  });
+  const g = L.segs[S.points.length], last = S.points[S.points.length - 1], cm = num(S.conclusion.minutes);
+  st.push({ kind:'turn', icon:g.turn || 'straight', title:'Exit toward your conclusion', body:last ? lines(last.transition) : [], min:0, stop:'end', pos:g.mid, id:'tr:' + g.from });
+  st.push({ kind:'concl', icon:'straight', title:'Review the route', body:lines(S.conclusion.review), min:cm * .6, stop:'end', pos:L.pos.end, haz:hz('end') });
+  st.push({ kind:'concl', icon:'flag', title:'Arrive with your final line', body:lines(S.conclusion.clincher), min:cm * .4, stop:'end', pos:L.pos.end });
+  st.push({ kind:'arrive', icon:'flag', title:'You have arrived', body:S.meta.takeaway ? ['Destination: ' + S.meta.takeaway] : ['Destination reached.'], min:0, stop:'end', pos:L.pos.end });
+  let c = 0; st.forEach(s => { s.start = c; c += s.min; s.end = c; });
+  return st;
+}
+function timeBar(){
+  const t = times(); const tot = Math.max(t.total, num(S.meta.limit), 0.01);
+  let segs = `<span style="width:${t.intro / tot * 100}%;background:var(--c-intro)"></span>`;
+  S.points.forEach((p, i) => segs += `<span style="width:${num(p.minutes) / tot * 100}%;background:var(--c-p${i % 2 + 1})"></span>`);
+  segs += `<span style="width:${t.concl / tot * 100}%;background:var(--c-concl)"></span>`;
+  return `<div class="tbar" aria-hidden="true">${segs}</div><ul class="tleg"><li><i style="background:var(--c-intro)"></i>Introduction ${fmt(t.intro)}</li><li><i style="background:var(--c-p1)"></i>Main points ${fmt(t.pts)}</li><li><i style="background:var(--c-concl)"></i>Conclusion ${fmt(t.concl)}</li>${t.total < num(S.meta.limit) ? `<li><i style="background:var(--surface-2);border:1px solid var(--line)"></i>Unused ${fmt(num(S.meta.limit) - t.total)}</li>` : ''}</ul>`;
+}
+function directionsTab(){
+  const t = times(), lim = num(S.meta.limit), over = lim && t.total > lim * 1.1;
+  const steps = buildSteps();
+  let h = `<div class="dir-sum"><span class="big${over ? ' over' : ''}">${fmt(t.total)}</span><span class="help" style="margin:0">planned of a ${fmt(lim)} time limit</span></div>${timeBar()}
+  <div class="btn-row"><button class="btn primary" data-action="start-nav">${icon('nav')}Start rehearsal</button><button class="btn" data-action="sheet">${icon('doc')}Trip sheet</button><button class="btn" data-action="balance">${icon('scale')}Even out times</button></div>
+  <ol class="steps">`;
+  steps.forEach((s, i) => {
+    const body = s.body.length ? `<ul>${s.body.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : `<p class="empty-txt" style="margin:4px 0 0">${s.kind === 'turn' ? 'No transition written yet.' : 'Nothing here yet.'}</p>`;
+    const subs = (s.pois || []).map(q => `<div class="sub-poi"><span class="tag ${q.type}">${icon(POI[q.type].icon)}</span>${esc(POI[q.type].map)}: ${esc(q.type === 'quote' ? [q.speaker, q.label].filter(Boolean).join(': ') : q.label || '(blank)')}</div>`).join('')
+      + (s.haz || []).map(hh => `<div class="sub-poi"><span class="tag haz">${icon('bang')}</span>Challenge ahead: ${esc(HAZ[hh.type])}${hh.plan ? '. ' + esc(hh.plan) : ''}</div>`).join('');
+    h += `<li class="step"><span class="step-ic">${icon(s.icon)}</span><div class="step-main"><button class="step-t" data-action="peek" data-step="${i}">${esc(s.title)}</button>${body}${subs}</div><span class="step-time">${s.min ? fmt(s.min) : ''}</span></li>`;
+  });
+  return h + '</ol>';
+}
+
+/* check tab */
+function issuesHTML(){
+  const groups = [['crit','Road closed: must fix','warning'],['warn','Slow traffic: should fix','warning'],['tip','Tips for a smoother drive','check']];
+  let h = '';
+  groups.forEach(([sev, label, ic]) => {
+    const list = ISS.filter(i => i.sev === sev);
+    if (!list.length) return;
+    h += `<div class="iss-group"><h3><span class="sev sev-${sev === 'tip' ? 'ok' : sev}">${icon(ic)}${list.length}</span>${label}</h3>`;
+    list.forEach(i => {
+      const where = i.stop ? `Go to ${stopName(i.stop)}` : i.tab ? `Open ${TABS.find(t => t.k === i.tab).label}` : '';
+      h += `<button class="iss ${sev}" data-action="goto" data-stop="${i.stop || ''}" data-tab="${i.tab || ''}" data-anchor="${i.anchor || ''}">${icon(sev === 'tip' ? 'check' : 'warning')}<span>${esc(i.msg)}${where ? `<small>${where}</small>` : ''}</span></button>`;
+    });
+    h += '</div>';
+  });
+  if (!ISS.filter(i => i.sev !== 'tip').length) h = `<p class="m-ok" style="display:flex;gap:6px">${icon('check')}All roads clear. Rehearse until it feels conversational.</p>` + h;
+  return h;
+}
+function scoreHTML(){
+  const s = score(), c = ISS.filter(i => i.sev === 'crit').length, w = ISS.filter(i => i.sev === 'warn').length;
+  const col = c ? 'var(--t-crit)' : w ? 'var(--t-warn)' : 'var(--t-ok)';
+  const C = 2 * Math.PI * 36;
+  return `<div class="score"><div class="ring-wrap"><svg viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="36" fill="none" stroke="var(--surface-2)" stroke-width="8"/><circle cx="42" cy="42" r="36" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C * s / 100} ${C}"/></svg><span class="num">${s}</span></div>
+  <div><h2>Route readiness ${s} of 100</h2><p class="help" style="margin:0">${c} road closure${c === 1 ? '' : 's'} and ${w} slowdown${w === 1 ? '' : 's'}. The map’s road colors show where.</p></div></div>`;
+}
+function checkTab(){
+  const locs = { start:'Introduction' };
+  S.points.forEach((p, i) => locs[p.id] = `Point ${i+1}: ${p.title || 'Untitled'}`);
+  locs.end = 'Conclusion';
+  let h = `<div data-live="score">${scoreHTML()}</div><div data-live="issues">${issuesHTML()}</div>
+  <section class="sec" id="haz-sec" style="margin-top:12px"><h2>Challenges ahead</h2><p class="help">Every route has hazards. Decide now what you’ll do if one appears, so you can keep driving.</p>`;
+  S.hazards.forEach(hz => {
+    h += `<fieldset class="haz-ed"><legend style="display:flex;gap:8px;align-items:center;font-weight:500;padding:0 4px"><span class="tag haz">${icon('bang')}</span>Warning sign</legend>
+      ${fSelect('Challenge', `hazards.${hz.id}.type`, hz.type, HAZ)}${fSelect('Where on the route', `hazards.${hz.id}.at`, hz.at, locs)}
+      ${fText('Your backup plan', `hazards.${hz.id}.plan`, hz.plan, { rows:2, ph:'What you’ll do if it happens' })}
+      <button class="btn danger" data-action="del-haz" data-id="${hz.id}">${icon('trash')}Remove</button></fieldset>`;
+  });
+  h += `<button class="btn" data-action="add-haz">${icon('plus')}Add a challenge</button></section>
+  <section class="sec"><h2>Rehearsal log</h2>`;
+  if (!S.rehearsals.length) h += `<p class="help">No rehearsals yet. Start a rehearsal from Directions to practice with turn-by-turn prompts and a timer.</p><button class="btn primary" data-action="start-nav">${icon('nav')}Start rehearsal</button>`;
+  else {
+    h += `<ul class="reh">${S.rehearsals.slice().reverse().map(r => {
+      const d = new Date(r.date); const diff = r.actual - r.planned;
+      const st = Math.abs(diff) <= 15 ? `<span class="m-ok">on time</span>` : diff > 0 ? `<span class="m-warn">${fmtSec(diff)} long</span>` : `<span class="m-warn">${fmtSec(-diff)} short</span>`;
+      return `<li><span>${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' })}${r.done ? '' : ' (stopped early)'}</span><span>${fmtSec(r.actual)} of ${fmtSec(r.planned)}, ${st}</span></li>`;
+    }).join('')}</ul><button class="btn primary" data-action="start-nav">${icon('nav')}Rehearse again</button>`;
+  }
+  return h + '</section>';
+}
+
+/* place card */
+function placeCard(id){
+  const back = `<button class="back" data-action="back">${icon('back')}Back</button>`;
+  const hero = (cls, ic, kicker) => `<div class="place-hero hero-${cls}">${back}<span class="big-ic">${icon(ic)}</span><span class="kicker">${kicker}</span></div>`;
+  const row = (ic, k, body) => `<div class="prow">${icon(ic)}<div><span class="k">${k}</span>${body}</div></div>`;
+  const ul = arr => arr.length ? `<ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<span class="empty-txt">Nothing yet</span>`;
+  const issues = sid => { const l = ISS.filter(i => i.stop === sid); return l.length ? row('traffic', 'Road check', `<ul>${l.map(i => `<li class="${i.sev === 'crit' ? 'm-crit' : 'm-warn'}">${esc(i.msg)}</li>`).join('')}</ul>`) : row('check', 'Road check', '<span class="m-ok">Road clear</span>'); };
+  const acts = (sid, extra='') => `<div class="acts"><button class="act" data-action="edit-stop" data-id="${sid}"><span class="c">${icon('edit')}</span>Edit</button><button class="act primary" data-action="nav-from" data-id="${sid}"><span class="c">${icon('nav')}</span>Rehearse</button>${extra}<button class="act" data-action="tab" data-tab="directions"><span class="c">${icon('turn')}</span>Directions</button></div>`;
+  if (id === 'start'){
+    return hero('start', 'start', 'Start of route') + `<h2 class="place-title" tabindex="-1">Introduction</h2><p class="help">${fmt(num(S.intro.minutes))} min. ${sevText(stopSev('start'))}</p>` + acts('start')
+      + row('mic', 'Attention grab', ul(lines(S.intro.attention))) + row('people', 'Reason to listen', ul(lines(S.intro.reason)))
+      + row('check', 'Credibility', ul(lines(S.intro.credibility))) + row('route', 'Preview', ul(lines(S.intro.preview))) + issues('start');
+  }
+  if (id === 'end'){
+    return hero('end', 'flag', 'Destination') + `<h2 class="place-title" tabindex="-1">Conclusion</h2><p class="help">${fmt(num(S.conclusion.minutes))} min. ${sevText(stopSev('end'))}</p>` + acts('end')
+      + row('target', 'What they’ll remember', S.meta.takeaway ? esc(S.meta.takeaway) : '<span class="empty-txt">Set your destination in Plan</span>')
+      + row('route', 'Review', ul(lines(S.conclusion.review))) + row('mic', 'Final line', ul(lines(S.conclusion.clincher))) + issues('end');
+  }
+  if (id.startsWith('poi:')){
+    let p, q; S.points.forEach(pt => pt.pois.forEach(x => { if ('poi:' + x.id === id){ p = pt; q = x; } }));
+    if (!q) return placeMissing();
+    const i = pointIndex(p.id);
+    let body = '';
+    if (q.type === 'quote') body = row('quote', 'On your card', quotePreview(q)) + row('people', 'Speaker', esc([q.speaker, q.credential].filter(Boolean).join(', ') || 'Not set'));
+    else body = row(POI[q.type].icon, POI[q.type].name, esc(q.label || 'Blank')) + (q.detail ? row('clock', 'When', esc(q.detail)) : '') + (q.source ? row('doc', 'Source', esc([q.source, q.date].filter(Boolean).join(', '))) : '');
+    return hero(q.type, POI[q.type].icon, POI[q.type].map) + `<h2 class="place-title" tabindex="-1">${esc(q.type === 'quote' ? (q.speaker || 'Quotation') : (q.label || POI[q.type].name))}</h2><p class="help">Near stop ${i+1}: ${esc(p.title || 'Main point ' + (i+1))}</p>`
+      + `<div class="acts"><button class="act" data-action="edit-stop" data-id="${p.id}"><span class="c">${icon('edit')}</span>Edit</button><button class="act" data-action="place" data-id="${p.id}"><span class="c">${icon('pin')}</span>Go to stop</button></div>` + body;
+  }
+  if (id.startsWith('hz:')){
+    const hz = S.hazards.find(x => 'hz:' + x.id === id); if (!hz) return placeMissing();
+    return hero('haz', 'warning', 'Challenges ahead') + `<h2 class="place-title" tabindex="-1">${esc(HAZ[hz.type])}</h2><p class="help">Near ${esc(stopName(hz.at))}</p>`
+      + `<div class="acts"><button class="act" data-action="goto" data-tab="check" data-anchor="haz" data-stop=""><span class="c">${icon('edit')}</span>Edit</button><button class="act" data-action="place" data-id="${hz.at}"><span class="c">${icon('pin')}</span>Go to stop</button></div>`
+      + row('warning', 'Backup plan', hz.plan ? esc(hz.plan) : '<span class="empty-txt">Write what you’ll do</span>');
+  }
+  if (id.startsWith('tr:')){
+    const from = id.slice(3), g = LAY.segs.find(s => s.from === from); if (!g) return placeMissing();
+    const dir = g.turn || 'straight'; const p = findPoint(from);
+    const txt = from === 'start' ? lines(S.intro.preview) : p ? lines(p.transition) : [];
+    return hero('tr', dir, 'Turn signal') + `<h2 class="place-title" tabindex="-1">${dir === 'straight' ? 'Continue' : 'Turn ' + dir} toward ${esc(stopName(g.to))}</h2><p class="help">From ${esc(stopName(from))}</p>`
+      + `<div class="acts"><button class="act" data-action="edit-stop" data-id="${from}"><span class="c">${icon('edit')}</span>Edit</button><button class="act" data-action="place" data-id="${g.to}"><span class="c">${icon('pin')}</span>Next stop</button></div>`
+      + row(dir, from === 'start' ? 'Preview' : 'Transition', ul(txt)) + (from !== 'start' ? issuesTrans(from) : '');
+  }
+  const i = pointIndex(id); if (i < 0) return placeMissing();
+  const p = S.points[i];
+  return hero('pin', 'pin', `Stop ${i+1} of ${S.points.length}`) + `<h2 class="place-title" tabindex="-1">${esc(p.title || 'Main point ' + (i+1))}</h2><p class="help">${fmt(num(p.minutes))} min. ${sevText(stopSev(p.id))}</p>`
+    + acts(p.id, `<button class="act" data-action="edit-stop" data-id="${p.id}" data-poi="1"><span class="c">${icon('plus')}</span>Add interest</button>`)
+    + row('pin', 'Keywords', ul(lines(p.keywords)))
+    + row('camera', 'Points of interest', p.pois.length ? `<ul>${p.pois.map(q => `<li><button class="link-btn" data-action="place" data-id="poi:${q.id}">${esc(POI[q.type].map)}: ${esc(q.type === 'quote' ? q.speaker || q.label : q.label || '(blank)')}</button></li>`).join('')}</ul>` : '<span class="empty-txt">None yet. Add a visual, quotation, evidence, or story.</span>')
+    + row(LAY.segs[i+1].turn || 'straight', 'Next turn', ul(lines(p.transition))) + issues(p.id);
+}
+function issuesTrans(from){ const l = ISS.filter(i => i.trans && i.stop === from); return l.length ? `<div class="prow">${icon('traffic')}<div><span class="k">Road check</span><ul>${l.map(i => `<li class="m-warn">${esc(i.msg)}</li>`).join('')}</ul></div></div>` : ''; }
+const sevText = s => s === 'crit' ? '<span class="m-crit">Road closed</span>' : s === 'warn' ? '<span class="m-warn">Slow traffic</span>' : '<span class="m-ok">Road clear</span>';
+function placeMissing(){ UI.place = null; return routeTab(); }
+
+/* trip card */
+function renderTrip(){
+  const t = times(), lim = num(S.meta.limit), over = lim && t.total > lim * 1.1;
+  $('#trip-card').innerHTML = `<div><div class="tt${over ? ' over' : ''}">${fmt(t.total)} min</div><div class="ts">${S.points.length} stops, readiness ${score()}</div></div><button class="btn" data-action="tab" data-tab="directions">${icon('turn')}Directions</button><button class="start-btn" data-action="start-nav">${icon('nav')}Start</button>`;
+}
+function renderChips(){
+  const C = [['stops','Stops','pin'],['pois','Points of interest','camera'],['trans','Turns','turn'],['haz','Challenges','warning'],['traffic','Road check colors','traffic']];
+  $('#chips').innerHTML = C.map(([k, l, ic]) => `<button class="chip" data-action="layer" data-layer="${k}" aria-pressed="${UI.layers[k]}">${icon(ic)}${l}</button>`).join('');
+}
+
+/* live updates without re-rendering inputs */
+let liveT = null;
+function scheduleLive(){ clearTimeout(liveT); liveT = setTimeout(updateLive, 180); }
+function updateLive(){
+  analyze(); save(); renderMap(); renderTrip();
+  const V = { title:esc(S.meta.title || 'Untitled speech'), sub:subLine(), badge:critBadge() };
+  V['t-start'] = 'Start: Introduction'; V['m-start'] = introMeta(); V['s-start'] = sevBadge(stopSev('start'));
+  V['t-end'] = 'Destination: Conclusion'; V['m-end'] = conclMeta(); V['s-end'] = sevBadge(stopSev('end'));
+  S.points.forEach((p, i) => { V['t-' + p.id] = esc(p.title || `Main point ${i+1}`); V['m-' + p.id] = pointMeta(p); V['s-' + p.id] = sevBadge(stopSev(p.id));
+    p.pois.forEach(q => { if (q.type === 'quote') V['qp-' + q.id] = quotePreview(q); }); });
+  if (UI.tab === 'check' && !UI.place){ V.issues = issuesHTML(); V.score = scoreHTML(); }
+  $$('[data-live]').forEach(el => { const k = el.dataset.live; if (k in V && el.innerHTML !== V[k]) el.innerHTML = V[k]; });
+}
+
+document.addEventListener('input', e => {
+  const el = e.target.closest('[data-bind]'); if (!el) return;
+  setPath(el.dataset.bind, el.type === 'checkbox' ? el.checked : el.value);
+  if (el.dataset.max){ const m = document.getElementById(el.id + '_m'); if (m) m.innerHTML = meter(el.value, +el.dataset.max); }
+  scheduleLive();
+});
+
+/* ---------- actions ---------- */
+function selectPlace(id, fromMap){
+  UI.place = id; UI.hl = null;
+  if (isMobile() && $('#app').dataset.sheet === 'peek') $('#app').dataset.sheet = 'half';
+  if (!UI.panel){ UI.panel = true; syncPanel(); }
+  renderPanel(); renderMap();
+  panelBody.scrollTop = 0;
+  setTimeout(() => centerOn(MPOS[id] || LAY.pos[id]), isMobile() ? 260 : 0);
+  if (fromMap){ const t = $('.place-title', panelBody); if (t) t.focus({ preventScroll:true }); }
+}
+function openStop(id, focusPoi){
+  UI.place = null; UI.tab = 'route'; UI.open = id;
+  renderPanel(); renderMap();
+  const el = document.getElementById('rl-' + id);
+  if (el){
+    el.scrollIntoView({ block:'start', behavior:reduced() ? 'auto' : 'smooth' });
+    const f = focusPoi ? $('.poi-add .btn', el) : $('textarea, input', el);
+    if (f) setTimeout(() => f.focus({ preventScroll:true }), 50);
+  }
+}
+function syncPanel(){
+  const app = $('#app');
+  app.classList.toggle('panel-off', !UI.panel);
+  const t = $('#panel-toggle'); t.setAttribute('aria-expanded', UI.panel); t.setAttribute('aria-label', UI.panel ? 'Hide the planner' : 'Show the planner');
+}
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3200); }
+function askConfirm(msg, ok='Confirm'){
+  return new Promise(res => {
+    const d = $('#dlg-confirm'); $('#cf-msg').textContent = msg; $('#cf-yes').textContent = ok;
+    const done = v => { d.close(); $('#cf-yes').onclick = $('#cf-no').onclick = null; res(v); };
+    $('#cf-yes').onclick = () => done(true); $('#cf-no').onclick = () => done(false);
+    d.onclose = () => res(false);
+    d.showModal(); $('#cf-no').focus();
+  });
+}
+function copyText(txt, okMsg){
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch(e){} ta.remove(); toast(ok ? okMsg : 'Copy blocked here. Select the text and copy it with Ctrl+C or Cmd+C.'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast(okMsg), fallback); else fallback();
+}
+function balanceTimes(){
+  const lim = num(S.meta.limit) || 5, n = Math.max(1, S.points.length);
+  const r = v => Math.round(v * 4) / 4;
+  S.intro.minutes = r(lim * 0.13); S.conclusion.minutes = r(lim * 0.09);
+  const each = r((lim - S.intro.minutes - S.conclusion.minutes) / n);
+  S.points.forEach(p => p.minutes = each);
+  analyze(); save(); renderPanel(); renderMap();
+  toast(`Times evened out: ${fmt(S.intro.minutes)} intro, ${fmt(each)} per point, ${fmt(S.conclusion.minutes)} conclusion.`);
+}
+function sheetText(){
+  const m = S.meta, t = times();
+  let s = `SPEECH GPS TRIP SHEET\n${m.title || 'Untitled speech'}${m.speaker ? ' | ' + m.speaker : ''}\n${PURPOSE[m.purpose]} | planned ${fmt(t.total)} of ${fmt(num(m.limit))}\nDestination: ${m.takeaway || '(not set)'}\n\n`;
+  const L = arr => arr.map(x => '  - ' + x).join('\n');
+  s += `START: INTRODUCTION (${fmt(t.intro)})\n Attention:\n${L(lines(S.intro.attention))}\n Reason to listen:\n${L(lines(S.intro.reason))}\n Credibility:\n${L(lines(S.intro.credibility))}\n Preview:\n${L(lines(S.intro.preview))}\n\n`;
+  S.points.forEach((p, i) => {
+    s += `STOP ${i+1}: ${(p.title || 'Main point ' + (i+1)).toUpperCase()} (${fmt(num(p.minutes))})\n${L(lines(p.keywords))}\n`;
+    p.pois.forEach(q => { s += `  [${POI[q.type].name}] ${q.type === 'quote' ? quotePlain(q) : q.label}${q.type === 'stat' && q.source ? ' (' + [q.source, q.date].filter(Boolean).join(' ') + ')' : ''}${q.detail ? ' | ' + q.detail : ''}\n`; });
+    S.hazards.filter(h => h.at === p.id).forEach(h => s += `  [Challenge] ${HAZ[h.type]}: ${h.plan}\n`);
+    s += `  >> TURN: ${p.transition || '(transition needed)'}\n\n`;
+  });
+  s += `ARRIVE: CONCLUSION (${fmt(t.concl)})\n Review:\n${L(lines(S.conclusion.review))}\n Final line:\n${L(lines(S.conclusion.clincher))}\n`;
+  const sh = S.hazards.filter(h => h.at === 'start' || h.at === 'end');
+  if (sh.length) s += `\nCHALLENGES AHEAD\n` + sh.map(h => `  ${HAZ[h.type]} (${stopName(h.at)}): ${h.plan}`).join('\n') + '\n';
+  return s;
+}
+const quotePlain = q => `${[q.speaker, q.credential].filter(Boolean).join(', ')} "${q.label}" ${[q.source, q.date].filter(Boolean).join(' ')}`.trim();
+function printSheet(){
+  const m = S.meta, t = times();
+  const ul = a => a.length ? `<ul>${a.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+  let h = `<h1>${esc(m.title || 'Untitled speech')}</h1><p>${esc(m.speaker)} ${esc(PURPOSE[m.purpose])}. Planned ${fmt(t.total)} of ${fmt(num(m.limit))}. Destination: ${esc(m.takeaway)}</p>`;
+  h += `<h2>Start: Introduction (${fmt(t.intro)})</h2><p><b>Attention</b></p>${ul(lines(S.intro.attention))}<p><b>Reason to listen</b></p>${ul(lines(S.intro.reason))}<p><b>Credibility</b></p>${ul(lines(S.intro.credibility))}<p><b>Preview</b></p>${ul(lines(S.intro.preview))}`;
+  S.points.forEach((p, i) => { h += `<h2>Stop ${i+1}: ${esc(p.title || 'Main point')} (${fmt(num(p.minutes))})</h2>${ul(lines(p.keywords))}${p.pois.map(q => `<p>[${POI[q.type].name}] ${esc(q.type === 'quote' ? quotePlain(q) : q.label)}</p>`).join('')}<p><b>Turn:</b> ${esc(p.transition)}</p>`; });
+  h += `<h2>Arrive: Conclusion (${fmt(t.concl)})</h2>${ul(lines(S.conclusion.review))}${ul(lines(S.conclusion.clincher))}`;
+  $('#print').innerHTML = h;
+  try { window.print(); } catch(e){ toast('Printing is blocked here. Copy the trip sheet instead.'); }
+}
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-action]'); if (!b) return;
+  const a = b.dataset.action, id = b.dataset.id;
+  switch (a){
+    case 'tab': UI.place = null; UI.hl = null; UI.tab = b.dataset.tab; if (isMobile() && $('#app').dataset.sheet === 'peek') $('#app').dataset.sheet = 'half'; renderPanel(); renderMap(); panelBody.scrollTop = 0; if (b.classList.contains('tab')) b.focus(); else { const t = $('#tab-' + UI.tab); if (t) t.focus(); } break;
+    case 'toggle': {
+      UI.open = UI.open === id ? null : id;
+      const li = document.getElementById('rl-' + id);
+      $$('.rl-head', panelBody).forEach(h => { const open = h.dataset.id === UI.open; h.setAttribute('aria-expanded', open); document.getElementById('rlb-' + h.dataset.id).hidden = !open; });
+      if (UI.open && li) { li.scrollIntoView({ block:'start', behavior:reduced() ? 'auto' : 'smooth' }); UI.hl = id; renderMap(); centerOn(MPOS[id]); }
+      break; }
+    case 'add-point': { const p = blankPoint(); p.minutes = S.points.length ? num(S.points[S.points.length - 1].minutes) || 1 : 1.25; S.points.push(p); UI.open = p.id; analyze(); save(); renderPanel(); renderMap(); fitRoute(); openStop(p.id); toast('Stop added. Give it a street name.'); break; }
+    case 'move': { const i = pointIndex(id), j = i + (+b.dataset.dir); if (j < 0 || j >= S.points.length) break; [S.points[i], S.points[j]] = [S.points[j], S.points[i]]; analyze(); save(); renderPanel(); renderMap(); const nb = $(`[data-action="move"][data-id="${id}"][data-dir="${b.dataset.dir}"]`) || $(`[data-action="move"][data-id="${id}"]`); if (nb) nb.focus(); toast(`Moved to stop ${j+1}.`); break; }
+    case 'del-point': { const p = findPoint(id); if (await askConfirm(`Remove “${p.title || 'this stop'}” and its points of interest?`, 'Remove stop')){ S.points = S.points.filter(x => x.id !== id); S.hazards.forEach(h => { if (h.at === id) h.at = 'start'; }); UI.open = null; analyze(); save(); renderPanel(); renderMap(); fitRoute(); toast('Stop removed.'); } break; }
+    case 'add-poi': { const p = findPoint(id); const q = blankPoi(b.dataset.type); p.pois.push(q); analyze(); save(); renderPanel(); renderMap(); const f = document.getElementById(fid(`points.${p.id}.pois.${q.id}.${q.type === 'quote' ? 'speaker' : 'label'}`)); if (f) f.focus(); break; }
+    case 'del-poi': { const p = findPoint(id); p.pois = p.pois.filter(q => q.id !== b.dataset.qid); analyze(); save(); renderPanel(); renderMap(); toast('Point of interest removed.'); break; }
+    case 'add-haz': { const h = { id:uid(), type:'tech', at:S.points[0] ? S.points[0].id : 'start', plan:'' }; S.hazards.push(h); analyze(); save(); renderPanel(); renderMap(); const f = document.getElementById(fid(`hazards.${h.id}.type`)); if (f) f.focus(); break; }
+    case 'del-haz': S.hazards = S.hazards.filter(h => h.id !== id); analyze(); save(); renderPanel(); renderMap(); break;
+    case 'place': selectPlace(id, false); break;
+    case 'back': UI.place = null; renderPanel(); renderMap(); { const t = $('#tab-' + UI.tab); if (t) t.focus(); } break;
+    case 'edit-stop': openStop(id, !!b.dataset.poi); break;
+    case 'goto': {
+      if (b.dataset.stop){ openStop(b.dataset.stop); }
+      else if (b.dataset.tab){ UI.place = null; UI.tab = b.dataset.tab; renderPanel(); renderMap(); panelBody.scrollTop = 0; if (b.dataset.anchor === 'haz'){ const s = $('#haz-sec'); if (s) s.scrollIntoView(); } }
+      break; }
+    case 'peek': { const st = buildSteps()[+b.dataset.step]; UI.hl = st.id || st.stop; renderMap(); centerOn(st.pos); break; }
+    case 'start-nav': startNav(0); break;
+    case 'nav-from': { const steps = buildSteps(); const i = steps.findIndex(s => s.stop === id && s.kind !== 'turn'); startNav(Math.max(0, i)); break; }
+    case 'balance': balanceTimes(); break;
+    case 'sheet': $('#sheet-txt').value = sheetText(); $('#dlg-sheet').showModal(); break;
+    case 'copy-sheet': copyText($('#sheet-txt').value, 'Trip sheet copied.'); break;
+    case 'print': printSheet(); break;
+    case 'help': $('#dlg-help').showModal(); break;
+    case 'theme': setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); break;
+    case 'zoom-in': { const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 0.75); break; }
+    case 'zoom-out': { const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.33); break; }
+    case 'fit': fitRoute(); break;
+    case 'panel-toggle': UI.panel = !UI.panel; syncPanel(); break;
+    case 'sheet-cycle': { const app = $('#app'); const order = ['peek', 'half', 'full']; app.dataset.sheet = order[(order.indexOf(app.dataset.sheet) + 1) % 3]; break; }
+    case 'layer': UI.layers[b.dataset.layer] = !UI.layers[b.dataset.layer]; b.setAttribute('aria-pressed', UI.layers[b.dataset.layer]); renderMap(); break;
+    case 'copy-backup': copyText(JSON.stringify(S), 'Backup code copied. Paste it somewhere safe.'); break;
+    case 'show-restore': { const box = $('#restore-box'); box.hidden = !box.hidden; if (!box.hidden) $('#restore-txt').focus(); break; }
+    case 'restore': {
+      let ns = null; try { ns = normalize(JSON.parse($('#restore-txt').value.trim())); } catch(err){}
+      if (!ns){ toast('That code didn’t work. Paste the whole backup code and try again.'); break; }
+      S = ns; analyze(); save(); UI.open = 'start'; renderPanel(); renderMap(); fitRoute(); toast('Route restored.'); break; }
+    case 'new-route':
+      if (await askConfirm('Clear this route and start with a blank map? Copy a backup code first if you want to keep it.', 'Start new route')){
+        S = blankState(); UI.tab = 'plan'; UI.place = null; UI.open = 'start'; analyze(); save(); renderPanel(); renderMap(); fitRoute();
+        const f = document.getElementById(fid('meta.title')); if (f) f.focus(); toast('New route started. Begin with your title and destination.'); }
+      break;
+    case 'load-sample':
+      if (await askConfirm('Replace your current route with the sample route?', 'Load sample')){ S = sampleState(); analyze(); save(); UI.place = null; renderPanel(); renderMap(); fitRoute(); toast('Sample route loaded.'); }
+      break;
+  }
+});
+/* tab keyboard */
+$('#panel-tabs').addEventListener('keydown', e => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  const i = TABS.findIndex(t => t.k === UI.tab);
+  let j = e.key === 'ArrowLeft' ? i - 1 : e.key === 'ArrowRight' ? i + 1 : e.key === 'Home' ? 0 : TABS.length - 1;
+  j = (j + TABS.length) % TABS.length; e.preventDefault();
+  UI.tab = TABS[j].k; renderPanel(); renderMap(); $('#tab-' + UI.tab).focus();
+});
+$$('dialog').forEach(d => d.addEventListener('click', e => { if (e.target.closest('[data-close]')) d.close(); }));
+$('#dlg-help').addEventListener('close', () => store.set(HKEY, '1'));
+
+/* ---------- search ---------- */
+const q = $('#q'), qr = $('#q-results');
+function searchItems(){
+  const items = [{ id:'start', t:'Introduction', s:'Start of route', txt:Object.values(S.intro).join(' ') }];
+  S.points.forEach((p, i) => {
+    items.push({ id:p.id, t:p.title || `Main point ${i+1}`, s:`Stop ${i+1}`, txt:p.keywords + ' ' + p.transition });
+    p.pois.forEach(x => items.push({ id:'poi:' + x.id, t:x.type === 'quote' ? (x.speaker || 'Quotation') + ': ' + x.label : x.label || POI[x.type].name, s:`${POI[x.type].map} near stop ${i+1}`, txt:Object.values(x).join(' ') }));
+  });
+  items.push({ id:'end', t:'Conclusion', s:'Destination', txt:S.conclusion.review + ' ' + S.conclusion.clincher + ' ' + S.meta.takeaway });
+  S.hazards.forEach(h => items.push({ id:'hz:' + h.id, t:HAZ[h.type], s:`Challenge near ${stopName(h.at)}`, txt:h.plan }));
+  return items;
+}
+function runSearch(){
+  const v = q.value.trim().toLowerCase();
+  if (!v){ qr.hidden = true; q.setAttribute('aria-expanded', 'false'); return; }
+  const res = searchItems().filter(it => (it.t + ' ' + it.s + ' ' + it.txt).toLowerCase().includes(v)).slice(0, 8);
+  qr.innerHTML = res.length ? res.map((r, i) => `<button role="option" id="qo-${i}" data-qid="${esc(r.id)}">${icon(r.id.startsWith('poi:') ? 'camera' : r.id.startsWith('hz:') ? 'warning' : 'pin')}<span><span class="qr-t">${esc(trunc(r.t, 48))}</span><span class="qr-s">${esc(r.s)}</span></span></button>`).join('') : `<div class="empty">No stops match “${esc(q.value)}”.</div>`;
+  qr.hidden = false; q.setAttribute('aria-expanded', 'true');
+}
+q.addEventListener('input', runSearch);
+q.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown'){ const f = $('button', qr); if (f){ e.preventDefault(); f.focus(); } }
+  else if (e.key === 'Enter'){ const f = $('button', qr); if (f){ e.preventDefault(); f.click(); } }
+  else if (e.key === 'Escape'){ q.value = ''; runSearch(); }
+});
+qr.addEventListener('keydown', e => {
+  const bs = $$('button', qr), i = bs.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown'){ e.preventDefault(); (bs[i + 1] || bs[0]).focus(); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); i <= 0 ? q.focus() : bs[i - 1].focus(); }
+  else if (e.key === 'Escape'){ q.focus(); qr.hidden = true; }
+});
+qr.addEventListener('click', e => { const b = e.target.closest('[data-qid]'); if (!b) return; qr.hidden = true; q.setAttribute('aria-expanded', 'false'); q.value = ''; selectPlace(b.dataset.qid, true); });
+document.addEventListener('click', e => { if (!e.target.closest('.search')){ qr.hidden = true; q.setAttribute('aria-expanded', 'false'); } });
+
+/* ---------- navigation (rehearsal) ---------- */
+const NAV = { on:false, i:0, steps:[], t0:0, acc:0, paused:false, timer:null };
+const elapsed = () => NAV.acc + (NAV.paused ? 0 : (performance.now() - NAV.t0) / 1000);
+function startNav(i){
+  analyze(); LAY = layout();
+  NAV.steps = buildSteps(); NAV.i = i; NAV.acc = NAV.steps[i] ? 0 : 0; NAV.t0 = performance.now(); NAV.paused = false; NAV.on = true; NAV.from = i;
+  UI.place = null; UI.hl = null;
+  $('#app').classList.add('navving'); $('#nav').hidden = false;
+  renderNav(); clearInterval(NAV.timer); NAV.timer = setInterval(tick, 250);
+  setTimeout(() => { const b = $('#nav-next'); if (b) b.focus(); }, 30);
+}
+function renderNav(){
+  const s = NAV.steps[NAV.i], nx = NAV.steps[NAV.i + 1];
+  const chips = (s.pois || []).map(x => `<span class="nav-chip"><span class="tag ${x.type}">${icon(POI[x.type].icon)}</span>${esc(POI[x.type].map)}: ${esc(trunc(x.type === 'quote' ? [x.speaker, x.label].filter(Boolean).join(': ') : x.label || '', 60))}</span>`).join('')
+    + (s.haz || []).map(h => `<span class="nav-chip"><span class="tag haz">${icon('bang')}</span>${esc(HAZ[h.type])}: ${esc(trunc(h.plan || '', 60))}</span>`).join('');
+  $('#nav').innerHTML = `<div class="nav-top" aria-live="polite">
+    <div class="nav-banner"><div class="nav-ic">${icon(s.icon)}</div><div class="nav-main"><p class="nav-title">${esc(s.title)}</p>${s.body.length ? `<ul class="nav-keys">${s.body.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}</div></div>
+    ${nx ? `<div class="nav-then">Then ${icon(nx.icon)}<span>${esc(trunc(nx.title, 44))}</span></div>` : ''}
+    ${chips ? `<div class="nav-chips">${chips}</div>` : ''}
+  </div>
+  <div class="nav-bottom">
+    <div class="nav-time"><span class="nav-el" id="nav-el">0:00</span><span class="nav-stat" id="nav-stat">On time</span></div>
+    <div class="nav-info">Turn <b>${NAV.i + 1}</b> of ${NAV.steps.length}. Aim to be here by <b>${fmt(s.end)}</b>. <span class="sr">Use arrow keys, Space, or a clicker to move.</span></div>
+    <div class="nav-btns">
+      <button class="btn" id="nav-prev" aria-label="Previous turn"${NAV.i === 0 ? ' disabled' : ''}>${icon('back')}</button>
+      <button class="btn" id="nav-pause" aria-label="${NAV.paused ? 'Resume timer' : 'Pause timer'}">${icon(NAV.paused ? 'play' : 'pause')}</button>
+      <button class="btn primary" id="nav-next">${NAV.i === NAV.steps.length - 1 ? 'Finish' : 'Next turn'}${icon('fwd')}</button>
+      <button class="btn nav-end" id="nav-end">${icon('stop')}End</button>
+    </div></div>`;
+  $('#nav-prev').onclick = () => navGo(-1);
+  $('#nav-next').onclick = () => navGo(1);
+  $('#nav-pause').onclick = navPause;
+  $('#nav-end').onclick = () => finishNav(false);
+  UI.hl = s.id || s.stop; renderMap();
+  centerOn(s.pos, 1100);
+  tick();
+}
+function navGo(d){
+  const j = NAV.i + d;
+  if (j >= NAV.steps.length) return finishNav(true);
+  if (j < 0) return;
+  NAV.i = j; const had = document.activeElement && document.activeElement.id; renderNav();
+  if (had && document.getElementById(had) && !document.getElementById(had).disabled) document.getElementById(had).focus(); else $('#nav-next').focus();
+}
+function navPause(){
+  if (NAV.paused){ NAV.t0 = performance.now(); NAV.paused = false; } else { NAV.acc = elapsed(); NAV.paused = true; }
+  const b = $('#nav-pause'); b.innerHTML = icon(NAV.paused ? 'play' : 'pause'); b.setAttribute('aria-label', NAV.paused ? 'Resume timer' : 'Pause timer');
+  tick();
+}
+function tick(){
+  if (!NAV.on) return;
+  const el = elapsed(), s = NAV.steps[NAV.i], offset = NAV.steps[NAV.from] ? NAV.steps[NAV.from].start * 60 : 0;
+  const t = el + offset, lim = num(S.meta.limit) * 60;
+  const e = $('#nav-el'), st = $('#nav-stat'); if (!e) return;
+  e.textContent = fmtSec(t);
+  let cls = '', msg = 'On time';
+  if (lim && t > lim){ cls = 'over'; msg = `Over the limit by ${fmtSec(t - lim)}`; }
+  else if (t > s.end * 60 + 10){ cls = 'slow'; msg = `Running ${fmtSec(t - s.end * 60)} behind`; }
+  else if (s.min && t < s.start * 60 - 15){ msg = 'Ahead of plan: slow down and breathe'; }
+  if (NAV.paused) msg = 'Paused. ' + msg;
+  e.className = 'nav-el ' + cls; st.textContent = msg;
+}
+function finishNav(done){
+  if (!NAV.on) return;
+  const actual = elapsed(); const planned = times().total * 60;
+  clearInterval(NAV.timer); NAV.on = false;
+  $('#app').classList.remove('navving'); $('#nav').hidden = true; $('#nav').innerHTML = '';
+  UI.hl = null;
+  if (NAV.from === 0 && actual > 10){
+    S.rehearsals.push({ date:new Date().toISOString(), planned:Math.round(planned), actual:Math.round(actual), done });
+    if (S.rehearsals.length > 30) S.rehearsals.shift();
+    UI.tab = 'check'; UI.place = null;
+    toast(done ? `Arrived. Rehearsal logged: ${fmtSec(actual)} of ${fmtSec(planned)} planned.` : `Rehearsal stopped at ${fmtSec(actual)} and logged.`);
+  } else toast('Rehearsal ended.');
+  analyze(); save(); renderPanel(); renderMap(); setTimeout(() => fitRoute(), 50);
+  const t = $('#tab-' + UI.tab); if (t) t.focus();
+}
+document.addEventListener('keydown', e => {
+  if (NAV.on){
+    if (e.target.closest('dialog')) return;
+    const onBtn = e.target.tagName === 'BUTTON';
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !onBtn)){ e.preventDefault(); navGo(1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); navGo(-1); }
+    else if (e.key === 'p' || e.key === 'P'){ navPause(); }
+    else if (e.key === 'Escape'){ e.preventDefault(); finishNav(false); }
+    return;
+  }
+  if (e.key === 'Escape' && UI.place && !e.target.closest('dialog')){ UI.place = null; renderPanel(); renderMap(); }
+});
+
+/* ---------- theme ---------- */
+function setTheme(t){
+  document.documentElement.dataset.theme = t; store.set(TKEY, t);
+  const b = $('#theme-btn'), dark = t === 'dark';
+  b.innerHTML = `${icon(dark ? 'sun' : 'moon')}<span class="theme-lbl">${dark ? 'Light' : 'Dark'}</span>`;
+  b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  b.setAttribute('aria-pressed', dark);
+}
+
+/* ---------- init ---------- */
+setTheme(store.get(TKEY) === 'dark' ? 'dark' : 'light');
+buildBase(); analyze(); renderChips(); renderPanel(); renderMap(); syncPanel();
+requestAnimationFrame(() => { applyVB(); fitRoute(false); });
+let rsT = null;
+new ResizeObserver(() => { clearTimeout(rsT); applyVB(); rsT = setTimeout(() => { if (!NAV.on) fitRoute(false); }, 150); }).observe(svg);
+if (!store.get(HKEY)) setTimeout(() => $('#dlg-help').showModal(), 400);
+})();
+</script>
+</body>
+</html>
