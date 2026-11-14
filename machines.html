@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simple Machines Virtual Lab</title>
+<script>
+(function(){try{var t=localStorage.getItem('sm-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<style>
+:root{
+  --paper:#F5F8FC; --surface:#FFFFFF; --ink:#14213D; --muted:#56637C; --line:#D3DCE9; --grid:#E5ECF6;
+  --effort:#0047AB; --effort-text:#0047AB; --effort-soft:#E6EEFA;
+  --load:#00a86b; --load-text:#00744A; --load-soft:#E2F5EC;
+  --loss:#C0392B; --loss-text:#B03224;
+  --metal:#71809A; --metal-fill:#E3E8F0; --wood:#E5C391; --wood-dark:#A8783F; --rope:#8C6B3E;
+  --focus:#0047AB;
+  --display:"Bahnschrift","DIN Alternate","DIN Next","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1B2D; --surface:#16253B; --ink:#E7EDF7; --muted:#A3B0C6; --line:#2C3D58; --grid:#1C2C45;
+    --effort:#6EA8FF; --effort-text:#8DBBFF; --effort-soft:#1B3155;
+    --load:#34D399; --load-text:#5BE3AE; --load-soft:#123A2E;
+    --loss:#FF7A6B; --loss-text:#FF8F82;
+    --metal:#8C9CB6; --metal-fill:#2A3B55; --wood:#9C7444; --wood-dark:#6A4C28; --rope:#D0AE7B;
+    --focus:#8DBBFF; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1B2D; --surface:#16253B; --ink:#E7EDF7; --muted:#A3B0C6; --line:#2C3D58; --grid:#1C2C45;
+  --effort:#6EA8FF; --effort-text:#8DBBFF; --effort-soft:#1B3155;
+  --load:#34D399; --load-text:#5BE3AE; --load-soft:#123A2E;
+  --loss:#FF7A6B; --loss-text:#FF8F82;
+  --metal:#8C9CB6; --metal-fill:#2A3B55; --wood:#9C7444; --wood-dark:#6A4C28; --rope:#D0AE7B;
+  --focus:#8DBBFF; color-scheme:dark;
+}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 130px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{font-family:var(--display);line-height:1.15;margin:0 0 .5em;font-weight:600}
+h1{font-size:clamp(2rem,4.2vw,3.1rem);letter-spacing:-.01em}
+h2{font-size:1.3rem}
+h3{font-size:1.08rem}
+p{margin:0 0 1em}
+a{color:var(--effort-text)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+.num{font-variant-numeric:tabular-nums}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:10px;padding-bottom:6px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font:600 1.15rem var(--display)}
+.brand svg{width:34px;height:34px}
+.theme-btn{display:inline-flex;align-items:center;gap:8px;font:600 .9rem var(--body);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;min-height:36px}
+.theme-btn:hover{border-color:var(--effort)}
+.theme-btn svg{width:18px;height:18px}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;padding-bottom:0}
+.tabs a{flex:0 0 auto;text-decoration:none;color:var(--muted);font:600 .95rem var(--display);padding:9px 12px 10px;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--effort-text);border-bottom-color:var(--effort)}
+.tabs .sep{flex:0 0 1px;background:var(--line);margin:8px 6px}
+
+/* Views */
+.view{display:none;padding:28px 0 64px}
+.view.active{display:block}
+.lede{font-size:1.1rem;color:var(--muted);max-width:68ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 .95rem var(--body);border-radius:8px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-height:40px;text-decoration:none}
+.btn:hover{border-color:var(--effort)}
+.btn.primary{background:var(--effort);border-color:var(--effort);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0F1B2D}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.small{font-size:.88rem;color:var(--muted)}
+
+/* Overview */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:36px;align-items:center;padding-bottom:28px}
+.hero h1{font-size:clamp(2.3rem,5vw,3.8rem);max-width:13ch}
+.hero .lede{font-size:1.15rem}
+.hero-art{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px}
+.hero-art svg{width:100%;height:auto;display:block}
+.hero-beam{transform-box:view-box;transform-origin:300px 190px;animation:tip 3.2s ease-in-out .4s 1 both}
+@keyframes tip{0%{transform:rotate(9deg)}55%{transform:rotate(-7deg)}100%{transform:rotate(-4deg)}}
+.section{margin-top:40px}
+.objectives{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;padding:0;list-style:none;margin:0}
+.objectives li{border-left:3px solid var(--effort);padding:4px 0 4px 14px}
+.objectives b{display:block;font-family:var(--display);font-size:1.05rem}
+.machines{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.mcard{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.mcard:hover{border-color:var(--effort)}
+.mcard svg{width:100%;height:96px;background:var(--paper);border-radius:8px}
+.mcard h3{margin:4px 0 0}
+.mcard p{margin:0;color:var(--muted);font-size:.93rem}
+.mcard span{margin-top:auto;color:var(--effort-text);font-weight:600;font-size:.92rem}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;counter-reset:s;list-style:none;padding:0;margin:0}
+.steps li{counter-increment:s;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.steps li::before{content:counter(s);display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--effort-soft);color:var(--effort-text);font:700 1rem var(--display);margin-bottom:8px}
+.steps b{display:block;font-family:var(--display);font-size:1.05rem}
+.key{display:flex;flex-wrap:wrap;gap:18px;margin-top:10px}
+.key span{display:inline-flex;align-items:center;gap:8px;font-size:.92rem}
+.swatch{width:26px;height:4px;border-radius:2px;display:inline-block}
+
+/* Lab */
+.lab-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+.lab-head .count{color:var(--muted);font-size:.95rem;margin:0 0 4px}
+.lab-head h1{margin:0}
+.lab-head .lede{margin:6px 0 0}
+.lab-nav{display:flex;gap:8px}
+.lab{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+.lab-main,.lab-side{display:grid;gap:18px}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px}
+.stage svg{display:block;width:100%;height:auto}
+.stage-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line);background:var(--surface)}
+.status{color:var(--muted);font-size:.92rem;flex:1 1 200px}
+.ctls{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 22px}
+.ctl label,.ctl .ctl-l{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:.92rem;margin-bottom:6px}
+.ctl output{font-variant-numeric:tabular-nums;color:var(--effort-text);font-family:var(--display);font-size:1rem}
+input[type=range]{width:100%;accent-color:var(--effort);height:24px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;font:600 .9rem var(--body);padding:8px 6px;border:0;background:var(--surface);color:var(--ink);cursor:pointer;min-height:36px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--effort);color:#fff}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#0F1B2D}
+details.card>summary{cursor:pointer;font:600 1.1rem var(--display);list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"+";font-size:1.4rem;color:var(--muted)}
+details.card[open]>summary::after{content:"−"}
+details.card[open]>summary{margin-bottom:10px}
+.formula{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-variant-numeric:tabular-nums;margin:10px 0}
+.formula div+div{margin-top:4px}
+.side-h{display:flex;align-items:baseline;gap:10px}
+.side-h .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--effort-soft);color:var(--effort-text);font:700 .95rem var(--display);flex:0 0 auto}
+.predict input{width:100%;font:600 1.05rem var(--body);padding:9px 12px;border:1px solid var(--metal);border-radius:8px;background:var(--paper);color:var(--ink);margin:6px 0 8px}
+.fb-box{border-radius:8px;padding:10px 12px;font-size:.93rem;margin-top:6px}
+.fb-box:empty{display:none}
+.fb-box.good{background:var(--load-soft);border:1px solid var(--load)}
+.fb-box.off{background:var(--effort-soft);border:1px solid var(--effort)}
+.readouts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}
+.readouts div{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.readouts dt{font-size:.8rem;color:var(--muted)}
+.readouts dd{margin:0;font:600 1.2rem var(--display);font-variant-numeric:tabular-nums}
+.readouts .e dd{color:var(--effort-text)}
+.readouts .l dd{color:var(--load-text)}
+.readouts .x dd{color:var(--loss-text)}
+.placeholder{color:var(--muted);font-size:.93rem;border:1px dashed var(--line);border-radius:8px;padding:14px;text-align:center}
+.trade{margin-top:14px;display:grid;gap:10px}
+.trade-row{display:grid;grid-template-columns:72px 1fr;gap:8px;align-items:center;font-size:.85rem}
+.trade-row .bars{display:grid;gap:4px}
+.tbar{height:12px;border-radius:3px;min-width:2px;transition:width .3s}
+.tbar.e{background:var(--effort)} .tbar.l{background:var(--load)}
+.tlabel{display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem}
+.calc{margin-top:12px}
+.calc summary{cursor:pointer;font-weight:600;font-size:.93rem;color:var(--effort-text)}
+table{width:100%;border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:.8rem}
+td.r,th.r{text-align:right}
+.tbl-wrap{overflow-x:auto;margin-top:10px}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* SVG */
+svg text{font-family:var(--display)}
+.t{fill:var(--ink);font-size:14px;font-weight:600}
+.tm{fill:var(--muted);font-size:13px;font-weight:500}
+.te{fill:var(--effort-text);font-size:14px;font-weight:700}
+.tl{fill:var(--load-text);font-size:14px;font-weight:700}
+.tx{fill:var(--loss-text);font-size:13px;font-weight:700}
+.ar{fill:none;stroke-linecap:round}
+.ar.eff{stroke:var(--effort)} .ar.load{stroke:var(--load)} .ar.loss{stroke:var(--loss)}
+.metal{fill:var(--metal-fill);stroke:var(--metal);stroke-width:2}
+.metal-s{fill:var(--metal);stroke:var(--metal)}
+.rim{fill:none;stroke:var(--metal);stroke-width:7}
+.spoke{stroke:var(--metal);stroke-width:3}
+.wood{fill:var(--wood);stroke:var(--wood-dark);stroke-width:2}
+.grain{stroke:var(--wood-dark);stroke-width:1;opacity:.5;fill:none}
+.box{fill:var(--load-soft);stroke:var(--load);stroke-width:2}
+.ground{stroke:var(--muted);stroke-width:2}
+.hatch{stroke:var(--muted);stroke-width:1}
+.dim{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:4 3;fill:none}
+.dimE{stroke:var(--effort);stroke-width:1.6}
+.dimL{stroke:var(--load);stroke-width:1.6}
+.rope{stroke:var(--rope);stroke-width:3;fill:none}
+.rope.sup{stroke:var(--load);stroke-width:4}
+.rope.free{stroke:var(--effort);stroke-width:4}
+.ramp{fill:var(--metal-fill);stroke:var(--metal);stroke-width:2}
+.thread{stroke:var(--metal);stroke-width:1.4}
+.path-d{fill:none;stroke:var(--effort);stroke-width:1.5;stroke-dasharray:5 5;opacity:.7}
+.mk-e{fill:var(--effort)} .mk-l{fill:var(--load)} .mk-x{fill:var(--loss)}
+
+/* Quiz */
+.q{border:0;padding:0;margin:0 0 18px}
+.q legend{font-weight:600;margin-bottom:8px;padding:0}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;font:500 .95rem var(--body);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;min-height:40px}
+.opt:hover:not(:disabled){border-color:var(--effort)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--load-soft);border-color:var(--load)}
+.opt.wrong{background:color-mix(in srgb,var(--loss) 12%,var(--surface));border-color:var(--loss)}
+.fb{margin:8px 0 0;font-size:.93rem}
+.fb:empty{display:none}
+.score{font:600 1.05rem var(--display)}
+
+/* Dashboard */
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0}
+.insight{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;border-top:4px solid var(--effort)}
+.insight:nth-child(2){border-top-color:var(--load)}
+.insight:nth-child(3){border-top-color:var(--loss)}
+.insight .k{color:var(--muted);font-size:.88rem}
+.insight .v{font:600 1.5rem var(--display);margin:2px 0}
+.insight .d{font-size:.9rem;color:var(--muted);margin:0}
+.dash-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;margin-top:18px}
+.chart svg{width:100%;height:auto;display:block}
+.gridl{stroke:var(--line);stroke-width:1}
+.refl{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:5 4}
+.bar-ideal{fill:var(--effort-soft);stroke:var(--effort);stroke-width:1.8}
+.bar-actual{fill:var(--load)}
+.bar-eff{fill:var(--load)}
+.bar-track{fill:var(--paper);stroke:var(--line)}
+.idealline{stroke:var(--effort);stroke-width:2;stroke-dasharray:7 5}
+.pt{fill:var(--load);stroke:var(--surface);stroke-width:2;fill-opacity:.9}
+.ptn{fill:#0F1B2D;font-size:12px;font-weight:700}
+:root[data-theme="dark"] .ptn{fill:#0F1B2D}
+.badge{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--load);color:#0F1B2D;font:700 .75rem var(--display);margin-right:4px}
+:root[data-theme="dark"] .badge{color:#0F1B2D}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:.88rem;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:16px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+td a{font-weight:600}
+
+/* Principles */
+.pgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.wb{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start}
+.wb svg{width:100%;height:auto;background:var(--paper);border-radius:10px;border:1px solid var(--line)}
+.wb .part{transition:opacity .2s}
+.wb svg.has-sel .part:not(.hl){opacity:.3}
+.wb-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.wb-btns button[aria-pressed="true"]{background:var(--effort);border-color:var(--effort);color:#fff}
+:root[data-theme="dark"] .wb-btns button[aria-pressed="true"]{color:#0F1B2D}
+.flips{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.flip{perspective:900px;background:none;border:0;padding:0;cursor:pointer;height:150px;font:inherit;color:inherit;text-align:left}
+.flip-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.flip[aria-pressed="true"] .flip-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;border:1px solid var(--line);padding:14px 16px;display:flex;flex-direction:column;justify-content:center}
+.face.front{background:var(--surface)}
+.face.front b{font:600 1.2rem var(--display)}
+.face.front small{color:var(--muted)}
+.face.back{background:var(--effort-soft);transform:rotateY(180deg);font-size:.92rem;border-color:var(--effort)}
+.foot{border-top:1px solid var(--line);padding:22px 0 30px;color:var(--muted);font-size:.88rem}
+
+@media (max-width:920px){
+  .hero,.lab,.dash-grid,.pgrid,.wb{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .wrap{padding:0 14px}
+  .readouts{grid-template-columns:1fr 1fr}
+  .readouts dd{font-size:1.05rem}
+  .brand span{font-size:1rem}
+}
+@media (prefers-reduced-motion: reduce){
+  .hero-beam{animation:none;transform:rotate(-4deg)}
+  .flip-in,.tbar{transition:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="mk-eff" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk-e"/></marker>
+    <marker id="mk-load" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk-l"/></marker>
+    <marker id="mk-loss" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.2" markerHeight="4.2" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk-x"/></marker>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="#overview">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="17" width="34" height="5" rx="2" transform="rotate(-10 20 20)" fill="#0047AB"/><path d="M20 22 L13 34 H27 Z" fill="#00a86b"/></svg>
+      <span>Simple Machines Lab</span>
+    </a>
+    <button class="theme-btn" id="themeBtn" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <span>Dark mode</span>
+    </button>
+  </div>
+  <nav class="wrap tabs" aria-label="Lab sections" id="tabs">
+    <a href="#overview">Overview</a>
+    <span class="sep" aria-hidden="true"></span>
+    <a href="#lever">Lever</a>
+    <a href="#wheel-axle">Wheel and axle</a>
+    <a href="#pulley">Pulley</a>
+    <a href="#inclined-plane">Inclined plane</a>
+    <a href="#wedge">Wedge</a>
+    <a href="#screw">Screw</a>
+    <span class="sep" aria-hidden="true"></span>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#principles">Principles and quiz</a>
+  </nav>
+</header>
+
+<main>
+<!-- OVERVIEW -->
+<section class="view" id="v-overview" aria-labelledby="h-overview">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1 id="h-overview" tabindex="-1">Every machine makes the same trade.</h1>
+        <p class="lede">A simple machine lets you push with less force by pushing over a longer distance, or move something farther by pushing harder. It can also change the direction of a push. What it can’t do is give back more work than you put in.</p>
+        <p>Build, run, and measure each of the six simple machines in its own virtual lab, then line them up on the dashboard to see how they compare.</p>
+        <div class="row-btns"><a class="btn primary" href="#lever">Start with the lever lab</a><a class="btn" href="#principles">Review the principles</a></div>
+        <div class="key" aria-label="Color key used in every lab">
+          <span><i class="swatch" style="background:var(--effort)"></i>Effort (what you apply)</span>
+          <span><i class="swatch" style="background:var(--load)"></i>Load (what the machine moves)</span>
+          <span><i class="swatch" style="background:var(--loss)"></i>Friction and losses</span>
+        </div>
+      </div>
+      <div class="hero-art">
+        <svg viewBox="0 0 600 300" role="img" aria-label="A first-class lever tips as a small effort on the long side raises a heavy load on the short side.">
+          <line x1="40" y1="246" x2="560" y2="246" class="ground"/>
+          <path d="M300 198 L272 246 H328 Z" class="metal"/>
+          <g class="hero-beam">
+            <rect x="80" y="182" width="440" height="16" rx="4" class="metal"/>
+            <rect x="92" y="128" width="72" height="54" rx="3" class="box"/>
+            <text x="128" y="161" class="tl">Load</text>
+            <line x1="128" y1="62" x2="128" y2="118" class="ar load" stroke-width="4" marker-end="url(#mk-load)"/>
+            <text x="128" y="52" class="tl">900 N</text>
+            <line x1="500" y1="106" x2="500" y2="172" class="ar eff" stroke-width="4" marker-end="url(#mk-eff)"/>
+            <text x="500" y="96" class="te">300 N</text>
+          </g>
+          <line x1="300" y1="272" x2="128" y2="272" class="dimL"/><text x="214" y="290" class="tl">1 m</text>
+          <line x1="300" y1="262" x2="500" y2="262" class="dimE"/><text x="400" y="257" class="te">3 m</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>What you’ll be able to do</h2>
+      <ul class="objectives">
+        <li><b>Identify</b>Name each machine, label its effort, load, and pivot or support, and find simple machines inside everyday devices.</li>
+        <li><b>Explain</b>Describe how each machine changes the size or direction of a force, or the distance its output moves.</li>
+        <li><b>Predict</b>Use the machine’s geometry to calculate ideal mechanical advantage and the effort it should need.</li>
+        <li><b>Measure and compare</b>Run the machine, compare your prediction with the measured effort, and explain the gap using work and efficiency.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>The six labs</h2>
+      <div class="machines" id="machineCards"></div>
+    </div>
+
+    <div class="section">
+      <h2>How each lab works</h2>
+      <ol class="steps">
+        <li><b>Set up the machine</b>Use the sliders to change its geometry, the load, and the friction.</li>
+        <li><b>Predict</b>Calculate the ideal mechanical advantage and enter the effort you expect.</li>
+        <li><b>Run and measure</b>Run the machine. The lab measures effort, distances, work, and efficiency.</li>
+        <li><b>Record and compare</b>Save trials, change one variable at a time, and compare all six on the dashboard.</li>
+      </ol>
+    </div>
+
+    <div class="section card">
+      <h2>About the models</h2>
+      <p>Each lab uses the standard ideal model from introductory physics, then adds friction so the measured effort is larger than the ideal effort. For most machines, friction appears as a percentage of input work lost. The inclined plane uses a coefficient of friction instead, because that’s how ramp friction is usually measured. The wedge uses the simple geometric model: ideal mechanical advantage equals taper length divided by thickness.</p>
+      <p class="small" style="margin:0">Forces are in newtons (N), distances in meters (m), and work in joules (J). Your recorded trials are saved in this browser only.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LABS (generated) -->
+<section class="view" id="v-lever"></section>
+<section class="view" id="v-wheel-axle"></section>
+<section class="view" id="v-pulley"></section>
+<section class="view" id="v-inclined-plane"></section>
+<section class="view" id="v-wedge"></section>
+<section class="view" id="v-screw"></section>
+
+<!-- DASHBOARD -->
+<section class="view" id="v-dashboard" aria-labelledby="h-dash">
+  <div class="wrap">
+    <h1 id="h-dash" tabindex="-1">Compare the six machines</h1>
+    <p class="lede">Each row uses the settings you left in that machine’s lab. Change a lab, come back, and watch the comparison shift.</p>
+    <div class="insights" id="insights"></div>
+    <div class="card">
+      <h2>Current setup of each machine</h2>
+      <div class="tbl-wrap"><table id="dashTable"></table></div>
+    </div>
+    <div class="dash-grid">
+      <div class="card chart">
+        <h2>Ideal and actual mechanical advantage</h2>
+        <p class="small">Bars grow right from 1 when the machine multiplies force, and left when it trades force for extra output distance. The scale is logarithmic so a screw and a lever fit on one chart.</p>
+        <div id="maChart"></div>
+        <div class="legend"><span><i style="background:var(--effort-soft);border:1.5px solid var(--effort)"></i>Ideal (IMA)</span><span><i style="background:var(--load)"></i>Actual (AMA)</span></div>
+      </div>
+      <div class="card chart">
+        <h2>Efficiency</h2>
+        <p class="small">Useful output work divided by input work. The gap to 100% is work lost to friction.</p>
+        <div id="effChart"></div>
+      </div>
+    </div>
+    <div class="card chart" style="margin-top:18px">
+      <h2>Same job, six machines</h2>
+      <p class="small">Each machine, at its current setup, moves a 1,000 N load through 0.5 m, which is 500 J of useful work. Points on the dashed line would be perfect machines. Every real point sits above it because friction makes the input work larger than 500 J.</p>
+      <div id="jobChart"></div>
+      <div class="tbl-wrap"><table id="jobTable"></table></div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">All recorded trials</h2>
+        <button class="btn" type="button" id="clearAll">Clear all trials</button>
+      </div>
+      <div class="tbl-wrap" id="allTrials"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRINCIPLES -->
+<section class="view" id="v-principles" aria-labelledby="h-pr">
+  <div class="wrap">
+    <h1 id="h-pr" tabindex="-1">Principles that apply to all six</h1>
+    <p class="lede">These five ideas connect what you see a machine do with the calculations that explain how well it does it.</p>
+    <div class="pgrid">
+      <details class="card" open>
+        <summary>Input and output</summary>
+        <p>Every machine has an input, where you apply the effort, and an output, where the machine acts on the load. To analyze any machine, find both points, the direction of each force, and how far each point moves.</p>
+        <p style="margin:0">In a sketch, draw the effort arrow at the input, the load arrow at the output, and note the distance each one travels.</p>
+      </details>
+      <details class="card" open>
+        <summary>Work</summary>
+        <p>For a constant force parallel to the motion, work is force times distance.</p>
+        <div class="formula"><div>W = F × d &nbsp;&nbsp; (N × m = J)</div></div>
+        <p style="margin:0">Applying a force isn’t the same as doing work. If you push on a box that doesn’t move, the displacement is zero, so the work done on the box is zero.</p>
+      </details>
+      <details class="card" open>
+        <summary>Mechanical advantage</summary>
+        <div class="formula">
+          <div>Ideal (IMA) = input distance ÷ output distance, or from geometry</div>
+          <div>Actual (AMA) = output force ÷ input force</div>
+        </div>
+        <p style="margin:0">Above 1, the machine multiplies force. Exactly 1, the forces are equal (it may still change direction). Below 1, the machine trades force for greater output distance or speed, as tweezers do.</p>
+      </details>
+      <details class="card" open>
+        <summary>Efficiency</summary>
+        <div class="formula"><div>Efficiency = output work ÷ input work × 100% = AMA ÷ IMA × 100%</div></div>
+        <p style="margin:0">A machine can multiply force and still be well under 100% efficient. A screw jack lets one hand lift a car, yet most of the input work turns into heat at the threads.</p>
+      </details>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>Compound machines: take apart a wheelbarrow</h2>
+      <p>A compound machine combines simple machines. Select a part of the wheelbarrow to see what it contributes.</p>
+      <div class="wb">
+        <svg viewBox="0 0 520 300" id="wbSvg" role="img" aria-label="Side view of a wheelbarrow with handles, tray holding a load, and a wheel on an axle.">
+          <line x1="20" y1="262" x2="500" y2="262" class="ground"/>
+          <g class="part" id="wb-tray">
+            <path d="M120 150 L330 150 L300 205 L150 205 Z" class="metal"/>
+            <rect x="185" y="112" width="90" height="38" rx="3" class="box"/>
+            <text x="230" y="137" class="tl">Load</text>
+            <line x1="230" y1="160" x2="230" y2="196" class="ar load" stroke-width="3.5" marker-end="url(#mk-load)"/>
+          </g>
+          <g class="part" id="wb-handle">
+            <line x1="122" y1="222" x2="450" y2="168" stroke="var(--metal)" stroke-width="7" stroke-linecap="round"/>
+            <line x1="300" y1="196" x2="300" y2="258" stroke="var(--metal)" stroke-width="5"/>
+            <line x1="450" y1="240" x2="450" y2="178" class="ar eff" stroke-width="4" marker-end="url(#mk-eff)"/>
+            <text x="450" y="258" class="te">Lift</text>
+          </g>
+          <g class="part" id="wb-wheel">
+            <circle cx="122" cy="222" r="38" class="rim" style="stroke-width:6"/>
+            <circle cx="122" cy="222" r="7" class="metal-s"/>
+            <line x1="122" y1="184" x2="122" y2="260" class="spoke" stroke-width="2"/>
+            <line x1="84" y1="222" x2="160" y2="222" class="spoke" stroke-width="2"/>
+          </g>
+        </svg>
+        <div>
+          <div class="wb-btns" role="group" aria-label="Wheelbarrow parts">
+            <button class="btn" type="button" data-part="handle" aria-pressed="false">Handles and frame</button>
+            <button class="btn" type="button" data-part="wheel" aria-pressed="false">Wheel and axle</button>
+            <button class="btn" type="button" data-part="tray" aria-pressed="false">Tray and load</button>
+          </div>
+          <div id="wbText" class="fb-box off" aria-live="polite">Select a part to begin.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Key terms</h2>
+      <p class="small">Select a card to flip it.</p>
+      <div class="flips" id="flips"></div>
+    </div>
+
+    <div class="section card">
+      <h2>Final check</h2>
+      <p class="small">Eight questions across all six machines. Each answer comes with an explanation.</p>
+      <div id="finalQuiz"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot"><div class="wrap">Simple Machines Virtual Lab. Idealized physics models for introductory instruction. Values are rounded for display.</div></footer>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const TAU=Math.PI*2;
+const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function fmt(v){
+  if(!isFinite(v)) return '—';
+  const a=Math.abs(v); const d=a>=100?0:a>=10?1:a>=1?2:3;
+  return v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+const pct=v=>isFinite(v)?(v*100).toFixed(1)+'%':'—';
+const arrow=(x1,y1,x2,y2,k,w)=>`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="ar ${k}" stroke-width="${w||4}" marker-end="url(#mk-${k})"/>`;
+const T=(x,y,s,c,a)=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="${c||'t'}" text-anchor="${a||'middle'}">${s}</text>`;
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+
+/* ---------- storage ---------- */
+let TRIALS={};
+try{TRIALS=JSON.parse(localStorage.getItem('sm-trials')||'{}')||{};}catch(e){TRIALS={};}
+function saveTrials(){try{localStorage.setItem('sm-trials',JSON.stringify(TRIALS));}catch(e){}}
+
+/* ---------- machines ---------- */
+const MACHINES=[
+{
+  id:'lever',name:'Lever',
+  tagline:'A rigid bar turns about a fulcrum. Move the fulcrum, effort, or load and watch the trade between force and distance change.',
+  card:'Seesaws, wheelbarrows, and tweezers: a bar turning on a pivot.',
+  outName:'Load',
+  controls:[
+    {k:'cls',type:'seg',label:'Lever class',opts:[[1,'Class 1'],[2,'Class 2'],[3,'Class 3']],v:1},
+    {k:'pos',type:'range',label:s=>({1:'Fulcrum distance from the load end',2:'Load distance from the fulcrum',3:'Effort distance from the fulcrum'})[s.cls],min:0.3,max:2.7,step:0.05,v:1,unit:'m',d:2},
+    {k:'W',type:'range',label:'Load weight',min:100,max:2000,step:50,v:900,unit:'N',d:0},
+    {k:'loss',type:'range',label:'Friction losses at the pivot',min:0,max:20,step:1,v:4,unit:'%',d:0}
+  ],
+  geo(s){const f=s.cls==1?s.pos:0, lx=s.cls==1?0:(s.cls==2?s.pos:3), ex=s.cls==3?s.pos:3; return {f,lx,ex,dl:Math.abs(lx-f),de:Math.abs(ex-f)};},
+  compute(s){const g=this.geo(s), ima=g.de/g.dl, eta=1-s.loss/100, th=0.12;
+    return {ima,load:s.W,effort:s.W/(ima*eta),dIn:g.de*th,dOut:g.dl*th,
+      ideal:[`IMA = effort arm ÷ load arm = ${g.de.toFixed(2)} m ÷ ${g.dl.toFixed(2)} m = ${fmt(ima)}`]};},
+  summary(s){const g=this.geo(s);return `Class ${s.cls}; effort arm ${g.de.toFixed(2)} m; load arm ${g.dl.toFixed(2)} m`;},
+  concept:`<p>Torque is force times the perpendicular distance from the fulcrum. The lever balances when the effort’s torque equals the load’s torque, so a longer effort arm needs less effort.</p>
+  <p>The class depends on which part sits in the middle. <b>Class 1:</b> fulcrum in the middle (seesaw). <b>Class 2:</b> load in the middle (wheelbarrow), always IMA above 1. <b>Class 3:</b> effort in the middle (tweezers), always IMA below 1, trading force for more movement at the tips.</p>`,
+  formula:['IMA = effort arm ÷ load arm','Effort × effort arm = Load × load arm (ideal)'],
+  quiz:[
+    {q:'Tweezers have the effort between the hinge and the tips. What class of lever are they, and what do they trade?',o:['Class 1; they multiply force','Class 2; they multiply force','Class 3; they trade force for greater tip movement','Class 3; they multiply force'],a:2,w:'With the effort in the middle, the effort arm is shorter than the load arm, so IMA is below 1. You squeeze harder than the tips push, but the tips move farther.'},
+    {q:'An effort arm is 2.0 m and the load arm is 0.5 m. What is the ideal mechanical advantage?',o:['0.25','2.5','4','1.5'],a:2,w:'IMA = effort arm ÷ load arm = 2.0 ÷ 0.5 = 4. An ideal effort of one quarter the load would balance it.'}
+  ],
+  view:'0 0 640 384',
+  draw(s,p,r,shown){
+    const g=this.geo(s), sc=150, x0=95, py=180, px=x0+g.f*sc, lx=x0+g.lx*sc, ex=x0+g.ex*sc;
+    const th=0.12*p, deg=(s.cls==1?1:-1)*th*180/Math.PI;
+    const eLab=shown?fmt(r.effort)+' N':'? N';
+    const cap={1:'Class 1: fulcrum in the middle, like a seesaw',2:'Class 2: load in the middle, like a wheelbarrow',3:'Class 3: effort in the middle, like tweezers'}[s.cls];
+    let o=T(18,374,cap,'tm','start');
+    o+=`<path d="M${px} ${py+8} L${px-22} ${py+52} H${px+22} Z" class="metal"/>`;
+    o+=`<line x1="${px-60}" y1="${py+52}" x2="${px+60}" y2="${py+52}" class="ground"/>`;
+    for(let i=0;i<6;i++) o+=`<line x1="${px-54+i*20}" y1="${py+52}" x2="${px-62+i*20}" y2="${py+62}" class="hatch"/>`;
+    o+=`<g transform="rotate(${deg.toFixed(3)} ${px} ${py})">`;
+    o+=`<rect x="${x0}" y="${py-8}" width="450" height="16" rx="4" class="metal"/>`;
+    for(let m=0;m<=3;m+=0.5){o+=`<line x1="${x0+m*sc}" y1="${py-8}" x2="${x0+m*sc}" y2="${py-2}" class="hatch"/>`;}
+    o+=`<rect x="${lx-27}" y="${py-54}" width="54" height="46" rx="3" class="box"/>`+T(lx,py-26,'Load','tl');
+    o+=arrow(lx,py-118,lx,py-62,'load')+T(lx,py-126,fmt(s.W)+' N','tl');
+    if(s.cls==1){o+=arrow(ex,py-112,ex,py-14,'eff')+T(ex,py-120,'Effort '+eLab,'te');}
+    else{o+=arrow(ex,py+82,ex,py+14,'eff')+T(ex,py+98,'Effort '+eLab,'te');}
+    o+='</g>';
+    const y1=py+116,y2=py+138;
+    o+=`<line x1="${px}" y1="${y1}" x2="${lx}" y2="${y1}" class="dimL"/><line x1="${lx}" y1="${y1-5}" x2="${lx}" y2="${y1+5}" class="dimL"/>`;
+    o+=T((px+lx)/2,y1-5,'load arm '+g.dl.toFixed(2)+' m','tl');
+    o+=`<line x1="${px}" y1="${y2}" x2="${ex}" y2="${y2}" class="dimE"/><line x1="${ex}" y1="${y2-5}" x2="${ex}" y2="${y2+5}" class="dimE"/>`;
+    o+=T((px+ex)/2,y2+16,'effort arm '+g.de.toFixed(2)+' m','te');
+    o+=`<line x1="${px}" y1="${y1-6}" x2="${px}" y2="${y2+6}" class="hatch"/>`;
+    if(p>0) o+=T(622,374,'Load raised '+(r.dOut*p).toFixed(3)+' m','tl','end');
+    return o;
+  }
+},
+{
+  id:'wheel-axle',name:'Wheel and axle',
+  tagline:'Two cylinders of different radii turn together. Put the effort on the big one to gain force, or on the small one to gain distance.',
+  card:'Screwdrivers, winches, and doorknobs: a big circle turning a small one.',
+  outName:'Load',
+  controls:[
+    {k:'mode',type:'seg',label:'Where you apply the effort',opts:[['wheel','On the wheel'],['axle','On the axle']],v:'wheel'},
+    {k:'R',type:'range',label:'Wheel radius',min:0.10,max:0.50,step:0.01,v:0.30,unit:'m',d:2},
+    {k:'r',type:'range',label:'Axle radius',min:0.02,max:0.10,step:0.005,v:0.05,unit:'m',d:3},
+    {k:'W',type:'range',label:'Load weight',min:100,max:2000,step:50,v:600,unit:'N',d:0},
+    {k:'loss',type:'range',label:'Friction losses at the bearings',min:0,max:20,step:1,v:5,unit:'%',d:0}
+  ],
+  io(s){return s.mode==='wheel'?{rin:s.R,rout:s.r}:{rin:s.r,rout:s.R};},
+  compute(s){const q=this.io(s), ima=q.rin/q.rout, eta=1-s.loss/100;
+    return {ima,load:s.W,effort:s.W/(ima*eta),dIn:q.rin*TAU,dOut:q.rout*TAU,
+      ideal:[`IMA = input radius ÷ output radius = ${q.rin.toFixed(3)} m ÷ ${q.rout.toFixed(3)} m = ${fmt(ima)}`]};},
+  summary(s){return `Effort on ${s.mode}; R ${s.R.toFixed(2)} m; r ${s.r.toFixed(3)} m`;},
+  concept:`<p>The wheel and axle are locked together, so they turn through the same angle. A point on the rim travels farther per turn than a point on the axle, so a force at the larger radius produces a larger force at the smaller radius.</p>
+  <p>A screwdriver works this way: your hand turns the wide handle, and the narrow shaft delivers more torque to the screw. Reverse the roles, effort on the axle, and the rim moves faster and farther with less force, as in a bicycle’s rear wheel.</p>`,
+  formula:['IMA = input radius ÷ output radius','Distance per turn = 2π × radius'],
+  quiz:[
+    {q:'Why does a screwdriver with a wider handle make a stubborn screw easier to turn?',o:['The wider handle reduces friction on the screw','The same hand force at a larger radius produces more torque','The wider handle makes the shaft turn faster','The wider handle increases the screw’s lead'],a:1,w:'Torque is force times radius. The same tangential hand force applied at a larger radius gives more torque, so the IMA (handle radius ÷ shaft radius) goes up.'},
+    {q:'A winch has a 0.25 m crank radius and a 0.05 m drum. What is its ideal mechanical advantage?',o:['0.2','5','1.25','12.5'],a:1,w:'IMA = input radius ÷ output radius = 0.25 ÷ 0.05 = 5. Your hand travels 5 times as far as the rope winds in.'}
+  ],
+  view:'0 0 640 390',
+  draw(s,p,r,shown){
+    const sc=260, cx=230, cy=140, Rw=s.R*sc, Ra=s.r*sc, q=this.io(s);
+    const rIn=q.rin*sc, rOut=q.rout*sc, k=19;
+    const rise=r.dOut*p*k, desc=r.dIn*p*k, rot=-360*p;
+    const eLab=shown?fmt(r.effort)+' N':'? N';
+    let o=T(18,24,s.mode==='wheel'?'Effort on the wheel: force multiplied, like a screwdriver or winch':'Effort on the axle: distance and speed multiplied','tm','start');
+    o+=`<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy+Rw+28}" class="hatch"/>`;
+    o+=`<g transform="rotate(${rot.toFixed(2)} ${cx} ${cy})">`;
+    o+=`<circle cx="${cx}" cy="${cy}" r="${Rw}" class="rim"/>`;
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;o+=`<line x1="${cx+Ra*Math.cos(a)}" y1="${cy+Ra*Math.sin(a)}" x2="${cx+Rw*Math.cos(a)}" y2="${cy+Rw*Math.sin(a)}" class="spoke"/>`;}
+    o+=`<circle cx="${cx}" cy="${cy}" r="${Ra}" class="metal"/><circle cx="${cx}" cy="${cy-Ra+5}" r="3" class="metal-s"/>`;
+    o+='</g>';
+    const ex=cx-rIn, ey=250+desc;
+    o+=`<line x1="${ex}" y1="${cy}" x2="${ex}" y2="${ey}" class="rope free"/>`;
+    o+=arrow(ex,ey,ex,ey+50,'eff')+T(ex-10,ey+28,'Effort '+eLab,'te','end');
+    const bx=cx+rOut, by=300-rise;
+    o+=`<line x1="${bx}" y1="${cy}" x2="${bx}" y2="${by}" class="rope"/>`;
+    o+=`<rect x="${bx-30}" y="${by}" width="60" height="44" rx="3" class="box"/>`+T(bx,by+27,fmt(s.W)+' N','tl');
+    o+=`<line x1="${cx}" y1="${cy}" x2="${cx+Rw*Math.cos(-2.3)}" y2="${cy+Rw*Math.sin(-2.3)}" class="dimE" style="stroke:var(--metal)"/>`;
+    o+=T(622,60,'Wheel radius R = '+s.R.toFixed(2)+' m','t','end');
+    o+=T(622,82,'Axle radius r = '+s.r.toFixed(3)+' m','t','end');
+    if(p>0){o+=T(622,118,'Rotation '+(p*360).toFixed(0)+'° of one turn','tm','end');
+      o+=T(622,140,'Effort rope moved '+(r.dIn*p).toFixed(2)+' m','te','end');
+      o+=T(622,162,'Load raised '+(r.dOut*p).toFixed(2)+' m','tl','end');}
+    return o;
+  }
+},
+{
+  id:'pulley',name:'Pulley',
+  tagline:'A rope over wheels. A fixed pulley changes direction; a system of pulleys shares the load among several rope segments.',
+  card:'Flagpoles, cranes, and block and tackle: rope segments sharing a load.',
+  outName:'Load',
+  controls:[
+    {k:'n',type:'range',label:'Rope segments supporting the load',min:1,max:6,step:1,v:3,unit:'',d:0},
+    {k:'W',type:'range',label:'Load weight',min:100,max:2000,step:50,v:900,unit:'N',d:0},
+    {k:'h',type:'range',label:'Lift height',min:0.5,max:2,step:0.1,v:1,unit:'m',d:1},
+    {k:'loss',type:'range',label:'Friction loss per pulley wheel',min:0,max:8,step:0.5,v:3,unit:'%',d:1}
+  ],
+  compute(s){const n=s.n, eta=Math.pow(1-s.loss/100,n);
+    return {ima:n,load:s.W,effort:s.W/(n*eta),dIn:n*s.h,dOut:s.h,
+      ideal:[`IMA = number of supporting rope segments = ${n}`,`Rope pulled = ${n} × ${s.h.toFixed(1)} m = ${(n*s.h).toFixed(1)} m`]};},
+  summary(s){return `${s.n} supporting segment${s.n>1?'s':''}; lift ${s.h.toFixed(1)} m`;},
+  concept:`<p>A single fixed pulley only changes the direction of the pull, so its IMA is 1. When a pulley moves with the load, two or more rope segments hold the load up, and they share it. In the ideal model each segment carries the same tension, which is the force you pull with.</p>
+  <p>To find the IMA, trace the rope and count only the segments that support the moving block. Counting pulley wheels can give the wrong answer, and the free end you pull down on doesn’t count.</p>`,
+  formula:['IMA = number of supporting rope segments','Rope pulled = IMA × height lifted'],
+  quiz:[
+    {q:'What does a single fixed pulley do for you?',o:['Halves the force needed','Changes the direction of the force; IMA is 1','Doubles the distance the load moves','Removes friction from the rope'],a:1,w:'One segment supports the load, so the effort equals the load in the ideal case. The benefit is pulling down instead of lifting up.'},
+    {q:'A block and tackle has 4 supporting segments. To raise the load 1 m, how much rope must you pull?',o:['0.25 m','1 m','2 m','4 m'],a:3,w:'Each of the 4 supporting segments must shorten by 1 m, so you pull 4 m of rope. Less force, more distance.'}
+  ],
+  view:'0 0 640 400',
+  draw(s,p,r,shown){
+    const n=s.n, cx=210, ytop=72, rise=r.dOut*p*12, yb=232-rise, pull=r.dIn*p*12;
+    const xs=[]; for(let j=0;j<=n;j++) xs.push(cx-n*12+j*24);
+    const eLab=shown?fmt(r.effort)+' N':'? N';
+    let o=`<line x1="40" y1="22" x2="420" y2="22" class="ground"/>`;
+    for(let i=0;i<19;i++) o+=`<line x1="${46+i*20}" y1="22" x2="${38+i*20}" y2="12" class="hatch"/>`;
+    o+=`<line x1="${(xs[0]+xs[n])/2}" y1="22" x2="${(xs[0]+xs[n])/2}" y2="${ytop-20}" stroke="var(--metal)" stroke-width="4"/>`;
+    o+=`<rect x="${xs[0]-16}" y="${ytop-20}" width="${xs[n]-xs[0]+32}" height="40" rx="6" class="metal" style="opacity:.75"/>`;
+    if(n>=2){o+=`<rect x="${xs[0]-16}" y="${yb-20}" width="${xs[n-1]-xs[0]+32}" height="40" rx="6" class="metal" style="opacity:.75"/>`;}
+    for(let j=0;j<n;j++){
+      o+=`<line x1="${xs[j]}" y1="${ytop}" x2="${xs[j]}" y2="${yb}" class="rope sup"/>`;
+    }
+    o+=`<line x1="${xs[n]}" y1="${ytop}" x2="${xs[n]}" y2="${200+pull}" class="rope free"/>`;
+    const spin=pull/12;
+    let wheels=0;
+    for(let j=0;j<n;j++){
+      const top=((n-j)%2===1), x=xs[j]+12, y=top?ytop:yb; wheels++;
+      o+=`<circle cx="${x}" cy="${y}" r="12" fill="var(--surface)" stroke="var(--metal)" stroke-width="3"/>`;
+      o+=`<line x1="${x}" y1="${y}" x2="${x+9*Math.cos(spin*(top?1:-1))}" y2="${y+9*Math.sin(spin*(top?1:-1))}" stroke="var(--metal)" stroke-width="2"/><circle cx="${x}" cy="${y}" r="2.5" class="metal-s"/>`;
+    }
+    const lcx=n>=2?(xs[0]+xs[n-1])/2:xs[0], hookY=n>=2?yb+20:yb;
+    o+=`<line x1="${lcx}" y1="${hookY}" x2="${lcx}" y2="${hookY+16}" stroke="var(--metal)" stroke-width="3"/>`;
+    o+=`<rect x="${lcx-40}" y="${hookY+16}" width="80" height="54" rx="3" class="box"/>`+T(lcx,hookY+40,'Load','tl')+T(lcx,hookY+58,fmt(s.W)+' N','tl');
+    for(let j=0;j<n;j++){ o+=T(xs[j],(ytop+yb)/2+(j%2?14:0),String(j+1),'tl'); }
+    o+=arrow(xs[n],200+pull,xs[n],246+pull,'eff')+T(xs[n]+12,232+pull,'Effort '+eLab,'te','start');
+    o+=T(622,60,'Supporting segments: '+n,'tl','end');
+    o+=T(622,82,'Pulley wheels: '+wheels,'t','end');
+    o+=T(622,104,n%2?'Rope tied to the moving block':'Rope tied to the fixed block','tm','end');
+    if(p>0){o+=T(622,140,'Rope pulled '+(r.dIn*p).toFixed(2)+' m','te','end');o+=T(622,162,'Load raised '+(r.dOut*p).toFixed(2)+' m','tl','end');}
+    return o;
+  }
+},
+{
+  id:'inclined-plane',name:'Inclined plane',
+  tagline:'A ramp raises a load to a height over a longer path. Longer ramps need less force but more distance.',
+  card:'Ramps, loading docks, and wheelchair access: height gained over a longer path.',
+  outName:'Load',
+  controls:[
+    {k:'h',type:'range',label:'Vertical rise',min:0.5,max:2,step:0.1,v:1,unit:'m',d:1},
+    {k:'L',type:'range',label:'Ramp length along the slope',min:1,max:6,step:0.1,v:4,unit:'m',d:1},
+    {k:'W',type:'range',label:'Load weight',min:100,max:2000,step:50,v:800,unit:'N',d:0},
+    {k:'mu',type:'range',label:'Coefficient of friction (μ)',min:0,max:0.4,step:0.01,v:0.05,unit:'',d:2}
+  ],
+  constrain(s){ if(s.L<s.h+0.1) s.L=Math.round((s.h+0.1)*10)/10; },
+  compute(s){const sn=s.h/s.L, cs=Math.sqrt(1-sn*sn), eff=s.W*(sn+s.mu*cs);
+    return {ima:s.L/s.h,load:s.W,effort:eff,dIn:s.L,dOut:s.h,fric:s.W*s.mu*cs,
+      ideal:[`IMA = ramp length ÷ rise = ${s.L.toFixed(1)} m ÷ ${s.h.toFixed(1)} m = ${fmt(s.L/s.h)}`,`Friction force along the ramp = μ × W × cos θ = ${fmt(s.W*s.mu*cs)} N`]};},
+  summary(s){return `Rise ${s.h.toFixed(1)} m; length ${s.L.toFixed(1)} m; μ ${s.mu.toFixed(2)}`;},
+  concept:`<p>Lifting a load straight up takes a force equal to its weight. Pushing it up a frictionless ramp, parallel to the surface, takes only the part of the weight that points down the slope, W × (rise ÷ length).</p>
+  <p>Two ramps that reach the same height give the load the same gain in gravitational potential energy, W × h. The longer ramp needs less force but more distance, so the ideal work is the same. Friction adds force on every ramp, and it adds more on longer ones because you push farther.</p>`,
+  formula:['IMA = ramp length ÷ vertical rise','Effort (ideal) = W × h ÷ L','Effort (with friction) = W(sin θ + μ cos θ)'],
+  quiz:[
+    {q:'A ramp is 6 m long and rises 1.5 m. What is its ideal mechanical advantage?',o:['0.25','4','7.5','9'],a:1,w:'IMA = length ÷ rise = 6 ÷ 1.5 = 4. On a frictionless ramp, you’d push with one quarter of the load’s weight.'},
+    {q:'Two frictionless ramps raise the same 500 N box to 1 m. One is 2 m long, the other 4 m. Which is true?',o:['The long ramp needs less force and less work','Both need the same force','The long ramp needs less force, and both need the same work','The short ramp gives the box more potential energy'],a:2,w:'Both raise the box 1 m, so both add 500 J of potential energy. The 4 m ramp halves the force but doubles the distance.'}
+  ],
+  view:'0 0 640 340',
+  draw(s,p,r,shown){
+    const sc=88, x0=50, y0=310, sn=s.h/s.L, th=Math.asin(sn), cs=Math.cos(th);
+    const b=Math.sqrt(s.L*s.L-s.h*s.h)*sc, tx=x0+b, ty=y0-s.h*sc;
+    const eLab=shown?fmt(r.effort)+' N':'? N';
+    let o=`<line x1="20" y1="${y0}" x2="620" y2="${y0}" class="ground"/>`;
+    o+=`<path d="M${x0} ${y0} L${tx} ${y0} L${tx} ${ty} Z" class="ramp"/>`;
+    o+=`<path d="M${x0+46} ${y0} A46 46 0 0 0 ${x0+46*cs} ${y0-46*sn}" class="dim"/>`+T(x0+56,y0-8,'θ = '+(th*180/Math.PI).toFixed(1)+'°','tm','start');
+    o+=`<line x1="${tx+18}" y1="${y0}" x2="${tx+18}" y2="${ty}" class="dimL"/>`+T(tx+24,(y0+ty)/2,'rise '+s.h.toFixed(1)+' m','tl','start');
+    const mx=(x0+tx)/2, my=(y0+ty)/2;
+    o+=`<text transform="translate(${(mx-sn*28).toFixed(1)} ${(my-cs*28).toFixed(1)}) rotate(${(-th*180/Math.PI).toFixed(2)})" class="te" text-anchor="middle">length ${s.L.toFixed(1)} m</text>`;
+    const box=34, d=(0.25+p*(s.L-0.75))*sc;
+    const bx=x0+cs*d, by=y0-sn*d, nx=-sn, ny=-cs, ccx=bx+nx*box/2, ccy=by+ny*box/2;
+    o+=`<g transform="translate(${ccx.toFixed(1)} ${ccy.toFixed(1)}) rotate(${(-th*180/Math.PI).toFixed(2)})"><rect x="${-box/2}" y="${-box/2}" width="${box}" height="${box}" rx="3" class="box"/></g>`;
+    o+=arrow(ccx+cs*(box/2+4),ccy-sn*(box/2+4),ccx+cs*(box/2+70),ccy-sn*(box/2+70),'eff');
+    o+=T(ccx+cs*(box/2+70)+6,ccy-sn*(box/2+70)-10,'Effort '+eLab,'te','start');
+    o+=arrow(ccx,ccy,ccx,ccy+60,'load',3.5)+T(ccx-8,ccy+56,fmt(s.W)+' N','tl','end');
+    if(s.mu>0){o+=arrow(bx-cs*4,by+sn*4,bx-cs*46,by+sn*46,'loss',3);
+      o+=T(bx-cs*50-4,by+sn*50+18,'friction','tx','end');}
+    o+=T(18,24,'Effort is applied parallel to the ramp surface','tm','start');
+    if(p>0){o+=T(622,24,'Pushed '+(r.dIn*p).toFixed(2)+' m along the ramp','te','end');o+=T(622,46,'Raised '+(r.dOut*p).toFixed(2)+' m','tl','end');}
+    return o;
+  }
+},
+{
+  id:'wedge',name:'Wedge',
+  tagline:'A moving inclined plane. Its sloped faces turn a driving force into larger outward forces that split or separate material.',
+  card:'Axes, knives, chisels, and doorstops: sloped faces pushing outward.',
+  outName:'Splitting force',
+  controls:[
+    {k:'t',type:'range',label:'Wedge thickness at the back',min:0.02,max:0.10,step:0.005,v:0.04,unit:'m',d:3},
+    {k:'L',type:'range',label:'Taper length',min:0.05,max:0.30,step:0.01,v:0.20,unit:'m',d:2},
+    {k:'R',type:'range',label:'Force needed to split the wood',min:500,max:5000,step:100,v:2500,unit:'N',d:0},
+    {k:'loss',type:'range',label:'Friction losses on the faces',min:0,max:60,step:1,v:30,unit:'%',d:0}
+  ],
+  compute(s){const ima=s.L/s.t, eta=1-s.loss/100;
+    return {ima,load:s.R,effort:s.R/(ima*eta),dIn:0.8*s.L,dOut:0.8*s.t,
+      ideal:[`IMA = taper length ÷ thickness = ${s.L.toFixed(2)} m ÷ ${s.t.toFixed(3)} m = ${fmt(ima)}`]};},
+  summary(s){return `Thickness ${s.t.toFixed(3)} m; taper ${s.L.toFixed(2)} m`;},
+  concept:`<p>A wedge is driven into or between materials. As it advances along its taper length, its faces push the material apart by its thickness. Because the driving force moves farther than the material spreads, the outward force can be much larger than the driving force.</p>
+  <p>In the simple geometric model, a longer, thinner taper gives a higher IMA. Real wedges lose a lot to friction, and the kind of material changes how they perform. Wood grain, moisture, and sharpness all matter.</p>`,
+  formula:['IMA = taper length ÷ thickness','Separation = depth driven × thickness ÷ taper length'],
+  quiz:[
+    {q:'Two wedges are both 3 cm thick. One has a 9 cm taper, the other 18 cm. Which has the higher IMA?',o:['The 9 cm taper, because it’s blunter','The 18 cm taper, with an IMA of 6','They’re equal because the thickness is the same','Neither; wedges have no mechanical advantage'],a:1,w:'IMA = taper ÷ thickness. 18 ÷ 3 = 6, compared with 9 ÷ 3 = 3. The longer taper must be driven farther for the same split, so it needs less force.'},
+    {q:'What does an axe head do with the downward force of a swing?',o:['Converts it to heat only','Redirects it into outward forces that push the wood apart','Reduces the distance the axe travels','Turns it into a rotation'],a:1,w:'The sloped faces redirect the driving force sideways, splitting the wood. A doorstop uses the same shape, pushing up on the door and down on the floor.'}
+  ],
+  view:'0 0 640 470',
+  draw(s,p,r,shown){
+    const sc=700, cx=320, top=282, bot=462, Lp=s.L*sc, tp=s.t*sc;
+    const depth=0.8*Lp*p, tipY=top+depth, wTop=tipY-Lp, g=depth*tp/Lp, crack=Math.min(bot,tipY+18);
+    const eLab=shown?fmt(r.effort)+' N':'? N';
+    let o=`<path d="M150 ${top} L${cx-g/2} ${top} L${cx} ${crack} L${cx} ${bot} L150 ${bot} Z" class="wood"/>`;
+    o+=`<path d="M490 ${top} L${cx+g/2} ${top} L${cx} ${crack} L${cx} ${bot} L490 ${bot} Z" class="wood"/>`;
+    for(let i=1;i<4;i++){o+=`<path d="M160 ${top+i*40} Q235 ${top+i*40-8} ${cx-g/2-8} ${top+i*40}" class="grain"/><path d="M${cx+g/2+8} ${top+i*40} Q405 ${top+i*40+8} 480 ${top+i*40}" class="grain"/>`;}
+    o+=`<path d="M${cx} ${tipY} L${cx-tp/2} ${wTop} L${cx+tp/2} ${wTop} Z" class="metal"/>`;
+    o+=arrow(cx,wTop-62,cx,wTop-8,'eff')+T(cx+14,wTop-38,'Driving force '+eLab,'te','start');
+    o+=arrow(cx-g/2-8,top+28,cx-g/2-78,top+28,'load')+arrow(cx+g/2+8,top+28,cx+g/2+78,top+28,'load');
+    o+=T(cx-g/2-84,top+33,fmt(s.R)+' N','tl','end')+T(cx+g/2+84,top+33,fmt(s.R)+' N','tl','start');
+    o+=`<line x1="${cx-tp/2}" y1="${wTop-10}" x2="${cx+tp/2}" y2="${wTop-10}" class="dimL"/>`;
+    o+=`<line x1="${cx+tp/2+14}" y1="${wTop}" x2="${cx+14}" y2="${tipY}" class="dimE"/>`;
+    o+=T(18,24,'Thickness '+s.t.toFixed(3)+' m; taper '+s.L.toFixed(2)+' m','tm','start');
+    if(p>0){o+=T(622,24,'Driven '+(r.dIn*p).toFixed(3)+' m','te','end');o+=T(622,46,'Wood separated '+(r.dOut*p).toFixed(3)+' m','tl','end');}
+    return o;
+  }
+},
+{
+  id:'screw',name:'Screw',
+  tagline:'An inclined plane wrapped around a cylinder. Each turn of the handle advances the load by one lead.',
+  card:'Screw jacks, vises, jar lids, and bolts: a ramp wrapped into a spiral.',
+  outName:'Load',
+  controls:[
+    {k:'R',type:'range',label:'Handle radius',min:0.10,max:0.50,step:0.01,v:0.30,unit:'m',d:2},
+    {k:'lead',type:'range',label:'Lead (advance per turn)',min:1,max:10,step:0.5,v:5,unit:'mm',d:1},
+    {k:'W',type:'range',label:'Load weight',min:1000,max:20000,step:500,v:12000,unit:'N',d:0},
+    {k:'N',type:'range',label:'Turns per run',min:1,max:10,step:1,v:5,unit:'',d:0},
+    {k:'loss',type:'range',label:'Friction losses in the threads',min:30,max:85,step:1,v:65,unit:'%',d:0}
+  ],
+  compute(s){const pm=s.lead/1000, ima=TAU*s.R/pm, eta=1-s.loss/100;
+    return {ima,load:s.W,effort:s.W/(ima*eta),dIn:s.N*TAU*s.R,dOut:s.N*pm,
+      ideal:[`Hand travel per turn = 2π × ${s.R.toFixed(2)} m = ${(TAU*s.R).toFixed(3)} m`,`IMA = hand travel per turn ÷ lead = ${(TAU*s.R).toFixed(3)} m ÷ ${pm.toFixed(4)} m = ${fmt(ima)}`]};},
+  summary(s){return `Handle ${s.R.toFixed(2)} m; lead ${s.lead.toFixed(1)} mm; ${s.N} turns`;},
+  concept:`<p>Unwrap a screw thread and you get a long, gentle ramp. One full turn of the handle moves your hand around a circle of 2πR while the load rises by just one lead, the axial advance per turn.</p>
+  <p>A smaller lead gives a higher IMA and needs more turns for the same travel. That’s why a screw jack can lift a car a little at a time. Thread friction is large, so most screw jacks are well under 50% efficient, which also keeps the load from unwinding on its own.</p>`,
+  formula:['IMA = 2πR ÷ lead','Load rise = turns × lead'],
+  quiz:[
+    {q:'You switch a screw jack to a thread with a smaller lead, keeping the same handle. What happens?',o:['IMA drops and fewer turns are needed','IMA rises and more turns are needed for the same lift','IMA stays the same; only friction changes','The load rises faster per turn'],a:1,w:'IMA = 2πR ÷ lead, so a smaller lead raises the IMA. Each turn lifts the load less, so you need more turns.'},
+    {q:'Which simple machine is a screw thread built from?',o:['A lever','A pulley','An inclined plane wrapped around a cylinder','A wheel without an axle'],a:2,w:'The thread is a ramp wound into a helix. Turning the screw slides the load up that ramp.'}
+  ],
+  view:'0 0 640 380',
+  draw(s,p,r,shown){
+    const cx=160, cy=190, Rp=s.R*260, ang=TAU*s.N*p-Math.PI/2;
+    const eLab=shown?fmt(r.effort)+' N':'? N';
+    let o=T(cx,24,'Top view: the handle','tm');
+    o+=`<circle cx="${cx}" cy="${cy}" r="${Rp}" class="path-d"/>`;
+    o+=`<circle cx="${cx}" cy="${cy}" r="18" class="metal"/><path d="M${cx-10} ${cy} A10 10 0 1 1 ${cx} ${cy+10}" class="dim"/>`;
+    const hx=cx+Rp*Math.cos(ang), hy=cy+Rp*Math.sin(ang), tx=-Math.sin(ang), ty=Math.cos(ang);
+    o+=`<line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="var(--metal)" stroke-width="7" stroke-linecap="round"/><circle cx="${hx}" cy="${hy}" r="10" class="metal-s"/>`;
+    o+=arrow(hx+tx*14,hy+ty*14,hx+tx*62,hy+ty*62,'eff');
+    o+=T(cx,cy+Rp+34>360?360:cy+Rp+34,'Effort '+eLab+' around a '+s.R.toFixed(2)+' m radius','te');
+    const sx=470, rise=r.dOut*p*1500, platY=200-rise, lp=s.lead*1.5;
+    o+=T(sx,24,'Side view: the jack','tm');
+    o+=`<line x1="360" y1="340" x2="590" y2="340" class="ground"/>`;
+    o+=`<rect x="${sx-15}" y="${platY+8}" width="30" height="${300-platY}" class="metal"/>`;
+    for(let y=platY+8+lp;y<262;y+=lp){o+=`<line x1="${sx-15}" y1="${y}" x2="${sx+15}" y2="${y-lp*0.6}" class="thread"/>`;}
+    o+=`<path d="M${sx-60} 340 L${sx-34} 262 L${sx+34} 262 L${sx+60} 340 Z" class="metal"/>`;
+    o+=`<rect x="${sx-40}" y="${platY}" width="80" height="10" rx="2" class="metal-s"/>`;
+    o+=`<rect x="${sx-48}" y="${platY-52}" width="96" height="52" rx="3" class="box"/>`+T(sx,platY-30,'Load','tl')+T(sx,platY-12,fmt(s.W)+' N','tl');
+    o+=arrow(sx+70,platY-70,sx+70,platY-10,'load',3.5);
+    o+=`<line x1="${sx-80}" y1="200" x2="${sx-52}" y2="200" class="hatch"/>`+T(sx-84,204,'start','tm','end');
+    if(p>0){o+=`<line x1="${sx-65}" y1="200" x2="${sx-65}" y2="${platY}" class="dimL"/>`;}
+    o+=T(622,370,'Lead '+s.lead.toFixed(1)+' mm per turn','t','end');
+    if(p>0){o+=T(18,350,'Turns: '+(s.N*p).toFixed(2)+' of '+s.N,'t','start');o+=T(18,372,'Hand traveled '+(r.dIn*p).toFixed(2)+' m; load rose '+(r.dOut*p*1000).toFixed(1)+' mm','tm','start');}
+    return o;
+  }
+}
+];
+const BYID={}; MACHINES.forEach((m,i)=>{m.idx=i;BYID[m.id]=m;});
+
+/* ---------- state ---------- */
+const S={};
+MACHINES.forEach(m=>{const st={ran:false,p:0}; m.controls.forEach(c=>st[c.k]=c.v); S[m.id]=st;});
+
+function calc(m,s){
+  const r=m.compute(s);
+  r.ama=r.load/r.effort; r.eff=r.ama/r.ima; r.win=r.effort*r.dIn; r.wout=r.load*r.dOut; r.idealEffort=r.load/r.ima;
+  return r;
+}
+
+/* ---------- icons ---------- */
+const ICONS={
+  'lever':`<line x1="20" y1="70" x2="180" y2="70" class="ground"/><path d="M100 54 L88 70 H112 Z" class="metal"/><rect x="30" y="46" width="140" height="8" rx="2" class="metal" transform="rotate(-6 100 50)"/><rect x="36" y="22" width="26" height="22" class="box" transform="rotate(-6 100 50)"/>`,
+  'wheel-axle':`<circle cx="80" cy="44" r="32" class="rim" style="stroke-width:4"/><circle cx="80" cy="44" r="9" class="metal"/><line x1="89" y1="44" x2="89" y2="80" class="rope"/><rect x="80" y="74" width="20" height="14" class="box"/><line x1="48" y1="44" x2="48" y2="80" class="rope free"/>`,
+  'pulley':`<line x1="60" y1="8" x2="140" y2="8" class="ground"/><line x1="100" y1="8" x2="100" y2="20" stroke="var(--metal)" stroke-width="3"/><circle cx="100" cy="30" r="10" fill="var(--surface)" stroke="var(--metal)" stroke-width="3"/><line x1="90" y1="30" x2="90" y2="64" class="rope sup"/><line x1="110" y1="30" x2="110" y2="80" class="rope free"/><rect x="76" y="64" width="28" height="22" class="box"/>`,
+  'inclined-plane':`<path d="M30 86 L170 86 L170 30 Z" class="ramp"/><rect x="92" y="44" width="22" height="22" class="box" transform="rotate(-21.8 103 66)"/>`,
+  'wedge':`<rect x="50" y="56" width="45" height="34" class="wood"/><rect x="105" y="56" width="45" height="34" class="wood"/><path d="M100 70 L86 14 H114 Z" class="metal"/>`,
+  'screw':`<path d="M70 90 L82 64 H118 L130 90 Z" class="metal"/><rect x="92" y="24" width="16" height="42" class="metal"/><line x1="92" y1="34" x2="108" y2="30" class="thread"/><line x1="92" y1="44" x2="108" y2="40" class="thread"/><line x1="92" y1="54" x2="108" y2="50" class="thread"/><rect x="74" y="8" width="52" height="16" class="box"/>`
+};
+$('#machineCards').innerHTML=MACHINES.map((m,i)=>`<a class="mcard" href="#${m.id}"><svg viewBox="0 0 200 96" aria-hidden="true">${ICONS[m.id]}</svg><h3>${m.name}</h3><p>${m.card}</p><span>Open the ${m.name.toLowerCase()} lab</span></a>`).join('');
+
+/* ---------- quiz ---------- */
+function renderQuiz(el,qs){
+  el.innerHTML=qs.map((q,i)=>`<fieldset class="q"><legend>${i+1}. ${q.q}</legend><div class="opts">${q.o.map((o,j)=>`<button type="button" class="opt" data-q="${i}" data-j="${j}">${o}</button>`).join('')}</div><p class="fb" aria-live="polite"></p></fieldset>`).join('')+`<div class="row-btns" style="align-items:center"><p class="score" aria-live="polite" style="margin:0"></p><button type="button" class="btn qreset">Try again</button></div>`;
+  const answered={};
+  const upd=()=>{const n=Object.keys(answered).length,c=Object.values(answered).filter(Boolean).length;
+    $('.score',el).textContent=n?`${c} of ${qs.length} correct${n<qs.length?' so far':''}`:'';};
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('.opt');
+    if(b){const qi=+b.dataset.q,j=+b.dataset.j; if(qi in answered) return; const q=qs[qi]; const ok=j===q.a; answered[qi]=ok;
+      const fs=b.closest('.q'); $$('.opt',fs).forEach((x,k)=>{x.disabled=true; if(k===q.a) x.classList.add('right'); else if(k===j) x.classList.add('wrong');});
+      $('.fb',fs).innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+q.w; upd(); return;}
+    if(e.target.closest('.qreset')){renderQuiz(el,qs);}
+  },{once:false});
+}
+
+/* ---------- lab build ---------- */
+function ctlLabel(c,s){return typeof c.label==='function'?c.label(s):c.label;}
+function ctlVal(c,v){return c.type==='seg'?'':(c.d!=null?Number(v).toFixed(c.d):v)+(c.unit?' '+c.unit:'');}
+
+function buildLab(m){
+  const s=S[m.id], el=$('#v-'+m.id), prev=MACHINES[m.idx-1], next=MACHINES[m.idx+1];
+  const ctlHtml=m.controls.map(c=>{
+    const id=`${m.id}-${c.k}`;
+    if(c.type==='seg') return `<div class="ctl"><span class="ctl-l" id="${id}-l">${ctlLabel(c,s)}</span><div class="seg" role="group" aria-labelledby="${id}-l">${c.opts.map(([v,t])=>`<button type="button" data-k="${c.k}" data-v="${v}" aria-pressed="${String(s[c.k])===String(v)}">${t}</button>`).join('')}</div></div>`;
+    return `<div class="ctl"><label for="${id}"><span id="${id}-l">${ctlLabel(c,s)}</span><output for="${id}" id="${id}-o">${ctlVal(c,s[c.k])}</output></label><input type="range" id="${id}" data-k="${c.k}" min="${c.min}" max="${c.max}" step="${c.step}" value="${s[c.k]}"></div>`;
+  }).join('');
+  el.innerHTML=`<div class="wrap">
+  <div class="lab-head"><div><p class="count">Lab ${m.idx+1} of 6</p><h1 id="h-${m.id}" tabindex="-1">${m.name}</h1><p class="lede">${m.tagline}</p></div>
+    <div class="lab-nav">${prev?`<a class="btn" href="#${prev.id}">Previous: ${prev.name}</a>`:''}${next?`<a class="btn" href="#${next.id}">Next: ${next.name}</a>`:`<a class="btn" href="#dashboard">Go to the dashboard</a>`}</div></div>
+  <div class="lab">
+    <div class="lab-main">
+      <div class="stage">
+        <svg viewBox="${m.view}" role="img" aria-label="${m.name} simulation" id="${m.id}-svg"></svg>
+        <div class="stage-bar"><button type="button" class="btn primary" data-act="run">Run the machine</button><button type="button" class="btn" data-act="reset">Reset</button><span class="status" role="status" id="${m.id}-status"></span></div>
+      </div>
+      <div class="card"><h2>Set up the machine</h2><div class="ctls">${ctlHtml}</div></div>
+      <details class="card" open><summary>How it works</summary>${m.concept}<div class="formula">${m.formula.map(f=>`<div>${f}</div>`).join('')}</div></details>
+    </div>
+    <aside class="lab-side" aria-label="Predict, measure, and record">
+      <div class="card predict"><div class="side-h"><span class="n">1</span><h2>Predict</h2></div>
+        <label for="${m.id}-pred">Effort you expect to need (N)</label>
+        <input type="number" id="${m.id}-pred" inputmode="decimal" min="0" step="any" placeholder="Example: 250">
+        <p class="small" style="margin:0">Find the ideal mechanical advantage from the geometry, then divide the ${m.outName.toLowerCase()} by it. Run the machine to check.</p>
+        <div class="fb-box" id="${m.id}-pfb" aria-live="polite"></div></div>
+      <div class="card"><div class="side-h"><span class="n">2</span><h2>Measure</h2></div><div id="${m.id}-meas"></div></div>
+      <div class="card"><div class="side-h"><span class="n">3</span><h2>Record</h2></div>
+        <div class="row-btns"><button type="button" class="btn primary" data-act="record" disabled>Record this trial</button><button type="button" class="btn" data-act="clear">Clear trials</button></div>
+        <div class="tbl-wrap" id="${m.id}-trials"></div></div>
+    </aside>
+  </div>
+  <div class="card section"><h2>Quick check</h2><div id="${m.id}-quiz"></div></div>
+  </div>`;
+  renderQuiz($('#'+m.id+'-quiz'),m.quiz);
+
+  el.addEventListener('input',e=>{
+    const t=e.target; if(t.type!=='range'||!t.dataset.k) return;
+    s[t.dataset.k]=parseFloat(t.value); changed(m);
+  });
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    if(b.dataset.k&&b.dataset.v!=null){const c=m.controls.find(x=>x.k===b.dataset.k); const v=c.opts.find(o=>String(o[0])===b.dataset.v)[0]; s[c.k]=v;
+      $$(`.seg button[data-k="${c.k}"]`,el).forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===b.dataset.v))); changed(m); return;}
+    const a=b.dataset.act;
+    if(a==='run') run(m); else if(a==='reset') resetLab(m); else if(a==='record') record(m);
+    else if(a==='clear'){TRIALS[m.id]=[];saveTrials();renderTrials(m);}
+  });
+  renderTrials(m); render(m);
+}
+
+function syncControls(m){
+  const s=S[m.id];
+  m.controls.forEach(c=>{const id=`${m.id}-${c.k}`; const l=$('#'+id+'-l'); if(l) l.textContent=ctlLabel(c,s);
+    if(c.type==='range'){const inp=$('#'+id); if(inp&&parseFloat(inp.value)!==s[c.k]) inp.value=s[c.k]; const o=$('#'+id+'-o'); if(o) o.textContent=ctlVal(c,s[c.k]);}});
+}
+const anims={};
+function changed(m){
+  const s=S[m.id]; if(m.constrain) m.constrain(s);
+  if(anims[m.id]){cancelAnimationFrame(anims[m.id]);anims[m.id]=null;}
+  s.ran=false; s.p=0; syncControls(m); $('#'+m.id+'-pfb').textContent=''; $('#'+m.id+'-pfb').className='fb-box'; render(m);
+}
+function resetLab(m){changed(m);}
+
+function setStatus(m,t){$('#'+m.id+'-status').textContent=t;}
+function render(m){
+  const s=S[m.id], r=calc(m,s), shown=s.ran||s.p>0;
+  $('#'+m.id+'-svg').innerHTML=m.draw(s,s.p,r,shown);
+  const meas=$('#'+m.id+'-meas');
+  if(!shown){meas.innerHTML=`<div class="placeholder">Run the machine to take measurements.</div>`;
+    setStatus(m,'Ready. Enter a prediction, then run the machine.');
+    $('[data-act="record"]',$('#v-'+m.id)).disabled=true; return;}
+  const p=s.p, din=r.dIn*p, dout=r.dOut*p;
+  const mx=Math.max(r.load,r.effort), dmx=Math.max(r.dIn,r.dOut);
+  meas.innerHTML=`<dl class="readouts">
+    <div class="e"><dt>Effort force</dt><dd>${fmt(r.effort)} N</dd></div>
+    <div class="l"><dt>${m.outName}</dt><dd>${fmt(r.load)} N</dd></div>
+    <div class="e"><dt>Input distance</dt><dd>${fmt(din)} m</dd></div>
+    <div class="l"><dt>Output distance</dt><dd>${fmt(dout)} m</dd></div>
+    <div class="e"><dt>Input work</dt><dd>${fmt(r.effort*din)} J</dd></div>
+    <div class="l"><dt>Useful output work</dt><dd>${fmt(r.load*dout)} J</dd></div>
+    <div><dt>Ideal MA (IMA)</dt><dd>${fmt(r.ima)}</dd></div>
+    <div><dt>Actual MA (AMA)</dt><dd>${fmt(r.ama)}</dd></div>
+    <div class="x"><dt>Efficiency</dt><dd>${pct(r.eff)}</dd></div>
+    <div class="x"><dt>Work lost to friction</dt><dd>${fmt(r.effort*din-r.load*dout)} J</dd></div>
+  </dl>
+  <div class="trade" aria-hidden="true">
+    <div class="trade-row"><span>Force</span><div class="bars"><div class="tbar e" style="width:${r.effort/mx*100}%"></div><div class="tbar l" style="width:${r.load/mx*100}%"></div></div></div>
+    <div class="trade-row"><span>Distance</span><div class="bars"><div class="tbar e" style="width:${r.dIn/dmx*100}%"></div><div class="tbar l" style="width:${r.dOut/dmx*100}%"></div></div></div>
+    <div class="tlabel"><span>Blue: input (effort)</span><span>Green: output (load)</span></div>
+  </div>
+  <details class="calc"><summary>Show the ideal calculation</summary><div class="formula">${r.ideal.map(x=>`<div>${x}</div>`).join('')}<div>Ideal effort = ${fmt(r.load)} N ÷ ${fmt(r.ima)} = ${fmt(r.idealEffort)} N</div><div>Measured effort ${fmt(r.effort)} N includes ${fmt(r.effort-r.idealEffort)} N to overcome friction</div></div></details>`;
+}
+
+function run(m){
+  const s=S[m.id];
+  if(anims[m.id]) cancelAnimationFrame(anims[m.id]);
+  setStatus(m,'Running…'); s.ran=false;
+  const dur=reduceMotion?0:2400, t0=performance.now();
+  const step=now=>{
+    const t=dur?Math.min(1,(now-t0)/dur):1; s.p=ease(t); render(m);
+    if(t<1){setStatus(m,'Running…'); anims[m.id]=requestAnimationFrame(step);}
+    else{anims[m.id]=null; s.ran=true; render(m); finish(m);}
+  };
+  anims[m.id]=requestAnimationFrame(step);
+}
+function finish(m){
+  const s=S[m.id], r=calc(m,s);
+  setStatus(m,'Measured. Record this trial, or change one setting and run again.');
+  $('[data-act="record"]',$('#v-'+m.id)).disabled=false;
+  const box=$('#'+m.id+'-pfb'), raw=$('#'+m.id+'-pred').value.trim(), pred=parseFloat(raw);
+  if(!raw||!isFinite(pred)){box.className='fb-box off';box.innerHTML='No prediction this time. Enter one before your next run to compare it with the measurement.';return;}
+  const diff=(pred-r.effort)/r.effort*100, idd=(pred-r.idealEffort)/r.idealEffort*100;
+  let msg=`You predicted <b>${fmt(pred)} N</b>. The measured effort was <b>${fmt(r.effort)} N</b> (${diff>=0?'+':''}${diff.toFixed(1)}%). `;
+  if(Math.abs(diff)<=5){box.className='fb-box good';msg+='That’s within 5% of the measurement, which means you accounted for friction too.';}
+  else if(Math.abs(idd)<=5){box.className='fb-box good';msg+=`Your prediction matches the ideal effort of ${fmt(r.idealEffort)} N. The extra ${fmt(r.effort-r.idealEffort)} N is the effort needed to overcome friction, which is why efficiency is ${pct(r.eff)} instead of 100%.`;}
+  else{box.className='fb-box off';msg+=`The ideal effort is ${fmt(r.load)} N ÷ IMA ${fmt(r.ima)} = ${fmt(r.idealEffort)} N. Check how you found the IMA from the geometry, then add the friction losses.`;}
+  box.innerHTML=msg;
+}
+function record(m){
+  const s=S[m.id]; if(!s.ran) return; const r=calc(m,s);
+  (TRIALS[m.id]=TRIALS[m.id]||[]).push({set:m.summary(s),load:r.load,effort:r.effort,ima:r.ima,ama:r.ama,eff:r.eff});
+  saveTrials(); renderTrials(m); setStatus(m,'Trial recorded. Change one setting and run again to compare.');
+}
+function trialTable(rows,withMachine){
+  if(!rows.length) return '';
+  return `<table><thead><tr>${withMachine?'<th>Machine</th>':''}<th>#</th><th>Setup</th><th class="r">Load (N)</th><th class="r">Effort (N)</th><th class="r">IMA</th><th class="r">AMA</th><th class="r">Efficiency</th></tr></thead><tbody>${rows.map((t,i)=>`<tr>${withMachine?`<td>${t.m}</td>`:''}<td>${t.i||i+1}</td><td>${t.set}</td><td class="r">${fmt(t.load)}</td><td class="r">${fmt(t.effort)}</td><td class="r">${fmt(t.ima)}</td><td class="r">${fmt(t.ama)}</td><td class="r">${pct(t.eff)}</td></tr>`).join('')}</tbody></table>`;
+}
+function renderTrials(m){
+  const rows=TRIALS[m.id]||[], el=$('#'+m.id+'-trials');
+  el.innerHTML=rows.length?trialTable(rows,false):'<p class="small" style="margin:10px 0 0">No trials yet. Run the machine, then record the result.</p>';
+}
+
+MACHINES.forEach(buildLab);
+
+/* ---------- dashboard ---------- */
+const lg=Math.log10;
+function lx(v,min,max,x0,w){return x0+(lg(Math.min(max,Math.max(v,min)))-lg(min))/(lg(max)-lg(min))*w;}
+function renderDashboard(){
+  const rows=MACHINES.map(m=>({m,s:S[m.id],r:calc(m,S[m.id])}));
+  const top=(f)=>rows.reduce((a,b)=>f(b)>f(a)?b:a);
+  const a=top(x=>x.r.ama), e=top(x=>x.r.eff), d=top(x=>0.5*x.r.ima);
+  $('#insights').innerHTML=`
+   <div class="insight"><div class="k">Most force multiplication</div><div class="v">${a.m.name}</div><p class="d">Actual MA of ${fmt(a.r.ama)}: ${fmt(a.r.load)} N moved with ${fmt(a.r.effort)} N.</p></div>
+   <div class="insight"><div class="k">Most efficient</div><div class="v">${e.m.name}</div><p class="d">${pct(e.r.eff)} of input work becomes useful output work.</p></div>
+   <div class="insight"><div class="k">Longest input distance for the same job</div><div class="v">${d.m.name}</div><p class="d">${fmt(0.5*d.r.ima)} m of input motion to move a load 0.5 m. Force gained is paid for in distance.</p></div>`;
+  $('#dashTable').innerHTML=`<thead><tr><th>Machine</th><th>Current setup</th><th class="r">Load (N)</th><th class="r">Effort (N)</th><th class="r">IMA</th><th class="r">AMA</th><th class="r">Efficiency</th><th>What it trades</th></tr></thead><tbody>${rows.map(x=>{
+    const tr=x.r.ima>1.001?'Less force, more input distance':x.r.ima<0.999?'More force, more output distance':'Same force, new direction';
+    return `<tr><td><a href="#${x.m.id}">${x.m.name}</a></td><td>${x.m.summary(x.s)}</td><td class="r">${fmt(x.r.load)}</td><td class="r">${fmt(x.r.effort)}</td><td class="r">${fmt(x.r.ima)}</td><td class="r">${fmt(x.r.ama)}</td><td class="r">${pct(x.r.eff)}</td><td>${tr}</td></tr>`;}).join('')}</tbody>`;
+
+  // MA chart (diverging log from 1)
+  {const W=640,x0=130,w=470,rowH=48,H=34+rows.length*rowH+40,min=0.01,max=10000,one=lx(1,min,max,x0,w);
+   let o='';
+   [0.01,0.1,1,10,100,1000,10000].forEach(t=>{const x=lx(t,min,max,x0,w);o+=`<line x1="${x}" y1="24" x2="${x}" y2="${H-30}" class="gridl"/>`+T(x,H-12,t>=1?t.toLocaleString('en-US'):String(t),'tm');});
+   o+=`<line x1="${one}" y1="16" x2="${one}" y2="${H-30}" class="refl"/>`;
+   o+=T(one-8,16,'trades force for distance','tm','end')+T(one+8,16,'multiplies force','tm','start');
+   rows.forEach((x,i)=>{const y=32+i*rowH, xi=lx(x.r.ima,min,max,x0,w), xa=lx(x.r.ama,min,max,x0,w);
+     o+=T(x0-10,y+20,x.m.name,'t','end');
+     o+=`<rect x="${Math.min(one,xi)}" y="${y}" width="${Math.max(2,Math.abs(xi-one))}" height="15" rx="2" class="bar-ideal"/>`;
+     o+=`<rect x="${Math.min(one,xa)}" y="${y+18}" width="${Math.max(2,Math.abs(xa-one))}" height="15" rx="2" class="bar-actual"/>`;
+     const lab=xi>=one?Math.max(xi,xa)+6:Math.max(xi,xa,one)+6;
+     o+=T(lab,y+13,fmt(x.r.ima),'te','start')+T(lab,y+31,fmt(x.r.ama),'tl','start');});
+   $('#maChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart of ideal and actual mechanical advantage for each machine on a logarithmic scale.">${o}</svg>`;}
+
+  // Efficiency
+  {const W=480,x0=130,w=290,rowH=40,H=20+rows.length*rowH+30;let o='';
+   [0,25,50,75,100].forEach(t=>{const x=x0+t/100*w;o+=`<line x1="${x}" y1="10" x2="${x}" y2="${H-26}" class="gridl"/>`+T(x,H-8,t+'%','tm');});
+   rows.forEach((x,i)=>{const y=16+i*rowH;o+=T(x0-10,y+16,x.m.name,'t','end')+`<rect x="${x0}" y="${y}" width="${w}" height="22" rx="3" class="bar-track"/><rect x="${x0}" y="${y}" width="${Math.max(0,x.r.eff)*w}" height="22" rx="3" class="bar-eff"/>`+T(x0+w+8,y+16,pct(x.r.eff),'t','start');});
+   $('#effChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart of efficiency for each machine.">${o}</svg>`;}
+
+  // Same job scatter
+  {const W=900,H=430,x0=90,y0=370,w=780,h=340,xmin=0.01,xmax=10000,ymin=0.1,ymax=100000;
+   const X=v=>lx(v,xmin,xmax,x0,w), Y=v=>y0-(lg(Math.min(ymax,Math.max(v,ymin)))-lg(ymin))/(lg(ymax)-lg(ymin))*h;
+   let o='';
+   [0.01,0.1,1,10,100,1000,10000].forEach(t=>{const x=X(t);o+=`<line x1="${x}" y1="${y0-h}" x2="${x}" y2="${y0}" class="gridl"/>`+T(x,y0+18,t>=1?t.toLocaleString('en-US'):String(t),'tm');});
+   [0.1,1,10,100,1000,10000,100000].forEach(t=>{const y=Y(t);o+=`<line x1="${x0}" y1="${y}" x2="${x0+w}" y2="${y}" class="gridl"/>`+T(x0-8,y+4,t>=1?t.toLocaleString('en-US'):String(t),'tm','end');});
+   o+=T(x0+w/2,y0+40,'Input distance needed (m)','t')+`<text transform="translate(20 ${y0-h/2}) rotate(-90)" class="t" text-anchor="middle">Effort needed (N)</text>`;
+   const ix1=0.01, ix2=5000; o+=`<line x1="${X(ix1)}" y1="${Y(500/ix1)}" x2="${X(ix2)}" y2="${Y(500/ix2)}" class="idealline"/>`;
+   o+=T(X(0.04),Y(500/0.04)-12,'Ideal: effort × distance = 500 J','te','start');
+   const pts=rows.map(x=>({n:x.m.name,dx:0.5*x.r.ima,f:1000/x.r.ama,w:0.5*x.r.ima*1000/x.r.ama}));
+   pts.forEach((pt,i)=>{const px=X(pt.dx),py=Y(pt.f);o+=`<circle cx="${px}" cy="${py}" r="11" class="pt"/>`+`<text x="${px}" y="${py+4.5}" text-anchor="middle" class="ptn">${i+1}</text>`;});
+   $('#jobChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Log-log scatter plot of effort versus input distance for each machine doing the same 500 joule job.">${o}</svg>`;
+   $('#jobTable').innerHTML=`<thead><tr><th>Machine</th><th class="r">Effort (N)</th><th class="r">Input distance (m)</th><th class="r">Input work (J)</th><th class="r">Lost to friction (J)</th></tr></thead><tbody>${pts.map((pt,i)=>`<tr><td><span class="badge">${i+1}</span> ${pt.n}</td><td class="r">${fmt(pt.f)}</td><td class="r">${fmt(pt.dx)}</td><td class="r">${fmt(pt.w)}</td><td class="r">${fmt(pt.w-500)}</td></tr>`).join('')}</tbody>`;}
+
+  const all=[]; MACHINES.forEach(m=>(TRIALS[m.id]||[]).forEach((t,i)=>all.push(Object.assign({m:m.name,i:i+1},t))));
+  $('#allTrials').innerHTML=all.length?trialTable(all,true):'<p class="small" style="margin:10px 0 0">No trials recorded yet. Record trials in any lab and they’ll appear here together.</p>';
+}
+$('#clearAll').addEventListener('click',()=>{TRIALS={};saveTrials();MACHINES.forEach(renderTrials);renderDashboard();});
+
+/* ---------- principles ---------- */
+const WB={
+  handle:'<b>Second-class lever.</b> The wheel’s axle is the fulcrum, the load sits in the middle, and you lift at the handles. Because the effort arm is longer than the load arm, you lift with less force than the load’s weight.',
+  wheel:'<b>Wheel and axle.</b> The wheel turns on its axle so the load rolls instead of sliding, which cuts the force needed to move it horizontally. Its axle also serves as the lever’s fulcrum.',
+  tray:'<b>The load.</b> Its weight acts between the fulcrum and your hands. Moving the load closer to the wheel shortens the load arm and raises the lever’s mechanical advantage.'
+};
+$$('.wb-btns button').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.part, on=b.getAttribute('aria-pressed')!=='true';
+  $$('.wb-btns button').forEach(x=>x.setAttribute('aria-pressed','false')); $$('#wbSvg .part').forEach(g=>g.classList.remove('hl'));
+  const svg=$('#wbSvg');
+  if(on){b.setAttribute('aria-pressed','true');$('#wb-'+k).classList.add('hl');svg.classList.add('has-sel');$('#wbText').innerHTML=WB[k];}
+  else{svg.classList.remove('has-sel');$('#wbText').textContent='Select a part to begin.';}
+}));
+
+const TERMS=[
+  ['Effort','Input force','The force applied to the machine at its input.'],
+  ['Load','Output force','The force the machine acts against, such as a weight to lift or wood to split.'],
+  ['Fulcrum','Lever pivot','The fixed point a lever turns about.'],
+  ['Torque','Turning effect','Force times the perpendicular distance from the pivot to the force’s line of action.'],
+  ['IMA','Ideal mechanical advantage','Input distance ÷ output distance, or the ratio from geometry, ignoring friction.'],
+  ['AMA','Actual mechanical advantage','Measured output force ÷ measured input force.'],
+  ['Efficiency','Useful output','Output work ÷ input work × 100%. Always below 100% in a real machine.'],
+  ['Work','W = F × d','Force times displacement in the direction of the force, measured in joules.'],
+  ['Lead','Screw advance','The axial distance a screw moves in one full turn.'],
+  ['Compound machine','Combination','A device made of two or more simple machines working together.']
+];
+$('#flips').innerHTML=TERMS.map(t=>`<button type="button" class="flip" aria-pressed="false" aria-label="${t[0]}: select to show the definition"><span class="flip-in"><span class="face front"><b>${t[0]}</b><small>${t[1]}</small></span><span class="face back">${t[2]}</span></span></button>`).join('');
+$('#flips').addEventListener('click',e=>{const b=e.target.closest('.flip'); if(!b) return; const on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',String(on)); b.setAttribute('aria-label',on?`${b.querySelector('b').textContent}: ${b.querySelector('.back').textContent}`:`${b.querySelector('b').textContent}: select to show the definition`);});
+
+renderQuiz($('#finalQuiz'),[
+  {q:'A machine has an IMA of 4. You measure an AMA of 3. What is its efficiency?',o:['33%','75%','133%','12%'],a:1,w:'Efficiency = AMA ÷ IMA × 100% = 3 ÷ 4 × 100% = 75%.'},
+  {q:'You push on a heavy crate with 200 N for a full minute, but it doesn’t move. How much work did you do on the crate?',o:['200 J','12,000 J','0 J','It depends on how tired you are'],a:2,w:'Work needs displacement. The crate moved 0 m, so W = 200 N × 0 m = 0 J, even though you applied a force.'},
+  {q:'A pulley system has 3 wheels and 4 rope segments supporting the moving block. What is its IMA?',o:['3','4','7','12'],a:1,w:'Count supporting segments, not wheels. Four segments share the load, so IMA = 4.'},
+  {q:'Which machine has an IMA below 1?',o:['A second-class lever','A third-class lever','A screw jack','A long ramp'],a:1,w:'In a third-class lever the effort arm is shorter than the load arm. It trades force for greater movement at the output.'},
+  {q:'How can a machine multiply force but still be less than 100% efficient?',o:['Force multiplication and efficiency measure different things; friction turns some input work into heat','It can’t; any machine that multiplies force is 100% efficient','Efficiency only applies to machines that change direction','The load adds energy to the machine'],a:0,w:'Mechanical advantage compares forces. Efficiency compares work. A screw jack has a huge AMA, but friction in the threads wastes most of the input work.'},
+  {q:'When you lift wheelbarrow handles, which class of lever are you using?',o:['First class','Second class','Third class','It isn’t a lever'],a:1,w:'The wheel’s axle is the fulcrum at one end, the load is in the middle, and the effort is at the handles.'},
+  {q:'A screw jack has a 0.3 m handle and a 5 mm lead. What is its IMA, to the nearest whole number?',o:['60','94','377','1,885'],a:2,w:'IMA = 2πR ÷ lead = (2π × 0.3 m) ÷ 0.005 m ≈ 1.885 ÷ 0.005 ≈ 377.'},
+  {q:'A wedge is driven 0.12 m into wood and spreads it 0.02 m apart. What is its IMA?',o:['0.17','6','2.4','12'],a:1,w:'IMA = input distance ÷ output distance = 0.12 ÷ 0.02 = 6.'}
+]);
+
+/* ---------- routing ---------- */
+const VIEWS=['overview','lever','wheel-axle','pulley','inclined-plane','wedge','screw','dashboard','principles'];
+let first=true;
+function route(){
+  let v=(location.hash||'').replace('#','');
+  if(!VIEWS.includes(v)) v='overview';
+  $$('.view').forEach(x=>x.classList.toggle('active',x.id==='v-'+v));
+  $$('#tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');});
+  const tab=$(`#tabs a[href="#${v}"]`); if(tab&&tab.scrollIntoView) tab.scrollIntoView({block:'nearest',inline:'nearest'});
+  if(v==='dashboard') renderDashboard();
+  if(BYID[v]) render(BYID[v]);
+  window.scrollTo(0,0);
+  if(!first){const h=$('#v-'+v+' h1'); if(h) h.focus({preventScroll:true});}
+  first=false;
+}
+window.addEventListener('hashchange',route);
+route();
+
+/* ---------- theme ---------- */
+const tb=$('#themeBtn');
+function syncTheme(){const d=document.documentElement.getAttribute('data-theme')==='dark';tb.setAttribute('aria-pressed',String(d));$('span',tb).textContent=d?'Light mode':'Dark mode';}
+tb.addEventListener('click',()=>{const d=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',d);try{localStorage.setItem('sm-theme',d);}catch(e){}syncTheme();});
+syncTheme();
+})();
+</script>
+</body>
+</html>
