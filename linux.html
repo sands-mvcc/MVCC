@@ -1,1771 +1,993 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Linux Command Simulator</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Linux Command Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F5FA; --surface:#FFFFFF; --surface-2:#E8EEF7; --ink:#13223F; --muted:#56678A; --line:#D2DBE9;
+  --navy:#0047AB; --navy-soft:#DCE7F8; --green:#00875A; --green-bright:#00a86b; --green-soft:#DDF4EA;
+  --amber:#9A5B00; --amber-soft:#FFF2DB;
+  --term-bg:#0C1A2E; --term-bar:#13263F; --term-ink:#D6E1F0; --term-dim:#7F94B3;
+  --t-green:#3DDC97; --t-blue:#7DB2FF; --t-red:#FF8080; --t-amber:#F4B860; --t-cyan:#7FD8E6;
+  --ui:'Atkinson Hyperlegible', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono:'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, 'Courier New', monospace;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#08121F; --surface:#0F1D31; --surface-2:#16294A; --ink:#E3EBF7; --muted:#9DAEC9; --line:#223658;
+    --navy:#6EA6FF; --navy-soft:#16294A; --green:#33D196; --green-bright:#33D196; --green-soft:#0F2E26;
+    --amber:#F4B860; --amber-soft:#2B2312; --term-bg:#060F1C; --term-bar:#0D1C31; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#08121F; --surface:#0F1D31; --surface-2:#16294A; --ink:#E3EBF7; --muted:#9DAEC9; --line:#223658;
+  --navy:#6EA6FF; --navy-soft:#16294A; --green:#33D196; --green-bright:#33D196; --green-soft:#0F2E26;
+  --amber:#F4B860; --amber-soft:#2B2312; --term-bg:#060F1C; --term-bar:#0D1C31; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{font-family:var(--ui);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5;min-height:100%}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+:focus-visible{outline:3px solid var(--navy);outline-offset:2px;border-radius:6px}
+kbd{font-family:var(--mono);font-size:.82em;padding:1px 6px;border-radius:5px;border:1px solid var(--line);background:var(--surface-2)}
 
-        body {
-            font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
-            color: #e0e0e0;
-        }
+/* Header */
+.top{max-width:1440px;margin:0 auto;padding:22px 20px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px}
+.brand{display:flex;align-items:center;gap:14px;margin-right:auto}
+.glyph{width:46px;height:46px;border-radius:12px;background:var(--navy);display:grid;place-items:center;flex:none}
+.glyph svg{width:28px;height:28px}
+.brand h1{font-size:1.45rem;line-height:1.15;letter-spacing:-.01em}
+.brand p{color:var(--muted);font-size:.95rem}
+.modes{display:flex;background:var(--surface-2);border-radius:999px;padding:4px;gap:2px}
+.modes button{padding:7px 16px;border-radius:999px;font-weight:700;font-size:.92rem;color:var(--muted)}
+.modes button[aria-selected="true"]{background:var(--surface);color:var(--navy);box-shadow:0 1px 3px rgba(10,30,70,.15)}
+.stats{display:flex;align-items:center;gap:18px}
+.stat{display:flex;flex-direction:column;line-height:1.15}
+.stat b{font-size:1.25rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.8rem;color:var(--muted)}
+.stat-ring{display:flex;align-items:center;gap:10px}
+.ring-bg{stroke:var(--surface-2)}
+.ring-fg{stroke:var(--green-bright);transition:stroke-dashoffset .5s ease}
+.ring-txt{fill:var(--ink);font-family:var(--ui);font-weight:700}
+.theme-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;background:var(--surface)}
+.theme-btn svg{width:20px;height:20px}
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 20px;
-            min-height: 100vh;
-        }
+/* Layout */
+.layout{max-width:1440px;margin:0 auto;padding:0 20px 32px;display:grid;gap:20px;
+  grid-template-columns:minmax(250px,290px) minmax(0,1fr) minmax(250px,300px);
+  grid-template-areas:"left term map";align-items:start}
+.left{grid-area:left}.term-wrap{grid-area:term}.map{grid-area:map}
+@media (max-width:1120px){.layout{grid-template-columns:minmax(0,1fr) 280px;grid-template-areas:"term map" "left left"}}
+@media (max-width:760px){.layout{grid-template-columns:minmax(0,1fr);grid-template-areas:"term" "map" "left"}.stats{gap:14px}}
 
-        .sidebar {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.panel h2{font-size:1.05rem;margin-bottom:4px}
+.panel .sub{color:var(--muted);font-size:.88rem;margin-bottom:14px}
 
-        .terminal-container {
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 12px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            flex-direction: column;
-        }
+/* Terminal */
+.term-wrap{position:relative;background:var(--term-bg);border-radius:16px;overflow:hidden;box-shadow:0 18px 40px -18px rgba(5,25,60,.55);border:1px solid #1E3352}
+.term-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--term-bar);border-bottom:1px solid #1E3352;color:var(--term-dim);font-family:var(--mono);font-size:.82rem}
+.term-bar .title{margin-right:auto;color:var(--term-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.term-bar .title i{font-style:normal;color:var(--t-green)}
+.bar-btn{font-family:var(--ui);font-size:.8rem;color:var(--term-ink);padding:5px 10px;border-radius:7px;border:1px solid #2A4366}
+.bar-btn:hover{background:#1A3050}
+.screen{height:min(60vh,560px);min-height:340px;overflow-y:auto;padding:16px 18px 8px;font-family:var(--mono);font-size:14px;line-height:1.55;color:var(--term-ink)}
+.ln{white-space:pre-wrap;word-break:break-word;min-height:1.55em}
+.ln.err{color:var(--t-red)}.ln.ok{color:var(--t-green)}.ln.info{color:var(--t-blue)}.ln.warn{color:var(--t-amber)}
+.ln.note{color:var(--term-dim);font-style:italic}
+.ln.celebrate{color:var(--t-green);font-weight:600}
+.pu{color:var(--t-green);font-weight:600}.pp{color:var(--t-blue);font-weight:600}.cmd{color:#fff}
+.d{color:var(--t-blue);font-weight:600}.f{color:var(--term-ink)}.h{color:var(--term-dim)}.dim{color:var(--term-dim)}
+.hl{background:rgba(244,184,96,.28);color:#FFE2B0;border-radius:3px}
+.inrow{display:flex;align-items:center;gap:8px;padding:10px 18px 12px;font-family:var(--mono);font-size:14px;border-top:1px dashed #1E3352}
+.inrow .prompt{white-space:nowrap}
+#cmd{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#fff;font:inherit;caret-color:var(--t-green);font-size:16px}
+#cmd:focus-visible{outline:none}
+.inrow:focus-within{background:rgba(61,220,151,.05)}
 
-        .mode-toggle {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
+/* Command anatomy */
+.anatomy{background:#0A1626;border-top:1px solid #1E3352;padding:10px 18px 12px;min-height:66px;display:flex;flex-direction:column;gap:6px}
+.toks{display:flex;flex-wrap:wrap;gap:6px 6px;align-items:flex-start}
+.tok{display:flex;flex-direction:column;align-items:center;gap:1px}
+.tok b{font-family:var(--mono);font-weight:600;font-size:.86rem;padding:2px 8px;border-radius:6px;border:1px solid}
+.tok small{font-size:.7rem;color:var(--term-dim)}
+.k-cmd b{color:var(--t-green);border-color:rgba(61,220,151,.45);background:rgba(61,220,151,.1)}
+.k-flag b{color:var(--t-amber);border-color:rgba(244,184,96,.45);background:rgba(244,184,96,.08)}
+.k-arg b{color:var(--t-blue);border-color:rgba(125,178,255,.4);background:rgba(125,178,255,.08)}
+.k-op b{color:var(--t-cyan);border-color:rgba(127,216,230,.45);background:rgba(127,216,230,.08)}
+.k-bad b{color:var(--t-red);border-color:rgba(255,128,128,.5);background:rgba(255,128,128,.08)}
+.ana-desc{font-size:.84rem;color:var(--term-ink)}
+.ana-desc em{font-style:normal;font-family:var(--mono);color:var(--term-dim)}
+.ana-tip{font-size:.84rem;color:var(--term-dim)}
+.ana-tip kbd{background:#13263F;border-color:#2A4366;color:var(--term-ink)}
 
-        .mode-btn {
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            color: #e0e0e0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+/* nano */
+.nano{position:absolute;inset:0;background:var(--term-bg);display:flex;flex-direction:column;font-family:var(--mono);font-size:14px;z-index:5}
+.nano[hidden]{display:none}
+.nano-bar{display:flex;justify-content:space-between;gap:10px;background:#D6E1F0;color:#0C1A2E;padding:4px 12px;font-weight:600}
+.nano textarea{flex:1;resize:none;background:transparent;border:0;outline:0;color:var(--term-ink);font:inherit;padding:12px 16px;line-height:1.55}
+.nano-msg{min-height:1.6em;text-align:center;color:var(--t-amber);padding:2px 12px}
+.nano-keys{display:flex;flex-wrap:wrap;gap:8px 18px;padding:8px 12px 12px;border-top:1px solid #1E3352}
+.nano-keys button{color:var(--term-ink);font-family:var(--mono);font-size:.85rem;display:flex;gap:6px;align-items:center;padding:3px 6px;border-radius:6px}
+.nano-keys button:hover{background:#13263F}
+.nano-keys kbd{background:#D6E1F0;color:#0C1A2E;border:0;font-weight:600}
 
-        .mode-btn.active {
-            background: rgba(74, 144, 226, 0.3);
-            border-color: #4a90e2;
-        }
+/* Lesson path */
+.rail{list-style:none;position:relative;display:flex;flex-direction:column;gap:4px;margin-bottom:16px}
+.rail::before{content:"";position:absolute;left:21px;top:22px;bottom:22px;width:2px;background:var(--line)}
+.station{position:relative;display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:6px 8px 6px 0;border-radius:10px}
+.station:hover{background:var(--surface-2)}
+.station[aria-current="step"]{background:var(--navy-soft)}
+.station .ringwrap{position:relative;flex:none;width:44px;height:44px;display:grid;place-items:center;background:var(--surface);border-radius:50%}
+.station[aria-current="step"] .ringwrap{background:var(--navy-soft)}
+.station .ringwrap svg{position:absolute;inset:0}
+.station .num{font-weight:700;font-size:.95rem;position:relative}
+.station.done .num{color:var(--green)}
+.station .meta{display:flex;flex-direction:column;line-height:1.25}
+.station .meta strong{font-size:.95rem}
+.station .meta span{font-size:.8rem;color:var(--muted)}
+.detail{border-top:1px solid var(--line);padding-top:16px}
+.detail h3{font-size:1.1rem;margin-bottom:6px;color:var(--navy)}
+.detail p.obj{font-size:.92rem;color:var(--ink);margin-bottom:14px}
+.detail h4{font-size:.85rem;color:var(--muted);margin:12px 0 6px;font-weight:700}
+.checks{list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.checks li{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.85rem;padding:3px 10px 3px 6px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.checks li svg{width:16px;height:16px}
+.checks li.yes{border-color:var(--green-bright);background:var(--green-soft);color:var(--green);font-weight:600}
+.try{display:flex;flex-direction:column;gap:4px}
+.try button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:6px 10px;border-radius:8px;border:1px solid transparent}
+.try button:hover{background:var(--surface-2);border-color:var(--line)}
+.try code{font-family:var(--mono);font-size:.86rem;color:var(--navy);font-weight:600}
+.try span{font-size:.8rem;color:var(--muted)}
+.hint{margin-top:14px;background:var(--amber-soft);color:var(--amber);border-radius:10px;padding:10px 12px;font-size:.88rem;display:flex;gap:8px}
+.hint svg{flex:none;width:18px;height:18px;margin-top:2px}
+.done-box{margin-top:14px;background:var(--green-soft);color:var(--green);border-radius:10px;padding:12px;font-size:.92rem;font-weight:700}
+.done-box button{display:block;margin-top:8px;background:var(--green);color:#fff;padding:8px 14px;border-radius:8px;font-weight:700;font-size:.9rem}
+:root[data-theme="dark"] .done-box button{color:#06231A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .done-box button{color:#06231A}}
+.link-btn{font-size:.82rem;color:var(--muted);text-decoration:underline;margin-top:14px}
 
-        .lessons {
-            display: none;
-        }
+/* Reference */
+.ref h3{font-size:.85rem;color:var(--muted);margin:14px 0 6px}
+.ref h3:first-of-type{margin-top:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-family:var(--mono);font-size:.84rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+.chips button:hover{border-color:var(--navy);color:var(--navy)}
 
-        .lessons.active {
-            display: block;
-        }
-
-        .lesson {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .lesson:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .lesson.completed {
-            border-color: #4CAF50;
-            background: rgba(76, 175, 80, 0.1);
-        }
-
-        .lesson.active {
-            border-color: #4a90e2;
-            background: rgba(74, 144, 226, 0.1);
-        }
-
-        .lesson h3 {
-            color: #4a90e2;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .lesson p {
-            font-size: 12px;
-            line-height: 1.4;
-            opacity: 0.8;
-        }
-
-        .progress {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            height: 6px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #4CAF50, #8BC34A);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .terminal {
-            flex: 1;
-            background: #000;
-            border-radius: 8px;
-            padding: 20px;
-            font-size: 14px;
-            line-height: 1.4;
-            overflow-y: auto;
-            min-height: 600px;
-            max-height: 70vh;
-            border: 2px solid #333;
-        }
-
-        .terminal-header {
-            display: flex;
-            align-items: center;
-            justify-content: between;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #333;
-        }
-
-        .terminal-title {
-            color: #4a90e2;
-            font-weight: bold;
-        }
-
-        .output-line {
-            margin-bottom: 4px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .command-line {
-            color: #4CAF50;
-        }
-
-        .error {
-            color: #f44336;
-        }
-
-        .success {
-            color: #4CAF50;
-        }
-
-        .info {
-            color: #2196F3;
-        }
-
-        .warning {
-            color: #FF9800;
-        }
-
-        .input-line {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .prompt {
-            color: #4CAF50;
-            margin-right: 8px;
-        }
-
-        #commandInput {
-            background: transparent;
-            border: none;
-            color: #e0e0e0;
-            font-family: inherit;
-            font-size: inherit;
-            outline: none;
-            flex: 1;
-            caret-color: #4CAF50;
-        }
-
-        .lesson-panel {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: none;
-        }
-
-        .lesson-panel.active {
-            display: block;
-        }
-
-        .lesson-title {
-            color: #4a90e2;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .lesson-objective {
-            color: #e0e0e0;
-            margin-bottom: 15px;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .lesson-commands {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 6px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-
-        .lesson-commands h4 {
-            color: #4CAF50;
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-
-        .lesson-commands ul {
-            list-style: none;
-            font-size: 12px;
-        }
-
-        .lesson-commands li {
-            margin-bottom: 4px;
-            color: #ccc;
-        }
-
-        .lesson-commands code {
-            color: #4a90e2;
-            background: rgba(74, 144, 226, 0.1);
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-
-        .hint {
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 10px;
-            color: #FFC107;
-            font-size: 12px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .stat {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            padding: 10px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .stat-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #4a90e2;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            opacity: 0.7;
-            margin-top: 4px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-        }
-    </style>
+/* Map */
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:12px;font-family:var(--mono);font-size:.82rem}
+.crumbs button{padding:2px 8px;border-radius:6px;background:var(--surface-2)}
+.crumbs button:last-child{background:var(--green-soft);color:var(--green);font-weight:600}
+.crumbs .sep{color:var(--muted)}
+.tree,.tree ul{list-style:none}
+.tree ul{margin-left:11px;padding-left:8px;border-left:1px dashed var(--line)}
+.row{display:flex;align-items:center;gap:4px;padding:2px 4px;border-radius:7px;font-family:var(--mono);font-size:.86rem}
+.row .caret{width:18px;height:18px;display:grid;place-items:center;border-radius:4px;color:var(--muted);flex:none}
+.row .caret svg{width:12px;height:12px;transition:transform .15s}
+.row .caret[aria-expanded="true"] svg{transform:rotate(90deg)}
+.row .spacer{width:18px;flex:none}
+.row .ico{width:17px;height:17px;flex:none;display:grid}
+.row.dir .ico{color:var(--navy)}
+.row.file .ico{color:var(--muted)}
+.row .nm{padding:1px 4px;border-radius:4px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.dir .nm{font-weight:600;color:var(--navy)}
+.row.hidden{opacity:.6}
+.row .nm:hover{text-decoration:underline}
+.row.here{background:var(--green-soft);box-shadow:inset 3px 0 0 var(--green-bright)}
+.row.here .nm,.row.here .ico{color:var(--green)}
+.badge{margin-left:auto;font-family:var(--ui);font-size:.72rem;font-weight:700;color:var(--green);white-space:nowrap;padding-left:6px}
+.row.fresh{animation:fresh 1.8s ease-out}
+@keyframes fresh{0%{background:rgba(0,168,107,.38)}100%{background:transparent}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:.78rem;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:5px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.map-count{font-size:.82rem;color:var(--muted);margin-top:10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="sidebar">
-            <div class="mode-toggle">
-                <button class="mode-btn active" onclick="setMode('practice')">Practice</button>
-                <button class="mode-btn" onclick="setMode('lessons')">Lessons</button>
-            </div>
+<header class="top">
+  <div class="brand">
+    <div class="glyph" aria-hidden="true"><svg viewBox="0 0 28 28" fill="none"><path d="M6 9l5 5-5 5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 19h8" stroke="#00d68a" stroke-width="2.6" stroke-linecap="round"/></svg></div>
+    <div><h1>Linux command simulator</h1><p>Type real commands and watch the filesystem respond.</p></div>
+  </div>
+  <div class="modes" role="tablist" aria-label="Mode">
+    <button role="tab" id="tab-lessons" data-mode="lessons">Guided lessons</button>
+    <button role="tab" id="tab-practice" data-mode="practice">Free practice</button>
+  </div>
+  <div class="stats">
+    <div class="stat-ring"><span id="lessonRing"></span><div class="stat"><b id="statLessons">0/6</b><span>Lessons</span></div></div>
+    <div class="stat"><b id="statCmds">0</b><span>Commands run</span></div>
+    <div class="stat"><b id="statAcc">–</b><span>Ran cleanly</span></div>
+  </div>
+  <button class="theme-btn" id="themeBtn" aria-label="Switch color theme"></button>
+</header>
 
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-value" id="commandCount">0</div>
-                    <div class="stat-label">Commands</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="lessonsCompleted">0</div>
-                    <div class="stat-label">Lessons</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="accuracy">100%</div>
-                    <div class="stat-label">Accuracy</div>
-                </div>
-            </div>
+<main class="layout">
+  <aside class="left panel" id="left" aria-label="Lessons and reference"></aside>
 
-            <div class="lessons" id="lessonsPanel">
-                <div class="lesson" onclick="startLesson(0)">
-                    <h3>Lesson 1: Basic Navigation</h3>
-                    <p>Learn to navigate directories with pwd, ls, and cd commands.</p>
-                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
-                </div>
-                <div class="lesson" onclick="startLesson(1)">
-                    <h3>Lesson 2: File Management</h3>
-                    <p>Create, copy, move, and delete files and directories.</p>
-                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
-                </div>
-                <div class="lesson" onclick="startLesson(2)">
-                    <h3>Lesson 3: Viewing Files</h3>
-                    <p>Display and search file contents with cat, head, tail, and grep.</p>
-                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
-                </div>
-                <div class="lesson" onclick="startLesson(3)">
-                    <h3>Lesson 4: System Information</h3>
-                    <p>Check system info, disk usage, and running processes.</p>
-                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
-                </div>
-                <div class="lesson" onclick="startLesson(4)">
-                    <h3>Lesson 5: Text Editing</h3>
-                    <p>Basic text editing with nano and file manipulation.</p>
-                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
-                </div>
-                <div class="lesson" onclick="startLesson(5)">
-                    <h3>Lesson 6: Network Commands</h3>
-                    <p>Network connectivity and file transfer commands.</p>
-                    <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
-                </div>
-            </div>
-
-            <div id="currentLessonPanel" class="lesson-panel">
-                <div class="lesson-title" id="lessonTitle"></div>
-                <div class="lesson-objective" id="lessonObjective"></div>
-                <div class="lesson-commands">
-                    <h4>Commands to try:</h4>
-                    <ul id="lessonCommands"></ul>
-                </div>
-                <div class="hint" id="lessonHint" style="display: none;"></div>
-            </div>
-        </div>
-
-        <div class="terminal-container">
-            <div class="terminal-header">
-                <div class="terminal-title">Linux Command Simulator</div>
-            </div>
-            <div class="terminal" id="terminal">
-                <div class="output-line success">Welcome to the Linux Command Simulator!</div>
-                <div class="output-line info">Type 'help' to see available commands or switch to Lessons mode for guided learning.</div>
-                <div class="output-line">Use the up/down arrow keys to navigate command history.</div>
-                <div class="output-line"></div>
-            </div>
-            <div class="input-line">
-                <span class="prompt" id="prompt">user@simulator:~$</span>
-                <input type="text" id="commandInput" autocomplete="off" autofocus>
-            </div>
-        </div>
+  <section class="term-wrap" aria-label="Terminal">
+    <div class="term-bar">
+      <span class="title" id="termTitle"></span>
+      <button class="bar-btn" id="btnClear">Clear screen</button>
+      <button class="bar-btn" id="btnReset">Reset files</button>
     </div>
-
-    <script>
-        // Global state
-        let currentMode = 'practice';
-        let currentLesson = -1;
-        let lessonProgress = Array(6).fill(0);
-        let commandHistory = [];
-        let historyIndex = -1;
-        let stats = { commands: 0, correct: 0, lessons: 0 };
-
-        // Virtual File System
-        class VirtualFileSystem {
-            constructor() {
-                this.currentPath = '/home/user';
-                this.files = {
-                    '/': {
-                        type: 'directory',
-                        contents: ['home', 'etc', 'var', 'usr', 'tmp']
-                    },
-                    '/home': {
-                        type: 'directory',
-                        contents: ['user']
-                    },
-                    '/home/user': {
-                        type: 'directory',
-                        contents: ['documents', 'downloads', 'demo.txt', '.bashrc']
-                    },
-                    '/home/user/documents': {
-                        type: 'directory',
-                        contents: ['notes.txt', 'project']
-                    },
-                    '/home/user/documents/project': {
-                        type: 'directory',
-                        contents: ['readme.md', 'src']
-                    },
-                    '/home/user/documents/project/src': {
-                        type: 'directory',
-                        contents: ['main.js', 'utils.js']
-                    },
-                    '/home/user/downloads': {
-                        type: 'directory',
-                        contents: ['file1.zip', 'image.png']
-                    },
-                    '/etc': {
-                        type: 'directory',
-                        contents: ['hosts', 'passwd', 'fstab']
-                    },
-                    '/var': {
-                        type: 'directory',
-                        contents: ['log', 'tmp']
-                    },
-                    '/var/log': {
-                        type: 'directory',
-                        contents: ['system.log', 'error.log']
-                    },
-                    '/usr': {
-                        type: 'directory',
-                        contents: ['bin', 'lib', 'share']
-                    },
-                    '/tmp': {
-                        type: 'directory',
-                        contents: []
-                    },
-                    '/home/user/demo.txt': {
-                        type: 'file',
-                        content: 'This is a demo file.\nIt contains multiple lines.\nYou can view it with cat, head, or tail commands.\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8\nLine 9\nLast line'
-                    },
-                    '/home/user/.bashrc': {
-                        type: 'file',
-                        content: '# Bash configuration file\nexport PATH=$PATH:/usr/local/bin\nalias ll="ls -la"\nalias la="ls -A"'
-                    },
-                    '/home/user/documents/notes.txt': {
-                        type: 'file',
-                        content: 'Meeting Notes\n============\n\n1. Project deadline: Next Friday\n2. Review documentation\n3. Test the new features\n4. Deploy to staging'
-                    },
-                    '/home/user/documents/project/readme.md': {
-                        type: 'file',
-                        content: '# Project Documentation\n\nThis is a sample project for learning Linux commands.\n\n## Features\n- File management\n- Text processing\n- System monitoring'
-                    },
-                    '/home/user/documents/project/src/main.js': {
-                        type: 'file',
-                        content: 'console.log("Hello, World!");\n\nfunction main() {\n    return "This is the main function";\n}'
-                    },
-                    '/home/user/documents/project/src/utils.js': {
-                        type: 'file',
-                        content: 'function formatDate(date) {\n    return date.toISOString();\n}\n\nmodule.exports = { formatDate };'
-                    },
-                    '/etc/hosts': {
-                        type: 'file',
-                        content: '127.0.0.1 localhost\n::1 localhost\n192.168.1.1 router'
-                    },
-                    '/etc/passwd': {
-                        type: 'file',
-                        content: 'root:x:0:0:root:/root:/bin/bash\nuser:x:1000:1000:User:/home/user:/bin/bash'
-                    },
-                    '/var/log/system.log': {
-                        type: 'file',
-                        content: '[2025-06-21 10:00:01] System started\n[2025-06-21 10:00:15] Network interface up\n[2025-06-21 10:01:00] User login: user'
-                    },
-                    '/var/log/error.log': {
-                        type: 'file',
-                        content: '[2025-06-21 09:45:12] WARNING: Low disk space\n[2025-06-21 10:00:05] ERROR: Failed to load module xyz'
-                    }
-                };
-                this.processes = [
-                    { pid: 1, name: 'systemd', cpu: 0.1, memory: 0.5 },
-                    { pid: 123, name: 'bash', cpu: 0.2, memory: 1.2 },
-                    { pid: 456, name: 'firefox', cpu: 15.6, memory: 24.3 },
-                    { pid: 789, name: 'code', cpu: 8.2, memory: 18.7 },
-                    { pid: 321, name: 'chrome', cpu: 12.4, memory: 32.1 }
-                ];
-            }
-
-            resolvePath(path) {
-                if (path.startsWith('/')) {
-                    return path;
-                }
-                if (path === '..') {
-                    const parts = this.currentPath.split('/').filter(p => p);
-                    parts.pop();
-                    return '/' + parts.join('/') || '/';
-                }
-                if (path === '~') {
-                    return '/home/user';
-                }
-                if (path === '.') {
-                    return this.currentPath;
-                }
-                if (this.currentPath === '/') {
-                    return '/' + path;
-                }
-                return this.currentPath + '/' + path;
-            }
-
-            exists(path) {
-                return this.files.hasOwnProperty(path);
-            }
-
-            isDirectory(path) {
-                return this.exists(path) && this.files[path].type === 'directory';
-            }
-
-            isFile(path) {
-                return this.exists(path) && this.files[path].type === 'file';
-            }
-
-            getContents(path) {
-                if (this.isDirectory(path)) {
-                    return this.files[path].contents || [];
-                }
-                return [];
-            }
-
-            getFileContent(path) {
-                if (this.isFile(path)) {
-                    return this.files[path].content || '';
-                }
-                return null;
-            }
-
-            createFile(path, content = '') {
-                this.files[path] = { type: 'file', content };
-                const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
-                const fileName = path.substring(path.lastIndexOf('/') + 1);
-                if (this.isDirectory(parentPath)) {
-                    const contents = this.getContents(parentPath);
-                    if (!contents.includes(fileName)) {
-                        contents.push(fileName);
-                    }
-                }
-            }
-
-            createDirectory(path) {
-                this.files[path] = { type: 'directory', contents: [] };
-                const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
-                const dirName = path.substring(path.lastIndexOf('/') + 1);
-                if (this.isDirectory(parentPath)) {
-                    const contents = this.getContents(parentPath);
-                    if (!contents.includes(dirName)) {
-                        contents.push(dirName);
-                    }
-                }
-            }
-
-            remove(path) {
-                if (this.exists(path)) {
-                    const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
-                    const itemName = path.substring(path.lastIndexOf('/') + 1);
-                    
-                    if (this.isDirectory(parentPath)) {
-                        const contents = this.getContents(parentPath);
-                        const index = contents.indexOf(itemName);
-                        if (index > -1) {
-                            contents.splice(index, 1);
-                        }
-                    }
-                    
-                    delete this.files[path];
-                    return true;
-                }
-                return false;
-            }
-
-            copy(source, dest) {
-                if (this.exists(source)) {
-                    this.files[dest] = { ...this.files[source] };
-                    const parentPath = dest.substring(0, dest.lastIndexOf('/')) || '/';
-                    const itemName = dest.substring(dest.lastIndexOf('/') + 1);
-                    if (this.isDirectory(parentPath)) {
-                        const contents = this.getContents(parentPath);
-                        if (!contents.includes(itemName)) {
-                            contents.push(itemName);
-                        }
-                    }
-                    return true;
-                }
-                return false;
-            }
-
-            getCurrentDirectory() {
-                return this.currentPath.split('/').pop() || '/';
-            }
-
-            getPromptPath() {
-                if (this.currentPath === '/home/user') {
-                    return '~';
-                }
-                return this.currentPath;
-            }
-        }
-
-        const fs = new VirtualFileSystem();
-
-        // Lesson definitions
-        const lessons = [
-            {
-                title: "Basic Navigation",
-                objective: "Learn to navigate the filesystem using basic commands. Start by checking where you are, list files, and move between directories.",
-                commands: [
-                    "pwd - Show current directory",
-                    "ls - List files and directories",
-                    "ls -l - Detailed file listing",
-                    "ls -a - Show hidden files",
-                    "cd documents - Change to documents directory",
-                    "cd .. - Go back to parent directory",
-                    "cd ~ - Go to home directory"
-                ],
-                requiredCommands: ['pwd', 'ls', 'cd'],
-                hints: [
-                    "Start with 'pwd' to see where you are",
-                    "Use 'ls' to see what's in the current directory",
-                    "Try 'cd documents' to enter the documents folder",
-                    "Use 'cd ..' to go back up one level"
-                ]
-            },
-            {
-                title: "File Management",
-                objective: "Create, copy, move, and delete files and directories. Learn the essential file operations every Linux user needs.",
-                commands: [
-                    "touch newfile.txt - Create empty file",
-                    "mkdir newfolder - Create directory",
-                    "cp demo.txt backup.txt - Copy file",
-                    "mv backup.txt renamed.txt - Move/rename file",
-                    "rm renamed.txt - Delete file",
-                    "rmdir newfolder - Remove empty directory"
-                ],
-                requiredCommands: ['touch', 'mkdir', 'cp', 'mv'],
-                hints: [
-                    "Use 'touch filename' to create an empty file",
-                    "Use 'mkdir dirname' to create a new directory",
-                    "Copy files with 'cp source destination'",
-                    "Move or rename with 'mv old new'"
-                ]
-            },
-            {
-                title: "Viewing Files",
-                objective: "Learn different ways to view and search file contents. Master the tools for reading and finding information in files.",
-                commands: [
-                    "cat demo.txt - Display entire file",
-                    "head demo.txt - Show first 10 lines",
-                    "tail demo.txt - Show last 10 lines",
-                    "head -n 5 demo.txt - Show first 5 lines",
-                    "grep 'Line' demo.txt - Search for text",
-                    "grep -n 'demo' demo.txt - Search with line numbers"
-                ],
-                requiredCommands: ['cat', 'head', 'tail', 'grep'],
-                hints: [
-                    "Use 'cat' to display the entire file content",
-                    "Use 'head' and 'tail' to see the beginning or end",
-                    "Search for text patterns with 'grep'",
-                    "Add -n to grep to show line numbers"
-                ]
-            },
-            {
-                title: "System Information",
-                objective: "Check system information, disk usage, and running processes. Learn to monitor your system's status.",
-                commands: [
-                    "whoami - Show current username",
-                    "uname -a - Display system information",
-                    "df -h - Show disk usage",
-                    "du -h documents - Show directory size",
-                    "ps - Show running processes",
-                    "ps aux - Detailed process list",
-                    "top - Dynamic process viewer"
-                ],
-                requiredCommands: ['whoami', 'uname', 'df', 'ps'],
-                hints: [
-                    "Use 'whoami' to see your username",
-                    "Check system info with 'uname -a'",
-                    "View disk space with 'df -h'",
-                    "See running processes with 'ps'"
-                ]
-            },
-            {
-                title: "Text Editing",
-                objective: "Learn basic text editing and file manipulation. Understand how to modify file contents.",
-                commands: [
-                    "nano demo.txt - Edit file with nano",
-                    "echo 'Hello World' > newfile.txt - Write to file",
-                    "echo 'Append text' >> newfile.txt - Append to file",
-                    "wc demo.txt - Count lines, words, characters",
-                    "sort demo.txt - Sort file contents",
-                    "uniq demo.txt - Remove duplicate lines"
-                ],
-                requiredCommands: ['nano', 'echo', 'wc'],
-                hints: [
-                    "Use 'nano filename' to edit files",
-                    "In nano simulator, press Ctrl+X to exit",
-                    "Use 'echo' with > to write or >> to append",
-                    "Count file statistics with 'wc'"
-                ]
-            },
-            {
-                title: "Network Commands",
-                objective: "Learn network connectivity and file transfer commands. Understand basic networking tools.",
-                commands: [
-                    "ping google.com - Test network connectivity",
-                    "wget http://example.com/file.txt - Download file",
-                    "curl http://example.com - Fetch web content",
-                    "ssh user@server - Connect to remote server",
-                    "scp file.txt user@server:/path - Copy file to server",
-                    "netstat -an - Show network connections"
-                ],
-                requiredCommands: ['ping', 'wget', 'curl', 'netstat'],
-                hints: [
-                    "Test connectivity with 'ping hostname'",
-                    "Download files with 'wget URL'",
-                    "Fetch web content with 'curl URL'",
-                    "View network connections with 'netstat'"
-                ]
-            }
-        ];
-
-        // Command implementations
-        const commands = {
-            help: () => {
-                return [
-                    { text: "Available commands:", class: "info" },
-                    { text: "", class: "" },
-                    { text: "File and Directory Management:", class: "warning" },
-                    { text: "  ls [-l] [-a] [-h] [path]  - List directory contents", class: "" },
-                    { text: "  cd [path]                - Change directory", class: "" },
-                    { text: "  pwd                       - Print working directory", class: "" },
-                    { text: "  mkdir [-p] <dir>          - Create directory", class: "" },
-                    { text: "  rmdir <dir>               - Remove empty directory", class: "" },
-                    { text: "  touch <file>              - Create empty file", class: "" },
-                    { text: "  cp [-r] <src> <dest>      - Copy files/directories", class: "" },
-                    { text: "  mv <src> <dest>           - Move/rename files", class: "" },
-                    { text: "  rm [-r] <file>            - Remove files/directories", class: "" },
-                    { text: "", class: "" },
-                    { text: "Viewing and Manipulating Files:", class: "warning" },
-                    { text: "  cat <file>                - Display file contents", class: "" },
-                    { text: "  head [-n num] <file>      - Show first lines", class: "" },
-                    { text: "  tail [-n num] <file>      - Show last lines", class: "" },
-                    { text: "  grep [-n] [-i] <pattern> <file> - Search in files", class: "" },
-                    { text: "  nano <file>               - Edit file", class: "" },
-                    { text: "  echo <text>               - Display text", class: "" },
-                    { text: "  wc <file>                 - Count lines, words, chars", class: "" },
-                    { text: "", class: "" },
-                    { text: "System Information:", class: "warning" },
-                    { text: "  whoami                    - Show current user", class: "" },
-                    { text: "  uname [-a]                - System information", class: "" },
-                    { text: "  df [-h]                   - Disk space usage", class: "" },
-                    { text: "  du [-h] [path]            - Directory usage", class: "" },
-                    { text: "  ps [aux]                  - Show processes", class: "" },
-                    { text: "  top                       - Dynamic process viewer", class: "" },
-                    { text: "  kill <pid>                - Terminate process", class: "" },
-                    { text: "", class: "" },
-                    { text: "Network Commands:", class: "warning" },
-                    { text: "  ping <host>               - Test connectivity", class: "" },
-                    { text: "  wget <url>                - Download file", class: "" },
-                    { text: "  curl <url>                - Fetch web content", class: "" },
-                    { text: "  ssh <user@host>           - Remote login", class: "" },
-                    { text: "  scp <src> <dest>          - Secure copy", class: "" },
-                    { text: "  netstat [-an]             - Network connections", class: "" },
-                    { text: "", class: "" },
-                    { text: "Other Commands:", class: "warning" },
-                    { text: "  man <command>             - Show manual page", class: "" },
-                    { text: "  clear                     - Clear terminal", class: "" },
-                    { text: "  history                   - Show command history", class: "" }
-                ];
-            },
-
-            pwd: () => {
-                return [{ text: fs.currentPath, class: "" }];
-            },
-
-            ls: (args) => {
-                const flags = { long: false, all: false, human: false };
-                let path = fs.currentPath;
-                
-                args.forEach(arg => {
-                    if (arg === '-l') flags.long = true;
-                    else if (arg === '-a') flags.all = true;
-                    else if (arg === '-h') flags.human = true;
-                    else if (arg === '-la' || arg === '-al') { flags.long = true; flags.all = true; }
-                    else if (!arg.startsWith('-')) path = fs.resolvePath(arg);
-                });
-
-                if (!fs.exists(path)) {
-                    return [{ text: `ls: cannot access '${path}': No such file or directory`, class: "error" }];
-                }
-
-                if (fs.isFile(path)) {
-                    const fileName = path.split('/').pop();
-                    return flags.long ? 
-                        [{ text: `-rw-r--r-- 1 user user  1024 Jun 21 10:00 ${fileName}`, class: "" }] :
-                        [{ text: fileName, class: "" }];
-                }
-
-                let contents = fs.getContents(path);
-                if (!flags.all) {
-                    contents = contents.filter(item => !item.startsWith('.'));
-                } else {
-                    contents = ['.', '..', ...contents];
-                }
-
-                if (contents.length === 0) {
-                    return [{ text: "", class: "" }];
-                }
-
-                if (flags.long) {
-                    const result = [];
-                    if (flags.all) {
-                        result.push({ text: "total " + contents.length, class: "info" });
-                    }
-                    contents.forEach(item => {
-                        if (item === '.' || item === '..') {
-                            result.push({ text: `drwxr-xr-x 2 user user 4096 Jun 21 10:00 ${item}`, class: "" });
-                        } else {
-                            const itemPath = path === '/' ? `/${item}` : `${path}/${item}`;
-                            const isDir = fs.isDirectory(itemPath);
-                            const permissions = isDir ? 'drwxr-xr-x' : '-rw-r--r--';
-                            const size = isDir ? '4096' : '1024';
-                            result.push({ text: `${permissions} 1 user user ${size} Jun 21 10:00 ${item}`, class: "" });
-                        }
-                    });
-                    return result;
-                }
-
-                return contents.map(item => ({ text: item, class: "" }));
-            },
-
-            cd: (args) => {
-                let path = args[0] || '/home/user';
-                path = fs.resolvePath(path);
-
-                if (!fs.exists(path)) {
-                    return [{ text: `cd: ${path}: No such file or directory`, class: "error" }];
-                }
-
-                if (!fs.isDirectory(path)) {
-                    return [{ text: `cd: ${path}: Not a directory`, class: "error" }];
-                }
-
-                fs.currentPath = path;
-                updatePrompt();
-                return [];
-            },
-
-            mkdir: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "mkdir: missing operand", class: "error" }];
-                }
-
-                const createParents = args.includes('-p');
-                const dirs = args.filter(arg => !arg.startsWith('-'));
-
-                const results = [];
-                dirs.forEach(dir => {
-                    const path = fs.resolvePath(dir);
-                    
-                    if (fs.exists(path)) {
-                        results.push({ text: `mkdir: cannot create directory '${dir}': File exists`, class: "error" });
-                        return;
-                    }
-
-                    if (createParents) {
-                        const parts = path.split('/').filter(p => p);
-                        let currentPath = '';
-                        parts.forEach(part => {
-                            currentPath += '/' + part;
-                            if (!fs.exists(currentPath)) {
-                                fs.createDirectory(currentPath);
-                            }
-                        });
-                    } else {
-                        const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
-                        if (!fs.exists(parentPath)) {
-                            results.push({ text: `mkdir: cannot create directory '${dir}': No such file or directory`, class: "error" });
-                            return;
-                        }
-                        fs.createDirectory(path);
-                    }
-                });
-
-                return results;
-            },
-
-            rmdir: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "rmdir: missing operand", class: "error" }];
-                }
-
-                const results = [];
-                args.forEach(dir => {
-                    const path = fs.resolvePath(dir);
-                    
-                    if (!fs.exists(path)) {
-                        results.push({ text: `rmdir: failed to remove '${dir}': No such file or directory`, class: "error" });
-                        return;
-                    }
-
-                    if (!fs.isDirectory(path)) {
-                        results.push({ text: `rmdir: failed to remove '${dir}': Not a directory`, class: "error" });
-                        return;
-                    }
-
-                    const contents = fs.getContents(path);
-                    if (contents.length > 0) {
-                        results.push({ text: `rmdir: failed to remove '${dir}': Directory not empty`, class: "error" });
-                        return;
-                    }
-
-                    fs.remove(path);
-                });
-
-                return results;
-            },
-
-            touch: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "touch: missing file operand", class: "error" }];
-                }
-
-                args.forEach(file => {
-                    const path = fs.resolvePath(file);
-                    if (!fs.exists(path)) {
-                        fs.createFile(path, '');
-                    }
-                });
-
-                return [];
-            },
-
-            cp: (args) => {
-                if (args.length < 2) {
-                    return [{ text: "cp: missing file operand", class: "error" }];
-                }
-
-                const recursive = args.includes('-r');
-                const files = args.filter(arg => !arg.startsWith('-'));
-                const source = fs.resolvePath(files[0]);
-                const dest = fs.resolvePath(files[1]);
-
-                if (!fs.exists(source)) {
-                    return [{ text: `cp: cannot stat '${files[0]}': No such file or directory`, class: "error" }];
-                }
-
-                if (fs.isDirectory(source) && !recursive) {
-                    return [{ text: `cp: -r not specified; omitting directory '${files[0]}'`, class: "error" }];
-                }
-
-                fs.copy(source, dest);
-                return [];
-            },
-
-            mv: (args) => {
-                if (args.length < 2) {
-                    return [{ text: "mv: missing file operand", class: "error" }];
-                }
-
-                const source = fs.resolvePath(args[0]);
-                const dest = fs.resolvePath(args[1]);
-
-                if (!fs.exists(source)) {
-                    return [{ text: `mv: cannot stat '${args[0]}': No such file or directory`, class: "error" }];
-                }
-
-                fs.copy(source, dest);
-                fs.remove(source);
-                return [];
-            },
-
-            rm: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "rm: missing operand", class: "error" }];
-                }
-
-                const recursive = args.includes('-r');
-                const files = args.filter(arg => !arg.startsWith('-'));
-
-                const results = [];
-                files.forEach(file => {
-                    const path = fs.resolvePath(file);
-                    
-                    if (!fs.exists(path)) {
-                        results.push({ text: `rm: cannot remove '${file}': No such file or directory`, class: "error" });
-                        return;
-                    }
-
-                    if (fs.isDirectory(path) && !recursive) {
-                        results.push({ text: `rm: cannot remove '${file}': Is a directory`, class: "error" });
-                        return;
-                    }
-
-                    fs.remove(path);
-                });
-
-                return results;
-            },
-
-            cat: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "cat: missing file operand", class: "error" }];
-                }
-
-                const results = [];
-                args.forEach(file => {
-                    const path = fs.resolvePath(file);
-                    
-                    if (!fs.exists(path)) {
-                        results.push({ text: `cat: ${file}: No such file or directory`, class: "error" });
-                        return;
-                    }
-
-                    if (fs.isDirectory(path)) {
-                        results.push({ text: `cat: ${file}: Is a directory`, class: "error" });
-                        return;
-                    }
-
-                    const content = fs.getFileContent(path);
-                    content.split('\n').forEach(line => {
-                        results.push({ text: line, class: "" });
-                    });
-                });
-
-                return results;
-            },
-
-            head: (args) => {
-                let lines = 10;
-                let files = [];
-                
-                for (let i = 0; i < args.length; i++) {
-                    if (args[i] === '-n' && i + 1 < args.length) {
-                        lines = parseInt(args[i + 1]);
-                        i++;
-                    } else if (!args[i].startsWith('-')) {
-                        files.push(args[i]);
-                    }
-                }
-
-                if (files.length === 0) {
-                    return [{ text: "head: missing file operand", class: "error" }];
-                }
-
-                const results = [];
-                files.forEach(file => {
-                    const path = fs.resolvePath(file);
-                    
-                    if (!fs.exists(path)) {
-                        results.push({ text: `head: cannot open '${file}' for reading: No such file or directory`, class: "error" });
-                        return;
-                    }
-
-                    if (fs.isDirectory(path)) {
-                        results.push({ text: `head: error reading '${file}': Is a directory`, class: "error" });
-                        return;
-                    }
-
-                    const content = fs.getFileContent(path);
-                    const contentLines = content.split('\n');
-                    const displayLines = contentLines.slice(0, lines);
-                    
-                    displayLines.forEach(line => {
-                        results.push({ text: line, class: "" });
-                    });
-                });
-
-                return results;
-            },
-
-            tail: (args) => {
-                let lines = 10;
-                let files = [];
-                
-                for (let i = 0; i < args.length; i++) {
-                    if (args[i] === '-n' && i + 1 < args.length) {
-                        lines = parseInt(args[i + 1]);
-                        i++;
-                    } else if (!args[i].startsWith('-')) {
-                        files.push(args[i]);
-                    }
-                }
-
-                if (files.length === 0) {
-                    return [{ text: "tail: missing file operand", class: "error" }];
-                }
-
-                const results = [];
-                files.forEach(file => {
-                    const path = fs.resolvePath(file);
-                    
-                    if (!fs.exists(path)) {
-                        results.push({ text: `tail: cannot open '${file}' for reading: No such file or directory`, class: "error" });
-                        return;
-                    }
-
-                    if (fs.isDirectory(path)) {
-                        results.push({ text: `tail: error reading '${file}': Is a directory`, class: "error" });
-                        return;
-                    }
-
-                    const content = fs.getFileContent(path);
-                    const contentLines = content.split('\n');
-                    const displayLines = contentLines.slice(-lines);
-                    
-                    displayLines.forEach(line => {
-                        results.push({ text: line, class: "" });
-                    });
-                });
-
-                return results;
-            },
-
-            grep: (args) => {
-                if (args.length < 2) {
-                    return [{ text: "grep: missing pattern or file", class: "error" }];
-                }
-
-                let pattern = args[0];
-                let showLineNumbers = false;
-                let ignoreCase = false;
-                let files = [];
-
-                for (let i = 0; i < args.length; i++) {
-                    if (args[i] === '-n') {
-                        showLineNumbers = true;
-                    } else if (args[i] === '-i') {
-                        ignoreCase = true;
-                    } else if (i === 0) {
-                        pattern = args[i];
-                    } else if (i > 0 && !args[i].startsWith('-')) {
-                        files.push(args[i]);
-                    }
-                }
-
-                if (files.length === 0) {
-                    return [{ text: "grep: missing file operand", class: "error" }];
-                }
-
-                const results = [];
-                files.forEach(file => {
-                    const path = fs.resolvePath(file);
-                    
-                    if (!fs.exists(path)) {
-                        results.push({ text: `grep: ${file}: No such file or directory`, class: "error" });
-                        return;
-                    }
-
-                    if (fs.isDirectory(path)) {
-                        results.push({ text: `grep: ${file}: Is a directory`, class: "error" });
-                        return;
-                    }
-
-                    const content = fs.getFileContent(path);
-                    const lines = content.split('\n');
-                    
-                    lines.forEach((line, index) => {
-                        const searchLine = ignoreCase ? line.toLowerCase() : line;
-                        const searchPattern = ignoreCase ? pattern.toLowerCase() : pattern;
-                        
-                        if (searchLine.includes(searchPattern)) {
-                            const prefix = showLineNumbers ? `${index + 1}:` : '';
-                            results.push({ text: `${prefix}${line}`, class: "success" });
-                        }
-                    });
-                });
-
-                return results;
-            },
-
-            nano: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "nano: missing file operand", class: "error" }];
-                }
-
-                const file = args[0];
-                const path = fs.resolvePath(file);
-                
-                return [
-                    { text: `GNU nano 4.8                    ${file}`, class: "info" },
-                    { text: "", class: "" },
-                    { text: "[ Nano editor simulation ]", class: "warning" },
-                    { text: "In a real terminal, you would edit the file here.", class: "" },
-                    { text: "For this simulation, the file is created/updated automatically.", class: "" },
-                    { text: "", class: "" },
-                    { text: "^G Get Help    ^O WriteOut    ^R Read File   ^Y Prev Page", class: "info" },
-                    { text: "^X Exit        ^J Justify     ^W Where Is    ^V Next Page", class: "info" }
-                ];
-            },
-
-            echo: (args) => {
-                const text = args.join(' ');
-                
-                // Handle output redirection
-                if (text.includes('>')) {
-                    const parts = text.split('>');
-                    const content = parts[0].trim().replace(/^['"]|['"]$/g, '');
-                    const fileName = parts[1].trim();
-                    const path = fs.resolvePath(fileName);
-                    
-                    if (text.includes('>>')) {
-                        // Append mode
-                        const existingContent = fs.exists(path) ? fs.getFileContent(path) : '';
-                        fs.createFile(path, existingContent + content + '\n');
-                    } else {
-                        // Write mode
-                        fs.createFile(path, content + '\n');
-                    }
-                    
-                    return [];
-                }
-                
-                return [{ text: text.replace(/^['"]|['"]$/g, ''), class: "" }];
-            },
-
-            wc: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "wc: missing file operand", class: "error" }];
-                }
-
-                const results = [];
-                args.forEach(file => {
-                    const path = fs.resolvePath(file);
-                    
-                    if (!fs.exists(path)) {
-                        results.push({ text: `wc: ${file}: No such file or directory`, class: "error" });
-                        return;
-                    }
-
-                    if (fs.isDirectory(path)) {
-                        results.push({ text: `wc: ${file}: Is a directory`, class: "error" });
-                        return;
-                    }
-
-                    const content = fs.getFileContent(path);
-                    const lines = content.split('\n').length - 1;
-                    const words = content.trim().split(/\s+/).length;
-                    const chars = content.length;
-                    
-                    results.push({ text: `  ${lines}  ${words}  ${chars} ${file}`, class: "" });
-                });
-
-                return results;
-            },
-
-            whoami: () => {
-                return [{ text: "user", class: "" }];
-            },
-
-            uname: (args) => {
-                if (args.includes('-a')) {
-                    return [{ text: "Linux simulator 5.15.0 #1 SMP Ubuntu x86_64 x86_64 x86_64 GNU/Linux", class: "" }];
-                }
-                return [{ text: "Linux", class: "" }];
-            },
-
-            df: (args) => {
-                const human = args.includes('-h');
-                
-                if (human) {
-                    return [
-                        { text: "Filesystem      Size  Used Avail Use% Mounted on", class: "info" },
-                        { text: "/dev/sda1        20G  8.5G   11G  45% /", class: "" },
-                        { text: "/dev/sda2       100G   45G   50G  48% /home", class: "" },
-                        { text: "tmpfs           2.0G     0  2.0G   0% /tmp", class: "" }
-                    ];
-                }
-                
-                return [
-                    { text: "Filesystem     1K-blocks     Used Available Use% Mounted on", class: "info" },
-                    { text: "/dev/sda1       20971520  8912896  11534336  45% /", class: "" },
-                    { text: "/dev/sda2      104857600 47185920  52428800  48% /home", class: "" },
-                    { text: "tmpfs            2097152        0   2097152   0% /tmp", class: "" }
-                ];
-            },
-
-            du: (args) => {
-                const human = args.includes('-h');
-                let path = fs.currentPath;
-                
-                args.forEach(arg => {
-                    if (!arg.startsWith('-')) {
-                        path = fs.resolvePath(arg);
-                    }
-                });
-
-                if (!fs.exists(path)) {
-                    return [{ text: `du: cannot access '${path}': No such file or directory`, class: "error" }];
-                }
-
-                if (human) {
-                    return [
-                        { text: "4.0K\t./documents/project/src", class: "" },
-                        { text: "8.0K\t./documents/project", class: "" },
-                        { text: "12K\t./documents", class: "" },
-                        { text: "4.0K\t./downloads", class: "" },
-                        { text: "20K\t.", class: "" }
-                    ];
-                }
-                
-                return [
-                    { text: "4\t./documents/project/src", class: "" },
-                    { text: "8\t./documents/project", class: "" },
-                    { text: "12\t./documents", class: "" },
-                    { text: "4\t./downloads", class: "" },
-                    { text: "20\t.", class: "" }
-                ];
-            },
-
-            ps: (args) => {
-                if (args.includes('aux')) {
-                    return [
-                        { text: "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND", class: "info" },
-                        ...fs.processes.map(p => ({ 
-                            text: `user      ${p.pid.toString().padStart(4)} ${p.cpu.toString().padStart(4)} ${p.memory.toString().padStart(4)} 123456  8912 pts/0    S+   10:00   0:00 ${p.name}`, 
-                            class: "" 
-                        }))
-                    ];
-                }
-                
-                return [
-                    { text: "  PID TTY          TIME CMD", class: "info" },
-                    ...fs.processes.slice(0, 3).map(p => ({ 
-                        text: `${p.pid.toString().padStart(5)} pts/0    00:00:00 ${p.name}`, 
-                        class: "" 
-                    }))
-                ];
-            },
-
-            top: () => {
-                return [
-                    { text: "top - 10:30:45 up 1 day,  2:15,  1 user,  load average: 0.85, 0.95, 1.02", class: "info" },
-                    { text: "Tasks: 156 total,   2 running, 154 sleeping,   0 stopped,   0 zombie", class: "" },
-                    { text: "%Cpu(s):  8.2 us,  2.1 sy,  0.0 ni, 89.5 id,  0.2 wa,  0.0 hi,  0.0 si,  0.0 st", class: "" },
-                    { text: "MiB Mem :   8192.0 total,   2048.5 free,   4096.2 used,   2047.3 buff/cache", class: "" },
-                    { text: "MiB Swap:   2048.0 total,   2048.0 free,      0.0 used.   3584.8 avail Mem", class: "" },
-                    { text: "", class: "" },
-                    { text: "  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND", class: "info" },
-                    ...fs.processes.map(p => ({ 
-                        text: `${p.pid.toString().padStart(5)} user      20   0  ${(Math.random() * 1000000 + 100000).toFixed(0).padStart(7)}  ${(Math.random() * 100000 + 10000).toFixed(0).padStart(6)}  ${(Math.random() * 10000 + 1000).toFixed(0).padStart(6)} S  ${p.cpu.toString().padStart(4)} ${p.memory.toString().padStart(4)}   0:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}.${Math.floor(Math.random() * 100).toString().padStart(2, '0')} ${p.name}`, 
-                        class: "" 
-                    }))
-                ];
-            },
-
-            kill: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]", class: "error" }];
-                }
-
-                const pid = parseInt(args[0]);
-                const processIndex = fs.processes.findIndex(p => p.pid === pid);
-                
-                if (processIndex === -1) {
-                    return [{ text: `kill: (${pid}) - No such process`, class: "error" }];
-                }
-
-                const processName = fs.processes[processIndex].name;
-                fs.processes.splice(processIndex, 1);
-                
-                return [{ text: `Process ${processName} (${pid}) terminated`, class: "success" }];
-            },
-
-            ping: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "ping: usage error: Destination address required", class: "error" }];
-                }
-
-                const host = args[0];
-                return [
-                    { text: `PING ${host} (${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}) 56(84) bytes of data.`, class: "info" },
-                    { text: `64 bytes from ${host}: icmp_seq=1 ttl=64 time=${(Math.random() * 50 + 1).toFixed(1)}ms`, class: "success" },
-                    { text: `64 bytes from ${host}: icmp_seq=2 ttl=64 time=${(Math.random() * 50 + 1).toFixed(1)}ms`, class: "success" },
-                    { text: `64 bytes from ${host}: icmp_seq=3 ttl=64 time=${(Math.random() * 50 + 1).toFixed(1)}ms`, class: "success" },
-                    { text: "^C", class: "warning" },
-                    { text: `--- ${host} ping statistics ---`, class: "info" },
-                    { text: "3 packets transmitted, 3 received, 0% packet loss", class: "success" }
-                ];
-            },
-
-            wget: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "wget: missing URL", class: "error" }];
-                }
-
-                const url = args[0];
-                const filename = url.split('/').pop() || 'index.html';
-                const path = fs.resolvePath(filename);
-                
-                fs.createFile(path, `Downloaded content from ${url}`);
-                
-                return [
-                    { text: `--${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')} ${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}:${String(new Date().getSeconds()).padStart(2, '0')}--  ${url}`, class: "info" },
-                    { text: `Resolving ${url.split('/')[2]}... ${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}`, class: "" },
-                    { text: `Connecting to ${url.split('/')[2]}... connected.`, class: "success" },
-                    { text: "HTTP request sent, awaiting response... 200 OK", class: "success" },
-                    { text: `Length: ${Math.floor(Math.random() * 50000 + 1000)} (${Math.floor(Math.random() * 50 + 1)}K) [text/html]`, class: "" },
-                    { text: `Saving to: '${filename}'`, class: "" },
-                    { text: `'${filename}' saved [${Math.floor(Math.random() * 50000 + 1000)}/${Math.floor(Math.random() * 50000 + 1000)}]`, class: "success" }
-                ];
-            },
-
-            curl: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "curl: try 'curl --help' for more information", class: "error" }];
-                }
-
-                const url = args[0];
-                return [
-                    { text: `<!DOCTYPE html>`, class: "" },
-                    { text: `<html>`, class: "" },
-                    { text: `<head><title>Example Domain</title></head>`, class: "" },
-                    { text: `<body>`, class: "" },
-                    { text: `<h1>Example Domain</h1>`, class: "" },
-                    { text: `<p>This domain is for use in illustrative examples.</p>`, class: "" },
-                    { text: `</body>`, class: "" },
-                    { text: `</html>`, class: "" }
-                ];
-            },
-
-            ssh: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "usage: ssh [-1246AaCfGgKkMNnqsTtVvXxYy] destination [command]", class: "error" }];
-                }
-
-                const destination = args[0];
-                return [
-                    { text: `ssh: connect to host ${destination} port 22: Connection timed out`, class: "error" },
-                    { text: "(In a real environment, this would establish a secure connection)", class: "info" }
-                ];
-            },
-
-            scp: (args) => {
-                if (args.length < 2) {
-                    return [{ text: "usage: scp [-12346BCpqrv] [-c cipher] [-F ssh_config] source target", class: "error" }];
-                }
-
-                const source = args[0];
-                const target = args[1];
-                
-                return [
-                    { text: `${source}                         100%  ${Math.floor(Math.random() * 10000 + 1000)}     ${(Math.random() * 10 + 1).toFixed(1)}KB/s   00:0${Math.floor(Math.random() * 9 + 1)}`, class: "success" },
-                    { text: "(In a real environment, this would securely copy files)", class: "info" }
-                ];
-            },
-
-            netstat: (args) => {
-                if (args.includes('-an')) {
-                    return [
-                        { text: "Active Internet connections (servers and established)", class: "info" },
-                        { text: "Proto Recv-Q Send-Q Local Address           Foreign Address         State", class: "info" },
-                        { text: "tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN", class: "" },
-                        { text: "tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN", class: "" },
-                        { text: "tcp        0      0 192.168.1.100:80       192.168.1.1:3389        ESTABLISHED", class: "" },
-                        { text: "udp        0      0 0.0.0.0:68              0.0.0.0:*", class: "" },
-                        { text: "udp        0      0 127.0.0.1:53            0.0.0.0:*", class: "" }
-                    ];
-                }
-                
-                return [
-                    { text: "Active Internet connections (w/o servers)", class: "info" },
-                    { text: "Proto Recv-Q Send-Q Local Address           Foreign Address         State", class: "info" },
-                    { text: "tcp        0      0 192.168.1.100:80       192.168.1.1:3389        ESTABLISHED", class: "" }
-                ];
-            },
-
-            man: (args) => {
-                if (args.length === 0) {
-                    return [{ text: "What manual page do you want?", class: "error" }];
-                }
-
-                const command = args[0];
-                const manPages = {
-                    ls: [
-                        { text: "LS(1)                     User Commands                     LS(1)", class: "info" },
-                        { text: "", class: "" },
-                        { text: "NAME", class: "warning" },
-                        { text: "       ls - list directory contents", class: "" },
-                        { text: "", class: "" },
-                        { text: "SYNOPSIS", class: "warning" },
-                        { text: "       ls [OPTION]... [FILE]...", class: "" },
-                        { text: "", class: "" },
-                        { text: "DESCRIPTION", class: "warning" },
-                        { text: "       List information about the FILEs (the current directory by", class: "" },
-                        { text: "       default). Sort entries alphabetically if none of -cftuvSUX", class: "" },
-                        { text: "       nor --sort is specified.", class: "" },
-                        { text: "", class: "" },
-                        { text: "       -a, --all", class: "success" },
-                        { text: "              do not ignore entries starting with .", class: "" },
-                        { text: "", class: "" },
-                        { text: "       -l     use a long listing format", class: "success" },
-                        { text: "", class: "" },
-                        { text: "       -h, --human-readable", class: "success" },
-                        { text: "              with -l, print sizes in human readable format", class: "" }
-                    ],
-                    cd: [
-                        { text: "CD(1)                     User Commands                     CD(1)", class: "info" },
-                        { text: "", class: "" },
-                        { text: "NAME", class: "warning" },
-                        { text: "       cd - change the working directory", class: "" },
-                        { text: "", class: "" },
-                        { text: "SYNOPSIS", class: "warning" },
-                        { text: "       cd [dir]", class: "" },
-                        { text: "", class: "" },
-                        { text: "DESCRIPTION", class: "warning" },
-                        { text: "       Change the current directory to DIR. The default DIR is the", class: "" },
-                        { text: "       value of the HOME shell variable.", class: "" }
-                    ]
-                };
-
-                if (manPages[command]) {
-                    return manPages[command];
-                }
-
-                return [
-                    { text: `No manual entry for ${command}`, class: "error" },
-                    { text: "See 'man man' for help on using the manual.", class: "info" }
-                ];
-            },
-
-            clear: () => {
-                const terminal = document.getElementById('terminal');
-                terminal.innerHTML = '';
-                return [];
-            },
-
-            history: () => {
-                return commandHistory.map((cmd, index) => ({ 
-                    text: `${index + 1}  ${cmd}`, 
-                    class: "" 
-                }));
-            }
-        };
-
-        // Terminal functions
-        function appendToTerminal(lines) {
-            const terminal = document.getElementById('terminal');
-            lines.forEach(line => {
-                const div = document.createElement('div');
-                div.className = `output-line ${line.class}`;
-                div.textContent = line.text;
-                terminal.appendChild(div);
-            });
-            terminal.scrollTop = terminal.scrollHeight;
-        }
-
-        function updatePrompt() {
-            const prompt = document.getElementById('prompt');
-            prompt.textContent = `user@simulator:${fs.getPromptPath()}$`;
-        }
-
-        function updateStats() {
-            document.getElementById('commandCount').textContent = stats.commands;
-            document.getElementById('lessonsCompleted').textContent = stats.lessons;
-            const accuracy = stats.commands > 0 ? Math.round((stats.correct / stats.commands) * 100) : 100;
-            document.getElementById('accuracy').textContent = accuracy + '%';
-        }
-
-        function executeCommand(input) {
-            const trimmedInput = input.trim();
-            if (!trimmedInput) return;
-
-            // Add to history
-            commandHistory.push(trimmedInput);
-            historyIndex = commandHistory.length;
-
-            // Display command
-            appendToTerminal([{ text: `user@simulator:${fs.getPromptPath()}$ ${trimmedInput}`, class: "command-line" }]);
-
-            // Parse command
-            const parts = trimmedInput.split(' ').filter(part => part.length > 0);
-            const command = parts[0];
-            const args = parts.slice(1);
-
-            // Update stats
-            stats.commands++;
-
-            // Execute command
-            if (commands[command]) {
-                try {
-                    const output = commands[command](args);
-                    if (output && output.length > 0) {
-                        appendToTerminal(output);
-                    }
-                    stats.correct++;
-                    
-                    // Check lesson progress
-                    if (currentLesson >= 0) {
-                        updateLessonProgress(command);
-                    }
-                } catch (error) {
-                    appendToTerminal([{ text: `Error executing ${command}: ${error.message}`, class: "error" }]);
-                }
-            } else {
-                appendToTerminal([{ text: `${command}: command not found`, class: "error" }]);
-            }
-
-            updateStats();
-        }
-
-        // Lesson system
-        function setMode(mode) {
-            currentMode = mode;
-            
-            // Update mode buttons
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            // Show/hide panels
-            const lessonsPanel = document.getElementById('lessonsPanel');
-            const currentLessonPanel = document.getElementById('currentLessonPanel');
-            
-            if (mode === 'lessons') {
-                lessonsPanel.classList.add('active');
-                if (currentLesson >= 0) {
-                    currentLessonPanel.classList.add('active');
-                }
-            } else {
-                lessonsPanel.classList.remove('active');
-                currentLessonPanel.classList.remove('active');
-                currentLesson = -1;
-            }
-        }
-
-        function startLesson(lessonIndex) {
-            currentLesson = lessonIndex;
-            const lesson = lessons[lessonIndex];
-            
-            // Update lesson panel
-            document.getElementById('lessonTitle').textContent = lesson.title;
-            document.getElementById('lessonObjective').textContent = lesson.objective;
-            
-            const commandsList = document.getElementById('lessonCommands');
-            commandsList.innerHTML = '';
-            lesson.commands.forEach(cmd => {
-                const li = document.createElement('li');
-                li.innerHTML = `<code>${cmd}</code>`;
-                commandsList.appendChild(li);
-            });
-            
-            // Show lesson panel
-            document.getElementById('currentLessonPanel').classList.add('active');
-            
-            // Update lesson visual state
-            document.querySelectorAll('.lesson').forEach((el, index) => {
-                el.classList.remove('active');
-                if (index === lessonIndex) {
-                    el.classList.add('active');
-                }
-            });
-            
-            // Show first hint
-            showHint(lessonIndex, 0);
-            
-            appendToTerminal([
-                { text: `=== ${lesson.title} ===`, class: "info" },
-                { text: lesson.objective, class: "" },
-                { text: "", class: "" }
-            ]);
-        }
-
-        function updateLessonProgress(command) {
-            if (currentLesson < 0) return;
-            
-            const lesson = lessons[currentLesson];
-            if (lesson.requiredCommands.includes(command)) {
-                lessonProgress[currentLesson]++;
-                
-                const progressBar = document.querySelectorAll('.lesson')[currentLesson].querySelector('.progress-bar');
-                const progressPercent = Math.min(100, (lessonProgress[currentLesson] / lesson.requiredCommands.length) * 100);
-                progressBar.style.width = progressPercent + '%';
-                
-                if (lessonProgress[currentLesson] >= lesson.requiredCommands.length) {
-                    completLesson(currentLesson);
-                } else {
-                    const hintIndex = Math.min(lessonProgress[currentLesson], lesson.hints.length - 1);
-                    showHint(currentLesson, hintIndex);
-                }
-            }
-        }
-
-        function completLesson(lessonIndex) {
-            const lessonElement = document.querySelectorAll('.lesson')[lessonIndex];
-            lessonElement.classList.add('completed');
-            lessonElement.classList.remove('active');
-            
-            stats.lessons++;
-            updateStats();
-            
-            appendToTerminal([
-                { text: "", class: "" },
-                { text: `🎉 Lesson ${lessonIndex + 1} completed!`, class: "success" },
-                { text: "Great job! You can continue practicing or start the next lesson.", class: "info" },
-                { text: "", class: "" }
-            ]);
-            
-            document.getElementById('lessonHint').style.display = 'none';
-            
-            // Auto-start next lesson after a delay
-            setTimeout(() => {
-                if (lessonIndex + 1 < lessons.length) {
-                    startLesson(lessonIndex + 1);
-                }
-            }, 2000);
-        }
-
-        function showHint(lessonIndex, hintIndex) {
-            const lesson = lessons[lessonIndex];
-            if (hintIndex < lesson.hints.length) {
-                const hintElement = document.getElementById('lessonHint');
-                hintElement.textContent = `💡 Hint: ${lesson.hints[hintIndex]}`;
-                hintElement.style.display = 'block';
-            }
-        }
-
-        // Event listeners
-        document.getElementById('commandInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const input = e.target.value;
-                executeCommand(input);
-                e.target.value = '';
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    e.target.value = commandHistory[historyIndex];
-                }
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (historyIndex < commandHistory.length - 1) {
-                    historyIndex++;
-                    e.target.value = commandHistory[historyIndex];
-                } else if (historyIndex === commandHistory.length - 1) {
-                    historyIndex++;
-                    e.target.value = '';
-                }
-            }
-        });
-
-        // Auto-focus input
-        document.addEventListener('click', () => {
-            document.getElementById('commandInput').focus();
-        });
-
-        // Initialize
-        updatePrompt();
-        updateStats();
-        document.getElementById('commandInput').focus();
-    </script>
+    <div class="screen" id="screen" role="log" aria-live="polite"></div>
+    <label class="inrow" for="cmd">
+      <span class="prompt" id="prompt"></span>
+      <span class="sr">Command</span>
+      <input id="cmd" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </label>
+    <div class="anatomy" id="anatomy" aria-live="off"></div>
+
+    <div class="nano" id="nano" hidden>
+      <div class="nano-bar"><span>GNU nano 7.2</span><span id="nanoName"></span><span id="nanoState"></span></div>
+      <textarea id="nanoText" spellcheck="false" aria-label="File contents"></textarea>
+      <div class="nano-msg" id="nanoMsg" role="status"></div>
+      <div class="nano-keys">
+        <button id="nanoSave"><kbd>^O</kbd> Write out</button>
+        <button id="nanoExit"><kbd>^X</kbd> Exit</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="map panel" aria-label="Filesystem map">
+    <h2>Filesystem map</h2>
+    <p class="sub">Click a name to put a command in the prompt.</p>
+    <nav class="crumbs" id="crumbs" aria-label="Current path"></nav>
+    <ul class="tree" id="tree" role="tree"></ul>
+    <p class="map-count" id="mapCount"></p>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--navy)"></i>Folder</span>
+      <span><i class="sw" style="border:1.5px solid var(--muted)"></i>File</span>
+      <span><i class="sw" style="background:var(--green-bright)"></i>You are here</span>
+      <span><i class="sw" style="background:rgba(0,168,107,.35)"></i>Just changed</span>
+    </div>
+  </aside>
+</main>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+
+/* ---------- Icons ---------- */
+const ICON={
+  folder:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4h4l2 2h7A1.5 1.5 0 0 1 18 7.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 2 14.5z" fill="currentColor"/></svg>',
+  file:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2.5h6.5L16 7v10.5H5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M11.5 2.5V7H16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  caret:'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  check:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  dot:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  bulb:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2a6 6 0 0 0-3.5 10.9V15h7v-2.1A6 6 0 0 0 10 2zM7.5 17h5v1h-5z" fill="currentColor"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>',
+  moon:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill="currentColor"/></svg>'
+};
+function ring(frac,size,stroke,inner){
+  const r=(size-stroke)/2,c=2*Math.PI*r,h=size/2;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle class="ring-bg" cx="${h}" cy="${h}" r="${r}" fill="none" stroke-width="${stroke}"/><circle class="ring-fg" cx="${h}" cy="${h}" r="${r}" fill="none" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c.toFixed(2)}" stroke-dashoffset="${(c*(1-frac)).toFixed(2)}" transform="rotate(-90 ${h} ${h})"/>${inner||''}</svg>`;
+}
+
+/* ---------- Virtual filesystem ---------- */
+const HOME='/home/user';
+const D=(c={})=>({type:'dir',children:c});
+const F=(t='')=>({type:'file',content:t});
+function seed(){return D({
+  home:D({user:D({
+    '.bashrc':F('# Bash configuration file\nexport PATH=$PATH:/usr/local/bin\nalias ll="ls -la"\nalias la="ls -A"'),
+    'demo.txt':F('This is a demo file.\nIt contains multiple lines.\nYou can view it with cat, head, or tail commands.\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8\nLine 9\nLast line'),
+    documents:D({
+      'notes.txt':F('Meeting Notes\n============\n\n1. Project deadline: Next Friday\n2. Review documentation\n3. Test the new features\n4. Deploy to staging'),
+      project:D({
+        'readme.md':F('# Project Documentation\n\nThis is a sample project for learning Linux commands.\n\n## Features\n- File management\n- Text processing\n- System monitoring'),
+        src:D({
+          'main.js':F('console.log("Hello, World!");\n\nfunction main() {\n    return "This is the main function";\n}'),
+          'utils.js':F('function formatDate(date) {\n    return date.toISOString();\n}\n\nmodule.exports = { formatDate };')
+        })
+      })
+    }),
+    downloads:D({'file1.zip':F('PK (binary archive data)'),'image.png':F('PNG (binary image data)')})
+  })}),
+  etc:D({
+    hosts:F('127.0.0.1 localhost\n::1 localhost\n192.168.1.1 router'),
+    passwd:F('root:x:0:0:root:/root:/bin/bash\nuser:x:1000:1000:User:/home/user:/bin/bash'),
+    fstab:F('/dev/sda1  /      ext4  defaults  0 1\n/dev/sda2  /home  ext4  defaults  0 2')
+  }),
+  tmp:D(),
+  usr:D({bin:D(),lib:D(),share:D()}),
+  var:D({log:D({
+    'error.log':F('[2026-11-14 09:45:12] WARNING: Low disk space\n[2026-11-14 10:00:05] ERROR: Failed to load module xyz\n[2026-11-14 10:02:40] ERROR: Connection refused on port 8080'),
+    'system.log':F('[2026-11-14 10:00:01] System started\n[2026-11-14 10:00:15] Network interface up\n[2026-11-14 10:01:00] User login: user')
+  }),tmp:D()})
+});}
+const seedProcs=()=>[
+  {pid:1,name:'systemd',cpu:0.1,mem:0.5},{pid:123,name:'bash',cpu:0.2,mem:1.2},
+  {pid:456,name:'firefox',cpu:15.6,mem:24.3},{pid:789,name:'code',cpu:8.2,mem:18.7},{pid:321,name:'chrome',cpu:12.4,mem:32.1}];
+let root=seed(), procs=seedProcs(), cwd=HOME, prevDir=HOME;
+const recent=new Set();
+
+function norm(p){
+  if(p===undefined||p==='')return cwd;
+  if(p==='~')p=HOME; else if(p.startsWith('~/'))p=HOME+p.slice(1);
+  const abs=p.startsWith('/')?p:(cwd==='/'?'':cwd)+'/'+p;
+  const out=[];
+  for(const s of abs.split('/')){ if(!s||s==='.')continue; if(s==='..')out.pop(); else out.push(s); }
+  return '/'+out.join('/');
+}
+function getNode(p){
+  if(p==='/')return root;
+  let n=root;
+  for(const s of p.split('/').filter(Boolean)){ if(!n||n.type!=='dir')return null; n=n.children[s]; }
+  return n||null;
+}
+const parentPath=p=>{const i=p.lastIndexOf('/');return i<=0?'/':p.slice(0,i)};
+const baseName=p=>p.slice(p.lastIndexOf('/')+1)||'/';
+const join=(d,n)=>d==='/'?'/'+n:d+'/'+n;
+const disp=p=>p===HOME?'~':p.startsWith(HOME+'/')?'~'+p.slice(HOME.length):p;
+function putNode(p,node){const par=getNode(parentPath(p));if(!par||par.type!=='dir')return false;par.children[baseName(p)]=node;recent.add(p);return true}
+function delNode(p){const par=getNode(parentPath(p));if(!par)return false;delete par.children[baseName(p)];return true}
+const clone=n=>JSON.parse(JSON.stringify(n));
+const sortedNames=n=>Object.keys(n.children).sort((a,b)=>a.replace(/^\./,'').localeCompare(b.replace(/^\./,'')));
+
+/* ---------- Output helpers ---------- */
+const L=(t,c='')=>({t,c}), E=t=>({t,c:'err'}), N=t=>({t,c:'note'});
+const lineText=l=>l.parts?l.parts.map(p=>p.t).join(''):(l.t||'');
+const textOf=lines=>lines.filter(l=>l.c!=='err'&&l.c!=='note'&&!l.clear).map(lineText).join('\n');
+const splitLines=t=>t===''?[]:t.replace(/\n$/,'').split('\n');
+function fa(args){const f=new Set(),a=[];args.forEach(x=>{if(/^-[A-Za-z]+$/.test(x))[...x.slice(1)].forEach(c=>f.add(c));else a.push(x)});return{f,a}}
+function readSrc(name,files,stdin){
+  if(!files.length) return stdin!=null?[{n:'',t:stdin}]:[{e:E(`${name}: missing file operand`)}];
+  return files.map(x=>{const n=getNode(norm(x));
+    if(!n)return{e:E(`${name}: ${x}: No such file or directory`)};
+    if(n.type==='dir')return{e:E(`${name}: ${x}: Is a directory`)};
+    return{n:x,t:n.content}});
+}
+const nm=(name,node)=>({t:name,c:node.type==='dir'?'d':(name.startsWith('.')?'h':'f')});
+const human=b=>b<1024?String(b):(b/1024).toFixed(1)+'K';
+function longLine(name,node,H){
+  const dir=node.type==='dir', size=dir?4096:node.content.length;
+  return{parts:[{t:`${dir?'drwxr-xr-x':'-rw-r--r--'} ${dir?2:1} user user ${(H?human(size):String(size)).padStart(6)} Nov 14 10:00 `,c:'dim'},nm(name,node)]};
+}
+function sizeKB(n){if(n.type==='file')return Math.max(4,Math.ceil(n.content.length/4096)*4);let s=4;for(const k in n.children)s+=sizeKB(n.children[k]);return s}
+function fakeIP(h){if(h==='localhost')return'127.0.0.1';let x=0;for(const c of h)x=(x*31+c.charCodeAt(0))>>>0;return`${93+x%100}.${(x>>8)%255}.${(x>>16)%255}.${1+(x>>24)%253}`}
+
+/* ---------- Command reference ---------- */
+const CMD={
+  pwd:['Navigate','pwd','Print the directory you are in'],
+  ls:['Navigate','ls [-l] [-a] [-h] [path]','List what is inside a directory'],
+  cd:['Navigate','cd [path]','Change the current directory'],
+  tree:['Navigate','tree [path]','Draw a directory and everything under it'],
+  mkdir:['Files','mkdir [-p] dir','Create a directory'],
+  rmdir:['Files','rmdir dir','Remove an empty directory'],
+  touch:['Files','touch file','Create an empty file'],
+  cp:['Files','cp [-r] source dest','Copy a file or directory'],
+  mv:['Files','mv source dest','Move or rename a file or directory'],
+  rm:['Files','rm [-r] [-f] path','Delete files or directories'],
+  cat:['Read and search','cat [-n] file','Print a whole file'],
+  head:['Read and search','head [-n N] file','Show the first lines of a file'],
+  tail:['Read and search','tail [-n N] file','Show the last lines of a file'],
+  grep:['Read and search','grep [-n] [-i] [-v] [-c] pattern file','Find lines that match a pattern'],
+  wc:['Read and search','wc [-l] [-w] [-c] file','Count lines, words and characters'],
+  sort:['Read and search','sort [-r] [-n] [-u] file','Sort lines'],
+  uniq:['Read and search','uniq [-c] file','Collapse repeated neighboring lines'],
+  echo:['Edit','echo text [> file]','Print text, or write it into a file with > or >>'],
+  nano:['Edit','nano file','Open a file in a text editor'],
+  whoami:['System','whoami','Show your username'],
+  hostname:['System','hostname','Show this machine’s name'],
+  uname:['System','uname [-a] [-r]','Show system information'],
+  date:['System','date','Show the date and time'],
+  df:['System','df [-h]','Show free disk space'],
+  du:['System','du [-h] [-s] [path]','Show how much space directories use'],
+  ps:['System','ps [aux]','List running processes'],
+  top:['System','top','Show processes sorted by activity'],
+  kill:['System','kill pid','Stop a process by its ID'],
+  ping:['Network','ping [-c N] host','Check whether a host answers'],
+  wget:['Network','wget url','Download a file'],
+  curl:['Network','curl [-I] url','Fetch a web page'],
+  ssh:['Network','ssh user@host','Log in to another machine'],
+  scp:['Network','scp source user@host:path','Copy a file to another machine'],
+  netstat:['Network','netstat [-an]','List network connections'],
+  man:['Shell','man command','Read the manual for a command'],
+  help:['Shell','help','List every command'],
+  history:['Shell','history','Show commands you have run'],
+  clear:['Shell','clear','Clear the screen']
+};
+const ALIAS={ll:'ls -la',la:'ls -a'};
+
+/* ---------- Commands ---------- */
+const C={};
+let pendingNano=null;
+
+C.help=()=>{
+  const out=[L('Available commands. Run man <command> for details.','info'),L('')];
+  const groups={};
+  for(const k in CMD)(groups[CMD[k][0]]=groups[CMD[k][0]]||[]).push(k);
+  for(const g in groups){out.push(L(g,'warn'));groups[g].forEach(k=>out.push({parts:[{t:'  '+CMD[k][1].padEnd(40),c:'ok'},{t:CMD[k][2]}]}));out.push(L(''))}
+  out.push(L('Pipes (|) and redirection (> and >>) work too. Press Tab to complete names.','note'));
+  return out;
+};
+C.pwd=()=>[L(cwd)];
+C.ls=args=>{
+  const{f,a}=fa(args),LONG=f.has('l'),ALL=f.has('a')||f.has('A'),H=f.has('h');
+  const targets=a.length?a:['.'],out=[];
+  targets.forEach((t,ti)=>{
+    const p=norm(t),n=getNode(p);
+    if(!n){out.push(E(`ls: cannot access '${t}': No such file or directory`));return}
+    if(n.type==='file'){out.push(LONG?longLine(t,n,H):{parts:[nm(t,n)]});return}
+    if(targets.length>1){if(ti)out.push(L(''));out.push(L(t+':'))}
+    let names=sortedNames(n);if(!ALL)names=names.filter(x=>!x.startsWith('.'));
+    const entries=names.map(x=>[x,n.children[x]]);
+    if(f.has('a'))entries.unshift(['.',n],['..',getNode(parentPath(p))]);
+    if(LONG){
+      out.push(L('total '+entries.reduce((s,[,c])=>s+(c.type==='dir'?4:sizeKB(c)),0),'dim'));
+      entries.forEach(([x,c])=>out.push(longLine(x,c,H)));
+    }else if(entries.length){
+      const parts=[];entries.forEach(([x,c],i)=>{if(i)parts.push({t:'  '});parts.push(nm(x,c))});out.push({parts});
+    }
+  });
+  return out;
+};
+C.cd=args=>{
+  let t=args[0];if(t==='-')t=prevDir;
+  const p=t===undefined?HOME:norm(t),n=getNode(p);
+  if(!n)return[E(`cd: ${t}: No such file or directory`)];
+  if(n.type!=='dir')return[E(`cd: ${t}: Not a directory`)];
+  prevDir=cwd;cwd=p;return args[0]==='-'?[L(p)]:[];
+};
+C.tree=args=>{
+  const t=args.find(x=>!x.startsWith('-'))||'.',p=norm(t),n=getNode(p);
+  if(!n)return[E(`${t} [error opening dir]`)];
+  if(n.type==='file')return[{parts:[nm(t,n)]}];
+  const out=[{parts:[{t,c:'d'}]}];let dirs=0,files=0;
+  (function walk(node,prefix){
+    const names=sortedNames(node).filter(x=>!x.startsWith('.'));
+    names.forEach((x,i)=>{const c=node.children[x],last=i===names.length-1;
+      out.push({parts:[{t:prefix+(last?'└── ':'├── '),c:'dim'},nm(x,c)]});
+      if(c.type==='dir'){dirs++;walk(c,prefix+(last?'    ':'│   '))}else files++;});
+  })(n,'');
+  out.push(L(''),L(`${dirs} director${dirs===1?'y':'ies'}, ${files} file${files===1?'':'s'}`));
+  return out;
+};
+C.mkdir=args=>{
+  const{f,a}=fa(args);if(!a.length)return[E('mkdir: missing operand')];
+  const out=[];
+  a.forEach(d=>{const p=norm(d);
+    if(getNode(p)){if(!f.has('p'))out.push(E(`mkdir: cannot create directory '${d}': File exists`));return}
+    if(f.has('p')){let cur='';for(const s of p.split('/').filter(Boolean)){cur+='/'+s;const n=getNode(cur);
+        if(!n)putNode(cur,D());else if(n.type!=='dir'){out.push(E(`mkdir: cannot create directory '${d}': Not a directory`));return}}}
+    else{const par=getNode(parentPath(p));
+      if(!par||par.type!=='dir')out.push(E(`mkdir: cannot create directory '${d}': No such file or directory`));else putNode(p,D())}
+  });return out;
+};
+C.rmdir=args=>{
+  if(!args.length)return[E('rmdir: missing operand')];
+  const out=[];
+  args.forEach(d=>{const p=norm(d),n=getNode(p);
+    if(!n)out.push(E(`rmdir: failed to remove '${d}': No such file or directory`));
+    else if(n.type!=='dir')out.push(E(`rmdir: failed to remove '${d}': Not a directory`));
+    else if(Object.keys(n.children).length)out.push(E(`rmdir: failed to remove '${d}': Directory not empty`));
+    else if(cwd===p||cwd.startsWith(p+'/'))out.push(E(`rmdir: failed to remove '${d}': Device or resource busy`));
+    else delNode(p);});
+  return out;
+};
+C.touch=args=>{
+  if(!args.length)return[E('touch: missing file operand')];
+  const out=[];
+  args.forEach(x=>{const p=norm(x);if(getNode(p))return;const par=getNode(parentPath(p));
+    if(!par||par.type!=='dir')out.push(E(`touch: cannot touch '${x}': No such file or directory`));else putNode(p,F(''))});
+  return out;
+};
+function copyLike(name,args,move){
+  const{f,a}=fa(args);
+  if(a.length<1)return[E(`${name}: missing file operand`)];
+  if(a.length<2)return[E(`${name}: missing destination file operand after '${a[0]}'`)];
+  const src=norm(a[0]),sn=getNode(src);let dst=norm(a[1]);
+  if(!sn)return[E(`${name}: cannot stat '${a[0]}': No such file or directory`)];
+  if(!move&&sn.type==='dir'&&!(f.has('r')||f.has('R')))return[E(`cp: -r not specified; omitting directory '${a[0]}'`)];
+  const dn=getNode(dst);if(dn&&dn.type==='dir')dst=join(dst,baseName(src));
+  if(dst===src)return[E(`${name}: '${a[0]}' and '${a[1]}' are the same file`)];
+  if(sn.type==='dir'&&dst.startsWith(src+'/'))return[E(`${name}: cannot ${move?'move':'copy'} a directory, '${a[0]}', into itself`)];
+  const par=getNode(parentPath(dst));
+  if(!par||par.type!=='dir')return[E(`${name}: cannot ${move?'move':'create'} '${a[1]}': No such file or directory`)];
+  putNode(dst,move?sn:clone(sn));
+  if(move){delNode(src);if(cwd===src||cwd.startsWith(src+'/'))cwd=dst+cwd.slice(src.length)}
+  return[];
+}
+C.cp=args=>copyLike('cp',args,false);
+C.mv=args=>copyLike('mv',args,true);
+C.rm=args=>{
+  const{f,a}=fa(args),R=f.has('r')||f.has('R'),force=f.has('f');
+  if(!a.length)return[E('rm: missing operand')];
+  const out=[];
+  a.forEach(x=>{const p=norm(x),n=getNode(p);
+    if(p==='/'&&R){out.push(E("rm: it is dangerous to operate recursively on '/'"),N('That command would erase the entire system. The simulator blocked it, and so does real rm unless you add --no-preserve-root.'));return}
+    if(!n){if(!force)out.push(E(`rm: cannot remove '${x}': No such file or directory`));return}
+    if(n.type==='dir'&&!R){out.push(E(`rm: cannot remove '${x}': Is a directory`));return}
+    delNode(p);if(cwd===p||cwd.startsWith(p+'/'))cwd=parentPath(p);});
+  return out;
+};
+C.cat=(args,stdin)=>{
+  const{f,a}=fa(args),out=[];let i=1;
+  readSrc('cat',a,stdin).forEach(s=>{if(s.e)return out.push(s.e);
+    splitLines(s.t).forEach(l=>out.push(L(f.has('n')?String(i++).padStart(6)+'  '+l:l)))});
+  return out;
+};
+function headTail(name,args,stdin){
+  let n=10;const files=[];
+  for(let i=0;i<args.length;i++){const x=args[i];
+    if(x==='-n'){n=parseInt(args[++i],10)}else if(/^-n\d+$/.test(x))n=+x.slice(2);else if(/^-\d+$/.test(x))n=+x.slice(1);
+    else if(!x.startsWith('-'))files.push(x)}
+  if(isNaN(n))return[E(`${name}: invalid number of lines`)];
+  const out=[],src=readSrc(name,files,stdin);
+  src.forEach((s,i)=>{if(s.e)return out.push(s.e);
+    if(files.length>1){if(i)out.push(L(''));out.push(L(`==> ${s.n} <==`,'info'))}
+    const ls=splitLines(s.t);(name==='head'?ls.slice(0,n):ls.slice(Math.max(0,ls.length-n))).forEach(l=>out.push(L(l)))});
+  return out;
+}
+C.head=(a,s)=>headTail('head',a,s);
+C.tail=(a,s)=>headTail('tail',a,s);
+C.grep=(args,stdin)=>{
+  const f=new Set(),rest=[];
+  args.forEach(x=>{if(/^-[nivc]+$/.test(x))[...x.slice(1)].forEach(c=>f.add(c));else rest.push(x)});
+  if(!rest.length)return[E('Usage: grep [OPTION]... PATTERN [FILE]...')];
+  const pat=rest[0],files=rest.slice(1);let re;
+  try{re=new RegExp(pat,f.has('i')?'gi':'g')}catch(e){re=new RegExp(pat.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),f.has('i')?'gi':'g')}
+  const out=[],src=readSrc('grep',files,stdin),multi=files.length>1;
+  src.forEach(s=>{if(s.e)return out.push(s.e);let count=0;
+    splitLines(s.t).forEach((line,idx)=>{re.lastIndex=0;const hit=re.test(line);if(hit===f.has('v'))return;count++;if(f.has('c'))return;
+      const parts=[];if(multi)parts.push({t:s.n+':',c:'pp'});if(f.has('n'))parts.push({t:(idx+1)+':',c:'ok'});
+      if(f.has('v'))parts.push({t:line});
+      else{re.lastIndex=0;let last=0,m;while((m=re.exec(line))){if(m[0]===''){re.lastIndex++;continue}
+          if(m.index>last)parts.push({t:line.slice(last,m.index)});parts.push({t:m[0],c:'hl'});last=m.index+m[0].length}
+        if(last<line.length)parts.push({t:line.slice(last)})}
+      out.push({parts})});
+    if(f.has('c'))out.push(L((multi?s.n+':':'')+count))});
+  return out;
+};
+C.wc=(args,stdin)=>{
+  const{f,a}=fa(args),all=!f.size,out=[],tot=[0,0,0];
+  const fmt=(l,w,c,n)=>[all||f.has('l')?String(l).padStart(4):'',all||f.has('w')?String(w).padStart(5):'',all||f.has('c')?String(c).padStart(6):''].filter(Boolean).join('')+(n?' '+n:'');
+  const src=readSrc('wc',a,stdin);
+  src.forEach(s=>{if(s.e)return out.push(s.e);
+    const l=(s.t.match(/\n/g)||[]).length+(s.t&&!s.t.endsWith('\n')?1:0),w=s.t.trim()?s.t.trim().split(/\s+/).length:0,c=s.t.length;
+    tot[0]+=l;tot[1]+=w;tot[2]+=c;out.push(L(fmt(l,w,c,s.n)))});
+  if(a.length>1)out.push(L(fmt(tot[0],tot[1],tot[2],'total')));
+  return out;
+};
+C.sort=(args,stdin)=>{
+  const{f,a}=fa(args);let lines=[];const out=[];
+  readSrc('sort',a,stdin).forEach(s=>{if(s.e)out.push(s.e);else lines=lines.concat(splitLines(s.t))});
+  lines.sort(f.has('n')?(x,y)=>(parseFloat(x)||0)-(parseFloat(y)||0):(x,y)=>x.localeCompare(y));
+  if(f.has('r'))lines.reverse();if(f.has('u'))lines=lines.filter((x,i)=>x!==lines[i-1]);
+  return out.concat(lines.map(x=>L(x)));
+};
+C.uniq=(args,stdin)=>{
+  const{f,a}=fa(args),out=[];
+  readSrc('uniq',a.slice(0,1),stdin).forEach(s=>{if(s.e)return out.push(s.e);
+    const groups=[];splitLines(s.t).forEach(x=>{const g=groups[groups.length-1];if(g&&g[0]===x)g[1]++;else groups.push([x,1])});
+    groups.forEach(([x,c])=>out.push(L(f.has('c')?String(c).padStart(7)+' '+x:x)))});
+  return out;
+};
+C.echo=args=>[L(args.filter((x,i)=>!(i===0&&x==='-n')).join(' '))];
+C.nano=args=>{
+  const x=args.find(a=>!a.startsWith('-'));
+  if(!x)return[E('nano: no file name given. Try: nano hello.txt')];
+  const p=norm(x),n=getNode(p);
+  if(n&&n.type==='dir')return[E(`nano: ${x} is a directory`)];
+  const par=getNode(parentPath(p));if(!par||par.type!=='dir')return[E(`nano: ${x}: No such file or directory`)];
+  pendingNano=p;return[];
+};
+C.whoami=()=>[L('user')];
+C.hostname=()=>[L('simulator')];
+C.date=()=>[L(new Date().toString().replace(/\s*\(.*\)$/,''))];
+C.uname=args=>{const{f}=fa(args);
+  if(f.has('a'))return[L('Linux simulator 6.8.0-48-generic #48-Ubuntu SMP PREEMPT_DYNAMIC x86_64 x86_64 x86_64 GNU/Linux')];
+  if(f.has('r'))return[L('6.8.0-48-generic')];return[L('Linux')]};
+C.df=args=>fa(args).f.has('h')?[
+  L('Filesystem      Size  Used Avail Use% Mounted on','info'),L('/dev/sda1        20G  8.5G   11G  45% /'),L('/dev/sda2       100G   45G   50G  48% /home'),L('tmpfs           2.0G     0  2.0G   0% /tmp')]:[
+  L('Filesystem     1K-blocks     Used Available Use% Mounted on','info'),L('/dev/sda1       20971520  8912896  11534336  45% /'),L('/dev/sda2      104857600 47185920  52428800  48% /home'),L('tmpfs            2097152        0   2097152   0% /tmp')];
+C.du=args=>{
+  const{f,a}=fa(args),t=a[0]||'.',p=norm(t),n=getNode(p);
+  if(!n)return[E(`du: cannot access '${t}': No such file or directory`)];
+  const fmt=k=>f.has('h')?(k>=1024?(k/1024).toFixed(1)+'M':k+'K'):String(k);
+  const out=[];
+  (function walk(node,label){if(node.type==='dir'&&!f.has('s'))sortedNames(node).forEach(x=>{const c=node.children[x];if(c.type==='dir')walk(c,label+'/'+x)});
+    if(node.type==='dir'||label===t)out.push({parts:[{t:fmt(sizeKB(node)).padEnd(6),c:'ok'},{t:'\t'+label}]})})(n,t);
+  return out;
+};
+C.ps=args=>{
+  if(args.some(x=>/aux|^-e/.test(x)))return[L('USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND','info'),
+    ...procs.map(p=>L(`${(p.pid===1?'root':'user').padEnd(8)}${String(p.pid).padStart(6)} ${p.cpu.toFixed(1).padStart(4)} ${p.mem.toFixed(1).padStart(4)} 123456  8912 pts/0    S+   10:00   0:00 ${p.name}`))];
+  return[L('    PID TTY          TIME CMD','info'),L('    123 pts/0    00:00:00 bash'),L('   9999 pts/0    00:00:00 ps')];
+};
+C.top=()=>[
+  L('top - 10:30:45 up 1 day,  2:15,  1 user,  load average: 0.85, 0.95, 1.02','info'),
+  L(`Tasks: ${procs.length} total,   1 running, ${procs.length-1} sleeping,   0 stopped,   0 zombie`),
+  L('%Cpu(s):  8.2 us,  2.1 sy,  0.0 ni, 89.5 id,  0.2 wa,  0.0 hi,  0.0 si,  0.0 st'),
+  L('MiB Mem :   8192.0 total,   2048.5 free,   4096.2 used,   2047.3 buff/cache'),L(''),
+  L('    PID USER      PR  NI    VIRT    RES  S  %CPU  %MEM COMMAND','info'),
+  ...[...procs].sort((x,y)=>y.cpu-x.cpu).map(p=>L(`${String(p.pid).padStart(7)} ${(p.pid===1?'root':'user').padEnd(9)} 20   0  ${String(200000+p.pid*517).padStart(6)}  ${String(9000+p.pid*31).padStart(5)}  S  ${p.cpu.toFixed(1).padStart(4)}  ${p.mem.toFixed(1).padStart(4)} ${p.name}`)),
+  N('top shows one snapshot here. In a real terminal it keeps refreshing until you press q.')];
+C.kill=args=>{
+  const ids=args.filter(x=>!x.startsWith('-'));
+  if(!ids.length)return[E('kill: usage: kill [-s sigspec | -n signum | -sigspec] pid')];
+  const out=[];
+  ids.forEach(x=>{const pid=parseInt(x,10),i=procs.findIndex(p=>p.pid===pid);
+    if(pid===1)out.push(E('kill: (1) - Operation not permitted'));
+    else if(i<0)out.push(E(`kill: (${x}) - No such process`));
+    else{const name=procs[i].name;procs.splice(i,1);out.push(L(`Stopped ${name} (PID ${pid}). Run ps aux to confirm it is gone.`,'note'))}});
+  return out;
+};
+C.ping=args=>{
+  let c=4;const rest=[];for(let i=0;i<args.length;i++){if(args[i]==='-c')c=Math.min(10,parseInt(args[++i],10)||4);else rest.push(args[i])}
+  const host=rest[0];if(!host)return[E('ping: usage error: Destination address required')];
+  const ip=fakeIP(host),out=[L(`PING ${host} (${ip}) 56(84) bytes of data.`,'info')];const times=[];
+  for(let i=1;i<=c;i++){const t=(12+((i*7+host.length*3)%9)+Math.random()).toFixed(1);times.push(+t);out.push(L(`64 bytes from ${ip}: icmp_seq=${i} ttl=56 time=${t} ms`))}
+  out.push(L(''),L(`--- ${host} ping statistics ---`,'info'),L(`${c} packets transmitted, ${c} received, 0% packet loss`,'ok'),
+    L(`rtt min/avg/max = ${Math.min(...times).toFixed(1)}/${(times.reduce((a,b)=>a+b,0)/c).toFixed(1)}/${Math.max(...times).toFixed(1)} ms`),
+    N('Simulated: this sandbox has no real network.'));
+  return out;
+};
+function hostOf(u){try{return new URL(u.includes('://')?u:'http://'+u).hostname}catch(e){return u}}
+C.wget=args=>{
+  const url=args.find(x=>!x.startsWith('-'));if(!url)return[E('wget: missing URL')];
+  const host=hostOf(url);let name=url.replace(/\/+$/,'').split('/').pop();if(!name||name===host||name.includes(':'))name='index.html';
+  let p=norm(name),k=1;while(getNode(p))p=norm(name+'.'+k++);
+  const body=`Downloaded from ${url}\n`;putNode(p,F(body));
+  return[L(`--2026-11-14 10:30:12--  ${url}`,'info'),L(`Resolving ${host}... ${fakeIP(host)}`),L(`Connecting to ${host}|${fakeIP(host)}|:80... connected.`),
+    L('HTTP request sent, awaiting response... 200 OK','ok'),L(`Length: ${body.length} [text/plain]`),L(`Saving to: '${baseName(p)}'`),L(''),
+    L(`'${baseName(p)}' saved [${body.length}/${body.length}]`,'ok'),N('Simulated download. Look for the new file on the map.')];
+};
+C.curl=args=>{
+  const{f,a}=fa(args),url=a[0];if(!url)return[E("curl: try 'curl --help' for more information")];
+  if(f.has('I'))return[L('HTTP/1.1 200 OK'),L('Content-Type: text/html; charset=UTF-8'),L('Content-Length: 1256'),L('Server: ECS (simulated)')];
+  return[L('<!doctype html>'),L('<html>'),L('<head><title>Example Domain</title></head>'),L('<body>'),L('  <h1>Example Domain</h1>'),L('  <p>This domain is for use in illustrative examples.</p>'),L('</body>'),L('</html>'),N('Simulated response.')];
+};
+C.ssh=args=>{const d=args.find(x=>!x.startsWith('-'));if(!d)return[E('usage: ssh [-p port] destination [command]')];
+  return[E(`ssh: connect to host ${d.split('@').pop()} port 22: Connection timed out`),N('In a real network this would open an encrypted shell on the remote machine.')]};
+C.scp=args=>{const a=args.filter(x=>!x.startsWith('-'));if(a.length<2)return[E('usage: scp [-r] source target')];
+  const n=getNode(norm(a[0]));if(!n)return[E(`scp: ${a[0]}: No such file or directory`)];
+  return[L(`${baseName(norm(a[0])).padEnd(30)}100%  ${String(n.type==='file'?n.content.length:4096).padStart(5)}   12.4KB/s   00:00`,'ok'),N('Simulated: no file actually left this machine.')]};
+C.netstat=args=>{const all=args.some(x=>/a/.test(x));return all?[
+  L('Active Internet connections (servers and established)','info'),L('Proto Recv-Q Send-Q Local Address           Foreign Address         State','info'),
+  L('tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN'),L('tcp        0      0 127.0.0.1:631           0.0.0.0:*               LISTEN'),
+  L('tcp        0      0 192.168.1.100:51234     93.184.215.14:443       ESTABLISHED'),L('udp        0      0 0.0.0.0:68              0.0.0.0:*'),L('udp        0      0 127.0.0.53:53           0.0.0.0:*')]:[
+  L('Active Internet connections (w/o servers)','info'),L('Proto Recv-Q Send-Q Local Address           Foreign Address         State','info'),
+  L('tcp        0      0 192.168.1.100:51234     93.184.215.14:443       ESTABLISHED')]};
+C.man=args=>{const c=args[0];if(!c)return[E('What manual page do you want?')];const info=CMD[c];
+  if(!info)return[E(`No manual entry for ${c}`)];
+  return[L(`${c.toUpperCase()}(1)                 User Commands                 ${c.toUpperCase()}(1)`,'info'),L(''),
+    L('NAME','warn'),L(`       ${c} - ${info[2].toLowerCase()}`),L(''),L('SYNOPSIS','warn'),L('       '+info[1]),L(''),
+    L('DESCRIPTION','warn'),L(`       ${info[2]}. Options in [brackets] are optional.`),L('')]};
+C.history=()=>hist.map((c,i)=>L(`${String(i+1).padStart(5)}  ${c}`));
+C.clear=()=>[{clear:true}];
+
+/* ---------- Lessons ---------- */
+const LESSONS=[
+  {title:'Basic navigation',objective:'Find out where you are, look around, and move between directories. Watch the green marker on the map follow you.',
+   required:['pwd','ls','cd'],
+   try:[['pwd','Show your current directory'],['ls','List files here'],['ls -la','Include hidden files and details'],['cd documents','Step into documents'],['cd ..','Go back up one level'],['cd ~','Jump home'],['tree','Draw the whole home folder']],
+   hints:{pwd:'Start with pwd to see which directory you’re in.',ls:'Run ls to list what’s here. Add -la to see hidden files like .bashrc.',cd:'Move with cd documents, then come back with cd ..'}},
+  {title:'File management',objective:'Create, copy, move and delete files and folders. Each change flashes on the map.',
+   required:['touch','mkdir','cp','mv','rm'],
+   try:[['touch newfile.txt','Create an empty file'],['mkdir newfolder','Create a folder'],['cp demo.txt backup.txt','Copy a file'],['mv backup.txt newfolder/','Move the copy into the folder'],['rm newfile.txt','Delete a file'],['ls newfolder','Check what moved']],
+   hints:{touch:'Create an empty file: touch newfile.txt',mkdir:'Make a folder: mkdir newfolder. Watch it appear on the map.',cp:'Copy a file: cp demo.txt backup.txt',mv:'Move the copy into your folder: mv backup.txt newfolder/',rm:'Delete a file you don’t need: rm newfile.txt'}},
+  {title:'Viewing files',objective:'Read whole files, peek at the start or end, and search inside them. Matches are highlighted.',
+   required:['cat','head','tail','grep'],
+   try:[['cat demo.txt','Print the whole file'],['head -n 3 demo.txt','First three lines'],['tail -n 2 demo.txt','Last two lines'],['grep -n Line demo.txt','Find lines with line numbers'],['grep -i error /var/log/error.log','Case-insensitive search'],['cat demo.txt | grep Line','Pipe one command into another']],
+   hints:{cat:'Print a whole file: cat demo.txt',head:'See just the top: head -n 3 demo.txt',tail:'See just the bottom: tail -n 2 demo.txt',grep:'Search inside a file: grep -n Line demo.txt'}},
+  {title:'System information',objective:'Check who you are, what the system is, how full the disks are, and what is running.',
+   required:['whoami','uname','df','ps'],
+   try:[['whoami','Your username'],['uname -a','Kernel and system details'],['df -h','Disk space in readable units'],['du -h documents','Space used by a folder'],['ps aux','Every running process'],['kill 456','Stop the firefox process']],
+   hints:{whoami:'Ask the system who you are: whoami',uname:'See system details: uname -a',df:'Check disk space: df -h',ps:'List running processes: ps aux'}},
+  {title:'Text editing',objective:'Write text into files with echo and redirection, edit them in nano, and count what you wrote.',
+   required:['echo','nano','wc'],
+   try:[['echo "Hello World" > hello.txt','Write a new file'],['echo "Second line" >> hello.txt','Add a line to the end'],['cat hello.txt','Check the result'],['nano hello.txt','Edit it in nano'],['wc hello.txt','Count lines, words, characters'],['sort -r demo.txt','Sort lines in reverse']],
+   hints:{echo:'Write text into a file: echo "Hello World" > hello.txt',nano:'Open the editor: nano hello.txt. Press Ctrl+O to save and Ctrl+X to exit.',wc:'Count what’s in the file: wc hello.txt'}},
+  {title:'Network commands',objective:'Test connections, download files and inspect network activity. Results are simulated.',
+   required:['ping','wget','curl','netstat'],
+   try:[['ping -c 3 example.com','Send three test packets'],['wget http://example.com/file.txt','Download a file'],['curl http://example.com','Fetch a web page'],['netstat -an','Every open connection'],['ssh user@server','Try a remote login']],
+   hints:{ping:'Check a host answers: ping -c 3 example.com',wget:'Download a file: wget http://example.com/file.txt',curl:'Fetch a page: curl http://example.com',netstat:'List connections: netstat -an'}}
+];
+
+/* ---------- State ---------- */
+let prog=store.get('lcs-progress',LESSONS.map(()=>[]));
+if(!Array.isArray(prog)||prog.length!==LESSONS.length)prog=LESSONS.map(()=>[]);
+let stats=store.get('lcs-stats',{cmds:0,ok:0});
+let mode=store.get('lcs-mode','lessons');
+let active=store.get('lcs-active',0);
+const hist=[];let hIdx=0;
+const expanded=new Set(['/','/home','/home/user','/home/user/documents']);
+const lessonDone=i=>LESSONS[i].required.every(r=>prog[i].includes(r));
+
+/* ---------- Terminal I/O ---------- */
+const screen=$('#screen'),input=$('#cmd');
+function print(lines){
+  lines.forEach(l=>{
+    if(l.clear){screen.innerHTML='';return}
+    const div=document.createElement('div');div.className='ln '+(l.c||'');
+    if(l.parts)l.parts.forEach(p=>{const s=document.createElement('span');if(p.c)s.className=p.c;s.textContent=p.t;div.appendChild(s)});
+    else div.textContent=l.t||'';
+    screen.appendChild(div);
+  });
+  screen.scrollTop=screen.scrollHeight;
+}
+const promptParts=()=>[{t:'user@simulator',c:'pu'},{t:':'},{t:disp(cwd),c:'pp'},{t:'$ '}];
+
+function tokenize(line){
+  const re=/"((?:[^"\\]|\\.)*)"|'([^']*)'|(>>|>|\|)|([^\s"'|>]+)/g,out=[];let m;
+  while((m=re.exec(line))){
+    if(m[3])out.push({v:m[3],op:m[3]});
+    else if(m[2]!==undefined)out.push({v:m[2],q:1});
+    else out.push({v:(m[1]!==undefined?m[1]:m[4]).replace(/\$(HOME|USER|PWD)\b/g,(_,k)=>({HOME,USER:'user',PWD:cwd})[k]),q:m[1]!==undefined?1:0});
+  }
+  return out;
+}
+function lev(a,b){const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+function suggest(n){let best=null,bd=3;Object.keys(C).forEach(k=>{const d=lev(n,k);if(d<bd){bd=d;best=k}});return best}
+
+function run(raw){
+  const line=raw.trim();
+  print([{parts:[...promptParts(),{t:raw,c:'cmd'}]}]);
+  if(!line)return;
+  hist.push(line);hIdx=hist.length;
+  const toks=tokenize(line),segs=[[]];let redir=null;
+  for(let i=0;i<toks.length;i++){const t=toks[i];
+    if(t.op==='|'){segs.push([]);continue}
+    if(t.op==='>'||t.op==='>>'){const nx=toks[i+1];redir={mode:t.op,file:nx&&!nx.op?nx.v:null};i++;continue}
+    segs[segs.length-1].push(t.v)}
+  stats.cmds++;
+  if(redir&&!redir.file){print([E("bash: syntax error near unexpected token `newline'")]);return finish(false,[])}
+  if(segs.some(s=>!s.length)){print([E("bash: syntax error near unexpected token `|'")]);return finish(false,[])}
+  let ok=true,stdin=null,final=[];const used=[];
+  for(let si=0;si<segs.length;si++){
+    let[name,...args]=segs[si];
+    if(ALIAS[name]){const al=ALIAS[name].split(' ');name=al[0];args=[...al.slice(1),...args]}
+    const fn=C[name];
+    if(!fn){final.push(E(`${name}: command not found`));const s=suggest(name);if(s)final.push(N(`Did you mean ${s}?`));ok=false;break}
+    const res=fn(args,stdin)||[];
+    if(res.some(l=>l.c==='err'))ok=false;else used.push(name);
+    if(si<segs.length-1){final.push(...res.filter(l=>l.c==='err'));stdin=textOf(res)}else final=final.concat(res);
+  }
+  if(redir){
+    const errs=final.filter(l=>l.c==='err'||l.c==='note'),p=norm(redir.file),n=getNode(p);
+    if(n&&n.type==='dir'){errs.push(E(`bash: ${redir.file}: Is a directory`));ok=false}
+    else if(!getNode(parentPath(p))){errs.push(E(`bash: ${redir.file}: No such file or directory`));ok=false}
+    else{const text=textOf(final);const body=text?text+'\n':'';
+      if(redir.mode==='>>'&&n){if(n.content&&!n.content.endsWith('\n'))n.content+='\n';n.content+=body;recent.add(p)}else putNode(p,F(body))}
+    final=errs;
+  }
+  print(final);
+  finish(ok,used);
+  if(pendingNano){const p=pendingNano;pendingNano=null;openNano(p)}
+}
+function finish(ok,used){
+  if(ok)stats.ok++;store.set('lcs-stats',stats);
+  if(mode==='lessons'&&active>=0){
+    const L_=LESSONS[active],was=lessonDone(active);let changed=false;
+    used.forEach(u=>{if(L_.required.includes(u)&&!prog[active].includes(u)){prog[active].push(u);changed=true}});
+    if(changed){store.set('lcs-progress',prog);
+      if(!was&&lessonDone(active))print([L(''),L(`Lesson ${active+1} complete. Every required command ran cleanly.`,'celebrate'),L('')]);}
+  }
+  renderAll();
+}
+
+/* ---------- Rendering ---------- */
+function renderPrompt(){
+  const pr=$('#prompt');pr.innerHTML='';
+  promptParts().forEach(p=>{const s=document.createElement('span');if(p.c)s.className=p.c;s.textContent=p.t;pr.appendChild(s)});
+  $('#termTitle').innerHTML='';
+  const t=$('#termTitle');t.append('user@simulator: ');const i=document.createElement('i');i.textContent=disp(cwd);t.appendChild(i);
+}
+function renderStats(){
+  const n=LESSONS.filter((_,i)=>lessonDone(i)).length;
+  $('#statLessons').textContent=`${n}/${LESSONS.length}`;
+  $('#lessonRing').innerHTML=ring(n/LESSONS.length,40,5);
+  $('#statCmds').textContent=stats.cmds;
+  $('#statAcc').textContent=stats.cmds?Math.round(stats.ok/stats.cmds*100)+'%':'–';
+}
+function insert(text){input.value=text;input.focus();input.setSelectionRange(text.length,text.length);renderAnatomy()}
+
+function renderLeft(){
+  const el=$('#left');el.innerHTML='';
+  if(mode==='practice'){
+    el.innerHTML='<h2>Command reference</h2><p class="sub">Click a command to start typing it. Run <code>man</code> plus a name for details.</p>';
+    const wrap=document.createElement('div');wrap.className='ref';
+    const groups={};for(const k in CMD)(groups[CMD[k][0]]=groups[CMD[k][0]]||[]).push(k);
+    for(const g in groups){const h=document.createElement('h3');h.textContent=g;wrap.appendChild(h);
+      const ch=document.createElement('div');ch.className='chips';
+      groups[g].forEach(k=>{const b=document.createElement('button');b.textContent=k;b.title=CMD[k][2];b.onclick=()=>insert(k+' ');ch.appendChild(b)});
+      wrap.appendChild(ch)}
+    el.appendChild(wrap);return;
+  }
+  el.innerHTML='<h2>Lesson path</h2><p class="sub">Run every command on a lesson’s checklist to complete it.</p>';
+  const ol=document.createElement('ol');ol.className='rail';
+  LESSONS.forEach((les,i)=>{
+    const li=document.createElement('li'),b=document.createElement('button');
+    const got=prog[i].length,need=les.required.length,done=lessonDone(i);
+    b.className='station'+(done?' done':'');if(i===active)b.setAttribute('aria-current','step');
+    b.innerHTML=`<span class="ringwrap">${ring(got/need,44,4)}<span class="num">${done?'✓':i+1}</span></span><span class="meta"><strong></strong><span>${got} of ${need} commands</span></span>`;
+    b.querySelector('strong').textContent=les.title;
+    b.onclick=()=>{active=i;store.set('lcs-active',i);renderLeft();print([L(''),L(`Lesson ${i+1}: ${les.title}`,'info'),L(les.objective,'note'),L('')]);input.focus()};
+    li.appendChild(b);ol.appendChild(li)});
+  el.appendChild(ol);
+  if(active<0)return;
+  const les=LESSONS[active],d=document.createElement('div');d.className='detail';
+  d.innerHTML=`<h3></h3><p class="obj"></p><h4>Checklist</h4><ul class="checks"></ul><h4>Try these</h4><div class="try"></div>`;
+  d.querySelector('h3').textContent=`${active+1}. ${les.title}`;d.querySelector('.obj').textContent=les.objective;
+  const ck=d.querySelector('.checks');
+  les.required.forEach(r=>{const li=document.createElement('li'),y=prog[active].includes(r);li.className=y?'yes':'';li.innerHTML=(y?ICON.check:ICON.dot);li.append(r);ck.appendChild(li)});
+  const tr=d.querySelector('.try');
+  les.try.forEach(([c,desc])=>{const b=document.createElement('button');b.innerHTML='<code></code><span></span>';b.querySelector('code').textContent=c;b.querySelector('span').textContent=desc;b.onclick=()=>insert(c);tr.appendChild(b)});
+  if(lessonDone(active)){
+    const box=document.createElement('div');box.className='done-box';
+    if(active<LESSONS.length-1){box.textContent='Lesson complete.';const nb=document.createElement('button');nb.textContent=`Start lesson ${active+2}: ${LESSONS[active+1].title}`;
+      nb.onclick=()=>{active++;store.set('lcs-active',active);renderLeft();print([L(''),L(`Lesson ${active+1}: ${LESSONS[active].title}`,'info'),L(LESSONS[active].objective,'note'),L('')]);input.focus()};box.appendChild(nb)}
+    else box.textContent=LESSONS.every((_,i)=>lessonDone(i))?'You’ve finished all six lessons. Switch to free practice and explore.':'Lesson complete. Pick any unfinished lesson above.';
+    d.appendChild(box);
+  }else{
+    const next=les.required.find(r=>!prog[active].includes(r));
+    const h=document.createElement('div');h.className='hint';h.innerHTML=ICON.bulb+'<span></span>';h.querySelector('span').textContent=les.hints[next];d.appendChild(h);
+  }
+  const rs=document.createElement('button');rs.className='link-btn';rs.textContent='Reset lesson progress';
+  rs.onclick=()=>{prog=LESSONS.map(()=>[]);stats={cmds:0,ok:0};store.set('lcs-progress',prog);store.set('lcs-stats',stats);renderAll()};
+  d.appendChild(rs);el.appendChild(d);
+}
+
+function renderMap(){
+  let p=cwd;for(;;){expanded.add(p);if(p==='/')break;p=parentPath(p)}
+  const tree=$('#tree');tree.innerHTML='';tree.appendChild(buildNode('/',root));
+  const cr=$('#crumbs');cr.innerHTML='';
+  const segs=cwd==='/'?['']:cwd.split('/');let acc='';
+  segs.forEach((s,i)=>{acc=i===0?'/':join(acc,s);const target=acc;
+    if(i>1){const sp=document.createElement('span');sp.className='sep';sp.textContent='/';cr.appendChild(sp)}
+    const b=document.createElement('button');b.textContent=i===0?'/':s;b.onclick=()=>insert('cd '+disp(target));cr.appendChild(b)});
+  let dirs=0,files=0;(function c(n){for(const k in n.children){if(n.children[k].type==='dir'){dirs++;c(n.children[k])}else files++}})(getNode(HOME));
+  $('#mapCount').textContent=`Your home folder holds ${dirs} folder${dirs===1?'':'s'} and ${files} file${files===1?'':'s'}.`;
+  recent.clear();
+}
+function buildNode(path,node){
+  const li=document.createElement('li');li.setAttribute('role','treeitem');
+  const name=path==='/'?'/':baseName(path),isDir=node.type==='dir',kids=isDir?Object.keys(node.children):[];
+  const row=document.createElement('div');
+  row.className='row '+(isDir?'dir':'file')+(name.startsWith('.')?' hidden':'')+(path===cwd?' here':'')+(recent.has(path)?' fresh':'');
+  if(isDir&&kids.length){const cb=document.createElement('button');cb.className='caret';cb.innerHTML=ICON.caret;
+    cb.setAttribute('aria-expanded',expanded.has(path));cb.setAttribute('aria-label',(expanded.has(path)?'Collapse ':'Expand ')+name);
+    cb.onclick=()=>{expanded.has(path)?expanded.delete(path):expanded.add(path);renderMap()};row.appendChild(cb)}
+  else{const s=document.createElement('span');s.className='spacer';row.appendChild(s)}
+  const ic=document.createElement('span');ic.className='ico';ic.innerHTML=isDir?ICON.folder:ICON.file;row.appendChild(ic);
+  const nb=document.createElement('button');nb.className='nm';nb.textContent=name;
+  const cmd=(isDir?'cd ':'cat ')+disp(path);nb.title='Put “'+cmd+'” in the prompt';nb.onclick=()=>insert(cmd);row.appendChild(nb);
+  if(path===cwd){const b=document.createElement('span');b.className='badge';b.textContent='You are here';row.appendChild(b)}
+  li.appendChild(row);
+  if(isDir&&kids.length&&expanded.has(path)){
+    li.setAttribute('aria-expanded','true');
+    const ul=document.createElement('ul');ul.setAttribute('role','group');
+    kids.sort((a,b)=>{const da=node.children[a].type==='dir',db=node.children[b].type==='dir';return da!==db?(da?-1:1):a.replace(/^\./,'').localeCompare(b.replace(/^\./,''))})
+      .forEach(k=>ul.appendChild(buildNode(join(path,k),node.children[k])));
+    li.appendChild(ul);
+  }
+  return li;
+}
+
+const KIND={cmd:'command',flag:'option',arg:'argument',op:'operator',bad:'unknown'};
+function renderAnatomy(){
+  const box=$('#anatomy'),v=input.value;box.innerHTML='';
+  if(!v.trim()){box.innerHTML='<span class="ana-tip">Press <kbd>Tab</kbd> to finish a file or command name. Press <kbd>↑</kbd> or <kbd>↓</kbd> to bring back earlier commands.</span>';return}
+  const toks=tokenize(v),row=document.createElement('div');row.className='toks';
+  let expect=true,first=null,afterRedir=false;
+  toks.forEach(t=>{let k;
+    if(t.op){k='op';expect=t.op==='|';afterRedir=t.op!=='|'}
+    else if(expect){k=(C[t.v]||ALIAS[t.v])?'cmd':'bad';expect=false;if(!first)first=t.v}
+    else if(!t.q&&/^-\S/.test(t.v))k='flag';else k='arg';
+    const el=document.createElement('span');el.className='tok k-'+k;el.innerHTML='<b></b><small></small>';
+    el.querySelector('b').textContent=t.op?t.v:(t.q?`"${t.v}"`:t.v);
+    el.querySelector('small').textContent=k==='op'?(t.op==='|'?'pipe':'redirect'):(afterRedir&&k==='arg'?'target file':KIND[k]);
+    if(k==='arg'&&afterRedir)afterRedir=false;
+    row.appendChild(el)});
+  box.appendChild(row);
+  const desc=document.createElement('div');desc.className='ana-desc';
+  const key=ALIAS[first]?ALIAS[first].split(' ')[0]:first;
+  if(key&&CMD[key]){desc.textContent=CMD[key][2]+'. ';const em=document.createElement('em');em.textContent='Usage: '+CMD[key][1];desc.appendChild(em)}
+  else if(first){desc.textContent=`“${first}” isn’t a command this simulator knows. Run help for the full list.`}
+  box.appendChild(desc);
+}
+function renderTabs(){
+  document.querySelectorAll('.modes button').forEach(b=>b.setAttribute('aria-selected',b.dataset.mode===mode));
+}
+function renderAll(){renderPrompt();renderStats();renderLeft();renderMap();renderTabs();renderAnatomy()}
+
+/* ---------- Tab completion ---------- */
+function complete(){
+  const v=input.value,partial=(v.match(/(\S*)$/)||['',''])[1],before=v.slice(0,v.length-partial.length);
+  const isCmd=!before.trim()||/\|\s*$/.test(before);let cands=[];
+  if(isCmd)cands=Object.keys(C).filter(c=>c.startsWith(partial));
+  else{const sl=partial.lastIndexOf('/'),dirPart=sl>=0?partial.slice(0,sl+1):'',pre=partial.slice(sl+1),dir=getNode(norm(dirPart||'.'));
+    if(!dir||dir.type!=='dir')return;
+    cands=Object.keys(dir.children).filter(n=>n.startsWith(pre)&&(pre.startsWith('.')||!n.startsWith('.'))).sort()
+      .map(n=>dirPart+n+(dir.children[n].type==='dir'?'/':''))}
+  if(!cands.length)return;
+  if(cands.length===1){const c=cands[0];input.value=before+c+(c.endsWith('/')?'':' ')}
+  else{let pfx=cands[0];cands.forEach(c=>{while(!c.startsWith(pfx))pfx=pfx.slice(0,-1)});
+    if(pfx.length>partial.length)input.value=before+pfx;
+    else{print([{parts:[...promptParts(),{t:v,c:'cmd'}]},{parts:cands.map((c,i)=>({t:(i?'  ':'')+c,c:c.endsWith('/')?'d':'f'}))}])}}
+  renderAnatomy();
+}
+
+/* ---------- nano ---------- */
+const nano=$('#nano'),nt=$('#nanoText');let nanoPath=null,nanoDirty=false,nanoConfirm=false;
+function openNano(p){
+  nanoPath=p;const n=getNode(p);nt.value=n?n.content:'';nanoDirty=false;nanoConfirm=false;
+  $('#nanoName').textContent=disp(p);$('#nanoState').textContent=n?'':'New file';$('#nanoMsg').textContent='';
+  nano.hidden=false;nt.focus();
+}
+function nanoSave(){
+  const n=getNode(nanoPath);if(n)n.content=nt.value;else putNode(nanoPath,F(nt.value));recent.add(nanoPath);
+  nanoDirty=false;nanoConfirm=false;$('#nanoState').textContent='';
+  $('#nanoMsg').textContent=`[ Wrote ${splitLines(nt.value).length} lines ]`;renderMap();
+}
+function nanoExit(){
+  if(nanoDirty&&!nanoConfirm){nanoConfirm=true;$('#nanoMsg').textContent='Unsaved changes. Press ^O to save, or ^X again to discard them.';return}
+  nano.hidden=true;print([L(nanoDirty?`Closed ${disp(nanoPath)} without saving.`:`Closed ${disp(nanoPath)}.`,'note')]);
+  nanoPath=null;renderAll();input.focus();
+}
+nt.addEventListener('input',()=>{nanoDirty=true;nanoConfirm=false;$('#nanoState').textContent='Modified'});
+nt.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&(e.key==='o'||e.key==='O')){e.preventDefault();nanoSave()}
+  else if(e.ctrlKey&&(e.key==='x'||e.key==='X')){e.preventDefault();nanoExit()}
+  else if(e.key==='Escape'){e.preventDefault();nanoExit()}
+});
+$('#nanoSave').onclick=()=>{nanoSave();nt.focus()};
+$('#nanoExit').onclick=nanoExit;
+
+/* ---------- Events ---------- */
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){const v=input.value;input.value='';run(v)}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(hIdx>0){hIdx--;input.value=hist[hIdx];renderAnatomy()}}
+  else if(e.key==='ArrowDown'){e.preventDefault();if(hIdx<hist.length-1){hIdx++;input.value=hist[hIdx]}else{hIdx=hist.length;input.value=''}renderAnatomy()}
+  else if(e.key==='Tab'){e.preventDefault();complete()}
+  else if(e.ctrlKey&&(e.key==='l'||e.key==='L')){e.preventDefault();screen.innerHTML=''}
+  else if(e.ctrlKey&&(e.key==='c'||e.key==='C')&&!window.getSelection().toString()){e.preventDefault();print([{parts:[...promptParts(),{t:input.value+'^C',c:'cmd'}]}]);input.value='';renderAnatomy()}
+});
+input.addEventListener('input',renderAnatomy);
+screen.addEventListener('click',()=>{if(!window.getSelection().toString())input.focus()});
+$('#btnClear').onclick=()=>{screen.innerHTML='';input.focus()};
+$('#btnReset').onclick=()=>{root=seed();procs=seedProcs();cwd=HOME;prevDir=HOME;print([N('Files restored to their starting state.')]);renderAll();input.focus()};
+document.querySelectorAll('.modes button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;store.set('lcs-mode',mode);if(mode==='lessons'&&active<0)active=0;renderAll()});
+
+/* Theme */
+const themeBtn=$('#themeBtn');
+function isDark(){const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches}
+function renderTheme(){themeBtn.innerHTML=isDark()?ICON.sun:ICON.moon;themeBtn.setAttribute('aria-label',isDark()?'Switch to light theme':'Switch to dark theme')}
+const savedTheme=store.get('lcs-theme',null);if(savedTheme)document.documentElement.dataset.theme=savedTheme;
+themeBtn.onclick=()=>{const t=isDark()?'light':'dark';document.documentElement.dataset.theme=t;store.set('lcs-theme',t);renderTheme()};
+renderTheme();
+
+/* Start */
+print([
+  L('Welcome to the Linux command simulator.','ok'),
+  L('Everything happens in a safe, pretend filesystem. Nothing you type can harm a real computer.'),
+  L("Type help for every command, or follow the lesson path on the left.",'info'),
+  L('')
+]);
+if(mode==='lessons'&&active>=0)print([L(`Lesson ${active+1}: ${LESSONS[active].title}`,'info'),L(LESSONS[active].objective,'note'),L('')]);
+renderAll();
+input.focus({preventScroll:true});
+})();
+</script>
 </body>
 </html>
