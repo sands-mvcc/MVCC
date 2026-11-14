@@ -1,0 +1,3177 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Rehearsal Room — Speech Practice Studio</title>
+<meta name="description" content="Record a speech take in your browser, see an objective breakdown of your delivery, keep every take with its video, and download a submission package for your instructor. Runs fully in the browser, no account or upload.">
+<script>
+(function(){
+  var t = "light";
+  try{ if(localStorage.getItem("rr_theme") === "dark") t = "dark"; }catch(e){}
+  document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
+<style>
+:root{
+  /* Stage is a design constant — dark in both themes, like a real stage */
+  --stage:#15171c;
+  --stage-2:#1d2028;
+  --stage-ink:#eef1f5;
+  --stage-ink-soft:#9aa3b0;
+  --stage-line:#2b303a;
+
+  --lamp:#e8a33d;          /* stage-light amber — fills, rings, focus */
+  --lamp-soft:rgba(232,163,61,.16);
+  --live:#e2574f;          /* recording red — only when live */
+
+  --good:#5fa47a;  --slow:#6f97c9;  --over:#d8894a;     /* fills and charts */
+
+  /* text versions of the accents — tuned to pass WCAG AA on light surfaces */
+  --lamp-ink:#8a5a10; --good-ink:#2f7a4d; --slow-ink:#3c6aa3; --over-ink:#a85a1c; --live-ink:#b3332c;
+
+  --paper:#e9edf1; --card:#ffffff; --line:#d7dde4; --field:#f3f6f9;
+  --ink:#1b2027; --ink-soft:#5a636f;
+
+  --radius:14px; --radius-sm:9px;
+  --shadow:0 1px 2px rgba(20,25,35,.06),0 8px 30px rgba(20,25,35,.08);
+
+  --font-display:'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif;
+  --font-body:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+
+  --maxw:1080px;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --paper:#0e1013; --card:#181b21; --line:#282d36; --field:#14161b;
+  --ink:#e9ecef; --ink-soft:#98a1ac;
+  --lamp-ink:#e8a33d; --good-ink:#6fbf8c; --slow-ink:#8fb2dc; --over-ink:#e39a5e; --live-ink:#ef7a73;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--font-body);color:var(--ink);background:var(--paper);line-height:1.5;font-size:16px}
+
+.skip-link{position:absolute;left:-999px;top:0;z-index:100;background:var(--ink);color:var(--paper);
+  padding:10px 16px;border-radius:0 0 8px 0;text-decoration:none}
+.skip-link:focus{left:0}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+
+/* ---------- Header ---------- */
+header.site{padding:34px 0 18px}
+.head-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.eyebrow{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--lamp-ink);margin:0 0 6px;font-weight:600}
+h1{font-family:var(--font-display);font-weight:600;font-size:clamp(1.9rem,5vw,2.9rem);
+  line-height:1.04;margin:0 0 8px;letter-spacing:-.01em}
+.tagline{margin:0;color:var(--ink-soft);max-width:56ch;font-size:1.02rem}
+.theme-btn{flex:0 0 auto;background:var(--card);color:var(--ink);border:1px solid var(--line);
+  min-height:40px;padding:0 14px;font-size:.84rem;box-shadow:var(--shadow)}
+.theme-btn:hover{border-color:var(--ink-soft)}
+
+.statusbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}
+.status-pill{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:.8rem;
+  letter-spacing:.04em;background:var(--card);border:1px solid var(--line);border-radius:100px;
+  padding:8px 15px 8px 13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+.status-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-soft);flex:0 0 auto}
+.status-pill[data-state="live"]{color:var(--live-ink);border-color:var(--live)}
+.status-pill[data-state="live"] .status-dot{background:var(--live);animation:pulse 1.1s ease-in-out infinite}
+.status-pill[data-state="review"]{color:var(--lamp-ink)}
+.status-pill[data-state="review"] .status-dot{background:var(--lamp)}
+.status-pill[data-state="ready"] .status-dot{background:var(--good)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}}
+.onair{display:none;align-items:center;gap:8px;font-family:var(--font-mono);font-weight:700;font-size:.78rem;
+  letter-spacing:.18em;color:#fff;background:#c43c34;border-radius:6px;padding:7px 12px;
+  box-shadow:0 0 0 4px rgba(226,87,79,.18)}
+.onair.show{display:inline-flex}
+.onair .bulb{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.1s ease-in-out infinite}
+
+/* ---------- Layout ---------- */
+main{padding:6px 0 60px}
+.grid{display:grid;grid-template-columns:1fr;gap:20px}
+@media (min-width:900px){ .grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start} }
+
+/* ---------- Stage ---------- */
+.stage{background:radial-gradient(120% 90% at 50% -10%,var(--stage-2),var(--stage) 62%);
+  border:1px solid var(--stage-line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);color:var(--stage-ink)}
+.viewport{position:relative;aspect-ratio:16/9;
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.012) 0 14px,transparent 14px 28px),#0c0e12;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+video{width:100%;height:100%;object-fit:cover;display:none;background:#000;transform:scaleX(-1)}
+video.playback{transform:none}
+.viewport.has-video video{display:block}
+/* audio-only takes: keep the placeholder, dock a slim player at the bottom */
+.viewport.audio-take video{display:block;position:absolute;left:14px;right:14px;bottom:14px;width:auto;height:44px;
+  background:transparent;transform:none;z-index:2}
+.placeholder{text-align:center;padding:26px;color:var(--stage-ink-soft);max-width:34ch}
+.placeholder .mark{font-family:var(--font-display);font-size:2.4rem;color:var(--lamp);line-height:1;margin-bottom:10px}
+.placeholder p{margin:.35em 0;font-size:.95rem}
+.viewport.has-video .placeholder{display:none}
+.viewport::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 rgba(226,87,79,0);transition:box-shadow .3s ease}
+.viewport.recording::after{box-shadow:inset 0 0 0 3px rgba(226,87,79,.85),inset 0 0 60px rgba(226,87,79,.25)}
+.prompt-strip{position:absolute;left:0;right:0;top:0;background:linear-gradient(180deg,rgba(10,12,16,.82),rgba(10,12,16,0));
+  color:var(--stage-ink);padding:12px 16px 26px;font-size:.92rem;display:none}
+.prompt-strip.show{display:block}
+.prompt-strip b{color:var(--lamp);font-weight:600;font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;
+  letter-spacing:.16em;display:block;margin-bottom:3px}
+.captions{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(0deg,rgba(10,12,16,.86),rgba(10,12,16,0));
+  color:var(--stage-ink);padding:30px 18px 16px;font-size:1.02rem;line-height:1.4;min-height:2.4em;display:none;text-align:center}
+.captions.show{display:block}
+.captions .interim{color:var(--stage-ink-soft)}
+.readout{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;
+  border-top:1px solid var(--stage-line);background:var(--stage-2)}
+.timer-wrap{display:flex;align-items:center;gap:14px}
+.ring{position:relative;width:54px;height:54px;flex:0 0 auto}
+.ring svg{transform:rotate(-90deg);display:block}
+.ring .track{stroke:var(--stage-line)}
+.ring .fill{stroke:var(--lamp);stroke-linecap:round;transition:stroke-dashoffset .25s linear,stroke .25s}
+.ring .rec-dot{position:absolute;inset:0;margin:auto;width:13px;height:13px;border-radius:50%;background:var(--stage-ink-soft)}
+.readout .ring .rec-dot.live{background:var(--live)}
+.timer{font-family:var(--font-mono);font-size:1.5rem;font-weight:600;letter-spacing:.02em;color:var(--stage-ink);font-variant-numeric:tabular-nums}
+.timer .target{font-size:.8rem;color:var(--stage-ink-soft);margin-left:2px}
+.level{flex:1;max-width:220px}
+.level-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--stage-ink-soft);margin-bottom:5px}
+.level-track{height:8px;border-radius:100px;background:var(--stage-line);overflow:hidden}
+.level-bar{height:100%;width:0%;border-radius:100px;background:linear-gradient(90deg,var(--good),var(--lamp) 70%,var(--live));transition:width .08s linear}
+.controls{display:flex;flex-wrap:wrap;gap:10px;padding:16px 18px;border-top:1px solid var(--stage-line);background:var(--stage)}
+
+button{font-family:var(--font-body);font-size:.95rem;font-weight:600;min-height:44px;padding:0 20px;border-radius:100px;cursor:pointer;
+  border:1px solid transparent;display:inline-flex;align-items:center;gap:9px;
+  transition:transform .06s ease,background .15s,border-color .15s,opacity .15s}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
+.btn-primary{background:var(--lamp);color:#1a1204;border-color:var(--lamp)}
+.btn-primary:hover:not(:disabled){background:#f0b155}
+.btn-rec{background:#c43c34;color:#fff;border-color:#c43c34}
+.btn-rec:hover:not(:disabled){background:#d4473f}
+.btn-ghost{background:transparent;color:var(--stage-ink);border-color:var(--stage-line)}
+.btn-ghost:hover:not(:disabled){border-color:var(--stage-ink-soft);background:rgba(255,255,255,.04)}
+.dot-ico{width:11px;height:11px;border-radius:50%;background:currentColor;flex:0 0 auto}
+.sq-ico{width:11px;height:11px;border-radius:2px;background:currentColor;flex:0 0 auto}
+
+/* ---------- Panels ---------- */
+.settings{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.settings>summary{list-style:none;cursor:pointer;padding:16px 20px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-family:var(--font-mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.settings>summary::-webkit-details-marker{display:none}
+.settings>summary:focus-visible{outline:3px solid var(--lamp);outline-offset:-3px}
+.chev{transition:transform .2s;color:var(--ink-soft);flex:0 0 auto}
+.settings[open] .chev{transform:rotate(180deg)}
+.settings-body{padding:4px 20px 20px;display:grid;gap:16px}
+.field label{display:block;font-weight:600;font-size:.86rem;margin-bottom:5px}
+.field .hint,.hint{font-size:.78rem;color:var(--ink-soft);margin:4px 0 0}
+input[type="text"],input[type="number"],input[type="email"],textarea,select{width:100%;font-family:var(--font-body);font-size:.95rem;color:var(--ink);
+  background:var(--field);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px}
+select{min-height:44px;cursor:pointer}
+textarea{resize:vertical;min-height:60px;line-height:1.5}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--lamp);outline-offset:0;border-color:var(--lamp)}
+input[type="file"]{width:100%;font-family:var(--font-body);font-size:.88rem;color:var(--ink);
+  background:var(--field);border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 11px}
+input[type="file"]::file-selector-button{font-family:var(--font-body);font-size:.84rem;font-weight:600;cursor:pointer;
+  background:var(--ink);color:var(--paper);border:0;border-radius:100px;padding:7px 14px;margin-right:11px;min-height:34px}
+.inline{display:flex;align-items:center;gap:10px}
+.inline input[type="number"]{width:90px}
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.9rem;font-weight:600}
+.toggle input{width:18px;height:18px;accent-color:var(--lamp);cursor:pointer;flex:0 0 auto}
+
+/* profile */
+.profile-panel{margin-bottom:16px}
+.profile-panel>summary .who{text-transform:none;letter-spacing:0;font-family:var(--font-body);font-size:.92rem;color:var(--ink);font-weight:600}
+.profile-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:560px){ .profile-grid{grid-template-columns:1.3fr 1fr 1fr} }
+.req{color:var(--live-ink);font-weight:600}
+
+/* ---------- Analysis ---------- */
+.analysis{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.analysis-head{padding:18px 20px 4px}
+.analysis-head p{margin:4px 0 0;color:var(--ink-soft);font-size:.9rem}
+.stage-head{display:flex;align-items:center;gap:11px;padding:15px 20px;border-bottom:1px solid var(--line)}
+.stage-num{width:24px;height:24px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:.78rem;font-weight:600;background:var(--field);color:var(--ink-soft);border:1px solid var(--line)}
+.stage-title{font-weight:600;font-size:1rem}
+.stage-when{margin-left:auto;font-size:.78rem;color:var(--ink-soft);text-align:right}
+.stage-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-top:16px}
+.stage-card[data-active="1"] .stage-num{background:var(--lamp);color:#1a1204;border-color:var(--lamp)}
+.stage-card[data-active="1"] .stage-when{color:var(--lamp-ink);font-weight:600}
+
+.metric .headline{font-size:1.05rem;font-weight:600;line-height:1.25;margin-bottom:4px}
+.metric .detail{font-size:.86rem;color:var(--ink-soft)}
+.metric .headline[data-tone="good"]{color:var(--good-ink)}
+.metric .headline[data-tone="slow"]{color:var(--slow-ink)}
+.metric .headline[data-tone="over"]{color:var(--over-ink)}
+.metric .headline[data-tone="mute"]{color:var(--ink-soft);font-weight:400}
+.accuracy-note{margin:0;padding:11px 13px;background:var(--lamp-soft);border-radius:var(--radius-sm);font-size:.82rem;color:var(--ink);display:flex;gap:9px;align-items:flex-start}
+.accuracy-note .n-ico{color:var(--lamp-ink);font-weight:700;flex:0 0 auto}
+.empty{padding:34px 24px 40px;text-align:center;color:var(--ink-soft)}
+.empty .mark{font-family:var(--font-display);font-size:2rem;color:var(--line);margin-bottom:6px}
+.delta{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.delta .d{font-family:var(--font-mono);font-size:.72rem;padding:3px 9px;border-radius:100px;background:var(--field);border:1px solid var(--line);color:var(--ink-soft)}
+.delta .d b{font-weight:600}
+.delta .d.up b{color:var(--good-ink)}
+.delta .d.dn b{color:var(--over-ink)}
+.countdown{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,12,16,.72);z-index:3}
+.countdown.show{display:flex}
+.countdown span{font-family:var(--font-display);font-size:clamp(3.5rem,14vw,7rem);color:var(--lamp);line-height:1;text-shadow:0 4px 30px rgba(0,0,0,.5)}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border-top:1px solid var(--line);margin-top:14px}
+.metric{background:var(--card);padding:16px 18px}
+.metric .k{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+.scale{margin-top:12px}
+.scale-track{position:relative;height:8px;border-radius:100px;background:linear-gradient(90deg,var(--slow) 0 33%,var(--good) 33% 66%,var(--over) 66% 100%);opacity:.85}
+.scale-mark{position:absolute;top:-4px;width:3px;height:16px;border-radius:2px;background:var(--ink);transform:translateX(-50%)}
+.scale-ends{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.62rem;color:var(--ink-soft);margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-family:var(--font-mono);font-size:.72rem;background:var(--field);border:1px solid var(--line);border-radius:100px;padding:3px 9px;color:var(--ink-soft)}
+.chip b{color:var(--over-ink)}
+.trace-wrap{padding:16px 18px;border-top:1px solid var(--line)}
+.trace-label{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;display:flex;justify-content:space-between;gap:10px}
+canvas.trace{width:100%;height:60px;display:block;background:#20252e;border-radius:var(--radius-sm)}
+
+/* coaching */
+.coach-wrap{padding:16px 18px;border-top:1px solid var(--line)}
+.coach-lead{margin:0 0 12px;color:var(--ink-soft);font-size:.86rem}
+.copy-note{font-size:.82rem;color:var(--good-ink);font-weight:600;align-self:center}
+.copy-note.warn{color:var(--over-ink)}
+.copy-note.quiet{color:var(--ink-soft);font-weight:400}
+.adv{margin-top:14px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}
+.adv>summary{list-style:none;cursor:pointer;padding:11px 14px;font-size:.84rem;font-weight:600;color:var(--ink-soft);min-height:44px;display:flex;align-items:center}
+.adv>summary::-webkit-details-marker{display:none}
+.adv>summary:hover{color:var(--ink)}
+.adv>summary:focus-visible{outline:3px solid var(--lamp);outline-offset:-3px}
+.adv-body{padding:4px 14px 16px;display:flex;flex-wrap:wrap;gap:10px}
+.coach-out{padding:14px 0 4px}
+.coach-out[hidden]{display:none}
+.coach-card{background:var(--field);border:1px solid var(--line);border-left:3px solid var(--lamp);border-radius:var(--radius-sm);padding:16px}
+.coach-opener{margin:0 0 4px;font-size:1rem;font-weight:600}
+.coach-sec{margin-top:14px}
+.coach-sec h4{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 7px}
+.coach-sec ul{margin:0;padding-left:18px}
+.coach-sec li{margin:4px 0}
+.improve{margin:8px 0;padding:11px 13px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius-sm)}
+.imp-focus{font-weight:600}
+.imp-why{font-size:.9rem;color:var(--ink-soft);margin-top:2px}
+.imp-try{font-size:.9rem;margin-top:6px}
+.imp-try b{color:var(--lamp-ink)}
+.coach-next{margin-top:14px;padding:11px 13px;background:var(--lamp-soft);border-radius:var(--radius-sm);font-weight:600}
+.coach-next span{display:block;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--lamp-ink);margin-bottom:3px}
+.coach-prose{font-size:.94rem;line-height:1.65}
+.coach-prose p{margin:.55em 0}
+.coach-prose ul{margin:.5em 0;padding-left:20px}
+.coach-prose .prose-h{font-size:.7rem;font-family:var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:1.1em 0 .4em;font-weight:600}
+.coach-more{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.coach-more>summary{cursor:pointer;font-size:.82rem;font-weight:600;color:var(--ink-soft);list-style:none;display:inline-flex;align-items:center;gap:6px}
+.coach-more>summary::-webkit-details-marker{display:none}
+.coach-more>summary::after{content:"\25BC";font-size:.6rem;transition:transform .2s}
+.coach-more[open]>summary::after{transform:rotate(180deg)}
+.coach-more>summary:focus-visible{outline:3px solid var(--lamp);outline-offset:3px;border-radius:4px}
+.assistant-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+.assistant-row .field{flex:1 1 220px;margin:0}
+.open-link{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 16px;border-radius:100px;border:1px solid var(--line);
+  color:var(--ink);text-decoration:none;font-size:.88rem;font-weight:600;background:transparent}
+.open-link:hover{border-color:var(--ink-soft);background:var(--field)}
+.open-link:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
+
+/* rubric */
+.rubric-wrap{padding:16px 18px;border-top:1px solid var(--line)}
+.rubric-lead{margin:0 0 14px;color:var(--ink-soft);font-size:.86rem}
+.crit{padding:11px 0;border-bottom:1px solid var(--line)}
+.crit:last-of-type{border-bottom:0}
+.crit-name{font-weight:600;font-size:.9rem;margin-bottom:8px}
+.scale-opts{display:flex;flex-wrap:wrap;gap:6px}
+.scale-opts label{flex:1 1 0;min-width:74px;cursor:pointer;text-align:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:7px 6px;
+  font-size:.76rem;color:var(--ink-soft);background:var(--field);transition:border-color .15s,background .15s,color .15s;position:relative}
+.scale-opts input{position:absolute;opacity:0;width:0;height:0}
+.scale-opts label:hover{border-color:var(--ink-soft)}
+.scale-opts label:has(input:checked){border-color:var(--lamp);background:var(--lamp-soft);color:var(--ink);font-weight:600}
+.scale-opts label:has(input:focus-visible){outline:3px solid var(--lamp);outline-offset:2px}
+.scale-opts .num{display:block;font-family:var(--font-mono);font-size:1rem;font-weight:600;line-height:1.2}
+.reflect{margin-top:14px;display:grid;gap:12px}
+.rubric-total{display:flex;align-items:baseline;gap:10px;margin-top:14px;padding:11px 13px;background:var(--field);border-radius:var(--radius-sm)}
+.rubric-total b{font-family:var(--font-mono);font-size:1.3rem}
+.rubric-total span{font-size:.84rem;color:var(--ink-soft)}
+
+/* hand-in */
+.hand-who{margin:0 0 12px;font-size:.9rem;padding:10px 12px;background:var(--field);border-radius:var(--radius-sm)}
+.hand-who.missing{background:rgba(216,137,74,.12);border:1px solid rgba(216,137,74,.4)}
+.link-btn{background:none;border:0;padding:0 2px;min-height:auto;font-size:inherit;font-weight:600;color:var(--ink);text-decoration:underline;border-radius:3px}
+
+/* ---------- history ---------- */
+.history{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-top:20px}
+.history>summary,.help>summary{list-style:none;cursor:pointer;padding:16px 20px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-family:var(--font-mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.history>summary::-webkit-details-marker,.help>summary::-webkit-details-marker{display:none}
+.history>summary:focus-visible,.help>summary:focus-visible{outline:3px solid var(--lamp);outline-offset:-3px}
+.history[open]>summary .chev,.help[open]>summary .chev{transform:rotate(180deg)}
+.hist-body{padding:0 20px 20px}
+.hist-empty{color:var(--ink-soft);font-size:.88rem;padding:6px 0 10px}
+.storage-line{font-size:.8rem;color:var(--ink-soft);margin:0 0 14px;padding:9px 12px;background:var(--field);border-radius:var(--radius-sm)}
+.spark-wrap{margin:6px 0 16px}
+.spark-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;display:flex;justify-content:space-between;gap:10px}
+canvas.spark{width:100%;height:52px;display:block;background:var(--field);border:1px solid var(--line);border-radius:var(--radius-sm)}
+.take{border:1px solid var(--line);border-radius:var(--radius-sm);margin-bottom:9px;overflow:hidden}
+.take>summary{list-style:none;cursor:pointer;padding:11px 13px;display:flex;flex-wrap:wrap;align-items:center;gap:9px;font-size:.86rem}
+.take>summary::-webkit-details-marker{display:none}
+.take>summary:focus-visible{outline:3px solid var(--lamp);outline-offset:-3px}
+.take .tno{font-family:var(--font-mono);font-weight:600;color:var(--lamp-ink);font-size:.8rem}
+.take .tdate{color:var(--ink-soft);font-size:.8rem}
+.take .tvid{font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:100px;background:rgba(95,164,122,.16);color:var(--good-ink)}
+.take .tvid.no{background:var(--field);color:var(--ink-soft)}
+.take .tstat{font-family:var(--font-mono);font-size:.75rem;color:var(--ink-soft);margin-left:auto}
+.take.current{border-color:var(--lamp)}
+.take-body{padding:2px 13px 14px;font-size:.86rem;border-top:1px solid var(--line)}
+.take-body dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:10px 0}
+.take-body dt{color:var(--ink-soft)}
+.take-body dd{margin:0}
+.take-body .tprompt{font-style:italic;color:var(--ink-soft);margin:8px 0}
+.take-body .ttext{background:var(--field);border-radius:var(--radius-sm);padding:10px;max-height:120px;overflow:auto;white-space:pre-wrap;margin:8px 0}
+.take-player{margin:10px 0}
+.take-player video{display:block;width:100%;max-height:260px;transform:none;border-radius:var(--radius-sm);background:#000}
+.take-player video.audio{max-height:54px;background:transparent}
+.take-actions,.hist-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.btn-danger{background:transparent;color:var(--over-ink);border-color:rgba(216,137,74,.5)}
+.btn-danger:hover:not(:disabled){background:rgba(216,137,74,.1)}
+
+/* transcript */
+.transcript-wrap{padding:16px 18px;border-top:1px solid var(--line)}
+.transcript-wrap h3{font-size:.95rem;margin:0 0 8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.transcript-wrap h3 span{font-family:var(--font-mono);font-size:.7rem;font-weight:400;color:var(--ink-soft);letter-spacing:.1em;text-transform:uppercase}
+.transcript{font-size:.95rem;line-height:1.7;background:var(--field);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;
+  min-height:80px;max-height:280px;overflow:auto;white-space:pre-wrap}
+.transcript mark{background:rgba(216,137,74,.28);color:inherit;border-radius:3px;padding:0 2px;font-weight:600}
+.transcript[contenteditable="true"]:focus{outline:2px solid var(--lamp)}
+.transcript:empty:before{content:attr(data-placeholder);color:var(--ink-soft)}
+.t-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.btn-sm{min-height:44px;font-size:.86rem;padding:0 16px}
+.btn-solid{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn-solid:hover:not(:disabled){opacity:.9}
+.btn-line{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-line:hover:not(:disabled){border-color:var(--ink-soft)}
+
+/* notices */
+.notice{margin:14px 0 0;padding:12px 14px;border-radius:var(--radius-sm);font-size:.86rem;background:var(--lamp-soft);
+  border:1px solid rgba(232,163,61,.4);color:var(--ink);display:flex;gap:10px;align-items:flex-start}
+.notice.err{background:rgba(226,87,79,.1);border-color:rgba(226,87,79,.4)}
+.notice .n-ico{color:var(--lamp-ink);font-weight:700;flex:0 0 auto}
+.notice.err .n-ico{color:var(--live-ink)}
+.notice[hidden]{display:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* help */
+.help{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-top:20px}
+.help-body{padding:0 20px 20px}
+.diag{background:var(--field);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px}
+.diag h4{margin:0 0 4px;font-size:.92rem}
+.diag p.lead{margin:0 0 10px;font-size:.84rem;color:var(--ink-soft)}
+.diag-out{margin-top:12px;font-size:.86rem}
+.diag-line{display:flex;gap:9px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--line)}
+.diag-line:last-child{border-bottom:0}
+.diag-ico{flex:0 0 auto;width:16px;text-align:center;font-weight:700}
+.diag-ok .diag-ico{color:var(--good-ink)} .diag-warn .diag-ico{color:var(--over-ink)} .diag-bad .diag-ico{color:var(--live-ink)}
+.diag-line span.det{color:var(--ink-soft);display:block;font-size:.82rem}
+.faq{border:1px solid var(--line);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden}
+.faq>summary{list-style:none;cursor:pointer;padding:11px 13px;font-size:.9rem;font-weight:600;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.faq>summary::-webkit-details-marker{display:none}
+.faq>summary::after{content:"\002B";font-family:var(--font-mono);color:var(--ink-soft);flex:0 0 auto}
+.faq[open]>summary::after{content:"\2212"}
+.faq>summary:focus-visible{outline:3px solid var(--lamp);outline-offset:-3px}
+.faq-body{padding:2px 13px 14px;font-size:.88rem;line-height:1.6;border-top:1px solid var(--line)}
+.faq-body p{margin:.6em 0}
+.faq-body ol,.faq-body ul{margin:.5em 0;padding-left:20px}
+.faq-body li{margin:.3em 0}
+.faq-body .os{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--lamp-ink);font-weight:600;margin:.9em 0 .2em;display:block}
+.help-link{font-size:.84rem;color:var(--ink-soft);text-decoration:underline;background:none;border:0;cursor:pointer;padding:6px 2px;min-height:auto;font-family:inherit}
+.help-link:hover{color:var(--ink)}
+.profile{border:1px solid var(--line);border-left:3px solid var(--lamp);border-radius:var(--radius-sm);background:var(--field);padding:11px 14px;margin:10px 0}
+.profile-name{font-weight:600;font-size:.95rem}
+.profile-meta{font-family:var(--font-mono);font-size:.74rem;color:var(--ink-soft);margin:4px 0 6px}
+.profile p{margin:0;font-size:.88rem}
+
+/* instructor roster */
+.inst-sec{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}
+.inst-sec h3{font-size:.98rem;margin:0 0 4px}
+.table-wrap{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:var(--radius-sm)}
+table.roster{border-collapse:collapse;width:100%;font-size:.8rem;min-width:640px}
+table.roster th,table.roster td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.roster th{background:var(--field);font-weight:600;white-space:nowrap}
+table.roster tr:last-child td{border-bottom:0}
+.vchk{font-weight:600;white-space:nowrap}
+.vchk.ok{color:var(--good-ink)} .vchk.bad{color:var(--live-ink)} .vchk.na{color:var(--ink-soft);font-weight:400}
+
+footer.site{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--ink-soft);font-size:.84rem}
+footer.site .program{color:var(--ink);font-weight:600}
+.print-head{display:none}
+
+@media (prefers-reduced-motion:reduce){ *{animation:none !important;transition:none !important} }
+
+/* print: a clean report for the instructor */
+@media print{
+  @page{margin:14mm}
+  :root{--ink:#000;--ink-soft:#333;--card:#fff;--field:#fff;--line:#bbb;--paper:#fff}
+  body{background:#fff;color:#000;font-size:11pt}
+  .stage-col, .settings, .history, .help, .notice, .onair, .statusbar, .theme-btn, .t-actions, .delta, .skip-link,
+  #emptyState, .accuracy-note, .coach-lead, .rubric-lead, .help-link, .scale, .chips, .assistant-row, .adv,
+  #coachPaste, label[for="coachPaste"], .paste-hint, #card5, .hand-who, .save-hint{display:none !important}
+  .print-head{display:block;padding:0 0 8px;border-bottom:1px solid #999;margin-bottom:6px;font-size:10pt}
+  .print-head b{font-size:12pt}
+  header.site{padding:0 0 8px;border-bottom:1px solid #000}
+  h1{font-size:17pt;margin:0} .eyebrow{color:#000;font-size:8pt;margin:0} .tagline{display:none}
+  .wrap{max-width:none;padding:0} .grid{display:block}
+  .analysis,.stage-card{border:0;box-shadow:none;margin:0}
+  .stage-head{border-bottom:1px solid #999;padding:8px 0 4px;page-break-after:avoid}
+  .stage-num{background:#fff;color:#000;border:1px solid #000} .stage-when{display:none}
+  .metrics{background:#fff;border-top:1px solid #999}
+  .metric{padding:7px 0;border-bottom:1px solid #ddd;page-break-inside:avoid}
+  .metric .headline{color:#000 !important;font-size:11pt}
+  .transcript{max-height:none;overflow:visible;border:1px solid #ccc;font-size:9.5pt}
+  .trace-wrap,.transcript-wrap,.rubric-wrap,.coach-wrap,.stage-body{padding:8px 0}
+  canvas.trace{background:#fff;border:1px solid #ccc;height:44px}
+  .scale-opts label{border:1px solid #ccc;background:#fff;color:#666;padding:3px 4px;font-size:8pt}
+  .scale-opts label:has(input:checked){border:1.5px solid #000;background:#eee;color:#000}
+  .coach-card{border:1px solid #999;border-left:3px solid #000}
+  .coach-more>summary{display:none} .coach-more .coach-prose{display:block !important}
+  footer.site{border-top:1px solid #999;font-size:8pt;padding:8px 0 0}
+}
+@media (max-width:520px){
+  .metrics{grid-template-columns:1fr}
+  .readout{flex-wrap:wrap}
+  .level{max-width:none;flex-basis:100%}
+  .head-top{flex-direction:column-reverse}
+}
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
+
+<div class="wrap">
+<header class="site">
+  <div class="head-top">
+    <div>
+      <p class="eyebrow">Speech Practice Studio</p>
+      <h1>The Rehearsal Room</h1>
+      <p class="tagline">Record a take, watch it back, and see an honest read on your delivery. Every take is kept in this browser with its video, ready to download and hand in. Nothing is uploaded.</p>
+    </div>
+    <button class="theme-btn" id="btnTheme" type="button" aria-pressed="false">Dark mode</button>
+  </div>
+  <div class="statusbar">
+    <span class="status-pill" id="statusPill" data-state="idle" role="status" aria-live="polite">
+      <span class="status-dot"></span><span id="statusText">Camera off</span>
+    </span>
+    <span class="onair" id="onair" aria-hidden="true"><span class="bulb"></span>ON AIR</span>
+  </div>
+</header>
+</div>
+
+<div class="wrap">
+<main id="main">
+  <div class="grid">
+
+    <!-- ============ LEFT: who + stage ============ -->
+    <div class="stage-col">
+      <div class="notice" id="assignBanner" hidden style="margin:0 0 16px">
+        <span class="n-ico" aria-hidden="true">✓</span>
+        <span><strong id="assignHead">Your instructor set up this take.</strong> <span id="assignFor"></span> The prompt and settings are ready — add your name, turn on your camera, and record.</span>
+      </div>
+
+      <details class="settings profile-panel" id="profilePanel">
+        <summary>
+          <span>Your details <span class="who" id="profileWho"></span></span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="settings-body">
+          <p class="hint" style="margin:0">Your name goes on every take, report, and file you hand in. It stays in this browser.</p>
+          <div class="profile-grid">
+            <div class="field">
+              <label for="studentName">Your name <span class="req">(required to hand in)</span></label>
+              <input type="text" id="studentName" autocomplete="name" placeholder="First and last name">
+            </div>
+            <div class="field">
+              <label for="studentCourse">Course or section</label>
+              <input type="text" id="studentCourse" placeholder="e.g. COMM 101-40">
+            </div>
+            <div class="field">
+              <label for="studentId">Student ID <span style="font-weight:400;color:var(--ink-soft)">(optional)</span></label>
+              <input type="text" id="studentId" autocomplete="off" placeholder="If your instructor asks">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="stage-card" id="card1" data-active="1" style="margin-top:0">
+        <div class="stage-head">
+          <span class="stage-num">1</span>
+          <span class="stage-title">Record your take</span>
+          <span class="stage-when" id="when1">You're here</span>
+        </div>
+      <section class="stage" aria-label="Recording stage" style="border:0;border-radius:0;box-shadow:none;margin:0">
+        <div class="viewport" id="viewport">
+          <div class="placeholder" id="placeholder">
+            <div class="mark" aria-hidden="true" id="phMark">🎙</div>
+            <p><strong id="phTitle">Step onto the stage.</strong></p>
+            <p id="phBody">Turn on your camera and mic to begin. Find your light, take a breath, and start your take when you're ready.</p>
+          </div>
+          <div class="prompt-strip" id="promptStrip"><b>Your prompt</b><span id="promptText"></span></div>
+          <video id="video" playsinline></video>
+          <div class="countdown" id="countdown" aria-hidden="true"><span id="countNum">3</span></div>
+          <div class="captions" id="captions" aria-hidden="true"></div>
+        </div>
+
+        <div class="readout">
+          <div class="timer-wrap">
+            <div class="ring" aria-hidden="true">
+              <svg width="54" height="54" viewBox="0 0 54 54">
+                <circle class="track" cx="27" cy="27" r="23" fill="none" stroke-width="4"></circle>
+                <circle class="fill" id="ringFill" cx="27" cy="27" r="23" fill="none" stroke-width="4" stroke-dasharray="144.5" stroke-dashoffset="144.5"></circle>
+              </svg>
+              <span class="rec-dot" id="recDot"></span>
+            </div>
+            <div><div class="timer"><span id="timer">0:00</span><span class="target" id="timerTarget"></span></div></div>
+          </div>
+          <div class="level" aria-hidden="true">
+            <div class="level-label">Mic level</div>
+            <div class="level-track"><div class="level-bar" id="levelBar"></div></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn-primary" id="btnEnable" type="button"><span class="dot-ico"></span>Turn on camera</button>
+          <button class="btn-rec" id="btnRecord" type="button" disabled><span class="dot-ico"></span>Start recording</button>
+          <button class="btn-ghost" id="btnStop" type="button" disabled hidden><span class="sq-ico"></span>Stop</button>
+          <button class="btn-ghost" id="btnAgain" type="button" disabled hidden>Record again</button>
+          <button class="btn-ghost" id="btnSaveVideo" type="button" disabled hidden>Download video</button>
+          <button class="help-link" id="btnHelpCam" type="button" style="color:var(--stage-ink-soft)">Camera or mic not working?</button>
+        </div>
+      </section>
+      </div>
+
+      <details class="settings" id="loadPanel" style="margin-top:20px">
+        <summary>
+          <span>Analyze an existing recording</span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="settings-body">
+          <p class="hint" style="margin:0">Already recorded elsewhere — on your phone, in Zoom or Teams? Load the file here instead of recording. The file is read in your browser.</p>
+          <div class="field">
+            <label for="fileVideo">Video or audio file</label>
+            <input type="file" id="fileVideo" accept="video/*,audio/*">
+            <p class="hint">mp4, webm, mov, m4a, mp3, wav. Length, pauses, and energy are read straight from the audio.</p>
+            <span class="copy-note" id="sourceNote" hidden></span>
+          </div>
+          <div class="field">
+            <label for="fileCaps">Transcript file <span style="font-weight:400;color:var(--ink-soft)">(optional)</span></label>
+            <input type="file" id="fileCaps" accept=".vtt,.srt,text/vtt,text/plain">
+            <p class="hint">A .vtt or .srt caption file. Without one, paste your words into the transcript box and choose Recount.</p>
+            <span class="copy-note" id="capsNote" hidden></span>
+          </div>
+        </div>
+      </details>
+
+      <div class="notice err" id="errNotice" hidden role="alert"><span class="n-ico" aria-hidden="true">!</span><span id="errText"></span></div>
+      <div class="notice" id="capNotice" hidden>
+        <span class="n-ico" aria-hidden="true">i</span>
+        <span>Live transcription isn't available in this browser. You can still record and time your take — then type or paste your transcript into the box on the right to get pace and filler analysis. (Chrome and Edge support live captions.)</span>
+      </div>
+      <div class="notice" id="embedNotice" hidden>
+        <span class="n-ico" aria-hidden="true">i</span>
+        <span><strong>Recording needs its own tab.</strong> This page seems to be running inside an embedded frame (or an LMS iframe), which can block the camera and mic. If the camera doesn't turn on, open the page directly in a browser tab.</span>
+      </div>
+    </div>
+
+    <!-- ============ RIGHT: analysis ============ -->
+    <div>
+      <details class="settings" id="settings">
+        <summary>
+          <span>Set up the take</span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="settings-body">
+          <div class="field">
+            <label for="promptInput">Speaking prompt <span style="font-weight:400;color:var(--ink-soft)">(optional — shows over the video)</span></label>
+            <textarea id="promptInput" placeholder="e.g. Deliver a 2-minute persuasive speech on why your community should fund public libraries."></textarea>
+          </div>
+          <div class="field">
+            <label id="lblTarget">Target length</label>
+            <div class="inline" role="group" aria-labelledby="lblTarget">
+              <input type="number" id="targetMin" min="0" max="60" step="0.5" value="2" aria-label="Target minimum minutes"> min
+              <span aria-hidden="true">to</span>
+              <input type="number" id="targetMax" min="0" max="60" step="0.5" value="3" aria-label="Target maximum minutes"> min
+            </div>
+            <p class="hint">The timer ring fills toward the upper limit.</p>
+          </div>
+          <div class="field">
+            <label id="lblPace">Target pace (words per minute)</label>
+            <div class="inline" role="group" aria-labelledby="lblPace">
+              <input type="number" id="wpmLow" min="60" max="260" step="5" value="130" aria-label="Pace lower bound"> to
+              <input type="number" id="wpmHigh" min="60" max="260" step="5" value="160" aria-label="Pace upper bound"> wpm
+            </div>
+            <p class="hint">A relaxed, clear public-speaking pace sits around 130–160.</p>
+          </div>
+          <div class="field">
+            <label for="language">Speaking language</label>
+            <select id="language">
+              <option value="en-US">English (US)</option>
+              <option value="en-GB">English (UK)</option>
+              <option value="es-US">Spanish (US)</option>
+              <option value="es-MX">Spanish (Mexico)</option>
+              <option value="es-ES">Spanish (Spain)</option>
+              <option value="pt-BR">Portuguese (Brazil)</option>
+              <option value="fr-FR">French</option>
+              <option value="ht-HT">Haitian Creole</option>
+              <option value="zh-CN">Chinese (Mandarin)</option>
+              <option value="ar-SA">Arabic</option>
+              <option value="hi-IN">Hindi</option>
+              <option value="tl-PH">Tagalog / Filipino</option>
+            </select>
+            <p class="hint">Sets the language for live captions and loads filler words for that language. Recognition quality varies — always read over your transcript and fix it.</p>
+          </div>
+          <div class="field">
+            <label for="fillerInput">Filler words to flag</label>
+            <input type="text" id="fillerInput" value="um, uh, er, ah, like, you know, so, basically, actually, literally, right, okay">
+            <p class="hint">Comma-separated. Words like “like” and “so” have legitimate uses, so read flagged counts as a prompt to check, not a verdict.</p>
+          </div>
+          <div class="field">
+            <label for="rubricInput">Self-scoring criteria</label>
+            <textarea id="rubricInput" rows="3">Organization &amp; structure
+Clarity of delivery
+Vocal variety &amp; emphasis
+Eye contact &amp; presence
+Support &amp; evidence
+Time management</textarea>
+            <p class="hint">One per line. Edit to match your instructor's rubric.</p>
+          </div>
+          <div class="field">
+            <label for="quality">Recording quality</label>
+            <select id="quality">
+              <option value="720">Video — 720p (best picture, about 18 MB a minute)</option>
+              <option value="480" selected>Video — 480p (good for handing in, about 8 MB a minute)</option>
+              <option value="audio">Audio only (under 1 MB a minute — every measurement still works)</option>
+            </select>
+            <p class="hint">All the delivery measurements come from the audio, so audio-only loses nothing except the picture of you.</p>
+          </div>
+          <label class="toggle"><input type="checkbox" id="capToggle" checked> Live captions while recording</label>
+          <label class="toggle"><input type="checkbox" id="countToggle" checked> 3-2-1 countdown before recording</label>
+          <label class="toggle"><input type="checkbox" id="keepVideoToggle" checked> Keep the video with each saved take</label>
+          <label class="toggle"><input type="checkbox" id="practiceToggle"> Practice mode — don't save takes <span style="font-weight:400;color:var(--ink-soft)">(record freely, nothing is kept)</span></label>
+        </div>
+      </details>
+
+      <section class="analysis" aria-label="Delivery analysis" style="margin-top:20px">
+        <div class="print-head" id="printHead"></div>
+        <div class="stage-head">
+          <span class="stage-num">2</span>
+          <span class="stage-title">See how you did</span>
+          <span class="stage-when" id="when2">After your first take</span>
+        </div>
+        <div class="analysis-head">
+          <h2 class="sr-only">Your delivery</h2>
+          <p id="analysisSub">Record a take to see the breakdown.</p>
+          <div class="delta" id="deltaBar" hidden></div>
+        </div>
+
+        <div id="emptyState" class="empty">
+          <div class="mark" aria-hidden="true">◷</div>
+          <p>No take yet. Your pace, fillers, pauses, and word variety will appear here once you finish recording.</p>
+        </div>
+
+        <div id="results" hidden>
+          <div class="metrics">
+            <div class="metric">
+              <div class="k">Length</div>
+              <div class="headline" id="hDuration" data-tone="mute">—</div>
+              <div class="detail" id="mDuration">—</div>
+            </div>
+            <div class="metric">
+              <div class="k">Your pace</div>
+              <div class="headline" id="hWpm" data-tone="mute">—</div>
+              <div class="detail" id="mWpm">—</div>
+              <div class="scale" aria-hidden="true">
+                <div class="scale-track"><span class="scale-mark" id="paceMark" style="left:50%"></span></div>
+                <div class="scale-ends"><span id="scaleLow">130</span><span id="scaleHigh">160</span></div>
+              </div>
+            </div>
+            <div class="metric">
+              <div class="k">Filler words</div>
+              <div class="headline" id="hFillers" data-tone="mute">—</div>
+              <div class="detail" id="mFillers">—</div>
+              <div class="chips" id="fillerChips"></div>
+            </div>
+            <div class="metric">
+              <div class="k">Word variety</div>
+              <div class="headline" id="hVariety" data-tone="mute">—</div>
+              <div class="detail" id="mVariety">—</div>
+              <div class="chips" id="repeatChips"></div>
+            </div>
+          </div>
+
+          <div class="metric" style="border-top:1px solid var(--line)">
+            <div class="k">Pauses</div>
+            <div class="headline" id="hPauses" data-tone="mute">—</div>
+            <div class="detail" id="mPauses">—</div>
+          </div>
+
+          <div class="metric" style="border-top:1px solid var(--line)">
+            <div class="k">Your energy</div>
+            <div class="headline" id="hEnergy" data-tone="mute">—</div>
+            <div class="detail" id="mEnergy">—</div>
+            <div class="chips" id="energyChips"></div>
+            <p class="hint" style="margin-top:10px">Read as variation within your own take, never as loudness — mic distance and room make raw volume impossible to compare fairly.</p>
+          </div>
+
+          <div class="trace-wrap">
+            <div class="trace-label"><span>Vocal energy over the take</span><span>quiet ← → loud · red = long pause</span></div>
+            <canvas class="trace" id="traceCanvas" width="600" height="120" role="img" aria-label="A trace of your speaking volume across the take, showing where you were louder, quieter, or paused."></canvas>
+          </div>
+
+          <div class="trace-wrap" id="paceTraceWrap" hidden>
+            <div class="trace-label"><span>Pace over the take</span><span>words per minute · green = your target</span></div>
+            <canvas class="trace" id="paceCanvas" width="600" height="120" role="img" aria-label="A line showing your speaking pace across the take, with your target band shaded." aria-describedby="paceSummary"></canvas>
+            <p class="sr-only" id="paceSummary"></p>
+            <p class="hint" style="margin-top:8px">A fairly flat line means steady pacing. Big dips and spikes mean you sped up and slowed down. Needs live captions to show.</p>
+          </div>
+
+          <div class="transcript-wrap">
+            <h3>Transcript <span>edit to fix mistakes</span></h3>
+            <p class="accuracy-note" style="margin-bottom:10px"><span class="n-ico" aria-hidden="true">i</span><span>This transcript is made automatically and often misreads accents, names, and technical words. Read it over and fix anything wrong before trusting the counts above.</span></p>
+            <div class="transcript" id="transcript" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Editable transcript of your take"></div>
+            <div class="t-actions">
+              <button class="btn-solid btn-sm" id="btnRecount" type="button">Recount from transcript</button>
+            </div>
+            <p class="hint" style="margin-top:10px">Editing the transcript updates word count, pace, fillers, and variety. Pauses and energy come from the audio and don't change.</p>
+          </div>
+
+          <div class="stage-head" style="border-top:1px solid var(--line)">
+            <span class="stage-num">3</span>
+            <span class="stage-title">Score yourself</span>
+            <span class="stage-when" id="when3">Your turn</span>
+          </div>
+          <div class="rubric-wrap" style="padding-top:14px">
+            <h3 class="sr-only">Score yourself</h3>
+            <p class="rubric-lead">Before you look at coaching, rate your own take. Self-assessment is where the learning sticks — the metrics above can't judge these.</p>
+            <div id="rubricList"></div>
+            <div class="rubric-total" id="rubricTotal" hidden><b id="rubricAvg">—</b><span id="rubricAvgNote">average across criteria you scored</span></div>
+            <div class="reflect">
+              <div class="field">
+                <label for="reflectWorked">What worked in this take?</label>
+                <textarea id="reflectWorked" placeholder="Be specific — a moment, a phrase, a section that landed."></textarea>
+              </div>
+              <div class="field">
+                <label for="reflectChange">One thing to change in the next take</label>
+                <textarea id="reflectChange" placeholder="Just one. Make it something you can actually do next time."></textarea>
+              </div>
+            </div>
+            <div class="t-actions">
+              <button class="btn-solid btn-sm" id="btnSaveTake" type="button">Save this take</button>
+              <span class="copy-note" id="practiceNote" hidden style="color:var(--ink-soft)">Practice mode is on — this take won't be saved.</span>
+              <span class="copy-note" id="saveNote" role="status" hidden></span>
+            </div>
+            <p class="hint save-hint" style="margin-top:10px">Every finished take is saved to your history automatically, video included. Your scores, reflection, and coaching are added to it as you go.</p>
+          </div>
+
+          <div class="stage-head" style="border-top:1px solid var(--line)">
+            <span class="stage-num">4</span>
+            <span class="stage-title">Get coaching</span>
+            <span class="stage-when" id="when4">After you score yourself</span>
+          </div>
+          <div class="coach-wrap" style="padding-top:14px">
+            <h3 class="sr-only">Coaching from an AI assistant</h3>
+            <p class="coach-lead">Hand this take to an AI assistant for specific feedback on your delivery. Use whichever one your school provides or you already have. If your school is a Microsoft school, you may already have Copilot through your login.</p>
+            <div class="assistant-row">
+              <div class="field">
+                <label for="assistant">Which assistant will you use?</label>
+                <select id="assistant">
+                  <option value="copilot">Microsoft Copilot</option>
+                  <option value="claude">Claude</option>
+                  <option value="chatgpt">ChatGPT</option>
+                  <option value="gemini">Google Gemini</option>
+                  <option value="other">Something else</option>
+                </select>
+              </div>
+              <a class="open-link" id="openAssistant" href="https://copilot.microsoft.com" target="_blank" rel="noopener noreferrer">Open Microsoft Copilot</a>
+            </div>
+            <div class="t-actions">
+              <button class="btn-solid btn-sm" id="btnCopyCoach" type="button">Copy coaching prompt</button>
+              <span class="copy-note" id="copyNote" role="status" hidden></span>
+            </div>
+            <div class="field" style="margin-top:16px">
+              <label for="coachPaste">Paste the reply here <span id="pasteWho" style="font-weight:400;color:var(--ink-soft)"></span></label>
+              <textarea id="coachPaste" rows="4" placeholder="Paste the whole reply here — the tool will pick out what it needs."></textarea>
+            </div>
+            <p class="hint paste-hint" style="margin:-6px 0 10px">The reply will end with a block of code. That's normal — it's how the tool reads the feedback. Copy the whole reply, code and all.</p>
+            <div class="t-actions">
+              <button class="btn-solid btn-sm" id="btnAddCoaching" type="button">Add coaching to this take</button>
+              <button class="btn-line btn-sm" id="btnClearCoaching" type="button">Clear</button>
+              <span class="copy-note" id="coachNote" role="status" hidden></span>
+            </div>
+            <div class="coach-out" id="coachOut" hidden></div>
+          </div>
+
+          <div id="card5">
+            <div class="stage-head" style="border-top:1px solid var(--line)">
+              <span class="stage-num">5</span>
+              <span class="stage-title">Hand it in</span>
+              <span class="stage-when" id="when5">When you're ready</span>
+            </div>
+            <div class="stage-body" style="padding:16px 18px">
+              <p class="hand-who" id="handWho"></p>
+              <div class="t-actions" style="margin-top:0">
+                <button class="btn-primary btn-sm" id="btnPackage" type="button">Download submission (.zip)</button>
+                <button class="btn-solid btn-sm" id="btnPrint" type="button">Print or save as PDF</button>
+                <button class="btn-line btn-sm" id="btnCopyReport" type="button">Copy report</button>
+              </div>
+              <span class="copy-note" id="shareNote" role="status" hidden style="display:block;margin-top:10px"></span>
+              <details class="adv">
+                <summary>Download files one at a time</summary>
+                <div class="adv-body">
+                  <button class="btn-line btn-sm" id="btnDlReport" type="button">Report (web page)</button>
+                  <button class="btn-line btn-sm" id="btnDlVideo" type="button">Video only</button>
+                  <button class="btn-line btn-sm" id="btnDlTranscript" type="button">Transcript (.txt)</button>
+                  <button class="btn-line btn-sm" id="btnDlRecord" type="button">Data record (.json)</button>
+                </div>
+              </details>
+              <p class="hint" style="margin-top:12px">The submission .zip holds your report (opens in any browser), transcript, video, and a data record your instructor's tool can read. Check your course's file size limit — 480p is about 8 MB a minute, audio-only under 1 MB. Use Copy report for a text-entry assignment.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <details class="history" id="history">
+        <summary>
+          <span>My takes <span id="histCount" style="text-transform:none;letter-spacing:0"></span></span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="hist-body">
+          <p class="storage-line" id="storageLine" hidden></p>
+          <div class="hist-empty" id="histEmpty">No saved takes yet. Finish a recording and it appears here automatically.</div>
+          <div class="spark-wrap" id="sparkWrap" hidden>
+            <div class="spark-label"><span>Progress across takes</span><span id="sparkLegend"></span></div>
+            <canvas class="spark" id="sparkCanvas" width="600" height="104" role="img" aria-label="A chart of your filler-word rate, speaking pace, and self-score across saved takes." aria-describedby="sparkSummary"></canvas>
+            <p class="sr-only" id="sparkSummary"></p>
+          </div>
+          <div id="histList"></div>
+          <div class="hist-actions" id="histActions" hidden>
+            <button class="btn-primary btn-sm" id="btnPortfolio" type="button">Download all takes (.zip)</button>
+            <button class="btn-line btn-sm" id="btnExportCsv" type="button">Summary (CSV)</button>
+            <button class="btn-line btn-sm" id="btnExportMd" type="button">Notes (Markdown)</button>
+            <button class="btn-danger btn-sm" id="btnClearHist" type="button">Clear history</button>
+          </div>
+          <span class="copy-note" id="histNote" role="status" hidden style="display:block;margin-top:10px"></span>
+          <p class="hint" style="margin-top:12px">Your takes and videos are stored in this browser on this device only. They won't follow you to another computer, and clearing your browsing data erases them. Download anything you need to keep.</p>
+        </div>
+      </details>
+
+      <details class="help" id="help">
+        <summary>
+          <span>Help &amp; troubleshooting</span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="help-body">
+          <div class="diag">
+            <h4>Check my setup</h4>
+            <p class="lead">Runs a quick check of this browser and your devices, then tells you what to fix.</p>
+            <button class="btn-solid btn-sm" id="btnDiag" type="button">Check my setup</button>
+            <div class="diag-out" id="diagOut" hidden></div>
+          </div>
+
+          <details class="faq" id="faq-handin">
+            <summary>How do I hand in my speech?</summary>
+            <div class="faq-body">
+              <ol>
+                <li>Add your name under <strong>Your details</strong>.</li>
+                <li>Record your take, score yourself, and add coaching if your instructor asks for it.</li>
+                <li>In step 5, choose <strong>Download submission (.zip)</strong>.</li>
+                <li>Upload that one .zip file to your course assignment. Don't unzip it first.</li>
+              </ol>
+              <p>Want to hand in an earlier take instead? Open <strong>My takes</strong>, open that take, and choose its <em>Download submission</em> button.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-permission">
+            <summary>The camera won't turn on, or I never saw a permission pop-up</summary>
+            <div class="faq-body">
+              <p>Your browser or your computer is blocking access. Work through these in order.</p>
+              <span class="os">In your browser</span>
+              <ol>
+                <li><strong>Chrome or Edge:</strong> click the camera or lock icon at the left of the address bar, set Camera and Microphone to <em>Allow</em>, then reload.</li>
+                <li><strong>Safari:</strong> Safari › Settings › Websites, choose Camera and then Microphone, and set this site to <em>Allow</em>.</li>
+                <li><strong>Firefox:</strong> click the camera icon in the address bar, clear any blocked setting, then reload.</li>
+              </ol>
+              <span class="os">On a Mac</span>
+              <ol>
+                <li>Open <strong>System Settings</strong> › <strong>Privacy &amp; Security</strong> › <strong>Camera</strong>, and turn on your browser.</li>
+                <li>Do the same under <strong>Microphone</strong>.</li>
+                <li>Quit your browser completely and reopen it.</li>
+              </ol>
+              <span class="os">On Windows</span>
+              <ol>
+                <li>Open <strong>Settings</strong> › <strong>Privacy &amp; security</strong> › <strong>Camera</strong>. Turn on camera access and allow desktop apps.</li>
+                <li>Repeat under <strong>Microphone</strong>, then reload this page.</li>
+              </ol>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-inuse">
+            <summary>It says the camera is busy, or the picture is black</summary>
+            <div class="faq-body">
+              <p>Another program is almost certainly holding your camera. Zoom, Teams, and Meet keep it reserved even when hidden.</p>
+              <ol>
+                <li>Quit those apps completely — closing the window often isn't enough.</li>
+                <li>Reload this page and turn the camera on again.</li>
+              </ol>
+              <p>A physical privacy shutter or a laptop camera-off key can also cause a black picture.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-mic">
+            <summary>The mic level bar doesn't move</summary>
+            <div class="faq-body">
+              <ul>
+                <li>Check for a hardware mute — many headsets have an inline switch.</li>
+                <li>With Bluetooth earbuds, try your computer's built-in mic instead.</li>
+                <li>Make sure the right microphone is selected in your system sound settings.</li>
+                <li>Turn the camera off and on again after changing any of this.</li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-captions">
+            <summary>No words appear in the transcript</summary>
+            <div class="faq-body">
+              <p>Live captions work in <strong>Chrome and Edge</strong>, not Safari or Firefox. Record in Chrome or Edge, or keep recording where you are and type or paste your words into the transcript box, then choose <em>Recount</em>.</p>
+              <p>Captions also need an internet connection, and they stop if you switch windows mid-take.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-slides">
+            <summary>I need to present slides while I record</summary>
+            <div class="faq-body">
+              <p>Start recording here first, then switch to your slides. Timing, pauses, and energy are measured from the audio, so they stay accurate. Live captions stop while this tab is hidden — paste your words into the transcript box afterwards and choose <em>Recount</em>.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-accuracy">
+            <summary>The transcript got my words wrong</summary>
+            <div class="faq-body">
+              <p>That's expected, and it isn't a judgement on how you speak. Edit the transcript box, then choose <em>Recount</em>. Always fix the transcript before trusting the filler-word count.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-privacy">
+            <summary>Where does my video go? Can anyone see it?</summary>
+            <div class="faq-body">
+              <p>Your recordings are saved in this browser's own storage on your device. They aren't uploaded, and nobody — including your instructor — sees them unless you hand them in.</p>
+              <p>One exception: live captions send audio to your browser's built-in speech service. For fully private practice, turn captions off and type your transcript.</p>
+              <p>On a shared or lab computer, choose <em>Clear history</em> under My takes before you leave.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-history">
+            <summary>My saved takes disappeared</summary>
+            <div class="faq-body">
+              <p>Takes are stored in this browser on this computer only. They won't follow you to another machine or browser, and they're erased if you clear browsing data or use private browsing. Use <em>Download all takes</em> to keep your own copy.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-file">
+            <summary>My file is too big to hand in</summary>
+            <div class="faq-body">
+              <p>Before you record, open <em>Set up the take</em> and change <strong>Recording quality</strong> to 480p or Audio only. Audio only is dramatically smaller and every measurement still works. If you only need the report, use <em>Print or save as PDF</em> or <em>Copy report</em>.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-assistant">
+            <summary>I don't have a Claude account</summary>
+            <div class="faq-body">
+              <p>You don't need one. In step 4, pick whichever assistant you have — Copilot, ChatGPT, Gemini, or something else. Check whether your school already provides one before signing up.</p>
+            </div>
+          </details>
+
+          <details class="faq" id="faq-phone">
+            <summary>Can I use my phone or tablet?</summary>
+            <div class="faq-body">
+              <p>It usually records, but a laptop or desktop in Chrome or Edge is much better — captions are more reliable and there's room to work. On a phone, record short takes and expect to type your transcript.</p>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="help" id="refProfiles">
+        <summary>
+          <span>What good sounds like — reference points</span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="help-body">
+          <p class="hint" style="margin-top:0">Rough pictures of common delivery styles — <b>not targets to hit</b>. Excellent speakers often sit outside any band on purpose.</p>
+          <div class="profile">
+            <div class="profile-name">A clear informative talk</div>
+            <div class="profile-meta">Pace around 130–150 wpm, few fillers, steady energy with gentle variation</div>
+            <p>Easy to follow, calm authority. The energy rises and falls a little to mark what matters.</p>
+          </div>
+          <div class="profile">
+            <div class="profile-name">An energetic persuasive speech</div>
+            <div class="profile-meta">Pace often 150–180 wpm, strong energy variation, frequently builds toward the end</div>
+            <p>If your take is fast but clear and full of energy, read a “moving quickly” flag as a style choice to control, not a failure.</p>
+          </div>
+          <div class="profile">
+            <div class="profile-name">A flat read — what to lift</div>
+            <div class="profile-meta">Very level energy, flat or fading arc, words often technically fine</div>
+            <p>Usually a sign of reading word-for-word. The fix isn’t speaking louder — it’s lifting your voice on the lines you care about and looking up between them.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="help" id="forInstructors">
+        <summary>
+          <span>For instructors</span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </summary>
+        <div class="help-body">
+          <h3 style="font-size:.98rem;margin:0 0 4px">Create an assignment link</h3>
+          <p style="font-size:.9rem;margin-top:0">Set up the take in <b>Set up the take</b> above, give it a title here, then build a link. Every student who opens it lands on the same setup, and the title is stamped on every submission. Nothing is stored on a server — the assignment travels inside the link.</p>
+          <div class="field">
+            <label for="assignTitle">Assignment title</label>
+            <input type="text" id="assignTitle" placeholder="e.g. Persuasive Speech — Final Take">
+          </div>
+          <div class="t-actions"><button class="btn-solid btn-sm" id="btnBuildLink" type="button">Build the student link</button></div>
+          <div id="linkOut" hidden style="margin-top:14px">
+            <label for="assignLink" style="display:block;font-weight:600;font-size:.86rem;margin-bottom:5px">Student link</label>
+            <input type="text" id="assignLink" readonly style="font-family:var(--font-mono);font-size:.82rem">
+            <div class="t-actions" style="margin-top:10px">
+              <button class="btn-solid btn-sm" id="btnCopyLink" type="button">Copy link</button>
+              <span class="copy-note" id="linkNote" role="status" hidden></span>
+            </div>
+          </div>
+
+          <div class="inst-sec">
+            <h3>Collect submissions</h3>
+            <p style="font-size:.9rem;margin:0 0 10px">Select the .zip files students handed in — or download them all from your LMS and select them together. You get one table with every student's numbers and a class summary to download. Files are read in this browser only.</p>
+            <div class="field">
+              <label for="collectFiles">Student submission files (.zip or .json)</label>
+              <input type="file" id="collectFiles" multiple accept=".zip,.json,application/zip,application/json">
+            </div>
+            <span class="copy-note" id="collectNote" role="status" hidden style="display:block;margin-top:8px"></span>
+            <div id="collectOut" hidden>
+              <div class="table-wrap"><table class="roster" id="rosterTable"></table></div>
+              <div class="t-actions">
+                <button class="btn-solid btn-sm" id="btnRosterCsv" type="button">Download class summary (CSV)</button>
+                <button class="btn-line btn-sm" id="btnRosterClear" type="button">Clear list</button>
+              </div>
+              <p class="hint" style="margin-top:10px"><b>Video check:</b> each submission records a SHA-256 fingerprint of its video. “Matches” means the video in the zip is the one the numbers were measured from. It catches swapped or re-edited videos, not a student who edits both files on purpose — treat it as a consistency check, not proof.</p>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="notice" id="privNotice" style="margin-top:16px">
+        <span class="n-ico" aria-hidden="true">i</span>
+        <span><strong>A note on privacy.</strong> Video stays on your device and is never uploaded here. Live captions in Chrome and Edge process audio through the browser's speech service. For fully private practice, turn captions off and type your transcript.</span>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<div class="wrap">
+<footer class="site">
+  <p>Built for <span class="program">Speech &amp; Communication</span> · Brookdale Community College · 2026 &nbsp;·&nbsp; A zero-cost practice studio. Delivery metrics are objective aids, not a grade.</p>
+</footer>
+</div>
+
+<div class="sr-only" id="live" aria-live="polite"></div>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // FEATURE FLAGS — flip to true to re-enable. No other edits needed.
+  // ---------------------------------------------------------------
+  const FEATURES = {
+    upload: false   // "Analyze an existing recording" (file + .vtt/.srt import)
+  };
+  const TOOL_ID = "rehearsal-room";
+  const SCHEMA = "rehearsal-room/2";
+  const MAX_TAKES = 40;
+
+  // ---------- element refs ----------
+  const $ = function(id){ return document.getElementById(id); };
+  const video = $("video"), viewport = $("viewport"), captions = $("captions");
+  const promptStrip = $("promptStrip"), promptTextEl = $("promptText");
+  const levelBar = $("levelBar"), ringFill = $("ringFill"), recDot = $("recDot");
+  const timerEl = $("timer"), timerTarget = $("timerTarget");
+  const statusPill = $("statusPill"), statusText = $("statusText"), onair = $("onair"), live = $("live");
+  const btnEnable = $("btnEnable"), btnRecord = $("btnRecord"), btnStop = $("btnStop");
+  const btnAgain = $("btnAgain"), btnSaveVideo = $("btnSaveVideo"), btnRecount = $("btnRecount");
+  const errNotice = $("errNotice"), errText = $("errText"), capNotice = $("capNotice");
+  const RING_C = 2 * Math.PI * 23;
+
+  // ---------- state ----------
+  let stream = null;
+  let recorder = null, chunks = [], recBlob = null, recURL = null, recExt = "webm";
+  let audioCtx = null, analyser = null, rafId = null;
+  let recog = null, recogActive = false;
+  let finals = [], interim = "";
+  let rmsSeries = [], pauseRuns = [];
+  let prevTake = null;
+  let isUploaded = false, isAudioOnly = false, takeIsAudio = false;
+  let startTs = 0, timerId = null, elapsedMs = 0;
+  let lastMetrics = null;
+  let coachingText = "";
+  let currentTakeId = null;     // id of the saved record for the take on screen
+  let mediaPending = false;     // video is being written to browser storage
+  let saveTimer = null;
+
+  const recogSupported = ("webkitSpeechRecognition" in window) || ("SpeechRecognition" in window);
+  const mediaSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  const embedded = (function(){ try{ return window.self !== window.top; }catch(e){ return true; } })();
+  const EMBED_MSG = "The studio is running inside an embedded frame, which blocks camera and microphone access. Open this page directly in a browser tab, then try again.";
+
+  // ---------- helpers ----------
+  function announce(msg){ live.textContent = ""; setTimeout(function(){ live.textContent = msg; }, 30); }
+  function setStatus(state, text){ statusPill.dataset.state = state; statusText.textContent = text; }
+  function fmt(sec){ sec = Math.max(0, sec||0); const m = Math.floor(sec/60), s = Math.floor(sec%60); return m + ":" + (s<10?"0":"") + s; }
+  function showErr(msg){ errText.textContent = msg; errNotice.hidden = false; }
+  function clearErr(){ errNotice.hidden = true; }
+  function escapeHTML(str){
+    return String(str == null ? "" : str).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c];
+    });
+  }
+  function pad2(n){ return (n<10?"0":"")+n; }
+  function stampOf(d){
+    d = d ? new Date(d) : new Date();
+    return d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate())+"-"+pad2(d.getHours())+pad2(d.getMinutes());
+  }
+  function stamp(){ return stampOf(); }
+  function slug(s, max){
+    return String(s||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"-").slice(0, max||40);
+  }
+  function mb(bytes){ bytes = bytes||0; if(bytes < 1048576) return Math.max(1, Math.round(bytes/1024)) + " KB"; return (bytes/1048576).toFixed(bytes < 10485760 ? 1 : 0) + " MB"; }
+  function note(id, msg, tone, silent){
+    const n = $(id); if(!n) return;
+    n.textContent = msg; n.hidden = false;
+    n.className = "copy-note" + (tone === "warn" ? " warn" : tone === "quiet" ? " quiet" : "");
+    if(!silent) announce(msg);
+  }
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k, v){ try{ localStorage.setItem(k, v); return true; }catch(e){ return false; } }
+
+  // ---------- theme (light by default, remembered) ----------
+  function applyTheme(t){
+    document.documentElement.setAttribute("data-theme", t);
+    $("btnTheme").textContent = t === "dark" ? "Light mode" : "Dark mode";
+    $("btnTheme").setAttribute("aria-pressed", t === "dark" ? "true" : "false");
+  }
+  $("btnTheme").addEventListener("click", function(){
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    applyTheme(next); lsSet("rr_theme", next);
+  });
+
+  // ---------- student profile ----------
+  function getProfile(){
+    return { name: $("studentName").value.trim(), course: $("studentCourse").value.trim(), sid: $("studentId").value.trim() };
+  }
+  function refreshProfileUI(){
+    const p = getProfile();
+    $("profileWho").textContent = p.name ? ("— " + p.name + (p.course ? ", " + p.course : "")) : "— add your name";
+    const hw = $("handWho");
+    if(p.name){
+      hw.className = "hand-who";
+      hw.innerHTML = "Labeled for <strong>" + escapeHTML(p.name) + "</strong>"
+        + (p.course ? " · " + escapeHTML(p.course) : "")
+        + (assignmentTitle() ? " · " + escapeHTML(assignmentTitle()) : "")
+        + '. <button type="button" class="link-btn" data-edit-profile>Change</button>';
+    } else {
+      hw.className = "hand-who missing";
+      hw.innerHTML = 'Add your name before you hand in, so your instructor knows whose speech this is. <button type="button" class="link-btn" data-edit-profile>Add my name</button>';
+    }
+    hw.querySelector("[data-edit-profile]").addEventListener("click", focusProfile);
+  }
+  function focusProfile(){
+    $("profilePanel").open = true;
+    $("profilePanel").scrollIntoView({ behavior:"smooth", block:"center" });
+    setTimeout(function(){ $("studentName").focus(); }, 250);
+  }
+  ["studentName","studentCourse","studentId"].forEach(function(id){
+    $(id).addEventListener("input", function(){
+      lsSet("rr_profile", JSON.stringify(getProfile()));
+      refreshProfileUI();
+      scheduleSave();
+    });
+  });
+  function assignmentTitle(){ return $("assignTitle").value.trim(); }
+  $("assignTitle").addEventListener("input", refreshProfileUI);
+
+  function getSettings(){
+    const fillers = ($("fillerInput").value || "").split(",")
+      .map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+    return {
+      targetMin: parseFloat($("targetMin").value) || 0,
+      targetMax: parseFloat($("targetMax").value) || 0,
+      wpmLow: parseInt($("wpmLow").value,10) || 130,
+      wpmHigh: parseInt($("wpmHigh").value,10) || 160,
+      fillers: fillers,
+      captionsOn: $("capToggle").checked,
+      language: $("language").value || "en-US"
+    };
+  }
+
+  const FILLER_SETS = {
+    en: "um, uh, er, ah, like, you know, so, basically, actually, literally, right, okay",
+    es: "eh, este, pues, o sea, como, bueno, entonces, mmm, verdad, digamos",
+    pt: "é, tipo, né, então, assim, sabe, aí, bem",
+    fr: "euh, ben, bah, du coup, genre, en fait, voilà, quoi, hein",
+    ht: "e, en, alò, kidonk, kòmsi, enben",
+    zh: "那个, 就是, 然后, 这个, 嗯",
+    ar: "يعني, اه, يعنى",
+    hi: "मतलब, तो, हाँ, वो, यानी, actually, basically",
+    tl: "parang, ano, kasi, tapos, diba, ganun"
+  };
+  function fillersForLang(code){ return FILLER_SETS[(code || "en-US").split("-")[0]] || FILLER_SETS.en; }
+  $("language").addEventListener("change", function(){
+    $("fillerInput").value = fillersForLang($("language").value);
+    lsSet("rr_lang", $("language").value);
+  });
+
+  function updatePracticeUI(){
+    const on = $("practiceToggle").checked;
+    $("btnSaveTake").hidden = on;
+    $("practiceNote").hidden = !on;
+  }
+  $("practiceToggle").addEventListener("change", function(){
+    updatePracticeUI();
+    lsSet("rr_practice", $("practiceToggle").checked ? "1" : "0");
+  });
+  $("keepVideoToggle").addEventListener("change", function(){ lsSet("rr_keepvideo", $("keepVideoToggle").checked ? "1" : "0"); });
+
+  // ---------- instructor assignment links ----------
+  function b64urlEncode(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+  function b64urlDecode(s){ s = s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length % 4) s += "="; return decodeURIComponent(escape(atob(s))); }
+  function buildAssignmentLink(){
+    const cfg = {
+      t: assignmentTitle(),
+      p: $("promptInput").value.trim(),
+      tmin: $("targetMin").value, tmax: $("targetMax").value,
+      wlo: $("wpmLow").value, whi: $("wpmHigh").value,
+      f: $("fillerInput").value.trim(), r: $("rubricInput").value.trim(),
+      lang: $("language").value, q: $("quality").value
+    };
+    return location.origin + location.pathname + "#assign=" + b64urlEncode(JSON.stringify(cfg));
+  }
+  function applyAssignmentFromHash(){
+    const m = (location.hash || "").match(/assign=([^&]+)/);
+    if(!m) return null;
+    let cfg;
+    try{ cfg = JSON.parse(b64urlDecode(m[1])); }catch(e){ return null; }
+    if(!cfg || typeof cfg !== "object") return null;
+    const set = function(id, v){ if(v != null && v !== "") $(id).value = String(v); };
+    if(cfg.lang) $("language").value = cfg.lang;
+    set("assignTitle", cfg.t); set("promptInput", cfg.p);
+    set("targetMin", cfg.tmin); set("targetMax", cfg.tmax);
+    set("wpmLow", cfg.wlo); set("wpmHigh", cfg.whi);
+    set("fillerInput", cfg.f); set("rubricInput", cfg.r);
+    if(cfg.q && ["720","480","audio"].indexOf(cfg.q) >= 0) $("quality").value = cfg.q;
+    return cfg;
+  }
+  $("btnBuildLink").addEventListener("click", function(){
+    $("assignLink").value = buildAssignmentLink();
+    $("linkOut").hidden = false;
+    $("assignLink").focus(); $("assignLink").select();
+  });
+  $("btnCopyLink").addEventListener("click", function(){
+    copyText($("assignLink").value || buildAssignmentLink(),
+      function(){ note("linkNote","Link copied."); },
+      function(){ note("linkNote","Couldn't copy — select the box and copy it manually.","warn"); });
+  });
+
+  function refreshPromptStrip(){
+    const t = $("promptInput").value.trim();
+    promptTextEl.textContent = t;
+    promptStrip.classList.toggle("show", !!t);
+  }
+  $("promptInput").addEventListener("input", refreshPromptStrip);
+  function refreshTargetLabel(){
+    const s = getSettings();
+    timerTarget.textContent = s.targetMax > 0 ? " / " + fmt(s.targetMax*60) : "";
+  }
+  ["targetMin","targetMax"].forEach(function(id){ $(id).addEventListener("input", refreshTargetLabel); });
+
+  // ---------- camera ----------
+  btnEnable.addEventListener("click", function(){
+    if(recorder && recorder.state === "recording") return;
+    if(stream) stopCamera(); else enableCamera();
+  });
+  function updateEnableLabel(){
+    const thing = $("quality").value === "audio" ? "microphone" : "camera";
+    btnEnable.querySelector("span.dot-ico").nextSibling.textContent = (stream ? "Turn off " : "Turn on ") + thing;
+    btnEnable.setAttribute("aria-pressed", stream ? "true" : "false");
+  }
+  $("quality").addEventListener("change", function(){
+    updateEnableLabel();
+    if(stream && !(recorder && recorder.state === "recording")){
+      showErr("Recording quality changed. Turn the " + (isAudioOnly ? "microphone" : "camera") + " off and on again to use the new setting.");
+    }
+  });
+  function resetPlaceholder(){
+    $("phMark").textContent = "\uD83C\uDF99";
+    $("phTitle").textContent = "Step onto the stage.";
+    $("phBody").textContent = "Turn on your camera and mic to begin. Find your light, take a breath, and start your take when you're ready.";
+  }
+  function stopCamera(){
+    try{ if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); } }catch(e){}
+    stream = null;
+    stopMetering(); stopRecognition();
+    if(video.srcObject){
+      video.srcObject = null;
+      if(!recURL){ viewport.classList.remove("has-video"); }
+    }
+    btnRecord.disabled = true;
+    const wasAudioOnly = isAudioOnly;
+    isAudioOnly = false;
+    if(!recURL) resetPlaceholder();
+    setStatus("idle", wasAudioOnly ? "Microphone off" : "Camera off");
+    updateEnableLabel();
+    announce(wasAudioOnly ? "Microphone is off." : "Camera and microphone are off.");
+  }
+  async function enableCamera(){
+    clearErr();
+    if(!mediaSupported){ showErr("This browser can't record media. Try a recent version of Chrome or Edge."); return; }
+    try{
+      const q = $("quality").value;
+      const audioOnly = (q === "audio");
+      const vw = q === "720" ? 1280 : 854, vh = q === "720" ? 720 : 480;
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: audioOnly ? false : { width:{ideal:vw}, height:{ideal:vh} },
+        audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:false }
+      });
+      isAudioOnly = audioOnly;
+      viewport.classList.remove("audio-take");
+      if(audioOnly){
+        $("phMark").textContent = "\u25CF"; $("phTitle").textContent = "Audio-only mode.";
+        $("phBody").textContent = "Your microphone is on. There's no picture to show \u2014 every measurement still works.";
+      }
+      video.classList.remove("playback");
+      video.srcObject = stream; video.muted = true; video.removeAttribute("controls");
+      await video.play().catch(function(){});
+      if(!audioOnly){ viewport.classList.add("has-video"); } else { viewport.classList.remove("has-video"); }
+      btnRecord.hidden = false; btnRecord.disabled = false;
+      btnAgain.hidden = true; btnSaveVideo.hidden = true;
+      updateEnableLabel();
+      btnRecord.focus();
+      setStatus("ready","Ready — take the stage");
+      announce((audioOnly ? "Microphone" : "Camera and microphone") + " on. Ready to record.");
+      if(!recogSupported){ capNotice.hidden = false; }
+      if(!getProfile().name){ $("profilePanel").open = true; }
+      refreshPromptStrip(); refreshTargetLabel();
+    }catch(e){
+      let m = "Couldn't reach the camera or mic.";
+      if(embedded && e && (e.name === "NotAllowedError" || e.name === "SecurityError" || e.name === "NotFoundError")) m = EMBED_MSG;
+      else if(e && (e.name === "NotAllowedError" || e.name === "SecurityError")) m = "Camera and mic access was blocked. Allow it from the address-bar permission icon, then reload.";
+      else if(e && e.name === "NotFoundError") m = "No camera or microphone was found. Connect one and reload, or switch Recording quality to Audio only.";
+      else if(e && (e.name === "NotReadableError" || e.name === "TrackStartError")) m = "Another app is using your camera. Quit Zoom, Teams, or Meet completely, then try again.";
+      showErr(m);
+      const link = document.createElement("button");
+      link.type = "button"; link.className = "help-link"; link.textContent = "Show me how to fix this";
+      link.addEventListener("click", function(){ openHelp(e && e.name === "NotReadableError" ? "faq-inuse" : "faq-permission"); });
+      errText.appendChild(document.createTextNode(" ")); errText.appendChild(link);
+    }
+  }
+
+  // ---------- audio metering ----------
+  function startMetering(){
+    try{
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024;
+      src.connect(analyser);
+      const buf = new Uint8Array(analyser.fftSize);
+      const tick = function(){
+        analyser.getByteTimeDomainData(buf);
+        let sum = 0;
+        for(let i=0;i<buf.length;i++){ const v=(buf[i]-128)/128; sum += v*v; }
+        const rms = Math.sqrt(sum/buf.length);
+        levelBar.style.width = Math.min(100, Math.round(rms*260)) + "%";
+        rmsSeries.push({ t: performance.now()-startTs, rms: rms });
+        rafId = requestAnimationFrame(tick);
+      };
+      rafId = requestAnimationFrame(tick);
+    }catch(e){}
+  }
+  function stopMetering(){
+    if(rafId){ cancelAnimationFrame(rafId); rafId = null; }
+    levelBar.style.width = "0%";
+    if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx = null; analyser = null; }
+  }
+
+  // ---------- speech recognition ----------
+  function startRecognition(){
+    if(!recogSupported) return;
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recog = new Rec();
+    recog.continuous = true; recog.interimResults = true;
+    recog.lang = $("language").value || "en-US";
+    recog.onresult = function(ev){
+      interim = "";
+      for(let i=ev.resultIndex;i<ev.results.length;i++){
+        const r = ev.results[i];
+        if(r.isFinal) finals.push({ t: performance.now()-startTs, text: r[0].transcript.trim() });
+        else interim += r[0].transcript;
+      }
+      renderCaptions();
+    };
+    recog.onend = function(){ if(recogActive){ try{ recog.start(); }catch(e){} } };
+    recog.onerror = function(ev){
+      if(ev && (ev.error === "not-allowed" || ev.error === "service-not-allowed")){ recogActive = false; capNotice.hidden = false; }
+    };
+    recogActive = true;
+    try{ recog.start(); }catch(e){}
+  }
+  function stopRecognition(){
+    recogActive = false;
+    if(recog){ try{ recog.stop(); }catch(e){} recog = null; }
+  }
+  function renderCaptions(){
+    const done = finals.map(function(f){ return f.text; }).join(" ");
+    captions.innerHTML = escapeHTML(done) + (interim ? ' <span class="interim">'+escapeHTML(interim)+'</span>' : "");
+  }
+
+  // ---------- recording ----------
+  btnRecord.addEventListener("click", function(){
+    if(!$("countToggle").checked){ startRecording(); return; }
+    const cd = $("countdown"), num = $("countNum");
+    let n = 3;
+    btnRecord.disabled = true;
+    num.textContent = n; cd.classList.add("show");
+    announce("Starting in 3.");
+    const iv = setInterval(function(){
+      n--;
+      if(n > 0){ num.textContent = n; }
+      else{
+        clearInterval(iv); cd.classList.remove("show"); btnRecord.disabled = false;
+        if(stream) startRecording();
+      }
+    }, 1000);
+  });
+  btnStop.addEventListener("click", stopRecording);
+  btnAgain.addEventListener("click", recordAgain);
+  btnSaveVideo.addEventListener("click", function(){
+    if(!recBlob) return;
+    downloadBlob(fileBase(null) + "_recording." + extFor(recBlob.type), recBlob);
+    announce("Downloading your video.");
+  });
+
+  // Audio-only streams get audio container types; video streams get video ones.
+  function pickMime(audioOnly){
+    const types = audioOnly
+      ? ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg;codecs=opus"]
+      : ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm","video/mp4"];
+    for(let i=0;i<types.length;i++){
+      if(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(types[i])) return types[i];
+    }
+    return "";
+  }
+  function extFor(type, fallback){
+    type = String(type || "");
+    if(/^audio\/mp4/.test(type)) return "m4a";
+    if(/mp4/.test(type)) return "mp4";
+    if(/ogg/.test(type)) return "ogg";
+    if(/webm/.test(type)) return "webm";
+    return fallback || "webm";
+  }
+
+  function startRecording(){
+    flushSave();
+    clearErr();
+    const s = getSettings();
+    chunks = []; finals = []; interim = ""; rmsSeries = []; pauseRuns = [];
+    if(recURL){ URL.revokeObjectURL(recURL); recURL = null; }
+    recBlob = null;
+    captions.innerHTML = "";
+    viewport.classList.remove("audio-take");
+
+    const mime = pickMime(isAudioOnly);
+    const q = $("quality").value;
+    const opts = { audioBitsPerSecond: 96000 };
+    if(mime) opts.mimeType = mime;
+    if(!isAudioOnly) opts.videoBitsPerSecond = q === "720" ? 2400000 : 1000000;
+    try{ recorder = new MediaRecorder(stream, opts); }
+    catch(e){
+      try{ recorder = new MediaRecorder(stream); }
+      catch(e2){ showErr("Couldn't start the recorder in this browser."); return; }
+    }
+    recExt = extFor(recorder.mimeType || mime);
+    recorder.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+    recorder.onstop = onRecordingStop;
+
+    startTs = performance.now();
+    recorder.start(1000);   // 1s slices, so a crash mid-take still leaves usable chunks
+    startMetering();
+    if(s.captionsOn) startRecognition();
+    captions.classList.toggle("show", s.captionsOn && recogSupported);
+
+    viewport.classList.add("recording");
+    btnEnable.disabled = true;
+    recDot.classList.add("live");
+    onair.classList.add("show");
+    setStatus("live","Recording");
+    btnRecord.hidden = true;
+    btnStop.hidden = false; btnStop.disabled = false; btnStop.focus();
+    btnAgain.hidden = true; btnSaveVideo.hidden = true;
+    hideResultsForNewTake();
+
+    elapsedMs = 0;
+    timerId = setInterval(function(){
+      elapsedMs = performance.now() - startTs;
+      const sec = elapsedMs/1000;
+      timerEl.textContent = fmt(sec);
+      updateRing(sec, s);
+    }, 100);
+    announce("Recording started.");
+  }
+
+  function updateRing(sec, s){
+    let frac = 0, color = "var(--lamp)";
+    if(s.targetMax > 0){
+      frac = Math.min(1, sec/(s.targetMax*60));
+      if(sec < s.targetMin*60) color = "var(--slow)";
+      else if(sec <= s.targetMax*60) color = "var(--good)";
+      else color = "var(--live)";
+    } else { frac = (sec % 60)/60; }
+    ringFill.style.strokeDashoffset = (RING_C*(1-frac)).toFixed(1);
+    ringFill.style.stroke = color;
+  }
+
+  function stopRecording(){
+    if(recorder && recorder.state !== "inactive"){ recorder.stop(); }
+    stopMetering(); stopRecognition();
+    if(timerId){ clearInterval(timerId); timerId = null; }
+    viewport.classList.remove("recording");
+    btnEnable.disabled = false;
+    recDot.classList.remove("live");
+    onair.classList.remove("show");
+    captions.classList.remove("show");
+    setStatus("review","Reviewing your take");
+    btnStop.hidden = true; btnStop.disabled = true;
+    announce("Recording stopped. Building your delivery breakdown.");
+  }
+
+  async function onRecordingStop(){
+    recBlob = new Blob(chunks, { type: (recorder && recorder.mimeType) || (chunks[0] && chunks[0].type) || "video/webm" });
+    recURL = URL.createObjectURL(recBlob);
+    isUploaded = false;
+    takeIsAudio = isAudioOnly;
+    video.srcObject = null;
+    video.src = recURL; video.muted = false;
+    video.setAttribute("controls",""); video.classList.add("playback");
+    if(takeIsAudio){
+      viewport.classList.add("audio-take");
+      $("phTitle").textContent = "Audio take ready.";
+      $("phBody").textContent = "Play it back with the player below, or record again.";
+    } else { viewport.classList.add("has-video"); }
+    btnAgain.hidden = false; btnAgain.disabled = false;
+    btnSaveVideo.hidden = false; btnSaveVideo.disabled = false;
+    btnSaveVideo.textContent = takeIsAudio ? "Download audio" : "Download video";
+
+    // Decode the finished audio: the live sampler pauses whenever the tab is
+    // backgrounded, so a slide-show take would otherwise lose its data.
+    try{
+      const res = await analyseAudio(recBlob);
+      if(res.series.length > 5){
+        rmsSeries = res.series;
+        if(res.durationMs > 500) elapsedMs = res.durationMs;
+      }
+    }catch(e){}
+    finishTake(null);
+  }
+
+  function recordAgain(){
+    flushSave();
+    if(recURL){ URL.revokeObjectURL(recURL); recURL = null; }
+    recBlob = null;
+    video.removeAttribute("src"); video.load();
+    video.classList.remove("playback"); video.removeAttribute("controls");
+    viewport.classList.remove("audio-take");
+    isUploaded = false;
+    $("fileVideo").value = ""; $("fileCaps").value = "";
+    $("sourceNote").hidden = true; $("capsNote").hidden = true;
+    finals = []; rmsSeries = []; pauseRuns = []; elapsedMs = 0;
+    if(stream){
+      video.srcObject = stream; video.muted = true;
+      video.play().catch(function(){});
+      if(isAudioOnly){
+        viewport.classList.remove("has-video");
+        $("phMark").textContent = "\u25CF"; $("phTitle").textContent = "Audio-only mode.";
+        $("phBody").textContent = "Your microphone is on. Start your next take when you're ready.";
+      }
+      btnRecord.hidden = false; btnRecord.disabled = false; btnRecord.focus();
+      setStatus("ready","Ready — take the stage");
+    } else {
+      viewport.classList.remove("has-video");
+      resetPlaceholder();
+      setStatus("idle","Camera off");
+    }
+    timerEl.textContent = "0:00";
+    ringFill.style.strokeDashoffset = RING_C.toFixed(1);
+    btnAgain.hidden = true; btnSaveVideo.hidden = true;
+    hideResultsForNewTake();
+    announce("Ready for a new take. Your last take is saved in My takes.");
+  }
+
+  // A new take starts clean: scores, reflection, and coaching belong to one take only.
+  function resetTakeInputs(){
+    currentTakeId = null;
+    coachingText = "";
+    $("coachPaste").value = "";
+    const co = $("coachOut"); co.hidden = true; co.innerHTML = "";
+    ["copyNote","saveNote","coachNote","shareNote"].forEach(function(id){ $(id).hidden = true; });
+    document.querySelectorAll('#rubricList input[type="radio"]').forEach(function(r){ r.checked = false; });
+    $("reflectWorked").value = ""; $("reflectChange").value = "";
+    updateRubricTotal();
+  }
+  function hideResultsForNewTake(){
+    $("results").hidden = true;
+    $("emptyState").hidden = false;
+    setStageState(false);
+    $("analysisSub").textContent = "Record a take to see the breakdown.";
+    $("deltaBar").hidden = true;
+    resetTakeInputs();
+    lastMetrics = null;
+  }
+
+  // ---------- metrics ----------
+  function transcriptText(){
+    return finals.map(function(f){ return f.text; }).join(" ").replace(/\s+/g," ").trim();
+  }
+  // Unicode-aware word splitting. Intl.Segmenter handles languages written
+  // without spaces (Chinese); the regex fallback still covers Arabic and Devanagari,
+  // which the old \w-based pattern silently counted as zero words.
+  function wordsOf(text, lang){
+    const lower = String(text || "").toLowerCase();
+    if(window.Intl && Intl.Segmenter){
+      try{
+        const seg = new Intl.Segmenter(lang || getSettings().language, { granularity:"word" });
+        const out = [];
+        for(const s of seg.segment(lower)){ if(s.isWordLike) out.push(s.segment); }
+        return out;
+      }catch(e){}
+    }
+    return lower.match(/[\p{L}\p{M}\p{N}'\u2019-]+/gu) || [];
+  }
+  // Fillers are matched as word sequences, so multi-word fillers ("you know")
+  // work and nothing matches inside a longer word.
+  function countFillers(text, fillers, lang){
+    const toks = wordsOf(text, lang);
+    let total = 0; const found = {};
+    fillers.forEach(function(f){
+      const ft = wordsOf(f, lang);
+      if(!ft.length) return;
+      let c = 0;
+      for(let i=0; i+ft.length <= toks.length; i++){
+        let ok = true;
+        for(let j=0;j<ft.length;j++){ if(toks[i+j] !== ft[j]){ ok = false; break; } }
+        if(ok){ c++; i += ft.length-1; }
+      }
+      if(c > 0){ found[f] = c; total += c; }
+    });
+    return { total: total, found: found };
+  }
+
+  const STOP = {"the":1,"a":1,"an":1,"and":1,"or":1,"but":1,"of":1,"to":1,"in":1,"on":1,"for":1,
+    "is":1,"are":1,"was":1,"were":1,"be":1,"it":1,"this":1,"that":1,"i":1,"you":1,"we":1,"they":1,
+    "he":1,"she":1,"my":1,"our":1,"your":1,"with":1,"as":1,"at":1,"by":1,"from":1,"so":1,"if":1,
+    "not":1,"do":1,"does":1,"can":1,"will":1,"would":1,"has":1,"have":1,"had":1,"me":1,"us":1,
+    "it's":1,"i'm":1,"don't":1,"there":1,"their":1,"what":1,"about":1,"just":1};
+
+  function computeMetrics(edited){
+    const s = getSettings();
+    const text = (typeof edited === "string") ? edited.replace(/\s+/g," ").trim() : transcriptText();
+    const durSec = elapsedMs/1000 || 0;
+    const words = wordsOf(text, s.language);
+    const wc = words.length;
+    const wpm = durSec > 0 ? Math.round(wc / (durSec/60)) : 0;
+    const fill = countFillers(text, s.fillers, s.language);
+    const fillRate = durSec > 0 ? (fill.total/(durSec/60)) : 0;
+    const uniq = {}; words.forEach(function(w){ uniq[w] = (uniq[w]||0)+1; });
+    const variety = wc > 0 ? Math.round((Object.keys(uniq).length/wc)*100) : 0;
+    const repeats = Object.keys(uniq)
+      .filter(function(w){ return !STOP[w] && w.length>2 && uniq[w]>=3; })
+      .sort(function(a,b){ return uniq[b]-uniq[a]; })
+      .slice(0,3).map(function(w){ return { w:w, n:uniq[w] }; });
+    return { durSec:durSec, wc:wc, wpm:wpm, fill:fill, fillRate:fillRate, variety:variety, repeats:repeats,
+             pauses:analysePauses(), energy:analyseEnergy(), text:text, settings:s };
+  }
+
+  // Energy is measured RELATIVE to this take only — never absolute loudness.
+  function analyseEnergy(){
+    const none = { ok:false };
+    if(rmsSeries.length < 20) return none;
+    const peak = rmsSeries.reduce(function(mx,p){ return Math.max(mx,p.rms); }, 0);
+    if(peak < 0.02) return none;
+    const floor = Math.max(0.015, peak*0.14);
+    const voiced = rmsSeries.filter(function(p){ return p.rms >= floor; });
+    if(voiced.length < 12) return none;
+    const mean = function(a){ return a.reduce(function(s,v){ return s+v; },0)/a.length; };
+    const vals = voiced.map(function(p){ return p.rms; });
+    const mu = mean(vals);
+    if(mu <= 0) return none;
+    const sd = Math.sqrt(mean(vals.map(function(v){ return (v-mu)*(v-mu); })));
+    const variation = sd/mu;
+    const T = elapsedMs;
+    const inWin = function(lo,hi){
+      const seg = voiced.filter(function(p){ return p.t >= lo && p.t < hi; }).map(function(p){ return p.rms; });
+      return seg.length >= 4 ? mean(seg) : null;
+    };
+    const first = inWin(0, T/3), last = inWin(2*T/3, T);
+    const arcPct = (first && last) ? Math.round(((last-first)/first)*100) : null;
+    const tail = inWin(T*0.92, T);   // final 8% of the take vs the whole
+    const finishPct = tail ? Math.round(((tail-mu)/mu)*100) : null;
+    return { ok:true, variation:variation, arcPct:arcPct, finishPct:finishPct };
+  }
+
+  function analysePauses(){
+    if(rmsSeries.length < 5) return { count:0, longest:0 };
+    const peak = rmsSeries.reduce(function(mx,p){ return Math.max(mx,p.rms); }, 0);
+    if(peak < 0.02) return { count:0, longest:0 };
+    const thresh = Math.max(0.015, peak*0.14);
+    const runs = []; let runStart = null;
+    for(let i=0;i<rmsSeries.length;i++){
+      const silent = rmsSeries[i].rms < thresh;
+      if(silent && runStart === null) runStart = rmsSeries[i].t;
+      if((!silent || i===rmsSeries.length-1) && runStart !== null){
+        runs.push({ start:runStart, dur:(rmsSeries[i].t-runStart)/1000 });
+        runStart = null;
+      }
+    }
+    const mid = runs.filter(function(r){ return r.start > 400 && (r.start/1000) < (elapsedMs/1000 - 0.5); });
+    let longest = 0, count = 0;
+    mid.forEach(function(r){ if(r.dur > longest) longest = r.dur; if(r.dur >= 1.5) count++; });
+    pauseRuns = mid.filter(function(r){ return r.dur >= 1.5; });
+    return { count:count, longest:longest };
+  }
+
+  // ---------- render ----------
+  function renderDelta(m){
+    const bar = $("deltaBar");
+    if(!prevTake){ bar.hidden = true; bar.innerHTML = ""; return; }
+    const items = [];
+    const add = function(label, now, before, lowerIsBetter, unit){
+      const d = now - before;
+      if(Math.abs(d) < 0.5){ items.push({cls:"", html: label+" unchanged"}); return; }
+      const better = lowerIsBetter ? d < 0 : d > 0;
+      items.push({ cls: better ? "up" : "dn", html: label + " <b>" + (d > 0 ? "+" : "") + Math.round(d) + (unit||"") + "</b>" });
+    };
+    add("fillers", m.fill.total, prevTake.fill.total, true, "");
+    add("pace", m.wpm, prevTake.wpm, false, " wpm");
+    add("length", m.durSec, prevTake.durSec, false, "s");
+    bar.innerHTML = '<span class="d">vs last take:</span>' + items.map(function(i){
+      return '<span class="d '+i.cls+'">'+i.html+'</span>';
+    }).join("");
+    bar.hidden = false;
+  }
+
+  function setStageState(hasTake){
+    $("card1").dataset.active = hasTake ? "0" : "1";
+    $("when1").textContent = hasTake ? "Done \u2014 record again any time" : "You're here";
+    $("when2").textContent = hasTake ? "You're here" : "After your first take";
+    $("when3").textContent = hasTake ? "Your turn" : "After your first take";
+    $("when4").textContent = hasTake ? "Ready when you are" : "After you score yourself";
+  }
+  function say(el, tone, phrase){ const h = $(el); h.dataset.tone = tone; h.textContent = phrase; }
+
+  // Note: renderResults no longer wipes scores and reflection — the original did,
+  // so pressing Recount erased a student's self-assessment. Resetting now happens
+  // only when a new take starts (resetTakeInputs).
+  function renderResults(m){
+    $("emptyState").hidden = true;
+    $("results").hidden = false;
+    $("analysisSub").textContent = "Here is what the recording shows. None of it is a grade.";
+    const s = m.settings;
+
+    $("mDuration").textContent = fmt(m.durSec) + (s.targetMax>0 ? (" of a " + s.targetMin + "\u2013" + s.targetMax + " min target") : "");
+    if(s.targetMax > 0){
+      if(m.durSec < s.targetMin*60) say("hDuration","slow","Shorter than planned");
+      else if(m.durSec <= s.targetMax*60) say("hDuration","good","Right on time");
+      else say("hDuration","over","Ran long");
+    } else say("hDuration","mute","No target set");
+
+    $("mWpm").textContent = m.wpm + " words per minute";
+    $("scaleLow").textContent = s.wpmLow; $("scaleHigh").textContent = s.wpmHigh;
+    const span = s.wpmHigh - s.wpmLow || 30, lo = s.wpmLow - span, hi = s.wpmHigh + span;
+    $("paceMark").style.left = Math.max(2, Math.min(98, ((m.wpm - lo)/(hi - lo))*100)) + "%";
+    if(m.wc < 3){ say("hWpm","mute","Not enough words yet"); $("mWpm").textContent = "Add a transcript to see your pace"; }
+    else if(m.wpm < s.wpmLow) say("hWpm","slow","On the slow side");
+    else if(m.wpm <= s.wpmHigh) say("hWpm","good","Just about right");
+    else say("hWpm","over","Moving quickly");
+
+    const chips = $("fillerChips"); chips.innerHTML = "";
+    const keys = Object.keys(m.fill.found).sort(function(a,b){ return m.fill.found[b]-m.fill.found[a]; });
+    $("mFillers").textContent = m.wc < 3 ? "Add a transcript to count these"
+      : (m.fill.total + " in total" + (keys.length ? (", mostly \u201c" + keys[0] + "\u201d") : ""));
+    if(m.wc < 3) say("hFillers","mute","Nothing counted yet");
+    else if(m.fill.total === 0) say("hFillers","good","None caught");
+    else if(m.fillRate < 2) say("hFillers","good","A few crept in");
+    else if(m.fillRate < 4) say("hFillers","over","Noticeable");
+    else say("hFillers","over","Very frequent");
+    keys.forEach(function(k){
+      const c = document.createElement("span"); c.className = "chip";
+      c.innerHTML = '\u201c'+escapeHTML(k)+'\u201d <b>\u00d7'+m.fill.found[k]+'</b>';
+      chips.appendChild(c);
+    });
+
+    $("mVariety").textContent = m.wc < 10 ? "Add a transcript to see this" : (m.variety + "% of your words were different");
+    if(m.wc < 10) say("hVariety","mute","Not enough words yet");
+    else if(m.repeats.length === 0) say("hVariety","good","Nicely varied");
+    else say("hVariety","slow","Some words repeat");
+    const rc = $("repeatChips"); rc.innerHTML = "";
+    m.repeats.forEach(function(r){
+      const c = document.createElement("span"); c.className = "chip";
+      c.innerHTML = escapeHTML(r.w)+' <b style="color:var(--ink-soft)">\u00d7'+r.n+'</b>';
+      rc.appendChild(c);
+    });
+
+    if(rmsSeries.length < 5){ say("hPauses","mute","No audio to read"); $("mPauses").textContent = "\u2014"; }
+    else {
+      $("mPauses").textContent = m.pauses.longest > 0 ? ("Longest about " + Math.round(m.pauses.longest) + " seconds") : "No long silences found";
+      if(m.pauses.count === 0) say("hPauses","good","Smooth throughout");
+      else if(m.pauses.count === 1) say("hPauses","good","One long gap");
+      else if(m.pauses.count === 2) say("hPauses","good","Two long gaps");
+      else say("hPauses","over","Several long gaps");
+    }
+
+    const e = m.energy, eChips = $("energyChips");
+    eChips.innerHTML = "";
+    if(!e || !e.ok){ say("hEnergy","mute","Not enough audio to read"); $("mEnergy").textContent = "\u2014"; }
+    else {
+      if(e.arcPct !== null && e.arcPct <= -22) say("hEnergy","over","Faded near the end");
+      else if(e.arcPct !== null && e.arcPct >= 22) say("hEnergy","good","Built toward the end");
+      else if(e.variation < 0.28) say("hEnergy","slow","Fairly level throughout");
+      else if(e.variation < 0.75) say("hEnergy","good","Good light and shade");
+      else say("hEnergy","over","Very uneven");
+      let detail;
+      if(e.arcPct !== null && e.arcPct <= -22) detail = "Quieter in the last third than the first";
+      else if(e.arcPct !== null && e.arcPct >= 22) detail = "Stronger in the last third than the first";
+      else if(e.variation < 0.28) detail = "Little change in emphasis \u2014 try varying it";
+      else detail = "You shifted emphasis as you spoke";
+      $("mEnergy").textContent = detail;
+      const chip = function(html){ const c = document.createElement("span"); c.className = "chip"; c.innerHTML = html; eChips.appendChild(c); };
+      if(e.variation < 0.28) chip('little variation in emphasis');
+      else if(e.variation > 0.75) chip('very uneven \u2014 check mic distance');
+      if(e.finishPct !== null && e.finishPct <= -30) chip('<b>final words drop off</b>');
+    }
+
+    renderTranscript(m.text, s.fillers);
+    updatePracticeUI();
+    setStageState(true);
+    announce("Your results are ready. " + m.wc + " words at " + m.wpm + " words per minute.");
+  }
+
+  function renderTranscript(text, fillers){
+    const el = $("transcript");
+    if(!text){
+      el.innerHTML = "";
+      el.dataset.placeholder = recogSupported
+        ? "No speech was captured. Type or paste your transcript here, then Recount."
+        : "Live captions aren't available in this browser. Type or paste your transcript here, then Recount.";
+      return;
+    }
+    let html = escapeHTML(text);
+    fillers.forEach(function(f){
+      if(!f) return;
+      const esc = escapeHTML(f).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+      try{
+        const re = new RegExp("(^|[^\\p{L}\\p{M}\\p{N}&;])(" + esc + ")(?=[^\\p{L}\\p{M}\\p{N}]|$)","giu");
+        html = html.replace(re, "$1<mark>$2</mark>");
+      }catch(e){}
+    });
+    el.innerHTML = html;
+  }
+
+  function drawTrace(){
+    const cv = $("traceCanvas"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+    ctx.clearRect(0,0,W,H);
+    if(rmsSeries.length < 2){
+      ctx.fillStyle = "#9aa3b0"; ctx.font = "13px monospace"; ctx.textAlign = "center";
+      ctx.fillText("No audio captured", W/2, H/2); return;
+    }
+    const peak = rmsSeries.reduce(function(mx,p){ return Math.max(mx,p.rms); }, 0) || 1;
+    const step = rmsSeries.length / W, pts = [];
+    for(let x=0;x<W;x++){
+      const r = rmsSeries[Math.min(Math.floor(x*step), rmsSeries.length-1)].rms / peak;
+      pts.push([x, H - Math.max(2, r*(H-8))]);
+    }
+    ctx.beginPath(); ctx.moveTo(0,H);
+    pts.forEach(function(p){ ctx.lineTo(p[0],p[1]); });
+    ctx.lineTo(W,H); ctx.closePath();
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,"rgba(240,177,85,.92)"); g.addColorStop(1,"rgba(240,177,85,.34)");
+    ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath();
+    pts.forEach(function(p,i){ i ? ctx.lineTo(p[0],p[1]) : ctx.moveTo(p[0],p[1]); });
+    ctx.strokeStyle = "#ffd89e"; ctx.lineWidth = 1.6; ctx.lineJoin = "round"; ctx.stroke();
+    const T = elapsedMs || 1;
+    ctx.fillStyle = "rgba(226,87,79,.30)"; ctx.strokeStyle = "rgba(226,87,79,.85)"; ctx.lineWidth = 1;
+    pauseRuns.forEach(function(r){
+      const x0 = (r.start/T)*W, w = Math.max(2, ((r.dur*1000)/T)*W);
+      ctx.fillRect(x0, 0, w, H);
+      ctx.beginPath(); ctx.moveTo(x0,0); ctx.lineTo(x0,H); ctx.stroke();
+    });
+  }
+
+  function drawPaceTrace(){
+    const wrap = $("paceTraceWrap"), cv = $("paceCanvas"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+    ctx.clearRect(0,0,W,H);
+    const dur = elapsedMs || 0;
+    if(finals.length < 3 || dur < 6000){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    const s = getSettings();
+    const pts = []; let cum = 0;
+    finals.forEach(function(f){ cum += wordsOf(f.text, s.language).length; pts.push({ t:f.t, cum:cum }); });
+    const cumAt = function(tt){ if(tt<=0) return 0; let c=0; for(let k=0;k<pts.length;k++){ if(pts[k].t<=tt) c=pts[k].cum; else break; } return c; };
+    const WIN = 12000, N = 90, series = [];
+    for(let i=0;i<=N;i++){
+      const t = (dur*i)/N, ws = Math.max(0, t-WIN), mins = (t-ws)/60000;
+      series.push({ t:t, wpm: mins>0 ? (cumAt(t)-cumAt(ws))/mins : 0 });
+    }
+    const peak = series.reduce(function(mx,p){ return Math.max(mx,p.wpm); }, 0);
+    const yMax = Math.max(peak*1.1, (s.wpmHigh||160)*1.25, 60);
+    const xOf = function(t){ return (t/dur)*W; };
+    const yOf = function(w){ return H - (Math.min(w,yMax)/yMax)*(H-4) - 2; };
+    if(s.wpmHigh > 0){
+      const y1 = yOf(s.wpmHigh), y2 = yOf(s.wpmLow);
+      ctx.fillStyle = "rgba(95,164,122,.20)"; ctx.fillRect(0, y1, W, y2-y1);
+      ctx.strokeStyle = "rgba(95,164,122,.55)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0,y1); ctx.lineTo(W,y1); ctx.moveTo(0,y2); ctx.lineTo(W,y2); ctx.stroke();
+    }
+    const startI = Math.max(1, Math.round((4000/dur)*N));
+    ctx.beginPath();
+    for(let i=startI;i<=N;i++){ const x=xOf(series[i].t), y=yOf(series[i].wpm); i===startI?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.strokeStyle = "#ffd89e"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
+    let mn=Infinity, mx=-Infinity;
+    for(let i=startI;i<=N;i++){ mn=Math.min(mn,series[i].wpm); mx=Math.max(mx,series[i].wpm); }
+    $("paceSummary").textContent = "Your pace ranged from about " + Math.round(mn) + " to " + Math.round(mx)
+      + " words per minute" + (s.wpmHigh>0 ? (", with a target band of " + s.wpmLow + " to " + s.wpmHigh) : "") + ".";
+  }
+
+  btnRecount.addEventListener("click", function(){
+    const el = $("transcript");
+    const text = (el.innerText || el.textContent || "").replace(/\s+/g," ").trim();
+    if(!text){ announce("Transcript is empty. Type your words first."); return; }
+    lastMetrics = computeMetrics(text);
+    renderResults(lastMetrics);
+    scheduleSave(true);
+    announce("Recounted from the edited transcript.");
+  });
+
+  // ---------- setup check / help ----------
+  function openHelp(faqId){
+    $("help").open = true;
+    if(faqId && $(faqId)){
+      $(faqId).open = true;
+      $(faqId).scrollIntoView({ behavior:"smooth", block:"center" });
+      const sum = $(faqId).querySelector("summary"); if(sum) sum.focus();
+    } else { $("help").scrollIntoView({ behavior:"smooth", block:"start" }); }
+  }
+  $("btnHelpCam").addEventListener("click", function(){ openHelp("faq-permission"); });
+
+  function diagLine(state, title, detail, faqId){
+    const row = document.createElement("div");
+    row.className = "diag-line diag-" + state;
+    const ico = state === "ok" ? "\u2713" : state === "warn" ? "!" : "\u2715";
+    const lbl = state === "ok" ? "Good:" : state === "warn" ? "Warning:" : "Problem:";
+    row.innerHTML = '<span class="diag-ico" aria-hidden="true">' + ico + '</span><div><span class="sr-only">' + lbl + ' </span><b>'
+      + escapeHTML(title) + '</b><span class="det">' + escapeHTML(detail) + '</span></div>';
+    if(faqId){
+      const a = document.createElement("button");
+      a.type = "button"; a.className = "help-link"; a.textContent = "How to fix";
+      a.addEventListener("click", function(){ openHelp(faqId); });
+      row.querySelector("div").appendChild(a);
+    }
+    return row;
+  }
+
+  $("btnDiag").addEventListener("click", async function(){
+    const out = $("diagOut");
+    out.hidden = false;
+    out.innerHTML = '<p style="color:var(--ink-soft)">Checking\u2026</p>';
+    const rows = [];
+    if(embedded) rows.push(["bad","Running inside an embedded frame","Recording usually can't work here. Open this page in its own browser tab.",null]);
+    if(!window.isSecureContext) rows.push(["bad","Not a secure page","Browsers only allow the camera on https pages. Open the link your instructor gave you.",null]);
+    rows.push(mediaSupported ? ["ok","This browser can record","Video and audio recording are supported.",null]
+                             : ["bad","This browser can't record","Try a recent version of Chrome or Edge.",null]);
+    rows.push(recogSupported ? ["ok","Live captions supported","Your words will be transcribed as you speak.",null]
+      : ["warn","Live captions not supported here","Safari and Firefox can't caption. You can still record, then type or paste your transcript.","faq-captions"]);
+    let camPerm = null, micPerm = null;
+    if(navigator.permissions && navigator.permissions.query){
+      try{ camPerm = (await navigator.permissions.query({name:"camera"})).state; }catch(e){}
+      try{ micPerm = (await navigator.permissions.query({name:"microphone"})).state; }catch(e){}
+    }
+    if(camPerm === "denied" || micPerm === "denied") rows.push(["bad","Camera or microphone is blocked","Your browser is refusing access. This is the most common cause of a blank picture.","faq-permission"]);
+    else if(camPerm === "granted" || micPerm === "granted") rows.push(["ok","Permission granted","Your browser is allowing camera and microphone access.",null]);
+    else if(camPerm || micPerm) rows.push(["warn","Permission not decided yet","You'll be asked when you turn the camera on. Choose Allow.","faq-permission"]);
+    try{
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const cams = devs.filter(function(d){ return d.kind === "videoinput"; });
+      const mics = devs.filter(function(d){ return d.kind === "audioinput"; });
+      rows.push(cams.length ? ["ok","Camera found", cams.length + (cams.length===1?" camera":" cameras") + " detected.",null]
+                            : ["bad","No camera found","Connect a webcam, or switch Recording quality to Audio only.","faq-inuse"]);
+      rows.push(mics.length ? ["ok","Microphone found", mics.length + (mics.length===1?" microphone":" microphones") + " detected.",null]
+                            : ["bad","No microphone found","Nothing to record. Connect a mic or headset.","faq-mic"]);
+    }catch(e){ rows.push(["warn","Couldn't list your devices","Turn the camera on and see what happens.","faq-permission"]); }
+    let lsOk = lsSet("rr_test","1"); try{ localStorage.removeItem("rr_test"); }catch(e){}
+    let dbOk = false;
+    try{ await idb(); dbOk = true; }catch(e){}
+    if(lsOk && dbOk) rows.push(["ok","Saved takes will work","This browser can keep your takes and their videos.",null]);
+    else if(lsOk) rows.push(["warn","Videos won't be kept","Your scores and notes save, but this browser won't store videos. Download each video right after recording.","faq-history"]);
+    else rows.push(["warn","Saved takes won't be kept","Private browsing or a browser setting is blocking storage. Download anything you need.","faq-history"]);
+    try{
+      if(navigator.storage && navigator.storage.estimate){
+        const est = await navigator.storage.estimate();
+        if(est.quota){
+          const free = est.quota - (est.usage||0);
+          rows.push(free > 200*1048576 ? ["ok","Plenty of storage", "About " + mb(free) + " free for recordings.",null]
+                                       : ["warn","Storage is low", "About " + mb(free) + " free. Download and delete old takes, or record audio only.","faq-file"]);
+        }
+      }
+    }catch(e){}
+    out.innerHTML = "";
+    rows.forEach(function(r){ out.appendChild(diagLine(r[0], r[1], r[2], r[3])); });
+    const bad = rows.filter(function(r){ return r[0]==="bad"; }).length;
+    announce(bad ? (bad + " problem" + (bad>1?"s":"") + " found. See the setup check.") : "Setup check complete. No blocking problems found.");
+  });
+
+  // ---------- assistant picker + coaching ----------
+  const JSON_INSTR = 'Write your reply in TWO parts, in this order.\n\n'
+    + 'PART 1 - the feedback itself, written for the student to read right here. Use clear headings and normal prose: an encouraging opening line, "What worked" with two specific things, "What to work on" with two or three prioritized items (each saying what to change, why, and what to try), and "For your next take" with a single focus. Warm and readable - no JSON, no code, just the coaching.\n\n'
+    + 'PART 2 - under a heading exactly like "Everything below is for the Rehearsal Room", output a single fenced code block marked json containing the same feedback in this shape: {"opener": string, "worked": [string, string], "improve": [{"focus": string, "why": string, "try": string}], "next": string}. Two or three items in "improve". No commentary inside the block.';
+
+  const ASSISTANTS = {
+    claude:  { name:"Claude",            url:"https://claude.ai/new" },
+    copilot: { name:"Microsoft Copilot", url:"https://copilot.microsoft.com" },
+    chatgpt: { name:"ChatGPT",           url:"https://chatgpt.com" },
+    gemini:  { name:"Google Gemini",     url:"https://gemini.google.com" },
+    other:   { name:"your assistant",    url:"" }
+  };
+  function currentAssistant(){ return ASSISTANTS[$("assistant").value] || ASSISTANTS.copilot; }
+  function refreshAssistant(){
+    const a = currentAssistant(), link = $("openAssistant");
+    if(a.url){ link.href = a.url; link.hidden = false; link.textContent = "Open " + a.name; }
+    else { link.hidden = true; }
+    $("btnCopyCoach").textContent = "Copy prompt for " + a.name;
+    $("pasteWho").textContent = "from " + a.name;
+    lsSet("rr_assistant", $("assistant").value);
+  }
+  $("assistant").addEventListener("change", refreshAssistant);
+
+  function coachInstructions(){
+    return "You are an encouraging, specific speech-delivery coach for a college communication class. "
+      + "You are given a practice-speech transcript (auto-generated, so it may contain small transcription errors - do not nitpick those) and objective delivery metrics measured by a browser tool. "
+      + "Coach the student's DELIVERY - pacing, filler words, flow, clarity, word choice, and how the delivery is organized - not the correctness of their ideas or opinions, unless a prompt or rubric below asks you to. "
+      + "Be warm, concrete, and actionable. Point to specific moments in the transcript, tie advice to the metrics where relevant, and never shame. Prioritize the two or three changes that would most improve the next take. "
+      + "Do not claim to have heard the audio, and do not infer emotion, confidence, or tone of voice - you only have text and numbers. Treat every metric as an approximation from a browser tool, not a grade. "
+      + "Write your feedback in the same language the transcript is written in.";
+  }
+  function contextText(m){
+    const s = m.settings, p = $("promptInput").value.trim(), L = [];
+    if(p){ L.push("PROMPT: " + p); L.push(""); }
+    L.push("DELIVERY METRICS:");
+    L.push("- Length: " + fmt(m.durSec) + (s.targetMax>0 ? (" (target "+s.targetMin+"-"+s.targetMax+" min)") : ""));
+    L.push("- Words: " + m.wc);
+    L.push("- Pace: " + m.wpm + " wpm (target " + s.wpmLow + "-" + s.wpmHigh + ")");
+    const fk = Object.keys(m.fill.found);
+    L.push("- Filler words: " + m.fill.total + (m.durSec>0 ? (" ("+m.fillRate.toFixed(1)+"/min)") : "")
+      + (fk.length ? (" - " + fk.map(function(k){ return k+" x"+m.fill.found[k]; }).join(", ")) : ""));
+    L.push("- Word variety: " + m.variety + "% unique" + (m.repeats.length ? (" - most repeated: " + m.repeats.map(function(r){ return r.w+" x"+r.n; }).join(", ")) : ""));
+    L.push("- Notable pauses (est.): " + m.pauses.count + (m.pauses.longest>0 ? (" - longest ~"+m.pauses.longest.toFixed(1)+"s") : ""));
+    if(m.energy && m.energy.ok){
+      const e = m.energy;
+      let el = "- Vocal energy (relative within this take only - NOT absolute loudness, so never comment on how loud or quiet the speaker is): ";
+      el += "variation index " + Math.round(e.variation*100) + (e.variation < 0.28 ? " (fairly level/monotone)" : e.variation < 0.75 ? " (good variety)" : " (very uneven)");
+      if(e.arcPct !== null) el += "; energy from first third to last third changed " + (e.arcPct>0?"+":"") + e.arcPct + "%" + (e.arcPct <= -22 ? " (faded toward the end)" : e.arcPct >= 22 ? " (built toward the end)" : " (steady)");
+      if(e.finishPct !== null && e.finishPct <= -30) el += "; the final words drop off noticeably (soft landing)";
+      L.push(el);
+    }
+    L.push(""); L.push("TRANSCRIPT:"); L.push(m.text || "(none captured)");
+    const rub = readRubric(), rkeys = Object.keys(rub);
+    if(rkeys.length || $("reflectWorked").value.trim() || $("reflectChange").value.trim()){
+      L.push(""); L.push("THE SPEAKER'S OWN ASSESSMENT (respond to it - affirm where they read themselves accurately, and gently note anything they were harder or easier on themselves about than the evidence supports):");
+      rkeys.forEach(function(k){ L.push("- " + k + ": " + rub[k] + "/4"); });
+      const w = $("reflectWorked").value.trim(), c = $("reflectChange").value.trim();
+      if(w) L.push("- They felt this worked: " + w);
+      if(c) L.push("- They want to change next time: " + c);
+    }
+    return L.join("\n");
+  }
+  function buildHandoffPrompt(m){
+    return coachInstructions() + " " + JSON_INSTR
+      + "\n\nGive me: one encouraging opener; two things that worked; two or three specific things to improve, prioritized; and one focus for my next take.\n\n"
+      + contextText(m);
+  }
+  function currentMetrics(){
+    const el = $("transcript");
+    return computeMetrics((el.innerText || el.textContent || "").replace(/\s+/g," ").trim());
+  }
+
+  function copyText(txt, ok, fail){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok, function(){ fallbackCopy(txt, ok, fail); });
+    } else { fallbackCopy(txt, ok, fail); }
+  }
+  function fallbackCopy(txt, ok, fail){
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      const done = document.execCommand("copy");
+      ta.remove();
+      done ? ok() : (fail && fail());
+    }catch(e){ if(fail) fail(); }
+  }
+
+  $("btnCopyCoach").addEventListener("click", function(){
+    if(!lastMetrics){ note("copyNote","Record a take first.","warn"); return; }
+    const m = currentMetrics();
+    if(!m.text){ note("copyNote","Add a transcript first, then copy.","warn"); return; }
+    copyText(buildHandoffPrompt(m),
+      function(){ note("copyNote","Copied. Paste it into " + currentAssistant().name + ", read the feedback, then copy the whole reply back here."); },
+      function(){ note("copyNote","Couldn't copy — select the transcript and copy manually.","warn"); });
+  });
+
+  // Chat windows often drop the ``` fences on copy, so the block is found by brace-matching.
+  function splitCoaching(text){
+    let prose = String(text), obj = null;
+    const fence = prose.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if(fence){
+      try{ const o = JSON.parse(fence[1].trim()); if(o && o.opener){ obj = o; prose = prose.replace(fence[0], ""); } }catch(e){}
+    }
+    if(!obj){
+      for(let i = prose.indexOf("{"); i !== -1; i = prose.indexOf("{", i+1)){
+        let depth = 0, inStr = false, esc = false, endIdx = -1;
+        for(let j = i; j < prose.length; j++){
+          const ch = prose[j];
+          if(esc){ esc = false; continue; }
+          if(ch === "\\"){ esc = true; continue; }
+          if(ch === '"'){ inStr = !inStr; continue; }
+          if(inStr) continue;
+          if(ch === "{") depth++;
+          else if(ch === "}"){ depth--; if(depth === 0){ endIdx = j; break; } }
+        }
+        if(endIdx === -1) break;
+        try{
+          const o = JSON.parse(prose.slice(i, endIdx+1));
+          if(o && o.opener){ obj = o; prose = prose.slice(0, i) + prose.slice(endIdx+1); break; }
+        }catch(e){}
+      }
+    }
+    prose = prose.replace(/^\s*[#*\-]{0,4}\s*everything below is for the rehearsal room\s*[*\-:]{0,4}\s*$/gim, "")
+                 .replace(/^\s*```(?:json)?\s*$/gim, "")
+                 .replace(/\n{3,}/g, "\n\n").trim();
+    return { obj: obj, prose: prose };
+  }
+
+  function formatProse(raw){
+    const lines = escapeHTML(raw).split("\n"), out = [];
+    let inList = false;
+    const closeList = function(){ if(inList){ out.push("</ul>"); inList = false; } };
+    const inline = function(t){
+      return t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+              .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:!?]|$)/g, "$1<em>$2</em>");
+    };
+    lines.forEach(function(ln){
+      const t = ln.trim();
+      if(!t){ closeList(); return; }
+      const h = t.match(/^#{1,6}\s+(.*)$/);
+      if(h){ closeList(); out.push('<h4 class="prose-h">' + inline(h[1]) + "</h4>"); return; }
+      const li = t.match(/^(?:[-*\u2022]|\d+[.)])\s+(.*)$/);
+      if(li){ if(!inList){ out.push("<ul>"); inList = true; } out.push("<li>" + inline(li[1]) + "</li>"); return; }
+      closeList(); out.push("<p>" + inline(t) + "</p>");
+    });
+    closeList();
+    return out.join("");
+  }
+
+  function renderCoaching(text){
+    const out = $("coachOut"); out.hidden = false;
+    const split = splitCoaching(text), obj = split.obj, prose = split.prose;
+    let h = '<div class="coach-card">';
+    if(obj){
+      h += '<p class="coach-opener">' + escapeHTML(obj.opener || "") + '</p>';
+      if(Array.isArray(obj.worked) && obj.worked.length){
+        h += '<div class="coach-sec"><h4>What worked</h4><ul>' + obj.worked.map(function(w){ return "<li>" + escapeHTML(w) + "</li>"; }).join("") + "</ul></div>";
+      }
+      if(Array.isArray(obj.improve) && obj.improve.length){
+        h += '<div class="coach-sec"><h4>What to work on</h4>';
+        obj.improve.forEach(function(it){
+          it = it || {};
+          h += '<div class="improve"><div class="imp-focus">' + escapeHTML(it.focus||"") + "</div>";
+          if(it.why) h += '<div class="imp-why">' + escapeHTML(it.why) + "</div>";
+          if(it["try"]) h += '<div class="imp-try"><b>Try:</b> ' + escapeHTML(it["try"]) + "</div>";
+          h += "</div>";
+        });
+        h += "</div>";
+      }
+      if(obj.next) h += '<div class="coach-next"><span>Your focus next take</span>' + escapeHTML(obj.next) + "</div>";
+      if(prose) h += '<details class="coach-more"><summary>Read the full feedback</summary><div class="coach-prose">' + formatProse(prose) + "</div></details>";
+    } else {
+      h += '<div class="coach-prose">' + formatProse(prose || text) + "</div>";
+    }
+    out.innerHTML = h + "</div>";
+  }
+
+  function coachingPlain(){
+    if(!coachingText) return "";
+    const sp = splitCoaching(coachingText);
+    if(sp.prose) return sp.prose;
+    const o = sp.obj;
+    if(!o) return coachingText.trim();
+    const L = [o.opener];
+    if(Array.isArray(o.worked) && o.worked.length){ L.push(""); L.push("What worked:"); o.worked.forEach(function(x){ L.push("- " + x); }); }
+    if(Array.isArray(o.improve) && o.improve.length){
+      L.push(""); L.push("What to work on:");
+      o.improve.forEach(function(it){ it = it||{}; L.push("- " + (it.focus||"")); if(it.why) L.push("  Why: " + it.why); if(it["try"]) L.push("  Try: " + it["try"]); });
+    }
+    if(o.next){ L.push(""); L.push("Next take: " + o.next); }
+    return L.join("\n");
+  }
+
+  $("btnAddCoaching").addEventListener("click", function(){
+    const raw = $("coachPaste").value.trim();
+    if(!raw){ note("coachNote","Paste the assistant's reply into the box first.","warn"); return; }
+    if(!lastMetrics){ note("coachNote","Record a take first.","warn"); return; }
+    coachingText = raw;
+    renderCoaching(raw);
+    scheduleSave(true);
+    note("coachNote","Coaching added to this take. It's included in your report and submission.");
+  });
+  $("btnClearCoaching").addEventListener("click", function(){
+    coachingText = ""; $("coachPaste").value = "";
+    const out = $("coachOut"); out.hidden = true; out.innerHTML = "";
+    scheduleSave(true);
+    note("coachNote","Coaching cleared.");
+  });
+
+  // ---------- rubric ----------
+  const SCALE = [{v:1,t:"Needs work"},{v:2,t:"Developing"},{v:3,t:"Solid"},{v:4,t:"Strong"}];
+  function criteriaList(){
+    return ($("rubricInput").value || "").split("\n").map(function(x){ return x.trim(); }).filter(Boolean).slice(0,12);
+  }
+  function renderRubric(){
+    const list = $("rubricList"), prior = readRubric();
+    list.innerHTML = "";
+    criteriaList().forEach(function(name, i){
+      const row = document.createElement("div"); row.className = "crit";
+      const h = document.createElement("div"); h.className = "crit-name"; h.id = "critName" + i; h.textContent = name;
+      row.appendChild(h);
+      const opts = document.createElement("div");
+      opts.className = "scale-opts"; opts.setAttribute("role","radiogroup"); opts.setAttribute("aria-labelledby", "critName" + i);
+      SCALE.forEach(function(sc){
+        const lab = document.createElement("label"), inp = document.createElement("input");
+        inp.type = "radio"; inp.name = "crit_" + i; inp.value = String(sc.v);
+        if(prior[name] === sc.v) inp.checked = true;
+        inp.addEventListener("change", function(){ updateRubricTotal(); scheduleSave(); });
+        const span = document.createElement("span");
+        span.innerHTML = '<span class="num">' + sc.v + '</span>' + escapeHTML(sc.t);
+        lab.appendChild(inp); lab.appendChild(span); opts.appendChild(lab);
+      });
+      row.appendChild(opts); list.appendChild(row);
+    });
+    updateRubricTotal();
+  }
+  $("rubricInput").addEventListener("change", renderRubric);
+  function readRubric(){
+    const out = {};
+    criteriaList().forEach(function(name, i){
+      const sel = document.querySelector('input[name="crit_' + i + '"]:checked');
+      if(sel) out[name] = parseInt(sel.value, 10);
+    });
+    return out;
+  }
+  function rubricAvg(r){
+    const k = Object.keys(r || {});
+    return k.length ? k.reduce(function(a,key){ return a + r[key]; }, 0) / k.length : null;
+  }
+  function updateRubricTotal(){
+    const r = readRubric(), keys = Object.keys(r), box = $("rubricTotal");
+    if(!keys.length){ box.hidden = true; return; }
+    $("rubricAvg").textContent = rubricAvg(r).toFixed(1) + " / 4";
+    $("rubricAvgNote").textContent = "average across " + keys.length + " of " + criteriaList().length + " criteria scored";
+    box.hidden = false;
+  }
+  ["reflectWorked","reflectChange"].forEach(function(id){ $(id).addEventListener("input", function(){ scheduleSave(); }); });
+
+  // =================================================================
+  // STUDENT RECORDS
+  // Metadata for each take lives in localStorage (small, synchronous).
+  // The recordings themselves live in IndexedDB, which can hold large files.
+  // =================================================================
+  const HKEY = "rr_takes_v1";
+  const IDB_NAME = "rehearsal-room", IDB_STORE = "media";
+  let idbPromise = null;
+
+  function idb(){
+    if(idbPromise) return idbPromise;
+    idbPromise = new Promise(function(res, rej){
+      if(!window.indexedDB){ rej(new Error("IndexedDB unavailable")); return; }
+      let r;
+      try{ r = indexedDB.open(IDB_NAME, 1); }catch(e){ rej(e); return; }
+      r.onupgradeneeded = function(){ if(!r.result.objectStoreNames.contains(IDB_STORE)) r.result.createObjectStore(IDB_STORE); };
+      r.onsuccess = function(){ res(r.result); };
+      r.onerror = function(){ rej(r.error); };
+      r.onblocked = function(){ rej(new Error("blocked")); };
+    });
+    idbPromise.catch(function(){ idbPromise = null; });
+    return idbPromise;
+  }
+  function idbOp(mode, fn){
+    return idb().then(function(db){
+      return new Promise(function(res, rej){
+        const tx = db.transaction(IDB_STORE, mode), rq = fn(tx.objectStore(IDB_STORE));
+        let out;
+        if(rq) rq.onsuccess = function(){ out = rq.result; };
+        tx.oncomplete = function(){ res(out); };
+        tx.onerror = tx.onabort = function(){ rej(tx.error || new Error("storage error")); };
+      });
+    });
+  }
+  const mediaPut = function(id, blob){ return idbOp("readwrite", function(st){ return st.put(blob, id); }); };
+  const mediaGet = function(id){ return idbOp("readonly", function(st){ return st.get(id); }).catch(function(){ return null; }); };
+  const mediaDel = function(id){ return idbOp("readwrite", function(st){ return st.delete(id); }).catch(function(){}); };
+  const mediaClear = function(){ return idbOp("readwrite", function(st){ return st.clear(); }).catch(function(){}); };
+
+  async function sha256Hex(data){
+    try{
+      if(!(window.crypto && crypto.subtle)) return null;
+      const buf = data instanceof Blob ? await data.arrayBuffer() : data;
+      const h = await crypto.subtle.digest("SHA-256", buf);
+      return Array.from(new Uint8Array(h)).map(function(b){ return b.toString(16).padStart(2,"0"); }).join("");
+    }catch(e){ return null; }
+  }
+
+  function loadTakes(){
+    try{ const raw = localStorage.getItem(HKEY); const a = raw ? JSON.parse(raw) : []; return Array.isArray(a) ? a : []; }
+    catch(e){ return []; }
+  }
+  function saveTakes(arr){ return lsSet(HKEY, JSON.stringify(arr)); }
+  function findTake(id){ return loadTakes().find(function(t){ return t.id === id; }) || null; }
+  function nextN(takes){ return takes.reduce(function(mx,t){ return Math.max(mx, t.n||0); }, 0) + 1; }
+
+  // One record shape is used everywhere: history, reports, submission zips, and
+  // the instructor's collector. Older saved takes simply lack some fields.
+  function snapshot(m){
+    const s = m.settings;
+    return {
+      schema: SCHEMA,
+      profile: getProfile(),
+      assignment: { title: assignmentTitle(), prompt: $("promptInput").value.trim() },
+      settings: { targetMin:s.targetMin, targetMax:s.targetMax, wpmLow:s.wpmLow, wpmHigh:s.wpmHigh, language:s.language, fillers:s.fillers },
+      durSec: Math.round(m.durSec), wc: m.wc, wpm: m.wpm,
+      fillers: m.fill.total, fillRate: Number(m.fillRate.toFixed(1)), fillFound: m.fill.found,
+      variety: m.variety, repeats: m.repeats,
+      pauses: m.pauses.count, longestPause: Number(m.pauses.longest.toFixed(1)),
+      energy: (m.energy && m.energy.ok) ? { variation: Math.round(m.energy.variation*100), arcPct: m.energy.arcPct, finishPct: m.energy.finishPct } : null,
+      rubric: readRubric(), worked: $("reflectWorked").value.trim(), change: $("reflectChange").value.trim(),
+      coaching: coachingPlain(), text: m.text,
+      source: isUploaded ? "uploaded" : "recorded"
+    };
+  }
+
+  function trimTakes(takes){
+    while(takes.length > MAX_TAKES){ const old = takes.shift(); if(old && old.id) mediaDel(old.id); }
+  }
+
+  // Create the record for the take on screen, or update it in place.
+  function saveNow(silent){
+    if($("practiceToggle").checked || !lastMetrics) return false;
+    const m = currentMetrics();
+    const takes = loadTakes(), snap = snapshot(m);
+    let rec = null;
+    if(currentTakeId){
+      const i = takes.findIndex(function(t){ return t.id === currentTakeId; });
+      if(i >= 0){ rec = Object.assign(takes[i], snap, { updated: new Date().toISOString() }); }
+      else currentTakeId = null;   // deleted from history meanwhile — make a fresh one
+    }
+    let created = false;
+    if(!rec){
+      rec = Object.assign({ id: Date.now(), n: nextN(takes), date: new Date().toISOString(), media: null }, snap);
+      takes.push(rec); currentTakeId = rec.id; created = true;
+      trimTakes(takes);
+    }
+    if(!saveTakes(takes)){
+      note("saveNote","Couldn't save — this browser's storage is full or blocked. Download your submission now so nothing is lost.","warn");
+      return false;
+    }
+    renderHistory();
+    if(created && recBlob && $("keepVideoToggle").checked) storeMedia(rec.id, recBlob);
+    else if(created && recBlob) note("saveNote","Saved as take " + rec.n + " (without video, as you chose in Set up the take).","quiet", true);
+    else if(!silent) note("saveNote","Saved to take " + rec.n + ".");
+    else note("saveNote","All changes saved to take " + rec.n + ".","quiet", true);
+    return true;
+  }
+  function scheduleSave(immediate){
+    if(!currentTakeId || $("practiceToggle").checked) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){ saveTimer = null; saveNow(true); }, immediate ? 50 : 700);
+  }
+  // Write any pending edits while the old take's audio data is still in memory.
+  function flushSave(){
+    if(!saveTimer) return;
+    clearTimeout(saveTimer); saveTimer = null;
+    if(currentTakeId && lastMetrics) saveNow(true);
+  }
+  $("btnSaveTake").addEventListener("click", function(){
+    if(!lastMetrics){ note("saveNote","Record a take first.","warn"); return; }
+    clearTimeout(saveTimer); saveNow(false);
+  });
+
+  async function storeMedia(id, blob){
+    mediaPending = true;
+    note("saveNote","Saving your video to this browser\u2026","quiet", true);
+    const meta = { type: blob.type, ext: extFor(blob.type, recExt), size: blob.size, audioOnly: takeIsAudio, stored: false, sha256: null };
+    meta.sha256 = await sha256Hex(blob);
+    try{
+      if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
+      await mediaPut(id, blob);
+      meta.stored = true;
+    }catch(e){ meta.stored = false; }
+    const takes = loadTakes(), t = takes.find(function(x){ return x.id === id; });
+    if(t){ t.media = meta; saveTakes(takes); renderHistory(); }
+    mediaPending = false;
+    const n = t ? t.n : "";
+    if(meta.stored) note("saveNote","Saved as take " + n + ", with its " + (takeIsAudio ? "audio" : "video") + " (" + mb(meta.size) + ").");
+    else note("saveNote","Saved take " + n + ", but this browser wouldn't keep the video. Use Download video now so you don't lose it.","warn");
+  }
+
+  // ---------- naming ----------
+  function fileBase(rec){
+    const p = (rec && rec.profile && rec.profile.name) ? rec.profile : getProfile();
+    const a = (rec && rec.assignment && rec.assignment.title) || assignmentTitle();
+    const n = rec ? rec.n : (currentTakeId && findTake(currentTakeId) ? findTake(currentTakeId).n : null);
+    return [slug(p.name) || "student", slug(a, 30) || "speech", n ? "take" + n : "take", stampOf(rec && rec.date)].join("_");
+  }
+
+  // ---------- reports (built from a record, so old takes get the same report) ----------
+  function energyWord(v){ return v < 28 ? "fairly level" : v < 75 ? "good light and shade" : "very uneven"; }
+  function settingsOf(rec){ return Object.assign({ targetMin:0, targetMax:0, wpmLow:130, wpmHigh:160 }, rec.settings || {}); }
+
+  function reportMd(rec){
+    const s = settingsOf(rec), p = rec.profile || {}, a = rec.assignment || { prompt: rec.prompt }, L = [];
+    L.push("# " + (a.title || "Speech take") + " — delivery report"); L.push("");
+    if(p.name) L.push("Speaker: " + p.name);
+    if(p.course) L.push("Course: " + p.course);
+    if(p.sid) L.push("Student ID: " + p.sid);
+    L.push("Take: " + (rec.n || "—") + " · " + new Date(rec.date || Date.now()).toLocaleString());
+    if(a.prompt){ L.push(""); L.push("## Prompt"); L.push(a.prompt); }
+    L.push(""); L.push("## Delivery");
+    L.push("- Length: " + fmt(rec.durSec) + (s.targetMax>0 ? "  (target "+s.targetMin+"–"+s.targetMax+" min)" : ""));
+    L.push("- Words: " + rec.wc);
+    L.push("- Pace: " + rec.wpm + " wpm  (target " + s.wpmLow + "–" + s.wpmHigh + ")");
+    L.push("- Filler words: " + rec.fillers + "  (" + rec.fillRate + "/min)");
+    const fk = Object.keys(rec.fillFound || {});
+    if(fk.length) L.push("  - " + fk.map(function(k){ return k + " ×" + rec.fillFound[k]; }).join(", "));
+    L.push("- Word variety: " + rec.variety + "% unique");
+    if(rec.repeats && rec.repeats.length) L.push("  - Most repeated: " + rec.repeats.map(function(r){ return r.w+" ×"+r.n; }).join(", "));
+    L.push("- Long pauses (estimated): " + rec.pauses + (rec.longestPause ? "  · longest ~" + rec.longestPause + "s" : ""));
+    if(rec.energy){
+      L.push("- Vocal energy (relative to this take, not loudness): variation " + rec.energy.variation + " (" + energyWord(rec.energy.variation) + ")"
+        + (rec.energy.arcPct != null ? "; first → last third " + (rec.energy.arcPct>0?"+":"") + rec.energy.arcPct + "%" : ""));
+    }
+    const rk = Object.keys(rec.rubric || {});
+    if(rk.length){
+      L.push(""); L.push("## Self-assessment");
+      rk.forEach(function(k){ L.push("- " + k + ": " + rec.rubric[k] + "/4"); });
+      L.push("- Average: " + rubricAvg(rec.rubric).toFixed(1) + "/4");
+    }
+    if(rec.worked || rec.change){
+      L.push(""); L.push("## Reflection");
+      if(rec.worked) L.push("**What worked:** " + rec.worked);
+      if(rec.change) L.push("**Next time:** " + rec.change);
+    }
+    if(rec.coaching){ L.push(""); L.push("## Coaching"); L.push(rec.coaching); }
+    L.push(""); L.push("## Transcript"); L.push(rec.text || "(none captured)");
+    if(rec.media && rec.media.sha256){ L.push(""); L.push("Recording fingerprint (SHA-256): " + rec.media.sha256); }
+    L.push(""); L.push("---");
+    L.push("Metrics come from an in-browser tool and are approximations, not a grade. The transcript is machine-made and may misread accents or names.");
+    return L.join("\n");
+  }
+
+  function reportHtml(rec){
+    const s = settingsOf(rec), p = rec.profile || {}, a = rec.assignment || { prompt: rec.prompt }, e = escapeHTML;
+    const row = function(k, v){ return "<tr><th>" + e(k) + "</th><td>" + v + "</td></tr>"; };
+    let h = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+      + "<title>" + e((p.name ? p.name + " — " : "") + (a.title || "Speech take") + " — take " + (rec.n || "")) + "</title>"
+      + "<style>body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#1b2027;max-width:760px;margin:32px auto;padding:0 20px;line-height:1.55}"
+      + "h1{font-family:'Iowan Old Style',Palatino,Georgia,serif;font-size:1.7rem;margin:0 0 4px}h2{font-size:1.05rem;margin:28px 0 8px;border-bottom:1px solid #d7dde4;padding-bottom:4px}"
+      + ".meta{color:#5a636f;margin:0}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e3e7ec;vertical-align:top}"
+      + "th{width:38%;font-weight:600}.box{background:#f3f6f9;border-radius:8px;padding:12px 14px;white-space:pre-wrap}.fine{font-size:.8rem;color:#5a636f;margin-top:30px}"
+      + "code{font-size:.75rem;word-break:break-all}@media print{body{margin:0}}</style></head><body>";
+    h += "<h1>" + e(a.title || "Speech take") + "</h1>";
+    h += '<p class="meta"><strong>' + e(p.name || "Name not given") + "</strong>" + (p.course ? " · " + e(p.course) : "") + (p.sid ? " · ID " + e(p.sid) : "") + "</p>";
+    h += '<p class="meta">Take ' + e(rec.n || "—") + " · " + e(new Date(rec.date || Date.now()).toLocaleString()) + "</p>";
+    if(a.prompt) h += "<h2>Prompt</h2><p>" + e(a.prompt) + "</p>";
+    h += "<h2>Delivery</h2><table>";
+    h += row("Length", e(fmt(rec.durSec)) + (s.targetMax>0 ? " (target " + e(s.targetMin) + "–" + e(s.targetMax) + " min)" : ""));
+    h += row("Words", e(rec.wc));
+    h += row("Pace", e(rec.wpm) + " words per minute (target " + e(s.wpmLow) + "–" + e(s.wpmHigh) + ")");
+    const fk = Object.keys(rec.fillFound || {});
+    h += row("Filler words", e(rec.fillers) + " (" + e(rec.fillRate) + " per minute)" + (fk.length ? "<br>" + fk.map(function(k){ return "“" + e(k) + "” ×" + e(rec.fillFound[k]); }).join(", ") : ""));
+    h += row("Word variety", e(rec.variety) + "% unique" + (rec.repeats && rec.repeats.length ? "<br>Most repeated: " + rec.repeats.map(function(r){ return e(r.w) + " ×" + e(r.n); }).join(", ") : ""));
+    h += row("Long pauses", e(rec.pauses) + (rec.longestPause ? " (longest about " + e(rec.longestPause) + "s)" : ""));
+    if(rec.energy) h += row("Vocal energy", e(energyWord(rec.energy.variation)) + (rec.energy.arcPct != null ? "; first to last third " + (rec.energy.arcPct>0?"+":"") + e(rec.energy.arcPct) + "%" : ""));
+    h += "</table>";
+    const rk = Object.keys(rec.rubric || {});
+    if(rk.length){
+      h += "<h2>Self-assessment</h2><table>" + rk.map(function(k){ return row(k, e(rec.rubric[k]) + " / 4"); }).join("")
+        + row("Average", e(rubricAvg(rec.rubric).toFixed(1)) + " / 4") + "</table>";
+    }
+    if(rec.worked || rec.change){
+      h += "<h2>Reflection</h2>";
+      if(rec.worked) h += "<p><strong>What worked:</strong> " + e(rec.worked) + "</p>";
+      if(rec.change) h += "<p><strong>Next time:</strong> " + e(rec.change) + "</p>";
+    }
+    if(rec.coaching) h += "<h2>Coaching</h2><div>" + formatProse(rec.coaching) + "</div>";
+    h += '<h2>Transcript</h2><div class="box">' + e(rec.text || "(none captured)") + "</div>";
+    h += '<p class="fine">Metrics come from an in-browser tool and are approximations, not a grade. The transcript is machine-made and may misread accents or names.';
+    if(rec.media && rec.media.sha256) h += "<br>Recording fingerprint (SHA-256): <code>" + e(rec.media.sha256) + "</code>";
+    h += "<br>Made with The Rehearsal Room.</p></body></html>";
+    return h;
+  }
+
+  function csvCell(v){
+    let s = String(v === null || v === undefined ? "" : v);
+    if(/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // block spreadsheet formula injection
+    return '"' + s.replace(/"/g,'""') + '"';
+  }
+  function takesCsv(takes){
+    const head = ["name","course","student_id","assignment","take","date","seconds","words","wpm","fillers","fillers_per_min",
+                  "variety_pct","pauses","longest_pause_s","energy_variation","energy_arc_pct","self_avg","has_video","worked","next_time"];
+    const rows = [head.map(csvCell).join(",")];
+    takes.forEach(function(t){
+      const p = t.profile || {}, a = t.assignment || {}, avg = rubricAvg(t.rubric);
+      rows.push([p.name, p.course, p.sid, a.title, t.n, t.date, t.durSec, t.wc, t.wpm, t.fillers, t.fillRate, t.variety,
+        t.pauses, t.longestPause, t.energy ? t.energy.variation : "", t.energy ? t.energy.arcPct : "",
+        avg != null ? avg.toFixed(2) : "", t.media && t.media.stored ? "yes" : "no", t.worked, t.change].map(csvCell).join(","));
+    });
+    return rows.join("\n");
+  }
+
+  // ---------- zip (store-only writer, no library) ----------
+  const CRC_TABLE = (function(){
+    const t = new Uint32Array(256);
+    for(let i=0;i<256;i++){ let c = i; for(let k=0;k<8;k++){ c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); } t[i] = c >>> 0; }
+    return t;
+  })();
+  function crc32(u8){
+    let c = 0xFFFFFFFF;
+    for(let i=0;i<u8.length;i++){ c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); }
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function dosDateTime(d){
+    d = d || new Date();
+    return { time: (d.getHours()<<11) | (d.getMinutes()<<5) | Math.floor(d.getSeconds()/2),
+             date: ((d.getFullYear()-1980)<<9) | ((d.getMonth()+1)<<5) | d.getDate() };
+  }
+  function makeZip(files){
+    const enc = new TextEncoder(), parts = [], central = [], dt = dosDateTime();
+    let offset = 0;
+    files.forEach(function(f){
+      const nameBytes = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+      lh.setUint16(10, dt.time, true); lh.setUint16(12, dt.date, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+      lh.setUint16(26, nameBytes.length, true); lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), nameBytes, f.data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+      ch.setUint16(12, dt.time, true); ch.setUint16(14, dt.date, true);
+      ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+      ch.setUint16(28, nameBytes.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true);
+      ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+      central.push(new Uint8Array(ch.buffer), nameBytes);
+      offset += 30 + nameBytes.length + size;
+    });
+    let cdSize = 0; central.forEach(function(c){ cdSize += c.length; });
+    const eocd = new DataView(new ArrayBuffer(22));
+    eocd.setUint32(0, 0x06054b50, true); eocd.setUint16(4, 0, true); eocd.setUint16(6, 0, true);
+    eocd.setUint16(8, files.length, true); eocd.setUint16(10, files.length, true);
+    eocd.setUint32(12, cdSize, true); eocd.setUint32(16, offset, true); eocd.setUint16(20, 0, true);
+    return new Blob(parts.concat(central, [new Uint8Array(eocd.buffer)]), { type:"application/zip" });
+  }
+
+  // ---------- zip reader (for the instructor collector) ----------
+  // Reads our own store-only zips, and re-zipped (deflated) ones where the
+  // browser has DecompressionStream.
+  async function readZip(file){
+    const buf = new Uint8Array(await file.arrayBuffer()), dv = new DataView(buf.buffer), dec = new TextDecoder();
+    let e = -1;
+    for(let i = buf.length-22; i >= Math.max(0, buf.length-65557); i--){ if(dv.getUint32(i,true) === 0x06054b50){ e = i; break; } }
+    if(e < 0) throw new Error("This file isn't a zip archive.");
+    const count = dv.getUint16(e+10,true);
+    let p = dv.getUint32(e+16,true);
+    const entries = [];
+    for(let k=0;k<count;k++){
+      if(p+46 > buf.length || dv.getUint32(p,true) !== 0x02014b50) break;
+      const method = dv.getUint16(p+10,true), csize = dv.getUint32(p+20,true);
+      const nlen = dv.getUint16(p+28,true), xlen = dv.getUint16(p+30,true), clen = dv.getUint16(p+32,true), lho = dv.getUint32(p+42,true);
+      entries.push({ name: dec.decode(buf.subarray(p+46, p+46+nlen)), method: method, csize: csize, lho: lho });
+      p += 46 + nlen + xlen + clen;
+    }
+    entries.forEach(function(en){
+      en.read = async function(){
+        const ln = dv.getUint16(en.lho+26,true), lx = dv.getUint16(en.lho+28,true), start = en.lho+30+ln+lx;
+        const raw = buf.subarray(start, start+en.csize);
+        if(en.method === 0) return raw;
+        if(en.method === 8 && window.DecompressionStream){
+          const out = await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer();
+          return new Uint8Array(out);
+        }
+        throw new Error("Compressed in a way this browser can't open.");
+      };
+    });
+    return entries;
+  }
+
+  // ---------- building a submission ----------
+  async function submissionFiles(rec, blob, prefix){
+    prefix = prefix || "";
+    const enc = new TextEncoder(), files = [];
+    let media = rec.media ? Object.assign({}, rec.media) : null, mediaBytes = null;
+    if(blob){
+      mediaBytes = new Uint8Array(await blob.arrayBuffer());
+      const ext = extFor(blob.type, media && media.ext);
+      media = Object.assign(media || {}, { type: blob.type, ext: ext, size: mediaBytes.length, file: "recording." + ext });
+      if(!media.sha256) media.sha256 = await sha256Hex(mediaBytes);
+    } else if(media){ media.file = null; }
+    const full = Object.assign({}, rec, { media: media, tool: TOOL_ID, exported: new Date().toISOString() });
+    files.push({ name: prefix + "report.html", data: enc.encode(reportHtml(full)) });
+    files.push({ name: prefix + "report.md", data: enc.encode(reportMd(full)) });
+    files.push({ name: prefix + "transcript.txt", data: enc.encode(rec.text || "(none captured)") });
+    files.push({ name: prefix + "record.json", data: enc.encode(JSON.stringify(full, null, 2)) });
+    if(mediaBytes) files.push({ name: prefix + media.file, data: mediaBytes });
+    return files;
+  }
+
+  // The record for the take on screen: the saved one if it exists, otherwise a
+  // fresh snapshot (practice mode can still download).
+  function currentRecord(){
+    if(!lastMetrics) return null;
+    if(!$("practiceToggle").checked){
+      clearTimeout(saveTimer);
+      saveNow(true);
+      const t = findTake(currentTakeId);
+      if(t) return t;
+    }
+    return Object.assign({ id:null, n:null, date:new Date().toISOString(), media:null }, snapshot(currentMetrics()));
+  }
+
+  function downloadBlob(name, blob){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+  function download(name, text, mime){ downloadBlob(name, new Blob([text], { type: mime })); }
+
+  async function downloadSubmission(rec, blob, noteId, btn){
+    if(btn) btn.disabled = true;
+    note(noteId, "Building your submission\u2026", "quiet");
+    try{
+      const zip = makeZip(await submissionFiles(rec, blob));
+      downloadBlob(fileBase(rec) + ".zip", zip);
+      note(noteId, "Submission ready (" + mb(zip.size) + ") \u2014 check your downloads, then upload that one .zip file."
+        + (!(rec.profile && rec.profile.name) ? " Tip: add your name under Your details so it's labeled." : ""));
+    }catch(e){
+      note(noteId, "Couldn't build the zip. Try the one-at-a-time downloads instead.", "warn");
+    }
+    if(btn) btn.disabled = false;
+  }
+
+  function needTake(){ if(!lastMetrics){ note("shareNote","Record a take first.","warn"); return false; } return true; }
+
+  $("btnPackage").addEventListener("click", function(){
+    if(!needTake()) return;
+    if(!getProfile().name){ note("shareNote","Add your name first so your instructor knows whose speech this is.","warn"); focusProfile(); return; }
+    if(mediaPending){ note("shareNote","Still saving your video \u2014 try again in a moment.","warn"); return; }
+    downloadSubmission(currentRecord(), recBlob, "shareNote", $("btnPackage"));
+  });
+  $("btnDlReport").addEventListener("click", function(){
+    if(!needTake()) return;
+    const r = currentRecord(); download(fileBase(r) + "_report.html", reportHtml(r), "text/html");
+    note("shareNote","Report downloaded. It opens in any browser and prints cleanly.");
+  });
+  $("btnDlVideo").addEventListener("click", function(){
+    if(!needTake()) return;
+    if(!recBlob){ note("shareNote","There's no recording for this take.","warn"); return; }
+    downloadBlob(fileBase(currentRecord()) + "_recording." + extFor(recBlob.type), recBlob);
+    note("shareNote","Video downloaded.");
+  });
+  $("btnDlTranscript").addEventListener("click", function(){
+    if(!needTake()) return;
+    const r = currentRecord(); download(fileBase(r) + "_transcript.txt", r.text || "(none captured)", "text/plain");
+    note("shareNote","Transcript downloaded.");
+  });
+  $("btnDlRecord").addEventListener("click", async function(){
+    if(!needTake()) return;
+    const r = currentRecord();
+    const files = await submissionFiles(r, null);
+    const json = files.find(function(f){ return /record\.json$/.test(f.name); });
+    downloadBlob(fileBase(r) + "_record.json", new Blob([json.data], { type:"application/json" }));
+    note("shareNote","Data record downloaded.");
+  });
+  $("btnCopyReport").addEventListener("click", function(){
+    if(!needTake()) return;
+    copyText(reportMd(currentRecord()),
+      function(){ note("shareNote","Report copied \u2014 paste it into your assignment."); },
+      function(){ note("shareNote","Couldn't copy. Use Report (web page) instead.","warn"); });
+  });
+
+  function fillPrintHead(){
+    const p = getProfile();
+    $("printHead").innerHTML = "<b>" + escapeHTML(p.name || "Name not given") + "</b>"
+      + (p.course ? " · " + escapeHTML(p.course) : "") + (p.sid ? " · ID " + escapeHTML(p.sid) : "")
+      + "<br>" + escapeHTML(assignmentTitle() || "Speech take") + " · " + escapeHTML(new Date().toLocaleString())
+      + ($("promptInput").value.trim() ? "<br><i>" + escapeHTML($("promptInput").value.trim()) + "</i>" : "");
+  }
+  window.addEventListener("beforeprint", fillPrintHead);
+  $("btnPrint").addEventListener("click", function(){
+    if(!needTake()) return;
+    fillPrintHead(); window.print();
+  });
+
+  // ---------- history ----------
+  let playerURLs = [];
+  function renderHistory(){
+    playerURLs.forEach(function(u){ URL.revokeObjectURL(u); }); playerURLs = [];
+    const takes = loadTakes(), list = $("histList");
+    const openIds = Array.prototype.map.call(list.querySelectorAll("details.take[open]"), function(d){ return d.dataset.id; });
+    $("histCount").textContent = takes.length ? "(" + takes.length + ")" : "";
+    list.innerHTML = "";
+    if(!takes.length){
+      $("histEmpty").hidden = false; $("histActions").hidden = true; $("sparkWrap").hidden = true; $("storageLine").hidden = true; return;
+    }
+    $("histEmpty").hidden = true; $("histActions").hidden = false;
+
+    takes.slice().reverse().forEach(function(t){
+      const d = document.createElement("details");
+      d.className = "take" + (t.id === currentTakeId ? " current" : "");
+      d.dataset.id = String(t.id);
+      if(openIds.indexOf(String(t.id)) >= 0) d.open = true;
+      const avg = rubricAvg(t.rubric);
+      const hasMedia = !!(t.media && t.media.stored);
+      const sum = document.createElement("summary");
+      sum.innerHTML = '<span class="tno">Take ' + escapeHTML(t.n) + '</span>'
+        + '<span class="tdate">' + escapeHTML(new Date(t.date).toLocaleDateString(undefined,{month:"short",day:"numeric"})) + '</span>'
+        + '<span class="tvid' + (hasMedia ? "" : " no") + '">' + (hasMedia ? (t.media.audioOnly ? "audio saved" : "video saved") : "no video") + '</span>'
+        + '<span class="tstat">' + fmt(t.durSec) + ' \u00b7 ' + t.wpm + ' wpm \u00b7 ' + t.fillers + ' fillers' + (avg != null ? ' \u00b7 self ' + avg.toFixed(1) + '/4' : '') + '</span>';
+      d.appendChild(sum);
+
+      const body = document.createElement("div"); body.className = "take-body";
+      const p = t.profile || {}, a = t.assignment || {};
+      let h = "";
+      if(p.name || a.title) h += '<p class="tprompt" style="font-style:normal">' + escapeHTML([p.name, p.course, a.title].filter(Boolean).join(" \u00b7 ")) + '</p>';
+      if(a.prompt || t.prompt) h += '<p class="tprompt">' + escapeHTML(a.prompt || t.prompt) + '</p>';
+      h += '<dl><dt>Length</dt><dd>' + fmt(t.durSec) + '</dd><dt>Pace</dt><dd>' + t.wpm + ' wpm \u00b7 ' + t.wc + ' words</dd>'
+        + '<dt>Fillers</dt><dd>' + t.fillers + ' (' + t.fillRate + '/min)</dd><dt>Variety</dt><dd>' + t.variety + '% unique</dd>'
+        + '<dt>Pauses</dt><dd>' + t.pauses + (t.longestPause ? ' \u00b7 longest ' + t.longestPause + 's' : '') + '</dd>';
+      if(t.energy) h += '<dt>Energy</dt><dd>' + escapeHTML(energyWord(t.energy.variation)) + '</dd>';
+      if(hasMedia) h += '<dt>Recording</dt><dd>' + mb(t.media.size) + '</dd>';
+      h += '</dl>';
+      const rk = Object.keys(t.rubric || {});
+      if(rk.length) h += '<dl>' + rk.map(function(k){ return '<dt>' + escapeHTML(k) + '</dt><dd>' + t.rubric[k] + '/4</dd>'; }).join("") + '</dl>';
+      if(t.worked) h += '<p><strong>Worked:</strong> ' + escapeHTML(t.worked) + '</p>';
+      if(t.change) h += '<p><strong>Next time:</strong> ' + escapeHTML(t.change) + '</p>';
+      if(t.coaching) h += '<p><strong>Coaching:</strong></p><div class="ttext">' + escapeHTML(t.coaching) + '</div>';
+      if(t.text) h += '<p><strong>Transcript:</strong></p><div class="ttext">' + escapeHTML(t.text) + '</div>';
+      body.innerHTML = h;
+
+      const player = document.createElement("div"); player.className = "take-player";
+      body.appendChild(player);
+      const acts = document.createElement("div"); acts.className = "take-actions";
+      const mk = function(label, cls, fn){
+        const b = document.createElement("button"); b.type = "button"; b.className = cls + " btn-sm"; b.textContent = label;
+        b.addEventListener("click", function(){ fn(b); }); acts.appendChild(b); return b;
+      };
+      const tNote = document.createElement("span"); tNote.className = "copy-note"; tNote.hidden = true; tNote.id = "tnote-" + t.id; tNote.setAttribute("role","status");
+      if(hasMedia){
+        mk(t.media.audioOnly ? "Play" : "Watch", "btn-line", async function(b){
+          if(player.firstChild){ player.innerHTML = ""; b.textContent = t.media.audioOnly ? "Play" : "Watch"; return; }
+          const blob = await mediaGet(t.id);
+          if(!blob){ note(tNote.id, "This recording is no longer in browser storage.", "warn"); return; }
+          const url = URL.createObjectURL(blob); playerURLs.push(url);
+          const v = document.createElement("video");
+          v.controls = true; v.src = url; v.setAttribute("playsinline","");
+          v.setAttribute("aria-label", "Recording of take " + t.n);
+          if(t.media.audioOnly) v.className = "audio";
+          player.appendChild(v); b.textContent = "Hide player";
+        });
+      }
+      mk("Download submission (.zip)", "btn-solid", async function(b){
+        const blob = hasMedia ? await mediaGet(t.id) : null;
+        downloadSubmission(t, blob, tNote.id, b);
+      });
+      if(hasMedia){
+        mk("Download " + (t.media.audioOnly ? "audio" : "video"), "btn-line", async function(){
+          const blob = await mediaGet(t.id);
+          if(!blob){ note(tNote.id, "This recording is no longer in browser storage.", "warn"); return; }
+          downloadBlob(fileBase(t) + "_recording." + extFor(blob.type, t.media.ext), blob);
+        });
+      }
+      mk("Report", "btn-line", function(){ download(fileBase(t) + "_report.html", reportHtml(t), "text/html"); });
+      mk("Delete this take", "btn-danger", function(b){
+        if(b.dataset.confirm !== "1"){
+          b.dataset.confirm = "1"; b.textContent = "Tap again to delete take " + t.n;
+          setTimeout(function(){ b.dataset.confirm = ""; b.textContent = "Delete this take"; }, 5000);
+          return;
+        }
+        saveTakes(loadTakes().filter(function(x){ return x.id !== t.id; }));
+        mediaDel(t.id);
+        if(currentTakeId === t.id) currentTakeId = null;
+        renderHistory(); announce("Take " + t.n + " deleted.");
+      });
+      body.appendChild(acts); body.appendChild(tNote);
+      d.appendChild(body);
+      list.appendChild(d);
+    });
+    drawSpark(takes);
+    updateStorageLine(takes);
+  }
+
+  async function updateStorageLine(takes){
+    const el = $("storageLine");
+    const withMedia = takes.filter(function(t){ return t.media && t.media.stored; });
+    const bytes = withMedia.reduce(function(s,t){ return s + (t.media.size||0); }, 0);
+    let txt = takes.length + (takes.length === 1 ? " take" : " takes") + " saved, " + withMedia.length + " with a recording (" + mb(bytes) + ").";
+    try{
+      if(navigator.storage && navigator.storage.estimate){
+        const est = await navigator.storage.estimate();
+        if(est.quota) txt += " About " + mb(Math.max(0, est.quota - (est.usage||0))) + " of browser storage left.";
+      }
+    }catch(e){}
+    el.textContent = txt; el.hidden = false;
+  }
+
+  function drawSpark(takes){
+    const wrap = $("sparkWrap");
+    if(takes.length < 2){ wrap.hidden = true; return; }
+    wrap.hidden = false;
+    const cv = $("sparkCanvas"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height, pad = 10, n = takes.length;
+    ctx.clearRect(0,0,W,H);
+    const xAt = function(i){ return pad + (i/(n-1))*(W-pad*2); };
+    const selfVals = takes.map(function(t){ return rubricAvg(t.rubric); });
+    const hasSelf = selfVals.filter(function(v){ return v!=null; }).length >= 2;
+    const series = [
+      { vals: takes.map(function(t){ return t.fillRate; }), color:"#d8894a" },
+      { vals: takes.map(function(t){ return t.wpm; }), color:"#e8a33d" }
+    ];
+    if(hasSelf) series.push({ vals: selfVals, color:"#5b8fb0", fixed:[0,4] });
+    series.forEach(function(sv){
+      const present = sv.vals.filter(function(v){ return v!=null; });
+      const mn = sv.fixed ? sv.fixed[0] : Math.min.apply(null, present), mx = sv.fixed ? sv.fixed[1] : Math.max.apply(null, present);
+      const span = (mx - mn) || 1;
+      const yAt = function(v){ return H - pad - ((v-mn)/span)*(H-pad*2); };
+      ctx.beginPath(); let started = false;
+      sv.vals.forEach(function(v,i){ if(v==null) return; started ? ctx.lineTo(xAt(i),yAt(v)) : ctx.moveTo(xAt(i),yAt(v)); started = true; });
+      ctx.strokeStyle = sv.color; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
+      sv.vals.forEach(function(v,i){ if(v==null) return; ctx.beginPath(); ctx.arc(xAt(i), yAt(v), 2.6, 0, Math.PI*2); ctx.fillStyle = sv.color; ctx.fill(); });
+    });
+    $("sparkLegend").innerHTML = '<span style="color:#d8894a">&#9632;</span> fillers/min &nbsp; <span style="color:#e8a33d">&#9632;</span> pace'
+      + (hasSelf ? ' &nbsp; <span style="color:#5b8fb0">&#9632;</span> self-score' : '');
+    const first = takes[0], last = takes[n-1];
+    let sum = "Across " + n + " takes, filler rate went from " + first.fillRate + " to " + last.fillRate
+      + " per minute, and pace from " + first.wpm + " to " + last.wpm + " words per minute.";
+    if(hasSelf){
+      const fs = selfVals.find(function(v){ return v!=null; });
+      let ls = null; for(let i=selfVals.length-1;i>=0;i--){ if(selfVals[i]!=null){ ls = selfVals[i]; break; } }
+      sum += " Your self-score went from " + fs.toFixed(1) + " to " + ls.toFixed(1) + " out of 4.";
+    }
+    $("sparkSummary").textContent = sum;
+  }
+
+  $("btnPortfolio").addEventListener("click", async function(){
+    const takes = loadTakes();
+    if(!takes.length) return;
+    const btn = $("btnPortfolio"); btn.disabled = true;
+    note("histNote","Gathering " + takes.length + " takes\u2026","quiet");
+    try{
+      const enc = new TextEncoder();
+      let files = [];
+      for(let i=0;i<takes.length;i++){
+        const t = takes[i];
+        const blob = (t.media && t.media.stored) ? await mediaGet(t.id) : null;
+        files = files.concat(await submissionFiles(t, blob, "take-" + pad2(t.n || i+1) + "/"));
+      }
+      files.unshift({ name:"summary.csv", data: enc.encode(takesCsv(takes)) });
+      files.unshift({ name:"README.txt", data: enc.encode(
+        "The Rehearsal Room - all takes\nExported " + new Date().toLocaleString() + "\n\n"
+        + "Each take-NN folder holds report.html (open in any browser), report.md, transcript.txt,\n"
+        + "record.json (data your instructor's tool can read), and the recording if one was kept.\n"
+        + "summary.csv opens in Excel or Google Sheets.\n") });
+      const zip = makeZip(files);
+      downloadBlob((slug(getProfile().name) || "student") + "_all-takes_" + stamp() + ".zip", zip);
+      note("histNote","All takes downloaded (" + mb(zip.size) + ").");
+    }catch(e){
+      note("histNote","Couldn't build the archive \u2014 it may be too large. Download takes one at a time instead.","warn");
+    }
+    btn.disabled = false;
+  });
+
+  $("btnExportCsv").addEventListener("click", function(){
+    const takes = loadTakes(); if(!takes.length) return;
+    download((slug(getProfile().name) || "student") + "_takes_" + stamp() + ".csv", takesCsv(takes), "text/csv");
+    note("histNote","Summary downloaded.");
+  });
+  $("btnExportMd").addEventListener("click", function(){
+    const takes = loadTakes(); if(!takes.length) return;
+    const body = takes.map(reportMd).join("\n\n---\n\n");
+    download((slug(getProfile().name) || "student") + "_takes_" + stamp() + ".md", "# Rehearsal history\n\n" + body, "text/markdown");
+    note("histNote","Notes downloaded.");
+  });
+  $("btnClearHist").addEventListener("click", function(){
+    const btn = $("btnClearHist");
+    if(btn.dataset.confirm === "1"){
+      try{ localStorage.removeItem(HKEY); }catch(e){}
+      mediaClear();
+      currentTakeId = null; prevTake = null;
+      btn.dataset.confirm = ""; btn.textContent = "Clear history";
+      renderHistory(); note("histNote","History and recordings cleared from this browser.");
+    } else {
+      btn.dataset.confirm = "1";
+      btn.textContent = "Tap again to erase every take and video";
+      setTimeout(function(){ if(btn.dataset.confirm === "1"){ btn.dataset.confirm = ""; btn.textContent = "Clear history"; } }, 5000);
+    }
+  });
+
+  // ---------- instructor: collect submissions ----------
+  let roster = [];
+  function vcheck(status){
+    const map = { ok:["ok","Matches"], bad:["bad","Doesn't match"], missing:["bad","Video missing"], none:["na","No video"], na:["na","Not checked"] };
+    return map[status] || map.na;
+  }
+  function rosterRow(rec, file, status){
+    const p = rec.profile || {}, a = rec.assignment || {};
+    return { file:file, name:p.name||"", course:p.course||"", sid:p.sid||"", assignment:a.title||"", take:rec.n, date:rec.date,
+      durSec:rec.durSec, wpm:rec.wpm, wc:rec.wc, fillRate:rec.fillRate, variety:rec.variety, pauses:rec.pauses,
+      self: rubricAvg(rec.rubric), coaching: !!rec.coaching, reflected: !!(rec.worked || rec.change), status:status };
+  }
+  $("collectFiles").addEventListener("change", async function(ev){
+    const files = Array.prototype.slice.call(ev.target.files || []);
+    if(!files.length) return;
+    note("collectNote","Reading " + files.length + (files.length === 1 ? " file" : " files") + "\u2026","quiet");
+    const dec = new TextDecoder();
+    let added = 0, problems = [];
+    for(const f of files){
+      try{
+        if(/\.json$/i.test(f.name)){
+          const rec = JSON.parse(await f.text());
+          if(!rec || rec.wpm === undefined) throw new Error("not a record");
+          roster.push(rosterRow(rec, f.name, rec.media && rec.media.sha256 ? "missing" : "none")); added++;
+          continue;
+        }
+        const entries = await readZip(f);
+        const recs = entries.filter(function(e){ return /(^|\/)record\.json$/i.test(e.name); });
+        if(!recs.length){ problems.push(f.name + " has no record.json"); continue; }
+        for(const re of recs){
+          const rec = JSON.parse(dec.decode(await re.read()));
+          const dir = re.name.slice(0, re.name.lastIndexOf("/") + 1);
+          const mEntry = entries.find(function(x){ return x.name.indexOf(dir) === 0 && /^recording\.[a-z0-9]+$/i.test(x.name.slice(dir.length)); });
+          let status;
+          if(!rec.media || !rec.media.sha256) status = mEntry ? "na" : "none";
+          else if(!mEntry) status = "missing";
+          else status = (await sha256Hex(await mEntry.read())) === rec.media.sha256 ? "ok" : "bad";
+          roster.push(rosterRow(rec, f.name, status)); added++;
+        }
+      }catch(err){ problems.push(f.name + (err && err.message ? " (" + err.message + ")" : "")); }
+    }
+    ev.target.value = "";
+    renderRoster();
+    note("collectNote", "Added " + added + (added === 1 ? " take" : " takes") + "." + (problems.length ? " Couldn't read: " + problems.join("; ") + "." : ""), problems.length ? "warn" : null);
+  });
+  function renderRoster(){
+    const out = $("collectOut"), tbl = $("rosterTable");
+    if(!roster.length){ out.hidden = true; tbl.innerHTML = ""; return; }
+    roster.sort(function(a,b){ return (a.name||"").localeCompare(b.name||"") || (a.take||0)-(b.take||0); });
+    const e = escapeHTML;
+    let h = '<caption class="sr-only">Collected student submissions</caption><thead><tr><th scope="col">Student</th><th scope="col">Course</th><th scope="col">Assignment</th>'
+      + '<th scope="col">Take</th><th scope="col">Length</th><th scope="col">Pace</th><th scope="col">Fillers/min</th><th scope="col">Self</th>'
+      + '<th scope="col">Reflected</th><th scope="col">Coaching</th><th scope="col">Video check</th></tr></thead><tbody>';
+    roster.forEach(function(r){
+      const v = vcheck(r.status);
+      h += "<tr><td>" + e(r.name || "(no name)") + (r.sid ? "<br><small>" + e(r.sid) + "</small>" : "") + "</td><td>" + e(r.course) + "</td><td>" + e(r.assignment)
+        + "</td><td>" + e(r.take != null ? r.take : "") + "<br><small>" + e(r.date ? new Date(r.date).toLocaleDateString() : "") + "</small></td><td>" + e(fmt(r.durSec))
+        + "</td><td>" + e(r.wpm) + "</td><td>" + e(r.fillRate) + "</td><td>" + (r.self != null ? e(r.self.toFixed(1)) : "\u2014")
+        + "</td><td>" + (r.reflected ? "Yes" : "No") + "</td><td>" + (r.coaching ? "Yes" : "No")
+        + '</td><td class="vchk ' + v[0] + '">' + e(v[1]) + "</td></tr>";
+    });
+    tbl.innerHTML = h + "</tbody>";
+    out.hidden = false;
+  }
+  $("btnRosterCsv").addEventListener("click", function(){
+    if(!roster.length) return;
+    const head = ["name","student_id","course","assignment","take","date","seconds","words","wpm","fillers_per_min","variety_pct","pauses","self_avg","reflected","coaching","video_check","file"];
+    const rows = [head.map(csvCell).join(",")].concat(roster.map(function(r){
+      return [r.name, r.sid, r.course, r.assignment, r.take, r.date, r.durSec, r.wc, r.wpm, r.fillRate, r.variety, r.pauses,
+        r.self != null ? r.self.toFixed(2) : "", r.reflected ? "yes" : "no", r.coaching ? "yes" : "no", vcheck(r.status)[1], r.file].map(csvCell).join(",");
+    }));
+    download("class-summary_" + stamp() + ".csv", rows.join("\n"), "text/csv");
+    note("collectNote","Class summary downloaded.");
+  });
+  $("btnRosterClear").addEventListener("click", function(){ roster = []; renderRoster(); note("collectNote","List cleared."); });
+
+  // ---------- post-hoc audio analysis ----------
+  async function analyseAudio(src){
+    const buf = (src instanceof ArrayBuffer) ? src : await src.arrayBuffer();
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) throw new Error("no AudioContext");
+    const ctx = new Ctx();
+    const audio = await new Promise(function(res, rej){
+      const pr = ctx.decodeAudioData(buf.slice(0), res, rej);
+      if(pr && pr.then) pr.then(res, rej);
+    });
+    const ch = audio.getChannelData(0), sr = audio.sampleRate, win = Math.max(1, Math.floor(sr*0.04)), series = [];
+    for(let i=0; i+win <= ch.length; i += win){
+      let acc = 0;
+      for(let j=0;j<win;j++){ const v = ch[i+j]; acc += v*v; }
+      series.push({ t:(i/sr)*1000, rms: Math.sqrt(acc/win) });
+    }
+    const durationMs = audio.duration*1000;
+    try{ ctx.close(); }catch(e){}
+    return { series: series, durationMs: isFinite(durationMs) ? durationMs : 0 };
+  }
+
+  // ---------- caption import (upload feature) ----------
+  function parseCaptions(raw){
+    const lines = String(raw).replace(/\r/g,"").split("\n"), cues = [];
+    let cur = null;
+    const timeRe = /(\d{1,2}:)?\d{1,2}:\d{2}[.,]\d{1,3}\s*-->\s*(\d{1,2}:)?\d{1,2}:\d{2}[.,]\d{1,3}/;
+    const toMs = function(x){
+      const parts = x.trim().replace(",",".").split(":").map(parseFloat);
+      let sec = parts.length === 3 ? parts[0]*3600 + parts[1]*60 + parts[2] : parts.length === 2 ? parts[0]*60 + parts[1] : parts[0];
+      return sec*1000;
+    };
+    for(let i=0;i<lines.length;i++){
+      const ln = lines[i].trim();
+      if(!ln){ if(cur && cur.text){ cues.push(cur); cur = null; } continue; }
+      if(/^WEBVTT/i.test(ln) || /^NOTE\b/i.test(ln) || /^STYLE\b/i.test(ln)) continue;
+      if(timeRe.test(ln)){ cur = { t: toMs(ln.split("-->")[0]), text: "" }; continue; }
+      if(/^\d+$/.test(ln) && !cur) continue;
+      if(cur){ const clean = ln.replace(/<[^>]*>/g,"").replace(/^-\s*/,"").trim(); if(clean) cur.text += (cur.text ? " " : "") + clean; }
+    }
+    if(cur && cur.text) cues.push(cur);
+    const seen = [];
+    cues.forEach(function(c){ if(c.text && c.text !== (seen.length ? seen[seen.length-1].text : "")) seen.push(c); });
+    return seen;
+  }
+
+  function finishTake(subtitle){
+    lastMetrics = computeMetrics();
+    renderResults(lastMetrics);
+    if(subtitle) $("analysisSub").textContent = subtitle;
+    renderDelta(lastMetrics);
+    prevTake = { fill:{total:lastMetrics.fill.total}, wpm:lastMetrics.wpm, durSec:lastMetrics.durSec };
+    drawTrace(); drawPaceTrace();
+    if(!$("practiceToggle").checked) saveNow(true);
+    document.querySelector(".analysis").scrollIntoView({ behavior:"smooth", block:"nearest" });
+  }
+
+  $("fileVideo").addEventListener("change", async function(ev){
+    const f = ev.target.files && ev.target.files[0];
+    if(!f) return;
+    clearErr();
+    note("sourceNote","Reading " + f.name + "\u2026","quiet");
+    try{
+      flushSave();
+      hideResultsForNewTake();
+      if(recURL) URL.revokeObjectURL(recURL);
+      recBlob = f; recURL = URL.createObjectURL(f);
+      takeIsAudio = /^audio\//.test(f.type);
+      video.srcObject = null; video.src = recURL; video.muted = false;
+      video.setAttribute("controls",""); video.classList.add("playback");
+      viewport.classList.toggle("audio-take", takeIsAudio);
+      viewport.classList.toggle("has-video", !takeIsAudio);
+      isUploaded = true; finals = [];
+      const res = await analyseAudio(f);
+      rmsSeries = res.series; elapsedMs = res.durationMs;
+      timerEl.textContent = fmt(elapsedMs/1000);
+      setStatus("review","Reviewing an uploaded recording");
+      btnAgain.hidden = false; btnAgain.disabled = false; btnSaveVideo.hidden = true;
+      finishTake("Loaded " + f.name + ". Add a transcript below to see pace and filler counts.");
+      note("sourceNote","Analyzing: " + f.name);
+    }catch(e){ note("sourceNote","Couldn't read the audio in that file. Try an mp4, webm, m4a, mp3, or wav.","warn"); }
+  });
+  $("fileCaps").addEventListener("change", function(ev){
+    const f = ev.target.files && ev.target.files[0];
+    if(!f) return;
+    const rd = new FileReader();
+    rd.onload = function(){
+      const cues = parseCaptions(rd.result);
+      if(!cues.length){ note("capsNote","No caption cues found in that file.","warn"); return; }
+      finals = cues.map(function(c){ return { t:c.t, text:c.text }; });
+      lastMetrics = computeMetrics();
+      renderResults(lastMetrics); drawTrace(); drawPaceTrace();
+      scheduleSave(true);
+      note("capsNote","Imported " + cues.length + " caption cues from " + f.name + ".");
+    };
+    rd.onerror = function(){ note("capsNote","Couldn't read that caption file.","warn"); };
+    rd.readAsText(f);
+  });
+
+  // ---------- leaving the page ----------
+  window.addEventListener("beforeunload", function(ev){
+    const recording = recorder && recorder.state === "recording";
+    const unsaved = lastMetrics && recBlob && !$("practiceToggle").checked && (!currentTakeId || mediaPending);
+    if(recording || unsaved){ ev.preventDefault(); ev.returnValue = ""; }
+  });
+  window.addEventListener("pagehide", function(){
+    try{ if(stream) stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+    stopRecognition();
+  });
+
+  // ---------- init ----------
+  applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
+  ringFill.style.strokeDashoffset = RING_C.toFixed(1);
+  if(!FEATURES.upload){ $("loadPanel").hidden = true; }
+  try{ localStorage.removeItem("rr_key"); }catch(e){}
+  const savedAsst = lsGet("rr_assistant");
+  if(savedAsst && ASSISTANTS[savedAsst]) $("assistant").value = savedAsst;
+  refreshAssistant();
+  try{
+    const prof = JSON.parse(lsGet("rr_profile") || "{}");
+    if(prof.name) $("studentName").value = prof.name;
+    if(prof.course) $("studentCourse").value = prof.course;
+    if(prof.sid) $("studentId").value = prof.sid;
+  }catch(e){}
+  if(lsGet("rr_keepvideo") === "0") $("keepVideoToggle").checked = false;
+  const assignCfg = applyAssignmentFromHash();
+  if(assignCfg){
+    $("assignBanner").hidden = false;
+    if(assignCfg.t) $("assignHead").textContent = assignCfg.t;
+    if(assignCfg.p) $("assignFor").textContent = "Prompt: \u201c" + assignCfg.p.slice(0,120) + (assignCfg.p.length>120 ? "\u2026" : "") + "\u201d";
+  } else {
+    const savedLang = lsGet("rr_lang");
+    if(savedLang){ $("language").value = savedLang; $("fillerInput").value = fillersForLang(savedLang); }
+  }
+  if(lsGet("rr_practice") === "1") $("practiceToggle").checked = true;
+  $("profilePanel").open = !getProfile().name;
+  refreshProfileUI();
+  updateEnableLabel();
+  updatePracticeUI();
+  setStageState(false);
+  renderRubric();
+  renderHistory();
+  (function(){
+    const t = loadTakes();
+    if(t.length){ const l = t[t.length-1]; prevTake = { fill:{total:l.fillers}, wpm:l.wpm, durSec:l.durSec }; }
+  })();
+  if(embedded){ $("embedNotice").hidden = false; }
+  if(!mediaSupported){
+    showErr(embedded ? EMBED_MSG : "This browser can't reach the camera. Open the page over https in a recent Chrome or Edge.");
+    btnEnable.disabled = true;
+  }
+  refreshTargetLabel();
+  refreshPromptStrip();
+})();
+</script>
+</body>
+</html>
