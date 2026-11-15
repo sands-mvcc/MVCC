@@ -1,457 +1,1385 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intro to Data Structures</title>
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --accent: #27ae60;
-            --light: #ecf0f1;
-            --dark: #1a252f;
-            --white: #ffffff;
-            --danger: #e74c3c;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Data Structures 101: Arrays, Stacks and Queues</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f5fa; --surface:#ffffff; --surface-2:#eaf0f8; --ink:#14223b; --muted:#4c5a72; --line:#d2dae7;
+  --navy:#0047AB; --navy-soft:#e1eafa; --btn:#0047AB; --btn-hover:#003a8c;
+  --green:#00a86b; --green-ink:#00704a; --green-soft:#dcf4ea;
+  --violet:#6a42d6; --violet-soft:#ece5fc;
+  --warn:#9a5600; --warn-soft:#fdf0da; --danger:#b42318; --danger-soft:#fde7e4;
+  --on-accent:#ffffff; --code-bg:#0f1b30; --code-ink:#e3ebf7;
+  --radius-lg:14px; --radius-sm:6px;
+  --font:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1424; --surface:#131e33; --surface-2:#1a2842; --ink:#e7edf7; --muted:#a8b5ca; --line:#2b3b5a;
+    --navy:#7aa5f5; --navy-soft:#1b2d50; --btn:#2f66cc; --btn-hover:#3b74de;
+    --green:#2fd39a; --green-ink:#4ee0a8; --green-soft:#11392c;
+    --violet:#b39cf7; --violet-soft:#2a2152;
+    --warn:#f2ab45; --warn-soft:#3a2a10; --danger:#ff8a7c; --danger-soft:#3f1b18;
+    --code-bg:#08101e; --code-ink:#e3ebf7;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1424; --surface:#131e33; --surface-2:#1a2842; --ink:#e7edf7; --muted:#a8b5ca; --line:#2b3b5a;
+  --navy:#7aa5f5; --navy-soft:#1b2d50; --btn:#2f66cc; --btn-hover:#3b74de;
+  --green:#2fd39a; --green-ink:#4ee0a8; --green-soft:#11392c;
+  --violet:#b39cf7; --violet-soft:#2a2152;
+  --warn:#f2ab45; --warn-soft:#3a2a10; --danger:#ff8a7c; --danger-soft:#3f1b18;
+  --code-bg:#08101e; --code-ink:#e3ebf7;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 84px);scroll-behavior:smooth;background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:1.0625rem;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{line-height:1.2;margin:0 0 .5em}
+h2{font-size:1.75rem;color:var(--ink)}
+h3{font-size:1.2rem}
+p{margin:0 0 1em}
+a{color:var(--navy)}
+code,kbd{font-family:var(--mono);font-size:.9em}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px;border-radius:4px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-        * {
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:1280px;margin:0 auto;padding:.7rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:.6rem;font-weight:700;color:var(--ink);text-decoration:none;margin-right:auto}
+.brand svg{width:30px;height:30px}
+.meter{display:flex;align-items:center;gap:.6rem;min-width:200px}
+.meter-track{flex:1;height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden;min-width:120px}
+.meter-fill{height:100%;width:0;background:linear-gradient(90deg,var(--navy),var(--green));transition:width .5s ease}
+.meter-label{font-weight:700;font-variant-numeric:tabular-nums;min-width:3.2ch;text-align:right}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--light);
-            color: var(--dark);
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
+/* ---------- buttons ---------- */
+.btn{font:inherit;font-size:.95rem;font-weight:700;border:1px solid transparent;border-radius:var(--radius-sm);padding:.5rem .85rem;cursor:pointer;display:inline-flex;align-items:center;gap:.45rem;background:var(--btn);color:var(--on-accent);line-height:1.2}
+.btn:hover{background:var(--btn-hover)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:18px;height:18px;flex:none}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+.btn.danger:hover{background:var(--danger-soft)}
+.btn.icon{padding:.5rem}
 
-        /* Header */
-        header {
-            background-color: var(--white);
-            border-bottom: 4px solid var(--accent);
-            padding: 2rem;
-            text-align: center;
-        }
+/* ---------- shell ---------- */
+.shell{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:2rem;padding:1.5rem 1.25rem 4rem}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 80px);align-self:start}
+.side ol{list-style:none;margin:0;padding:0;counter-reset:mod}
+.side li{counter-increment:mod}
+.side a{display:flex;align-items:center;gap:.6rem;padding:.45rem .6rem;border-radius:var(--radius-sm);color:var(--ink);text-decoration:none;font-size:.97rem}
+.side a::before{content:counter(mod);display:inline-grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:50%;border:2px solid var(--line);font-size:.8rem;font-weight:700;flex:none;color:var(--muted)}
+.side a.done::before{content:"✓";background:var(--green);border-color:var(--green);color:#06281b}
+.side a:hover{background:var(--surface-2)}
+.side a .frac{margin-left:auto;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.side-note{font-size:.85rem;color:var(--muted);margin:1rem .6rem 0}
+main{min-width:0}
+section.mod{padding:2.5rem 0;border-top:1px solid var(--line)}
+section.mod:first-of-type{border-top:0;padding-top:.5rem}
+.lede{font-size:1.15rem;color:var(--muted);max-width:68ch}
+.prose{max-width:70ch}
 
-        header h1 {
-            margin: 0;
-            color: var(--primary);
-            font-size: 2.5rem;
-        }
+/* ---------- hero ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:2rem;align-items:center}
+.hero h1{font-size:clamp(2.2rem,4.4vw,3.3rem);letter-spacing:-.01em;margin-bottom:.35em}
+.hero .lede{margin-bottom:1.2rem}
+.hero-art{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:1rem}
+.hero-art svg{width:100%;height:auto;display:block}
+.flow{list-style:none;padding:0;margin:0;display:grid;gap:.4rem;counter-reset:step}
+.flow li{counter-increment:step;display:flex;gap:.7rem;align-items:baseline}
+.flow li::before{content:counter(step);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;min-width:1ch}
 
-        header p {
-            color: #7f8c8d;
-            font-size: 1.1rem;
-        }
+/* ---------- KSA ---------- */
+.ksa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem;margin-top:1.25rem}
+.ksa-col{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:1.25rem}
+.ksa-col h3{display:flex;align-items:center;gap:.5rem}
+.ksa-col h3 .tag{font-family:var(--mono);font-size:.85rem;background:var(--navy-soft);color:var(--navy);border-radius:4px;padding:.1rem .4rem}
+.ksa-col ul{list-style:none;padding:0;margin:0;display:grid;gap:.8rem}
+.ksa-col li{font-size:.97rem}
+.ksa-col li b{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-right:.35rem}
+.ksa-col li small{display:block;color:var(--muted);font-size:.85rem}
+.ksa-col li small a{font-weight:700}
 
-        /* Container */
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+/* ---------- concept block ---------- */
+.concept{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:1.75rem;align-items:start;margin-bottom:1.5rem}
+.concept figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:1rem}
+.concept figcaption{font-size:.88rem;color:var(--muted);margin-top:.5rem}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:1rem 0 0}
+.fact{background:var(--surface-2);border-radius:var(--radius-sm);padding:.6rem .8rem}
+.fact dt{font-size:.82rem;color:var(--muted)}
+.fact dd{margin:0;font-weight:700}
+.callout{border-left:4px solid var(--warn);background:var(--warn-soft);padding:.8rem 1rem;border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin:1rem 0;max-width:70ch}
+.callout.sec{border-left-color:var(--danger);background:var(--danger-soft)}
 
-        /* Section Styling */
-        section {
-            background: var(--white);
-            margin-bottom: 30px;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
+/* ---------- labs ---------- */
+.lab{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:1.25rem;margin-top:1.25rem}
+.lab-head{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem}
+.lab-head h3{margin:0}
+.lab-head .chips{margin-left:auto;display:flex;gap:.35rem;flex-wrap:wrap}
+.chip{font-size:.78rem;border:1px solid var(--line);border-radius:99px;padding:.15rem .55rem;color:var(--muted);display:inline-flex;gap:.3rem;align-items:center}
+.chip.on{background:var(--green-soft);border-color:var(--green);color:var(--ink)}
+.chip.on::before{content:"✓";font-weight:700;color:var(--green-ink)}
+.controls{display:flex;gap:.6rem;flex-wrap:wrap;align-items:end;margin-bottom:1rem}
+.field{display:flex;flex-direction:column;gap:.2rem;font-size:.85rem;color:var(--muted)}
+.field input{font:inherit;font-size:1rem;width:6.5rem;padding:.45rem .55rem;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink)}
+.field input.wide{width:14rem}
+.console{font-family:var(--mono);font-size:.85rem;background:var(--code-bg);color:var(--code-ink);border-radius:var(--radius-sm);padding:.75rem .9rem;min-height:4.6rem;max-height:9rem;overflow:auto;margin-top:1rem}
+.console p{margin:0 0 .3rem}
+.console .ok{color:#7ff0bf}
+.console .err{color:#ffb4a8}
+.console .info{color:#b9cdf5}
+.stat-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.75rem;font-size:.92rem;color:var(--muted)}
+.stat-row strong{color:var(--ink);font-variant-numeric:tabular-nums}
+.bigo{font-family:var(--mono);font-weight:600;padding:.05rem .4rem;border-radius:4px;background:var(--navy-soft);color:var(--navy)}
 
-        h2 {
-            color: var(--accent);
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
+/* array */
+.cells{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;overflow-x:auto}
+.cell{border:2px solid var(--navy);background:var(--navy-soft);border-radius:var(--radius-sm);padding:.3rem .2rem;display:flex;flex-direction:column;align-items:center;min-width:58px;transition:background .2s,border-color .2s,transform .2s}
+.cell .idx{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.cell .val{font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums;min-height:1.6em}
+.cell .addr{font-family:var(--mono);font-size:.68rem;color:var(--muted)}
+.cell.empty{background:transparent;border-style:dashed;border-color:var(--line)}
+.cell.empty .val{color:var(--muted)}
+.cell.hit{background:var(--green-soft);border-color:var(--green);transform:translateY(-4px)}
+.cell.check{background:var(--warn-soft);border-color:var(--warn)}
+.cell.move{background:var(--violet-soft);border-color:var(--violet)}
+.cell.miss{background:var(--danger-soft);border-color:var(--danger)}
+.formula{font-family:var(--mono);font-size:.92rem;background:var(--surface-2);padding:.5rem .75rem;border-radius:var(--radius-sm);margin-top:.75rem;overflow-x:auto;white-space:nowrap}
 
-        /* Concept Cards */
-        .concept-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
+/* stack */
+.stack-wrap{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:1.5rem;align-items:start}
+.stack-viz{display:flex;flex-direction:column-reverse;gap:5px;padding:.6rem .6rem 0;border:3px solid var(--ink);border-top:0;border-radius:0 0 12px 12px;min-height:280px}
+.slot{height:38px;border-radius:var(--radius-sm);display:flex;align-items:center;padding:0 .7rem;font-weight:700;border:2px dashed var(--line);color:var(--muted);font-size:.85rem;position:relative;transition:transform .25s,opacity .25s}
+.slot .si{font-family:var(--mono);font-size:.75rem;margin-right:.6rem}
+.slot.full{border:2px solid var(--green);background:var(--green-soft);color:var(--ink);font-size:1.05rem}
+.slot.top::after{content:"◀ top";position:absolute;right:.6rem;font-size:.8rem;color:var(--green-ink)}
+.slot.peek{outline:3px solid var(--warn)}
+.slot.leaving{transform:translateY(-30px);opacity:0}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
-        .card {
-            background: #f8f9fa;
-            border-left: 5px solid var(--primary);
-            padding: 20px;
-            border-radius: 4px;
-        }
+/* bracket checker */
+.tape{display:flex;gap:4px;flex-wrap:wrap;margin:.75rem 0}
+.tape span{font-family:var(--mono);font-size:1.3rem;width:2.1rem;height:2.4rem;display:grid;place-items:center;border:2px solid var(--line);border-radius:var(--radius-sm);background:var(--surface)}
+.tape span.read{color:var(--muted);background:var(--surface-2)}
+.tape span.cur{border-color:var(--warn);background:var(--warn-soft)}
+.mini-stack{display:flex;gap:4px;align-items:center;min-height:2.6rem;padding:.3rem;border:2px solid var(--ink);border-left:0;border-radius:0 8px 8px 0;flex-wrap:wrap}
+.mini-stack span{font-family:var(--mono);font-size:1.2rem;width:2.1rem;height:2.1rem;display:grid;place-items:center;background:var(--green-soft);border:2px solid var(--green);border-radius:4px}
+.mini-stack em{color:var(--muted);font-size:.85rem;padding:0 .4rem}
+.verdict{font-weight:700;margin-top:.6rem;min-height:1.6em}
+.verdict.good{color:var(--green-ink)} .verdict.bad{color:var(--danger)}
 
-        .card h3 {
-            margin-top: 0;
-            color: var(--primary);
-        }
+/* queue */
+.queue-wrap{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:1.75rem;align-items:center}
+.ring{position:relative;width:100%;max-width:320px;aspect-ratio:1;margin:0 auto}
+.ring::before{content:"";position:absolute;inset:14%;border:2px dashed var(--line);border-radius:50%}
+.ring-center{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none}
+.ring-center strong{font-size:1.8rem;display:block;font-variant-numeric:tabular-nums}
+.ring-center span{font-size:.8rem;color:var(--muted)}
+.qcell{position:absolute;width:19%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;background:var(--surface);transition:background .25s,border-color .25s}
+.qcell.full{border:2px solid var(--violet);background:var(--violet-soft)}
+.qcell .qv{font-weight:700;font-size:1.1rem}
+.qcell .qi{position:absolute;bottom:-1.25rem;font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.qcell .ptr{position:absolute;top:-.6rem;font-size:.7rem;font-weight:700;border-radius:4px;padding:0 .3rem;color:var(--on-accent)}
+.qcell .ptr.f{background:var(--btn);left:-.5rem}
+.qcell .ptr.r{background:var(--green-ink);right:-.5rem}
+.line-view{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:.5rem;min-height:2.6rem}
+.line-view span.p{width:2.4rem;height:2.4rem;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--violet-soft);border:2px solid var(--violet)}
+.line-view em{font-size:.85rem;color:var(--muted);font-style:normal}
 
-        /* Interactive Playground Area */
-        .playground {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 40px;
-            justify-content: center;
-            margin-top: 20px;
-        }
+/* code tabs */
+details.code{margin-top:1rem;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface)}
+details.code summary{cursor:pointer;padding:.65rem .9rem;font-weight:700}
+.tabs{display:flex;gap:.25rem;padding:0 .9rem}
+.tabs button{font:inherit;font-size:.88rem;border:1px solid var(--line);border-bottom:0;background:var(--surface-2);color:var(--ink);padding:.3rem .8rem;border-radius:6px 6px 0 0;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--code-bg);color:var(--code-ink);border-color:var(--code-bg)}
+pre{margin:0 .9rem .9rem;background:var(--code-bg);color:var(--code-ink);padding:1rem;border-radius:0 var(--radius-sm) var(--radius-sm) var(--radius-sm);overflow-x:auto;font-family:var(--mono);font-size:.85rem;line-height:1.55}
+pre .c{color:#8fa6c8}
 
-        .demo-box {
-            flex: 1;
-            min-width: 300px;
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 8px;
-            background: #fafafa;
-        }
+/* big-o table */
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;max-width:820px;background:var(--surface);border-radius:var(--radius-sm);overflow:hidden}
+th,td{text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--line);vertical-align:middle}
+th{background:var(--surface-2);font-size:.9rem}
+td select{font:inherit;padding:.3rem .4rem;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+td.mark{font-weight:700;width:9rem}
+td.mark.good{color:var(--green-ink)} td.mark.bad{color:var(--danger)}
 
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
+/* scenarios */
+.scen{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:1.5rem;max-width:820px}
+.scen-meta{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;color:var(--muted);font-size:.92rem}
+.dots{display:flex;gap:.35rem;margin-left:auto}
+.dots button{width:1.4rem;height:1.4rem;border-radius:50%;border:2px solid var(--line);background:var(--surface);cursor:pointer;padding:0;font-size:.7rem;color:var(--muted)}
+.dots button.cur{border-color:var(--navy)}
+.dots button.solved{background:var(--green);border-color:var(--green)}
+.dots button.retry{background:var(--warn-soft);border-color:var(--warn)}
+.scen-text{font-size:1.25rem;margin:0 0 1.25rem;min-height:3.5em}
+.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}
+.choice{font:inherit;cursor:pointer;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--radius-lg);padding:.9rem .5rem;display:flex;flex-direction:column;align-items:center;gap:.4rem;font-weight:700}
+.choice svg{width:54px;height:40px}
+.choice:hover{border-color:var(--navy)}
+.choice.right{border-color:var(--green);background:var(--green-soft)}
+.choice.wrong{border-color:var(--danger);background:var(--danger-soft)}
+.feedback{margin-top:1rem;min-height:3em;max-width:70ch}
+.feedback.good{color:var(--green-ink)} .feedback.bad{color:var(--danger)}
+.feedback strong{display:block}
+.feedback span{color:var(--ink)}
+.scen-nav{display:flex;justify-content:space-between;margin-top:1rem}
 
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-            background-color: var(--primary);
-        }
+/* quiz */
+.quiz{display:grid;gap:1rem;max-width:820px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin:0}
+.q legend{font-weight:700;padding:0;margin-bottom:.6rem;float:left;width:100%}
+.q legend + *{clear:both}
+.q .num{color:var(--navy);margin-right:.4rem}
+.q pre{margin:.2rem 0 .8rem;border-radius:var(--radius-sm)}
+.opts{display:grid;gap:.45rem}
+.opt{font:inherit;text-align:left;cursor:pointer;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--radius-sm);padding:.55rem .8rem}
+.opt:hover:not(:disabled){border-color:var(--navy)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--green);background:var(--green-soft)}
+.opt.wrong{border-color:var(--danger);background:var(--danger-soft)}
+.q .explain{margin-top:.7rem;font-size:.97rem}
+.q .explain b.good{color:var(--green-ink)} .q .explain b.bad{color:var(--danger)}
+.score{font-size:1.1rem;font-weight:700;margin:.5rem 0 1rem}
 
-        button:hover {
-            background-color: var(--accent);
-            transform: translateY(-2px);
-        }
+/* glossary */
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.9rem}
+.flip{perspective:900px;height:150px;border:0;padding:0;background:none;cursor:pointer;font:inherit;color:inherit;text-align:center}
+.flip-inner{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.flip.on .flip-inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:var(--radius-lg);display:grid;place-items:center;padding:.9rem;border:1px solid var(--line)}
+.face.front{background:var(--surface);font-weight:700;font-size:1.15rem}
+.face.front small{display:block;font-weight:400;font-size:.78rem;color:var(--muted);margin-top:.3rem}
+.face.back{background:var(--navy-soft);transform:rotateY(180deg);font-size:.92rem;line-height:1.45}
 
-        button.remove {
-            background-color: var(--danger);
-        }
+/* progress dashboard */
+.dash{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:1.5rem;align-items:start;max-width:900px}
+.ring-score{width:200px;height:200px;position:relative}
+.ring-score svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-score .ring-text{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring-score strong{font-size:2.4rem;display:block;line-height:1}
+.ring-score span{font-size:.85rem;color:var(--muted)}
+.dash .actions{margin-top:1rem}
+.status{font-weight:700}
+.status.good{color:var(--green-ink)} .status.part{color:var(--warn)} .status.none{color:var(--muted)}
 
-        button.remove:hover {
-            background-color: #c0392b;
-        }
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 1.25rem);transform:translateX(-50%) translateY(150%);background:var(--ink);color:var(--bg);padding:.7rem 1.1rem;border-radius:var(--radius-sm);font-weight:700;z-index:50;transition:transform .3s;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
 
-        /* Visualizers */
-        .visual-container {
-            height: 200px;
-            background: white;
-            border: 2px dashed #ccc;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            position: relative;
-            overflow: hidden;
-        }
+#printReport{display:none}
 
-        /* Stack Specifics */
-        #stack-viz {
-            flex-direction: column-reverse; /* Items stack from bottom */
-            justify-content: flex-start;
-            align-items: center;
-        }
-        
-        .stack-item {
-            width: 80%;
-            height: 40px;
-            background-color: var(--accent);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 2px 0;
-            border-radius: 4px;
-            animation: slideDown 0.3s ease-out;
-        }
+/* ---------- responsive ---------- */
+@media (max-width: 980px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:1rem}
+  .side{position:static}
+  .side ol{display:flex;overflow-x:auto;gap:.25rem;padding-bottom:.4rem}
+  .side a{white-space:nowrap}
+  .side a .frac,.side-note{display:none}
+  .hero,.concept,.stack-wrap,.queue-wrap,.dash{grid-template-columns:minmax(0,1fr)}
+  .ksa{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width: 600px){
+  .facts{grid-template-columns:minmax(0,1fr)}
+  .choices{grid-template-columns:minmax(0,1fr)}
+  .choice{flex-direction:row;justify-content:flex-start;padding:.6rem .9rem}
+  .meter{order:3;width:100%}
+  .cells{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .btn .lbl{display:none}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none !important;animation:none !important;scroll-behavior:auto !important}
+}
 
-        /* Queue Specifics */
-        #queue-viz {
-            flex-direction: row; /* Items line up left to right */
-            justify-content: flex-start;
-        }
-
-        .queue-item {
-            min-width: 50px;
-            height: 80%;
-            background-color: var(--primary);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-right: 5px;
-            border-radius: 4px;
-            animation: slideLeft 0.3s ease-out;
-        }
-
-        /* Array Specifics */
-        #array-viz {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-            align-items: center;
-        }
-
-        .array-slot {
-            height: 60px;
-            border: 2px solid var(--primary);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            background: #eee;
-            position: relative;
-        }
-        
-        .array-slot span {
-            font-size: 0.8rem;
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            color: #888;
-        }
-
-        /* Quiz Section */
-        .quiz-container {
-            text-align: center;
-        }
-
-        .scenario-box {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-            padding: 20px;
-            background-color: #e8f6f3;
-            border-radius: 8px;
-            border: 1px solid var(--accent);
-        }
-
-        .feedback {
-            margin-top: 15px;
-            font-weight: bold;
-            min-height: 24px;
-        }
-        
-        .correct { color: var(--accent); }
-        .incorrect { color: var(--danger); }
-
-        /* Animations */
-        @keyframes slideDown {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes slideLeft {
-            from { transform: translateX(20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-    </style>
+/* ---------- print ---------- */
+@media print{
+  :root{--bg:#fff;--surface:#fff;--surface-2:#f1f4f9;--ink:#000;--muted:#333;--line:#bbb;--code-bg:#f4f6fa;--code-ink:#000;padding:0}
+  body{background:#fff;font-size:11pt}
+  body::before{display:none}
+  .topbar,.side,.toast,.controls,.actions,.scen-nav,.dots,.no-print{display:none !important}
+  .shell{display:block;padding:0}
+  section.mod{break-inside:avoid-page;padding:1rem 0}
+  .lab,.q,.scen,.ksa-col{break-inside:avoid}
+  .console{max-height:none}
+  .flip{height:auto}
+  .flip-inner{transform:none !important}
+  .face{position:static;backface-visibility:visible;transform:none;margin-bottom:.3rem}
+  pre .c{color:#555}
+  body.print-report .shell{display:none}
+  body.print-report #printReport{display:block}
+}
+#printReport table{max-width:none}
+</style>
 </head>
 <body>
 
-<header>
-    <h1>Data Structures 101</h1>
-    <p>Organizing and Storing Data Efficiently</p>
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-array" viewBox="0 0 54 40"><g fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="10" width="12" height="20" rx="2"/><rect x="15" y="10" width="12" height="20" rx="2"/><rect x="28" y="10" width="12" height="20" rx="2"/><rect x="41" y="10" width="11" height="20" rx="2"/></g><text x="8" y="7" font-size="7" text-anchor="middle" fill="currentColor">0</text><text x="21" y="7" font-size="7" text-anchor="middle" fill="currentColor">1</text><text x="34" y="7" font-size="7" text-anchor="middle" fill="currentColor">2</text><text x="46" y="7" font-size="7" text-anchor="middle" fill="currentColor">3</text></symbol>
+  <symbol id="i-stack" viewBox="0 0 54 40"><g fill="none" stroke="currentColor" stroke-width="2.5"><rect x="12" y="28" width="30" height="8" rx="3"/><rect x="12" y="18" width="30" height="8" rx="3"/><rect x="12" y="8" width="30" height="8" rx="3"/><path d="M27 1v5M24 3l3-3 3 3"/></g></symbol>
+  <symbol id="i-queue" viewBox="0 0 54 40"><g fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="20" r="6"/><circle cx="27" cy="20" r="6"/><circle cx="42" cy="20" r="6"/><path d="M2 32h50M6 35l-4-3 4-3"/></g></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></g></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></g></symbol>
+  <symbol id="i-theme" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></g></symbol>
+</svg>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#start">
+      <svg viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="7" fill="#0047AB"/><rect x="7" y="17" width="16" height="4" rx="1.5" fill="#00a86b"/><rect x="7" y="11" width="16" height="4" rx="1.5" fill="#fff"/><rect x="7" y="5" width="16" height="4" rx="1.5" fill="#00a86b" opacity=".6"/><rect x="7" y="23" width="16" height="2" rx="1" fill="#fff" opacity=".5"/></svg>
+      <span>Data Structures 101</span>
+    </a>
+    <div class="meter" title="Lesson progress">
+      <div class="meter-track" role="progressbar" aria-label="Lesson progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meterBar"><div class="meter-fill" id="meterFill"></div></div>
+      <span class="meter-label" id="meterLabel">0%</span>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" data-act="save"><svg aria-hidden="true"><use href="#i-save"/></svg><span class="lbl">Save report</span></button>
+      <button class="btn ghost" type="button" data-act="print-report"><svg aria-hidden="true"><use href="#i-print"/></svg><span class="lbl">Print report</span></button>
+      <button class="btn ghost icon" type="button" id="themeBtn" aria-label="Switch between light and dark mode"><svg aria-hidden="true"><use href="#i-theme"/></svg></button>
+    </div>
+  </div>
 </header>
 
-<div class="container">
+<div class="shell">
+  <nav class="side" aria-label="Lesson modules">
+    <ol id="sideNav">
+      <li><a href="#outcomes" data-mod="outcomes">Learning outcomes</a></li>
+      <li><a href="#arrays" data-mod="arrays">Arrays<span class="frac"></span></a></li>
+      <li><a href="#stacks" data-mod="stacks">Stacks<span class="frac"></span></a></li>
+      <li><a href="#queues" data-mod="queues">Queues<span class="frac"></span></a></li>
+      <li><a href="#complexity" data-mod="complexity">Big-O compared<span class="frac"></span></a></li>
+      <li><a href="#scenarios" data-mod="scenarios">Scenarios<span class="frac"></span></a></li>
+      <li><a href="#quiz" data-mod="quiz">Knowledge check<span class="frac"></span></a></li>
+      <li><a href="#glossary" data-mod="glossary">Glossary<span class="frac"></span></a></li>
+      <li><a href="#progress" data-mod="progress">My progress</a></li>
+    </ol>
+    <p class="side-note">Your progress saves automatically in this browser. Use <b>Save report</b> to keep a copy or hand it in.</p>
+  </nav>
 
-    <section id="concepts">
-        <h2>Core Concepts</h2>
-        <div class="concept-grid">
-            <div class="card">
-                <h3>Array</h3>
-                <p>A collection of items stored at contiguous memory locations. Think of it as a row of numbered lockers.</p>
-                <small><strong>Access:</strong> Fast (by index)<br><strong>Size:</strong> Fixed (usually)</small>
-            </div>
-            <div class="card">
-                <h3>Stack (LIFO)</h3>
-                <p><strong>Last In, First Out.</strong> Like a stack of plates. You add to the top and remove from the top.</p>
-                <small><strong>Operations:</strong> Push (Add), Pop (Remove)</small>
-            </div>
-            <div class="card">
-                <h3>Queue (FIFO)</h3>
-                <p><strong>First In, First Out.</strong> Like a line at a grocery store. You join at the back and leave from the front.</p>
-                <small><strong>Operations:</strong> Enqueue (Add), Dequeue (Remove)</small>
-            </div>
+  <main id="main">
+
+    <!-- HERO -->
+    <section class="mod" id="start">
+      <div class="hero">
+        <div>
+          <h1>Arrays, stacks and queues</h1>
+          <p class="lede">Every program has to decide where data lives and in what order it comes back out. These three structures answer that question in three different ways, and nearly every larger structure you will meet is built from them.</p>
+          <ol class="flow" aria-label="How this lesson works">
+            <li>Read the idea and see it drawn.</li>
+            <li>Run each structure in its lab and watch memory change.</li>
+            <li>Apply it to real scenarios, then take the knowledge check.</li>
+            <li>Save or print your progress report.</li>
+          </ol>
         </div>
+        <div class="hero-art">
+          <svg viewBox="0 0 480 230" role="img" aria-labelledby="heroTitle">
+            <title id="heroTitle">An array as numbered lockers, a stack as plates, and a queue as a line of people</title>
+            <!-- array -->
+            <g>
+              <text x="12" y="22" font-size="14" font-weight="700" fill="var(--navy)">Array: jump to any index</text>
+              <g font-family="JetBrains Mono, monospace" font-size="12" fill="var(--muted)">
+                <text x="34" y="44" text-anchor="middle">0</text><text x="86" y="44" text-anchor="middle">1</text><text x="138" y="44" text-anchor="middle">2</text><text x="190" y="44" text-anchor="middle">3</text><text x="242" y="44" text-anchor="middle">4</text>
+              </g>
+              <g stroke="var(--navy)" stroke-width="2" fill="var(--navy-soft)">
+                <rect x="12" y="50" width="44" height="44" rx="5"/><rect x="64" y="50" width="44" height="44" rx="5"/><rect x="116" y="50" width="44" height="44" rx="5" fill="var(--green-soft)" stroke="var(--green)"/><rect x="168" y="50" width="44" height="44" rx="5"/><rect x="220" y="50" width="44" height="44" rx="5"/>
+              </g>
+              <g font-size="17" font-weight="700" fill="var(--ink)" text-anchor="middle"><text x="34" y="78">12</text><text x="86" y="78">45</text><text x="138" y="78">7</text><text x="190" y="78">23</text><text x="242" y="78">56</text></g>
+              <path d="M138 120 V100" stroke="var(--green)" stroke-width="2.5" marker-end="url(#ah)"/>
+              <text x="138" y="136" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">arr[2]</text>
+            </g>
+            <!-- stack -->
+            <g>
+              <text x="318" y="22" font-size="14" font-weight="700" fill="var(--green-ink)">Stack: last in, first out</text>
+              <path d="M330 80 v118 h112 v-118" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+              <g stroke="var(--green)" stroke-width="2" fill="var(--green-soft)"><rect x="338" y="168" width="96" height="24" rx="6"/><rect x="338" y="140" width="96" height="24" rx="6"/><rect x="338" y="112" width="96" height="24" rx="6"/></g>
+              <g font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle"><text x="386" y="185">first in</text><text x="386" y="157">B</text><text x="386" y="129">last in</text></g>
+              <path d="M370 66 V100" stroke="var(--green)" stroke-width="2.5" marker-end="url(#ah)"/><text x="364" y="60" font-size="11" text-anchor="end" fill="var(--muted)">push</text>
+              <path d="M404 100 V66" stroke="var(--danger)" stroke-width="2.5" marker-end="url(#ahr)"/><text x="410" y="60" font-size="11" fill="var(--muted)">pop</text>
+            </g>
+            <!-- queue -->
+            <g>
+              <text x="12" y="170" font-size="14" font-weight="700" fill="var(--violet)">Queue: first in, first out</text>
+              <g stroke="var(--violet)" stroke-width="2" fill="var(--violet-soft)"><circle cx="70" cy="203" r="15"/><circle cx="112" cy="203" r="15"/><circle cx="154" cy="203" r="15"/><circle cx="196" cy="203" r="15"/></g>
+              <g font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle"><text x="70" y="208">1</text><text x="112" y="208">2</text><text x="154" y="208">3</text><text x="196" y="208">4</text></g>
+              <path d="M50 203 H20" stroke="var(--danger)" stroke-width="2.5" marker-end="url(#ahr)"/><text x="36" y="226" font-size="11" text-anchor="middle" fill="var(--muted)">front</text>
+              <path d="M250 203 H218" stroke="var(--green)" stroke-width="2.5" marker-end="url(#ah)"/><text x="240" y="226" font-size="11" text-anchor="middle" fill="var(--muted)">rear</text>
+            </g>
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="var(--green)"/></marker>
+              <marker id="ahr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="var(--danger)"/></marker>
+            </defs>
+          </svg>
+        </div>
+      </div>
     </section>
 
-    <section id="interactive">
-        <h2>Interactive Lab</h2>
-        <p>Use the controls to manipulate the data structures and observe how data is added and removed.</p>
-        
-        <div class="playground">
-            
-            <div class="demo-box">
-                <h3>The Stack (LIFO)</h3>
-                <div class="controls">
-                    <button onclick="pushStack()">Push</button>
-                    <button class="remove" onclick="popStack()">Pop</button>
-                </div>
-                <div id="stack-viz" class="visual-container">
-                    </div>
-                <p style="font-size: 0.9rem; color: #666;">Note: Items pile up. The last one added is the first one removed.</p>
-            </div>
-
-            <div class="demo-box">
-                <h3>The Queue (FIFO)</h3>
-                <div class="controls">
-                    <button onclick="enqueue()">Enqueue</button>
-                    <button class="remove" onclick="dequeue()">Dequeue</button>
-                </div>
-                <div id="queue-viz" class="visual-container">
-                    </div>
-                <p style="font-size: 0.9rem; color: #666;">Note: Items form a line. The first one added is the first one removed.</p>
-            </div>
-
+    <!-- OUTCOMES -->
+    <section class="mod" id="outcomes">
+      <h2>What you will be able to do</h2>
+      <p class="lede">These are the knowledge, skills and abilities this lesson builds. Each one links to the activity where you practise it, and your report records which activities you finished.</p>
+      <div class="ksa">
+        <div class="ksa-col">
+          <h3><span class="tag">K</span> Knowledge</h3>
+          <ul>
+            <li><b>K1</b>Define an array, a stack and a queue, and state the ordering rule each one enforces.<small>Practised in <a href="#glossary">Glossary</a>, <a href="#quiz">Knowledge check</a></small></li>
+            <li><b>K2</b>Explain contiguous memory and why <code>address = base + index × size</code> makes indexing constant time.<small>Practised in <a href="#arrays">Array lab</a></small></li>
+            <li><b>K3</b>State the Big-O cost of access, insert, delete, push, pop, enqueue and dequeue.<small>Practised in <a href="#complexity">Big-O match</a></small></li>
+            <li><b>K4</b>Name the failure conditions: out-of-bounds index, overflow and underflow.<small>Practised in <a href="#arrays">Array lab</a>, <a href="#stacks">Stack lab</a></small></li>
+            <li><b>K5</b>Recognise where systems use these structures: the call stack, packet buffers, print spoolers, undo history.<small>Practised in <a href="#scenarios">Scenarios</a></small></li>
+          </ul>
         </div>
+        <div class="ksa-col">
+          <h3><span class="tag">S</span> Skills</h3>
+          <ul>
+            <li><b>S1</b>Trace a sequence of operations by hand and predict the final state and output.<small>Practised in <a href="#quiz">Knowledge check</a></small></li>
+            <li><b>S2</b>Implement a stack and a queue on top of a fixed-size array using index pointers.<small>Practised in the code panels in <a href="#stacks">Stacks</a> and <a href="#queues">Queues</a></small></li>
+            <li><b>S3</b>Compute circular-buffer positions with modular arithmetic.<small>Practised in <a href="#queues">Circular queue lab</a></small></li>
+            <li><b>S4</b>Use a stack to check that brackets or tags are balanced.<small>Practised in <a href="#bracketLab">Bracket checker</a></small></li>
+            <li><b>S5</b>Write guard checks that reject invalid indexes, full pushes and empty pops.<small>Practised in all three labs</small></li>
+          </ul>
+        </div>
+        <div class="ksa-col">
+          <h3><span class="tag">A</span> Abilities</h3>
+          <ul>
+            <li><b>A1</b>Choose the right structure for a problem from how its data must be accessed.<small>Practised in <a href="#scenarios">Scenarios</a></small></li>
+            <li><b>A2</b>Weigh performance trade-offs before writing code.<small>Practised in <a href="#complexity">Big-O compared</a></small></li>
+            <li><b>A3</b>Diagnose off-by-one and pointer errors from symptoms.<small>Practised in all three labs</small></li>
+            <li><b>A4</b>Connect unchecked writes into a stack buffer to buffer-overflow attacks.<small>Practised in <a href="#stacks">Stacks</a>, <a href="#quiz">Knowledge check</a></small></li>
+          </ul>
+        </div>
+      </div>
     </section>
 
-    <section id="challenge">
-        <h2>Real-World Challenge</h2>
-        <div class="quiz-container">
-            <p>Read the scenario below and select the best Data Structure to solve the problem.</p>
-            
-            <div class="scenario-box" id="scenario-text">
-                Loading Scenario...
-            </div>
-
-            <div class="controls" style="justify-content: center;">
-                <button onclick="checkAnswer('Stack')">Stack</button>
-                <button onclick="checkAnswer('Queue')">Queue</button>
-                <button onclick="checkAnswer('Array')">Array</button>
-            </div>
-
-            <div id="feedback-msg" class="feedback"></div>
-            
-            <button onclick="nextScenario()" style="margin-top: 10px; background-color: #95a5a6;">Next Scenario</button>
+    <!-- ARRAYS -->
+    <section class="mod" id="arrays">
+      <h2>Arrays: numbered slots in one block of memory</h2>
+      <div class="concept">
+        <div class="prose">
+          <p>An array stores items side by side in a single, contiguous block of memory. Each slot has an <b>index</b>, starting at 0. Because every slot is the same size, the computer never searches for an item: it calculates where the item is.</p>
+          <p>That calculation is the whole secret of the array. For an array of 4-byte integers starting at address <code>0x1000</code>, element 3 lives at <code>0x1000 + 3 × 4 = 0x100C</code>. One multiplication and one addition, no matter whether the array holds 8 items or 8 million. That is <span class="bigo">O(1)</span> access.</p>
+          <p>The price is paid when the shape changes. Inserting at the front means every existing item must move one slot to the right, and deleting from the front means they all move left. That is <span class="bigo">O(n)</span> work.</p>
+          <dl class="facts">
+            <div class="fact"><dt>Access by index</dt><dd>O(1)</dd></div>
+            <div class="fact"><dt>Insert or delete in the middle</dt><dd>O(n)</dd></div>
+            <div class="fact"><dt>Search unsorted</dt><dd>O(n)</dd></div>
+          </dl>
         </div>
+        <figure>
+          <svg viewBox="0 0 260 170" role="img" aria-labelledby="addrTitle">
+            <title id="addrTitle">Address calculation: base address plus index times element size</title>
+            <g font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)" text-anchor="middle">
+              <text x="30" y="22">0x1000</text><text x="80" y="22">0x1004</text><text x="130" y="22">0x1008</text><text x="180" y="22">0x100C</text><text x="230" y="22">0x1010</text>
+            </g>
+            <g stroke="var(--navy)" stroke-width="2" fill="var(--navy-soft)">
+              <rect x="8" y="28" width="44" height="40" rx="4"/><rect x="58" y="28" width="44" height="40" rx="4"/><rect x="108" y="28" width="44" height="40" rx="4"/><rect x="158" y="28" width="44" height="40" rx="4" fill="var(--green-soft)" stroke="var(--green)"/><rect x="208" y="28" width="44" height="40" rx="4"/>
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink)" text-anchor="middle"><text x="30" y="84">[0]</text><text x="80" y="84">[1]</text><text x="130" y="84">[2]</text><text x="180" y="84">[3]</text><text x="230" y="84">[4]</text></g>
+            <path d="M30 100 Q105 140 178 74" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+            <text x="130" y="158" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink)">base + 3 × 4 bytes</text>
+          </svg>
+          <figcaption>The CPU jumps straight to the green slot. No other slot is looked at.</figcaption>
+        </figure>
+      </div>
+
+      <div class="lab" id="arrayLab">
+        <div class="lab-head">
+          <h3>Array lab</h3>
+          <div class="chips" data-chips="arrays"></div>
+        </div>
+        <div class="controls">
+          <label class="field">Index<input id="arrIndex" type="number" value="2" inputmode="numeric"></label>
+          <label class="field">Value<input id="arrValue" type="number" value="99" inputmode="numeric"></label>
+          <button class="btn" type="button" data-arr="read">Read arr[i]</button>
+          <button class="btn" type="button" data-arr="insert">Insert at i</button>
+          <button class="btn" type="button" data-arr="delete">Delete at i</button>
+          <button class="btn" type="button" data-arr="search">Search for value</button>
+          <button class="btn ghost" type="button" data-arr="reset">Reset</button>
+        </div>
+        <div class="cells" id="arrayCells" aria-label="Array memory cells"></div>
+        <div class="formula" id="arrFormula">address = 0x1000 + index × 4</div>
+        <div class="stat-row"><span>Size <strong id="arrSize">5</strong> of 8</span><span>Steps last operation <strong id="arrOps">0</strong></span><span>Cost <strong id="arrCost">–</strong></span></div>
+        <div class="console" id="arrLog" role="log" aria-live="polite"><p class="info">Try reading index 2, then try index 9 to see what an out-of-range access looks like.</p></div>
+      </div>
+
+      <details class="code">
+        <summary>See it in code</summary>
+        <div class="tabs" role="tablist" data-tabs="arr"><button role="tab" aria-selected="true" data-lang="py">Python</button><button role="tab" aria-selected="false" data-lang="java">Java</button></div>
+<pre data-tab="arr" data-lang="py">scores = [88, 92, 75, 64, 99]
+print(scores[2])        <span class="c"># O(1) -> 75</span>
+scores.insert(0, 70)    <span class="c"># O(n): every element shifts right</span>
+scores.pop(1)           <span class="c"># O(n): elements after index 1 shift left</span>
+print(scores[5])        <span class="c"># IndexError: list index out of range</span></pre>
+<pre data-tab="arr" data-lang="java" hidden>int[] scores = {88, 92, 75, 64, 99};
+System.out.println(scores[2]);   <span class="c">// O(1) -> 75</span>
+System.out.println(scores[5]);   <span class="c">// ArrayIndexOutOfBoundsException</span>
+
+<span class="c">// Java arrays have a fixed size. Inserting means</span>
+<span class="c">// allocating a bigger array and copying: O(n).</span>
+int[] bigger = java.util.Arrays.copyOf(scores, 10);</pre>
+      </details>
     </section>
 
+    <!-- STACKS -->
+    <section class="mod" id="stacks">
+      <h2>Stacks: the last one in is the first one out</h2>
+      <div class="concept">
+        <div class="prose">
+          <p>A stack only lets you touch one end, called the <b>top</b>. <b>Push</b> places an item on top, <b>pop</b> removes the top item, and <b>peek</b> looks at it without removing it. Think of a stack of plates: you never pull one from the middle.</p>
+          <p>Built on an array, a stack needs a single integer, <code>top</code>, that records the index of the newest item. Push increments it and writes; pop reads and decrements. Neither operation moves any other element, so both are <span class="bigo">O(1)</span>.</p>
+          <p>Your own programs run on a stack. Every function call pushes a frame holding its local variables and the address to return to; every return pops it. Recursion that never stops keeps pushing until the call stack overflows.</p>
+          <div class="callout sec"><b>Security connection.</b> If a program copies more bytes into a local buffer than the buffer holds, the extra bytes spill over neighbouring stack data, including the saved return address. An attacker who controls those bytes can redirect execution. Bounds checks like the ones in the lab below are the first defence.</div>
+        </div>
+        <figure>
+          <svg viewBox="0 0 260 220" role="img" aria-labelledby="callTitle">
+            <title id="callTitle">The call stack: main calls checkLogin, which calls hash. Each call is a frame on top of the last.</title>
+            <path d="M40 30 v170 h180 v-170" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+            <g stroke="var(--green)" stroke-width="2" fill="var(--green-soft)"><rect x="50" y="150" width="160" height="40" rx="6"/><rect x="50" y="104" width="160" height="40" rx="6"/><rect x="50" y="58" width="160" height="40" rx="6" stroke="var(--warn)" fill="var(--warn-soft)"/></g>
+            <g font-family="JetBrains Mono, monospace" font-size="12" fill="var(--ink)"><text x="62" y="175">main()</text><text x="62" y="129">checkLogin()</text><text x="62" y="83">hash()</text></g>
+            <g font-size="10" fill="var(--muted)"><text x="150" y="175">frame 0</text><text x="150" y="129">frame 1</text><text x="150" y="83">running</text></g>
+            <text x="130" y="22" text-anchor="middle" font-size="11" fill="var(--muted)">returns pop frames from the top</text>
+          </svg>
+          <figcaption>hash() must finish and pop before checkLogin() can resume.</figcaption>
+        </figure>
+      </div>
+
+      <div class="lab" id="stackLab">
+        <div class="lab-head">
+          <h3>Stack lab</h3>
+          <div class="chips" data-chips="stacks"></div>
+        </div>
+        <div class="stack-wrap">
+          <div>
+            <div class="stack-viz" id="stackViz" aria-label="Stack, capacity 6"></div>
+            <p style="text-align:center;font-size:.85rem;color:var(--muted);margin-top:.4rem">Capacity 6. Index 0 is at the bottom.</p>
+          </div>
+          <div>
+            <div class="controls">
+              <label class="field">Value (optional)<input id="stackValue" type="number" placeholder="auto" inputmode="numeric"></label>
+              <button class="btn" type="button" data-stk="push">Push</button>
+              <button class="btn" type="button" data-stk="pop">Pop</button>
+              <button class="btn ghost" type="button" data-stk="peek">Peek</button>
+              <button class="btn ghost" type="button" data-stk="reset">Reset</button>
+            </div>
+            <div class="formula" id="stackFormula">top = -1 (empty)</div>
+            <div class="console" id="stackLog" role="log" aria-live="polite"><p class="info">Push until the stack is full, then push once more. Pop past empty too. Both are bugs your code must guard against.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab" id="bracketLab">
+        <div class="lab-head">
+          <h3>Bracket checker: a stack solving a real problem</h3>
+        </div>
+        <p class="prose">Compilers and HTML validators use a stack to confirm that every opener has a matching closer in the right order. Openers are pushed; each closer must match the item on top, which is then popped. The string is balanced only if the stack is empty at the end.</p>
+        <div class="controls">
+          <label class="field">Expression<input id="bcInput" class="wide" type="text" value="{[()()]}" maxlength="24" spellcheck="false" autocomplete="off"></label>
+          <button class="btn" type="button" data-bc="step">Step</button>
+          <button class="btn" type="button" data-bc="run">Run all</button>
+          <button class="btn ghost" type="button" data-bc="reset">Load</button>
+          <span style="display:flex;gap:.35rem;flex-wrap:wrap">
+            <button class="btn ghost" type="button" data-bcex="{[()()]}">{[()()]}</button>
+            <button class="btn ghost" type="button" data-bcex="([)]">([)]</button>
+            <button class="btn ghost" type="button" data-bcex="((a+b)*c">((a+b)*c</button>
+          </span>
+        </div>
+        <div class="tape" id="bcTape" aria-label="Characters to read"></div>
+        <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap"><span style="font-size:.85rem;color:var(--muted)">Stack (top on the right)</span><div class="mini-stack" id="bcStack"></div></div>
+        <div class="verdict" id="bcVerdict" aria-live="polite"></div>
+      </div>
+
+      <details class="code">
+        <summary>See it in code: an array-backed stack</summary>
+        <div class="tabs" role="tablist" data-tabs="stk"><button role="tab" aria-selected="true" data-lang="py">Python</button><button role="tab" aria-selected="false" data-lang="java">Java</button></div>
+<pre data-tab="stk" data-lang="py">class Stack:
+    def __init__(self, capacity):
+        self.items = [None] * capacity
+        self.top = -1                    <span class="c"># -1 means empty</span>
+
+    def push(self, value):
+        if self.top == len(self.items) - 1:
+            raise OverflowError("stack overflow")
+        self.top += 1
+        self.items[self.top] = value
+
+    def pop(self):
+        if self.top == -1:
+            raise IndexError("stack underflow")
+        value = self.items[self.top]
+        self.top -= 1
+        return value</pre>
+<pre data-tab="stk" data-lang="java" hidden>public class IntStack {
+    private final int[] items;
+    private int top = -1;                <span class="c">// -1 means empty</span>
+
+    public IntStack(int capacity) { items = new int[capacity]; }
+
+    public void push(int value) {
+        if (top == items.length - 1) throw new IllegalStateException("overflow");
+        items[++top] = value;
+    }
+
+    public int pop() {
+        if (top == -1) throw new IllegalStateException("underflow");
+        return items[top--];
+    }
+}</pre>
+      </details>
+    </section>
+
+    <!-- QUEUES -->
+    <section class="mod" id="queues">
+      <h2>Queues: the first one in is the first one out</h2>
+      <div class="concept">
+        <div class="prose">
+          <p>A queue is a waiting line. <b>Enqueue</b> adds an item at the <b>rear</b>; <b>dequeue</b> removes the item at the <b>front</b>. Whoever has waited longest is served next, which is exactly what printers, network routers and operating-system schedulers need.</p>
+          <p>A naive array queue that always removes from index 0 must shift every remaining item left, an <span class="bigo">O(n)</span> cost on every dequeue. The fix is the <b>circular buffer</b>: leave items where they are and move two pointers instead. When a pointer runs off the end of the array it wraps back to 0 using the remainder operator.</p>
+          <p class="formula" style="display:inline-block">rear = (rear + 1) % capacity</p>
+          <p>With wrapping, both enqueue and dequeue are <span class="bigo">O(1)</span>, and the array's space is reused forever.</p>
+        </div>
+        <figure>
+          <svg viewBox="0 0 260 150" role="img" aria-labelledby="naiveTitle">
+            <title id="naiveTitle">A naive queue shifts every item left after each dequeue, while a circular queue only moves the front pointer</title>
+            <text x="8" y="16" font-size="12" font-weight="700" fill="var(--danger)">Naive: shift everything</text>
+            <g stroke="var(--violet)" stroke-width="2" fill="var(--violet-soft)"><rect x="8" y="24" width="40" height="30" rx="4" fill="none" stroke="var(--line)" stroke-dasharray="3 3"/><rect x="52" y="24" width="40" height="30" rx="4"/><rect x="96" y="24" width="40" height="30" rx="4"/><rect x="140" y="24" width="40" height="30" rx="4"/></g>
+            <g font-size="16" fill="var(--danger)"><text x="40" y="70">←</text><text x="84" y="70">←</text><text x="128" y="70">←</text></g>
+            <text x="8" y="96" font-size="12" font-weight="700" fill="var(--green-ink)">Circular: move one pointer</text>
+            <g stroke="var(--violet)" stroke-width="2" fill="var(--violet-soft)"><rect x="8" y="104" width="40" height="30" rx="4" fill="none" stroke="var(--line)" stroke-dasharray="3 3"/><rect x="52" y="104" width="40" height="30" rx="4"/><rect x="96" y="104" width="40" height="30" rx="4"/><rect x="140" y="104" width="40" height="30" rx="4"/></g>
+            <path d="M28 146 Q50 146 66 138" fill="none" stroke="var(--green)" stroke-width="2" marker-end="url(#ah)"/>
+            <text x="200" y="124" font-size="11" fill="var(--muted)">front</text>
+          </svg>
+          <figcaption>Same result, but the circular version does one step instead of n.</figcaption>
+        </figure>
+      </div>
+
+      <div class="lab" id="queueLab">
+        <div class="lab-head">
+          <h3>Circular queue lab</h3>
+          <div class="chips" data-chips="queues"></div>
+        </div>
+        <div class="queue-wrap">
+          <div class="ring" id="qRing" aria-label="Circular buffer with 8 slots">
+            <div class="ring-center"><div><strong id="qCount">0</strong><span>of 8 used</span></div></div>
+          </div>
+          <div>
+            <div class="controls">
+              <button class="btn" type="button" data-q="enq">Enqueue</button>
+              <button class="btn" type="button" data-q="enq3">Enqueue 3</button>
+              <button class="btn" type="button" data-q="deq">Dequeue</button>
+              <button class="btn ghost" type="button" data-q="reset">Reset</button>
+            </div>
+            <div class="formula" id="qFormula">front = 0, rear = 0, count = 0</div>
+            <p style="margin:.9rem 0 0;font-size:.9rem;color:var(--muted)">The line as customers see it, front first:</p>
+            <div class="line-view" id="qLine"><em>Empty</em></div>
+            <div class="console" id="qLog" role="log" aria-live="polite"><p class="info">Goal: make the rear pointer travel past slot 7 and wrap to 0. Hint: enqueue, dequeue a few, then keep enqueuing.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <details class="code">
+        <summary>See it in code: a circular queue</summary>
+        <div class="tabs" role="tablist" data-tabs="que"><button role="tab" aria-selected="true" data-lang="py">Python</button><button role="tab" aria-selected="false" data-lang="java">Java</button></div>
+<pre data-tab="que" data-lang="py">class CircularQueue:
+    def __init__(self, capacity):
+        self.buf = [None] * capacity
+        self.front = self.rear = self.count = 0
+
+    def enqueue(self, value):
+        if self.count == len(self.buf):
+            raise OverflowError("queue full")
+        self.buf[self.rear] = value
+        self.rear = (self.rear + 1) % len(self.buf)    <span class="c"># wrap</span>
+        self.count += 1
+
+    def dequeue(self):
+        if self.count == 0:
+            raise IndexError("queue empty")
+        value = self.buf[self.front]
+        self.front = (self.front + 1) % len(self.buf)  <span class="c"># wrap</span>
+        self.count -= 1
+        return value</pre>
+<pre data-tab="que" data-lang="java" hidden>public class IntQueue {
+    private final int[] buf;
+    private int front = 0, rear = 0, count = 0;
+
+    public IntQueue(int capacity) { buf = new int[capacity]; }
+
+    public void enqueue(int value) {
+        if (count == buf.length) throw new IllegalStateException("full");
+        buf[rear] = value;
+        rear = (rear + 1) % buf.length;      <span class="c">// wrap</span>
+        count++;
+    }
+
+    public int dequeue() {
+        if (count == 0) throw new IllegalStateException("empty");
+        int value = buf[front];
+        front = (front + 1) % buf.length;    <span class="c">// wrap</span>
+        count--;
+        return value;
+    }
+}</pre>
+      </details>
+    </section>
+
+    <!-- COMPLEXITY -->
+    <section class="mod" id="complexity">
+      <h2>Big-O compared</h2>
+      <p class="lede">Choosing a structure is choosing which operations are cheap. Match each operation to its cost, then check your answers. Use what you watched happen in the labs: did other elements have to move?</p>
+      <div class="lab">
+        <div class="lab-head"><h3>Match the cost</h3><div class="chips" data-chips="complexity"></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Operation</th><th scope="col">Cost</th><th scope="col">Result</th></tr></thead>
+            <tbody id="bigoBody"></tbody>
+          </table>
+        </div>
+        <div class="controls" style="margin-top:1rem"><button class="btn" type="button" id="bigoCheck">Check answers</button></div>
+        <p id="bigoMsg" class="verdict" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <!-- SCENARIOS -->
+    <section class="mod" id="scenarios">
+      <h2>Real-world scenarios</h2>
+      <p class="lede">Read each situation and pick the structure that fits. Ask yourself one question: does the newest item leave first, does the oldest leave first, or do you jump straight to a known position?</p>
+      <div class="scen">
+        <div class="scen-meta"><span id="scenCount">Scenario 1 of 10</span><div class="dots" id="scenDots" aria-label="Jump to scenario"></div></div>
+        <p class="scen-text" id="scenText"></p>
+        <div class="choices">
+          <button class="choice" type="button" data-choice="Array"><svg aria-hidden="true" style="color:var(--navy)"><use href="#i-array"/></svg>Array</button>
+          <button class="choice" type="button" data-choice="Stack"><svg aria-hidden="true" style="color:var(--green-ink)"><use href="#i-stack"/></svg>Stack</button>
+          <button class="choice" type="button" data-choice="Queue"><svg aria-hidden="true" style="color:var(--violet)"><use href="#i-queue"/></svg>Queue</button>
+        </div>
+        <div class="feedback" id="scenFeedback" aria-live="polite"></div>
+        <div class="scen-nav"><button class="btn ghost" type="button" id="scenPrev">Previous</button><button class="btn" type="button" id="scenNext">Next scenario</button></div>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section class="mod" id="quiz">
+      <h2>Knowledge check</h2>
+      <p class="lede">Eight questions. Your first answer to each is recorded, so trace on paper before you click.</p>
+      <p class="score" id="quizScore">Score: 0 of 8 answered</p>
+      <div class="quiz" id="quizList"></div>
+    </section>
+
+    <!-- GLOSSARY -->
+    <section class="mod" id="glossary">
+      <h2>Glossary</h2>
+      <p class="lede">Select a card to flip it. Try to say the definition aloud before you look. Flip at least six to complete this module.</p>
+      <div class="gloss" id="glossList"></div>
+    </section>
+
+    <!-- PROGRESS -->
+    <section class="mod" id="progress">
+      <h2>My progress</h2>
+      <div class="dash">
+        <div>
+          <label class="field" style="max-width:22rem">Your name for the report<input id="studentName" class="wide" type="text" autocomplete="name" placeholder="First and last name" style="width:100%"></label>
+          <div class="table-wrap" style="margin-top:1rem">
+            <table>
+              <thead><tr><th scope="col">Module</th><th scope="col">Completed</th><th scope="col">Status</th></tr></thead>
+              <tbody id="dashBody"></tbody>
+            </table>
+          </div>
+          <div class="actions">
+            <button class="btn" type="button" data-act="save"><svg aria-hidden="true"><use href="#i-save"/></svg>Save report</button>
+            <button class="btn ghost" type="button" data-act="print-report"><svg aria-hidden="true"><use href="#i-print"/></svg>Print report</button>
+            <button class="btn ghost" type="button" data-act="print-lesson"><svg aria-hidden="true"><use href="#i-print"/></svg>Print lesson notes</button>
+            <button class="btn danger" type="button" id="resetAll">Reset progress</button>
+          </div>
+          <p style="font-size:.88rem;color:var(--muted);margin-top:.75rem" id="lastSaved">Not started yet.</p>
+        </div>
+        <div class="ring-score" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-2)" stroke-width="12"/><circle id="dashRing" cx="60" cy="60" r="52" fill="none" stroke="var(--green)" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="transition:stroke-dashoffset .6s"/></svg>
+          <div class="ring-text"><div><strong id="dashPct">0%</strong><span>complete</span></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
 </div>
 
+<div id="printReport"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
-    // --- STACK LOGIC ---
-    const stackContainer = document.getElementById('stack-viz');
-    let stackCount = 0;
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r => setTimeout(r, reduced ? 40 : ms));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-    function pushStack() {
-        if (stackContainer.children.length >= 5) {
-            alert("Stack Overflow! The stack is full.");
-            return;
-        }
-        stackCount++;
-        const item = document.createElement('div');
-        item.className = 'stack-item';
-        item.innerText = 'Data ' + stackCount;
-        stackContainer.appendChild(item);
+/* ================= DATA ================= */
+const CHECKS = {
+  arrays:[['arrayRead','Read by index'],['arrayBounds','Out-of-range index'],['arrayInsert','Insert with shift'],['arrayDelete','Delete with shift'],['arraySearch','Linear search']],
+  stacks:[['stackPush','Push'],['stackPop','Pop'],['stackEdge','Overflow or underflow'],['bracket','Bracket check']],
+  queues:[['queueEnq','Enqueue'],['queueDeq','Dequeue'],['queueWrap','Pointer wrap-around']],
+  complexity:[['bigO','All costs matched']],
+  glossary:[['glossary','Six cards flipped']]
+};
+
+const SCENARIOS = [
+  {t:'You are building the Undo button for a text editor. The most recent edit must be the first one reversed.', a:'Stack', e:'Undo history is LIFO: the newest action sits on top and is popped first. Redo is usually a second stack.'},
+  {t:'A shared printer receives jobs from twenty computers and must print them in the order they arrived.', a:'Queue', e:'A print spooler is a classic FIFO queue: the job that waited longest prints next.'},
+  {t:'You store the test scores for a class of 30 and need to look up seat 17’s score instantly.', a:'Array', e:'With a known position, an array computes the address directly: O(1) access by index.'},
+  {t:'A web browser’s Back button must return you to the page you were on just before this one.', a:'Stack', e:'Each visited page is pushed; Back pops the most recent one.'},
+  {t:'A router receives packets faster than its outgoing link can send them and must transmit them in arrival order.', a:'Queue', e:'Router interface buffers are FIFO queues. When the buffer is full, new packets are dropped, which is queue overflow in the real world.'},
+  {t:'Function A calls B, which calls C. C must finish before B can continue, and B before A.', a:'Stack', e:'This is the call stack. Each call pushes a frame with locals and a return address; each return pops it.'},
+  {t:'An image row holds 1,920 pixel brightness values and a filter needs to read pixel 960 directly.', a:'Array', e:'Pixels are stored contiguously, so pixel 960 is base + 960 × size. No scanning needed.'},
+  {t:'An HTML validator checks that every opening tag such as &lt;div&gt; has a matching closing tag in the correct nesting order.', a:'Stack', e:'Openers are pushed and each closer must match the top. It is the bracket checker you ran, with tags instead of brackets.'},
+  {t:'A network scanner explores hosts one hop away first, then two hops away, then three.', a:'Queue', e:'Breadth-first search uses a queue so the nearest unexplored hosts are always processed first.'},
+  {t:'A program converts a month number from 1 to 12 into the month’s name.', a:'Array', e:'Store the 12 names in an array and index directly with the month number (minus 1 if the array starts at 0).'}
+];
+
+const QUIZ = [
+  {q:'Starting with an empty stack, these run in order. What remains, bottom to top?', code:'push(4); push(9); pop(); push(2); push(7); pop(); pop();', o:['4','4, 9','4, 2','The stack is empty'], a:0, e:'Trace: [4] → [4,9] → pop 9 → [4] → [4,2] → [4,2,7] → pop 7 → pop 2 → [4].'},
+  {q:'Starting with an empty queue, these run in order. What does the next dequeue return?', code:'enqueue(A); enqueue(B); enqueue(C); dequeue(); enqueue(D); dequeue();', o:['A','B','C','D'], a:2, e:'A and B have already left from the front. The line is now C, D, so C comes out next.'},
+  {q:'An int array starts at 0x2000 and each int is 4 bytes. What is the address of arr[6]?', o:['0x2006','0x2018','0x2024','0x2010'], a:1, e:'6 × 4 = 24 bytes, and 24 in hexadecimal is 0x18. So 0x2000 + 0x18 = 0x2018.'},
+  {q:'What does it cost to insert a new element at index 0 of an array holding n elements?', o:['O(1)','O(log n)','O(n)','O(n²)'], a:2, e:'All n existing elements must shift one slot right to make room.'},
+  {q:'A circular queue has capacity 8 and rear = 7. After one successful enqueue, what is rear?', o:['8','0','7','1'], a:1, e:'(7 + 1) % 8 = 0. The pointer wraps to the start of the array.'},
+  {q:'Calling pop() on an empty stack is called what?', o:['Overflow','Underflow','A segmentation fault in every language','Wrap-around'], a:1, e:'Underflow is removing from an empty structure; overflow is adding to a full one. Good code checks for both.'},
+  {q:'Why is a circular buffer better than a queue that always removes from index 0 and shifts?', o:['It uses less memory per item','Dequeue becomes O(1) because nothing shifts','It keeps items sorted','It never becomes full'], a:1, e:'Only the front pointer moves, so dequeue no longer costs O(n). It can still become full.'},
+  {q:'A program copies 200 attacker-supplied bytes into a 64-byte local buffer with no length check. What is most at risk?', o:['The heap allocator’s free list','The saved return address in the function’s stack frame','The CPU’s cache','The queue of print jobs'], a:1, e:'The local buffer lives in a stack frame. Overflowing it can overwrite the saved return address and hijack control flow, which is a stack-based buffer overflow.'}
+];
+
+const BIGO = [
+  ['Read arr[i] by index','O(1)'],
+  ['Insert at the front of an array','O(n)'],
+  ['Search an unsorted array for a value','O(n)'],
+  ['Stack push','O(1)'],
+  ['Stack pop','O(1)'],
+  ['Circular queue enqueue','O(1)'],
+  ['Naive queue dequeue (shift everything left)','O(n)']
+];
+
+const GLOSSARY = [
+  ['Array','Fixed-size collection of same-type items in contiguous memory, reached by index.'],
+  ['Index','The position number of an element. Most languages start at 0.'],
+  ['Contiguous memory','Storage where elements sit next to each other with no gaps, so addresses can be calculated.'],
+  ['Stack','A collection where items are added and removed only at the top.'],
+  ['LIFO','Last In, First Out. The newest item leaves first.'],
+  ['Push and pop','Push adds an item to the top of a stack; pop removes and returns the top item.'],
+  ['Peek','Read the top (or front) item without removing it.'],
+  ['Queue','A collection where items join at the rear and leave from the front.'],
+  ['FIFO','First In, First Out. The oldest item leaves first.'],
+  ['Enqueue and dequeue','Enqueue adds at the rear of a queue; dequeue removes from the front.'],
+  ['Overflow and underflow','Adding to a full structure, or removing from an empty one.'],
+  ['Circular buffer','An array whose pointers wrap from the last index back to 0 using modulo.'],
+  ['Big-O notation','Describes how an operation’s cost grows as the input size n grows.'],
+  ['Call stack','The runtime stack of function frames holding locals and return addresses.']
+];
+
+/* ================= STATE ================= */
+const KEY = 'ds101-progress-v1';
+const blank = () => ({name:'', checks:{}, scen:{}, quiz:{}, flipped:[], started:null, updated:null});
+let S = blank();
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch(e) {}
+
+function persist(){
+  S.updated = new Date().toISOString();
+  if (!S.started) S.started = S.updated;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+  refreshProgress();
+}
+function mark(id){
+  if (S.checks[id]) return;
+  S.checks[id] = true;
+  persist();
+  const label = Object.values(CHECKS).flat().find(c => c[0] === id);
+  if (label) toast('Checkpoint complete: ' + label[1]);
+}
+
+function tally(){
+  const labIds = Object.values(CHECKS).flat().map(c => c[0]);
+  const labsDone = labIds.filter(id => S.checks[id]).length;
+  const scenSolved = SCENARIOS.filter((_, i) => S.scen[i] && S.scen[i].solved).length;
+  const scenFirst = SCENARIOS.filter((_, i) => S.scen[i] && S.scen[i].first === true).length;
+  const quizAnswered = QUIZ.filter((_, i) => S.quiz[i] !== undefined).length;
+  const quizRight = QUIZ.filter((q, i) => S.quiz[i] === q.a).length;
+  const total = labIds.length + SCENARIOS.length + QUIZ.length;
+  const done = labsDone + scenSolved + quizAnswered;
+  return {labIds, labsDone, scenSolved, scenFirst, quizAnswered, quizRight, total, done, pct: Math.round(done / total * 100)};
+}
+
+function moduleRows(){
+  const t = tally();
+  const rows = [];
+  const names = {arrays:'Arrays lab', stacks:'Stacks lab and bracket checker', queues:'Circular queue lab', complexity:'Big-O match', glossary:'Glossary'};
+  ['arrays','stacks','queues','complexity'].forEach(k => {
+    const n = CHECKS[k].filter(c => S.checks[c[0]]).length;
+    rows.push({key:k, name:names[k], done:n, of:CHECKS[k].length, detail:CHECKS[k].map(c => (S.checks[c[0]] ? '✓ ' : '✗ ') + c[1]).join('; ')});
+  });
+  rows.push({key:'scenarios', name:'Real-world scenarios', done:t.scenSolved, of:SCENARIOS.length, detail:'Correct on first try: ' + t.scenFirst + ' of ' + SCENARIOS.length});
+  rows.push({key:'quiz', name:'Knowledge check', done:t.quizAnswered, of:QUIZ.length, detail:'Score: ' + t.quizRight + ' of ' + QUIZ.length + ' correct'});
+  const g = CHECKS.glossary.filter(c => S.checks[c[0]]).length;
+  rows.push({key:'glossary', name:'Glossary', done:g, of:1, detail:'Cards flipped: ' + Math.min(S.flipped.length, GLOSSARY.length) + ' of ' + GLOSSARY.length});
+  return rows;
+}
+
+function refreshProgress(){
+  const t = tally();
+  $('#meterFill').style.width = t.pct + '%';
+  $('#meterLabel').textContent = t.pct + '%';
+  $('#meterBar').setAttribute('aria-valuenow', t.pct);
+  $('#dashPct').textContent = t.pct + '%';
+  $('#dashRing').style.strokeDashoffset = (326.7 * (1 - t.pct / 100)).toFixed(1);
+  const rows = moduleRows();
+  $('#dashBody').innerHTML = rows.map(r => {
+    const cls = r.done >= r.of ? 'good' : r.done > 0 ? 'part' : 'none';
+    const word = r.done >= r.of ? 'Complete' : r.done > 0 ? 'In progress' : 'Not started';
+    return `<tr><td>${esc(r.name)}<br><small style="color:var(--muted)">${esc(r.detail)}</small></td><td>${r.done} of ${r.of}</td><td class="status ${cls}">${word}</td></tr>`;
+  }).join('');
+  // sidebar
+  const byKey = Object.fromEntries(rows.map(r => [r.key, r]));
+  $$('#sideNav a').forEach(a => {
+    const r = byKey[a.dataset.mod];
+    const frac = a.querySelector('.frac');
+    if (r) { a.classList.toggle('done', r.done >= r.of); if (frac) frac.textContent = r.done + '/' + r.of; }
+  });
+  // chips
+  $$('[data-chips]').forEach(box => {
+    box.innerHTML = CHECKS[box.dataset.chips].map(c => `<span class="chip ${S.checks[c[0]] ? 'on' : ''}">${esc(c[1])}</span>`).join('');
+  });
+  $('#lastSaved').textContent = S.updated ? 'Progress saved in this browser on ' + new Date(S.updated).toLocaleString() + '.' : 'Not started yet. Progress saves automatically as you work.';
+}
+
+/* ================= TOAST ================= */
+let toastTimer;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ================= THEME ================= */
+const THEME_KEY = 'ds101-theme';
+try { const th = localStorage.getItem(THEME_KEY); if (th) document.documentElement.setAttribute('data-theme', th); } catch(e) {}
+$('#themeBtn').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem(THEME_KEY, next); } catch(e) {}
+});
+
+/* ================= CODE TABS ================= */
+$$('[data-tabs]').forEach(list => {
+  list.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    list.querySelectorAll('button').forEach(x => x.setAttribute('aria-selected', x === b));
+    $$(`pre[data-tab="${list.dataset.tabs}"]`).forEach(p => p.hidden = p.dataset.lang !== b.dataset.lang);
+  });
+});
+
+/* ================= ARRAY LAB ================= */
+const ARR_CAP = 8, BASE = 0x1000, W = 4;
+let arr, arrSize, arrBusy = false;
+const hex = n => '0x' + n.toString(16).toUpperCase();
+function arrInit(){ arr = [12,45,7,23,56,null,null,null]; arrSize = 5; }
+arrInit();
+function renderArray(hl){
+  hl = hl || {};
+  const box = $('#arrayCells'); box.innerHTML = '';
+  for (let i = 0; i < ARR_CAP; i++){
+    const c = document.createElement('div');
+    c.className = 'cell' + (i >= arrSize ? ' empty' : '') + (hl[i] ? ' ' + hl[i] : '');
+    c.innerHTML = `<span class="idx">[${i}]</span><span class="val">${i < arrSize ? arr[i] : '·'}</span><span class="addr">${hex(BASE + i * W)}</span>`;
+    c.setAttribute('aria-label', `Index ${i}, ${i < arrSize ? 'value ' + arr[i] : 'empty'}`);
+    box.appendChild(c);
+  }
+  $('#arrSize').textContent = arrSize;
+}
+function arrLog(msg, kind){ const l = $('#arrLog'); const p = document.createElement('p'); p.className = kind || 'info'; p.textContent = msg; l.appendChild(p); l.scrollTop = l.scrollHeight; }
+function arrStats(steps, cost){ $('#arrOps').textContent = steps; $('#arrCost').textContent = cost; }
+function intVal(sel){ const v = $(sel).value.trim(); if (v === '' || !/^-?\d+$/.test(v)) return null; return parseInt(v, 10); }
+function arrLock(on){ arrBusy = on; $$('[data-arr]').forEach(b => b.disabled = on); }
+
+async function arrAction(kind){
+  if (arrBusy) return;
+  if (kind === 'reset'){ arrInit(); renderArray(); arrStats(0,'–'); $('#arrFormula').textContent = 'address = 0x1000 + index × 4'; arrLog('Array reset to [12, 45, 7, 23, 56].'); return; }
+  const i = intVal('#arrIndex'), v = intVal('#arrValue');
+  if (kind === 'read'){
+    if (i === null){ arrLog('Enter a whole-number index first.', 'err'); return; }
+    if (i < 0 || i >= arrSize){
+      renderArray(); arrStats(1,'error');
+      arrLog(`arr[${i}] is out of range. Valid indexes are 0 to ${arrSize - 1}. Python raises IndexError and Java raises ArrayIndexOutOfBoundsException. C does no check at all and silently reads whatever sits at ${hex(BASE + i * W)}.`, 'err');
+      $('#arrFormula').textContent = `address = 0x1000 + ${i} × 4 = ${hex(Math.max(0, BASE + i * W))}  ← not part of this array`;
+      mark('arrayBounds'); return;
     }
+    renderArray({[i]:'hit'});
+    $('#arrFormula').textContent = `address = 0x1000 + ${i} × 4 = ${hex(BASE + i * W)}`;
+    arrStats(1,'O(1)');
+    arrLog(`arr[${i}] = ${arr[i]}. One address calculation, no other slot visited.`, 'ok');
+    mark('arrayRead'); return;
+  }
+  if (kind === 'insert'){
+    if (i === null || v === null){ arrLog('Enter both an index and a value.', 'err'); return; }
+    if (arrSize === ARR_CAP){ arrLog('The array is full (8 of 8). A fixed-size array cannot grow; you would need to allocate a larger one and copy everything, which is O(n).', 'err'); return; }
+    if (i < 0 || i > arrSize){ arrLog(`Insert index must be between 0 and ${arrSize}. Inserting at ${i} would leave a gap.`, 'err'); mark('arrayBounds'); return; }
+    arrLock(true); let moves = 0;
+    arrLog(`Inserting ${v} at index ${i}: shifting ${arrSize - i} element(s) right, starting from the end.`);
+    for (let k = arrSize; k > i; k--){ arr[k] = arr[k - 1]; moves++; renderArray({[k]:'move', [k - 1]:'check'}); await sleep(420); }
+    arr[i] = v; arrSize++; renderArray({[i]:'hit'});
+    arrStats(moves + 1, moves ? 'O(n)' : 'O(1) at the end');
+    arrLog(`Done. ${moves} shift(s) plus 1 write. The closer to the front you insert, the more work it takes.`, 'ok');
+    arrLock(false); mark('arrayInsert'); return;
+  }
+  if (kind === 'delete'){
+    if (i === null){ arrLog('Enter an index to delete.', 'err'); return; }
+    if (i < 0 || i >= arrSize){ arrLog(`Nothing at index ${i}. Valid indexes are 0 to ${arrSize - 1}.`, 'err'); mark('arrayBounds'); return; }
+    arrLock(true); let moves = 0; const removed = arr[i];
+    renderArray({[i]:'miss'}); await sleep(420);
+    for (let k = i; k < arrSize - 1; k++){ arr[k] = arr[k + 1]; moves++; renderArray({[k]:'move', [k + 1]:'check'}); await sleep(420); }
+    arr[arrSize - 1] = null; arrSize--; renderArray();
+    arrStats(moves, moves ? 'O(n)' : 'O(1) at the end');
+    arrLog(`Removed ${removed}. ${moves} element(s) shifted left to close the gap.`, 'ok');
+    arrLock(false); mark('arrayDelete'); return;
+  }
+  if (kind === 'search'){
+    if (v === null){ arrLog('Enter a value to search for.', 'err'); return; }
+    arrLock(true); let comps = 0, found = -1;
+    for (let k = 0; k < arrSize; k++){ comps++; renderArray({[k]:'check'}); await sleep(360); if (arr[k] === v){ found = k; break; } }
+    renderArray(found >= 0 ? {[found]:'hit'} : {});
+    arrStats(comps, 'O(n)');
+    arrLog(found >= 0 ? `Found ${v} at index ${found} after ${comps} comparison(s).` : `${v} is not in the array. All ${comps} slots were checked.`, found >= 0 ? 'ok' : 'err');
+    arrLock(false); mark('arraySearch');
+  }
+}
+$$('[data-arr]').forEach(b => b.addEventListener('click', () => arrAction(b.dataset.arr)));
+renderArray();
 
-    function popStack() {
-        if (stackContainer.lastElementChild) {
-            stackContainer.removeChild(stackContainer.lastElementChild);
-        } else {
-            alert("Stack Underflow! The stack is empty.");
-        }
+/* ================= STACK LAB ================= */
+const ST_CAP = 6; let stack = [], stackAuto = 10, stackBusy = false;
+function renderStack(peek){
+  const viz = $('#stackViz'); viz.innerHTML = '';
+  for (let i = 0; i < ST_CAP; i++){
+    const d = document.createElement('div');
+    const filled = i < stack.length;
+    d.className = 'slot' + (filled ? ' full' : '') + (filled && i === stack.length - 1 ? ' top' : '') + (peek && i === stack.length - 1 ? ' peek' : '');
+    d.innerHTML = `<span class="si">[${i}]</span>${filled ? stack[i] : 'empty'}`;
+    viz.appendChild(d);
+  }
+  $('#stackFormula').textContent = stack.length ? `top = ${stack.length - 1}, items[top] = ${stack[stack.length - 1]}` : 'top = -1 (empty)';
+}
+function stLog(msg, kind){ const l = $('#stackLog'); const p = document.createElement('p'); p.className = kind || 'info'; p.textContent = msg; l.appendChild(p); l.scrollTop = l.scrollHeight; }
+function shake(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+async function stackAction(kind){
+  if (stackBusy) return;
+  if (kind === 'push'){
+    if (stack.length === ST_CAP){ shake($('#stackViz')); stLog(`Stack overflow: top is already ${ST_CAP - 1}, the last valid index. A guard must reject this push; without one, the write lands outside the array.`, 'err'); mark('stackEdge'); return; }
+    let v = intVal('#stackValue'); if (v === null) v = stackAuto++;
+    stack.push(v); $('#stackValue').value = '';
+    renderStack(); stLog(`push(${v}): top becomes ${stack.length - 1}. Nothing else moved. O(1).`, 'ok'); mark('stackPush');
+  } else if (kind === 'pop'){
+    if (!stack.length){ shake($('#stackViz')); stLog('Stack underflow: pop() on an empty stack. Return an error or raise an exception rather than reading items[-1].', 'err'); mark('stackEdge'); return; }
+    stackBusy = true;
+    const slots = $$('#stackViz .slot'); const topEl = slots[stack.length - 1]; if (topEl) topEl.classList.add('leaving');
+    await sleep(260);
+    const v = stack.pop(); renderStack(); stackBusy = false;
+    stLog(`pop() returned ${v}. top becomes ${stack.length - 1}. O(1).`, 'ok'); mark('stackPop');
+  } else if (kind === 'peek'){
+    if (!stack.length){ stLog('peek() on an empty stack has nothing to show.', 'err'); return; }
+    renderStack(true); stLog(`peek() = ${stack[stack.length - 1]}. The item stays on the stack.`);
+  } else if (kind === 'reset'){
+    stack = []; stackAuto = 10; renderStack(); stLog('Stack cleared.');
+  }
+}
+$$('[data-stk]').forEach(b => b.addEventListener('click', () => stackAction(b.dataset.stk)));
+renderStack();
+
+/* ================= BRACKET CHECKER ================= */
+const PAIRS = {')':'(', ']':'[', '}':'{'};
+let bc = {str:'', i:0, st:[], done:false, running:false};
+function bcLoad(){
+  bc = {str: $('#bcInput').value.slice(0,24), i:0, st:[], done:false, running:false};
+  bcRender(); setVerdict('Press Step to read the first character.', '');
+}
+function setVerdict(msg, cls){ const v = $('#bcVerdict'); v.textContent = msg; v.className = 'verdict ' + (cls || ''); }
+function bcRender(){
+  $('#bcTape').innerHTML = [...bc.str].map((ch, k) => `<span class="${k < bc.i ? 'read' : k === bc.i && !bc.done ? 'cur' : ''}">${esc(ch === ' ' ? '␣' : ch)}</span>`).join('');
+  $('#bcStack').innerHTML = bc.st.length ? bc.st.map(ch => `<span>${esc(ch)}</span>`).join('') : '<em>empty</em>';
+}
+function bcFinish(ok, msg){ bc.done = true; bcRender(); setVerdict(msg, ok ? 'good' : 'bad'); mark('bracket'); }
+function bcStep(){
+  if (bc.done) return;
+  if (!bc.str.length){ setVerdict('Type an expression first.', 'bad'); bc.done = true; return; }
+  if (bc.i >= bc.str.length){
+    if (bc.st.length) bcFinish(false, `End of input, but ${bc.st.length} opener(s) were never closed: ${bc.st.join(' ')}. Unbalanced.`);
+    else bcFinish(true, 'End of input and the stack is empty. Balanced.');
+    return;
+  }
+  const ch = bc.str[bc.i];
+  if ('([{'.includes(ch)){ bc.st.push(ch); setVerdict(`Read “${ch}”: an opener, so push it.`, ''); }
+  else if (PAIRS[ch]){
+    if (!bc.st.length){ bc.i++; bcFinish(false, `Read “${ch}”: a closer, but the stack is empty (underflow). Unbalanced.`); return; }
+    const top = bc.st[bc.st.length - 1];
+    if (top === PAIRS[ch]){ bc.st.pop(); setVerdict(`Read “${ch}”: it matches the top “${top}”, so pop.`, ''); }
+    else { bc.i++; bcFinish(false, `Read “${ch}”, but the top is “${top}”. The nesting order is wrong. Unbalanced.`); return; }
+  } else { setVerdict(`Read “${ch}”: not a bracket, skip it.`, ''); }
+  bc.i++; bcRender();
+}
+async function bcRun(){
+  if (bc.running) return; bc.running = true;
+  while (!bc.done){ bcStep(); await sleep(450); }
+  bc.running = false;
+}
+$$('[data-bc]').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.bc;
+  if (k === 'reset') bcLoad();
+  else if (k === 'step'){ if (bc.str !== $('#bcInput').value.slice(0,24) && bc.i === 0) bcLoad(); bcStep(); }
+  else if (k === 'run'){ if (bc.done || bc.str !== $('#bcInput').value.slice(0,24)) bcLoad(); bcRun(); }
+}));
+$$('[data-bcex]').forEach(b => b.addEventListener('click', () => { $('#bcInput').value = b.dataset.bcex; bcLoad(); }));
+bcLoad();
+
+/* ================= QUEUE LAB ================= */
+const Q_CAP = 8; let qbuf, qf, qr, qc, qNext;
+function qInit(){ qbuf = Array(Q_CAP).fill(null); qf = 0; qr = 0; qc = 0; qNext = 0; }
+qInit();
+const letter = n => String.fromCharCode(65 + (n % 26));
+function renderQueue(){
+  const ring = $('#qRing');
+  ring.querySelectorAll('.qcell').forEach(n => n.remove());
+  for (let i = 0; i < Q_CAP; i++){
+    const ang = (-90 + i * 360 / Q_CAP) * Math.PI / 180;
+    const c = document.createElement('div');
+    c.className = 'qcell' + (qbuf[i] !== null ? ' full' : '');
+    c.style.left = (50 + 40 * Math.cos(ang)) + '%';
+    c.style.top = (50 + 40 * Math.sin(ang)) + '%';
+    let ptr = '';
+    if (i === qf) ptr += '<span class="ptr f">F</span>';
+    if (i === qr) ptr += '<span class="ptr r">R</span>';
+    c.innerHTML = `${ptr}<span class="qv">${qbuf[i] !== null ? qbuf[i] : ''}</span><span class="qi">${i}</span>`;
+    c.setAttribute('aria-label', `Slot ${i}${qbuf[i] !== null ? ', holds ' + qbuf[i] : ', empty'}${i === qf ? ', front' : ''}${i === qr ? ', rear' : ''}`);
+    ring.appendChild(c);
+  }
+  $('#qCount').textContent = qc;
+  const line = [];
+  for (let k = 0; k < qc; k++) line.push(qbuf[(qf + k) % Q_CAP]);
+  $('#qLine').innerHTML = line.length ? '<em>front</em>' + line.map(v => `<span class="p">${v}</span>`).join('') + '<em>rear</em>' : '<em>Empty</em>';
+}
+function qLog(msg, kind){ const l = $('#qLog'); const p = document.createElement('p'); p.className = kind || 'info'; p.textContent = msg; l.appendChild(p); l.scrollTop = l.scrollHeight; }
+function qEnq(){
+  if (qc === Q_CAP){ shake($('#qRing')); qLog('Queue full: count = 8. front and rear point at the same slot, which is why we track count separately.', 'err'); return false; }
+  const v = letter(qNext++); const old = qr;
+  qbuf[qr] = v; qr = (qr + 1) % Q_CAP; qc++;
+  $('#qFormula').textContent = `rear = (${old} + 1) % 8 = ${qr}`;
+  qLog(`enqueue(${v}) wrote slot ${old}. rear = (${old} + 1) % 8 = ${qr}.${old === Q_CAP - 1 ? ' The rear pointer wrapped to 0.' : ''}`, 'ok');
+  mark('queueEnq'); if (old === Q_CAP - 1) mark('queueWrap');
+  return true;
+}
+function qDeq(){
+  if (!qc){ shake($('#qRing')); qLog('Queue empty: dequeue() has nothing to return (underflow).', 'err'); return; }
+  const v = qbuf[qf]; const old = qf;
+  qbuf[qf] = null; qf = (qf + 1) % Q_CAP; qc--;
+  $('#qFormula').textContent = `front = (${old} + 1) % 8 = ${qf}`;
+  qLog(`dequeue() returned ${v} from slot ${old}. front = (${old} + 1) % 8 = ${qf}. Nothing shifted.${old === Q_CAP - 1 ? ' The front pointer wrapped to 0.' : ''}`, 'ok');
+  mark('queueDeq'); if (old === Q_CAP - 1) mark('queueWrap');
+}
+$$('[data-q]').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.q;
+  if (k === 'enq') qEnq();
+  else if (k === 'enq3'){ for (let n = 0; n < 3; n++) if (!qEnq()) break; }
+  else if (k === 'deq') qDeq();
+  else if (k === 'reset'){ qInit(); $('#qFormula').textContent = 'front = 0, rear = 0, count = 0'; qLog('Queue reset.'); }
+  renderQueue();
+}));
+renderQueue();
+
+/* ================= BIG-O ================= */
+const bigoBody = $('#bigoBody');
+bigoBody.innerHTML = BIGO.map((r, i) => `<tr><td>${esc(r[0])}</td><td><select aria-label="Cost of ${esc(r[0])}" data-bigo="${i}"><option value="">Choose</option><option>O(1)</option><option>O(n)</option></select></td><td class="mark" id="bigoMark${i}"></td></tr>`).join('');
+$('#bigoCheck').addEventListener('click', () => {
+  let right = 0, blankCount = 0;
+  BIGO.forEach((r, i) => {
+    const val = $(`[data-bigo="${i}"]`).value; const m = $('#bigoMark' + i);
+    if (!val){ blankCount++; m.textContent = ''; m.className = 'mark'; return; }
+    const ok = val === r[1]; if (ok) right++;
+    m.textContent = ok ? '✓ Correct' : '✗ Try again'; m.className = 'mark ' + (ok ? 'good' : 'bad');
+  });
+  const msg = $('#bigoMsg');
+  if (right === BIGO.length){ msg.textContent = 'All seven correct. Notice the pattern: anything that shifts or scans elements is O(n).'; msg.className = 'verdict good'; mark('bigO'); }
+  else { msg.textContent = `${right} of ${BIGO.length} correct${blankCount ? ', ' + blankCount + ' unanswered' : ''}. For each one, ask whether other elements had to move or be visited.`; msg.className = 'verdict bad'; }
+});
+
+/* ================= SCENARIOS ================= */
+let sIdx = 0;
+function renderScen(){
+  const s = SCENARIOS[sIdx], rec = S.scen[sIdx];
+  $('#scenCount').textContent = `Scenario ${sIdx + 1} of ${SCENARIOS.length}`;
+  $('#scenText').innerHTML = s.t;
+  $$('.choice').forEach(b => { b.classList.remove('right','wrong'); if (rec && rec.solved && b.dataset.choice === s.a) b.classList.add('right'); });
+  const fb = $('#scenFeedback');
+  if (rec && rec.solved){ fb.className = 'feedback good'; fb.innerHTML = `<strong>${esc(s.a)} is right.</strong><span>${esc(s.e)}</span>`; }
+  else { fb.className = 'feedback'; fb.innerHTML = ''; }
+  $('#scenDots').innerHTML = SCENARIOS.map((_, i) => {
+    const r = S.scen[i]; const cls = (i === sIdx ? 'cur ' : '') + (r && r.solved ? (r.first ? 'solved' : 'retry') : '');
+    return `<button type="button" class="${cls}" data-dot="${i}" aria-label="Scenario ${i + 1}${r && r.solved ? ', solved' : ''}"></button>`;
+  }).join('');
+  $('#scenPrev').disabled = sIdx === 0;
+  $('#scenNext').textContent = sIdx === SCENARIOS.length - 1 ? 'Back to first' : 'Next scenario';
+}
+$$('.choice').forEach(b => b.addEventListener('click', () => {
+  const s = SCENARIOS[sIdx]; const pick = b.dataset.choice; const ok = pick === s.a;
+  const rec = S.scen[sIdx] || {first:null, solved:false};
+  if (rec.first === null) rec.first = ok;
+  if (ok) rec.solved = true;
+  S.scen[sIdx] = rec; persist();
+  $$('.choice').forEach(x => x.classList.remove('right','wrong'));
+  b.classList.add(ok ? 'right' : 'wrong');
+  const fb = $('#scenFeedback');
+  if (ok){ fb.className = 'feedback good'; fb.innerHTML = `<strong>${esc(s.a)} is right.</strong><span>${esc(s.e)}</span>`; }
+  else { fb.className = 'feedback bad'; fb.innerHTML = `<strong>Not ${esc(pick)}.</strong><span>Does the newest item leave first, the oldest, or do you jump to a known position? Try again.</span>`; }
+  const dots = $$('#scenDots button'); renderDotsOnly(dots);
+}));
+function renderDotsOnly(){ const keep = $('#scenFeedback').innerHTML, cls = $('#scenFeedback').className; const marks = $$('.choice').map(b => b.className); renderScen(); $('#scenFeedback').innerHTML = keep; $('#scenFeedback').className = cls; $$('.choice').forEach((b, i) => b.className = marks[i]); }
+$('#scenDots').addEventListener('click', e => { const d = e.target.closest('[data-dot]'); if (!d) return; sIdx = +d.dataset.dot; renderScen(); });
+$('#scenPrev').addEventListener('click', () => { if (sIdx > 0){ sIdx--; renderScen(); } });
+$('#scenNext').addEventListener('click', () => { sIdx = (sIdx + 1) % SCENARIOS.length; renderScen(); });
+renderScen();
+
+/* ================= QUIZ ================= */
+function renderQuiz(){
+  $('#quizList').innerHTML = QUIZ.map((q, i) => {
+    const ans = S.quiz[i];
+    const opts = q.o.map((o, k) => {
+      let cls = 'opt';
+      if (ans !== undefined){ if (k === q.a) cls += ' right'; else if (k === ans) cls += ' wrong'; }
+      return `<button type="button" class="${cls}" data-q="${i}" data-o="${k}" ${ans !== undefined ? 'disabled' : ''}>${esc(o)}</button>`;
+    }).join('');
+    const ex = ans !== undefined ? `<p class="explain"><b class="${ans === q.a ? 'good' : 'bad'}">${ans === q.a ? 'Correct.' : 'Not quite.'}</b> ${esc(q.e)}</p>` : '';
+    return `<fieldset class="q"><legend><span class="num">${i + 1}.</span>${esc(q.q)}</legend>${q.code ? `<pre>${esc(q.code)}</pre>` : ''}<div class="opts">${opts}</div>${ex}</fieldset>`;
+  }).join('');
+  const t = tally();
+  $('#quizScore').textContent = `Score: ${t.quizRight} correct, ${t.quizAnswered} of ${QUIZ.length} answered`;
+}
+$('#quizList').addEventListener('click', e => {
+  const b = e.target.closest('.opt'); if (!b || b.disabled) return;
+  const i = +b.dataset.q; if (S.quiz[i] !== undefined) return;
+  S.quiz[i] = +b.dataset.o; persist(); renderQuiz();
+  const fs = $$('#quizList .q')[i]; if (fs) fs.querySelector('.explain').setAttribute('tabindex','-1');
+});
+renderQuiz();
+
+/* ================= GLOSSARY ================= */
+$('#glossList').innerHTML = GLOSSARY.map((g, i) => `<button type="button" class="flip ${S.flipped.includes(i) ? '' : ''}" data-g="${i}" aria-pressed="false" aria-label="${esc(g[0])}. Select to show the definition."><span class="flip-inner"><span class="face front">${esc(g[0])}<small>Select to flip</small></span><span class="face back">${esc(g[1])}</span></span></button>`).join('');
+$('#glossList').addEventListener('click', e => {
+  const b = e.target.closest('.flip'); if (!b) return;
+  const on = b.classList.toggle('on'); b.setAttribute('aria-pressed', on);
+  b.setAttribute('aria-label', on ? GLOSSARY[+b.dataset.g][0] + ': ' + GLOSSARY[+b.dataset.g][1] : GLOSSARY[+b.dataset.g][0] + '. Select to show the definition.');
+  const i = +b.dataset.g;
+  if (on && !S.flipped.includes(i)){ S.flipped.push(i); persist(); if (S.flipped.length >= 6) mark('glossary'); }
+});
+
+/* ================= NAME ================= */
+const nameEl = $('#studentName'); nameEl.value = S.name || '';
+let nameTimer; nameEl.addEventListener('input', () => { clearTimeout(nameTimer); nameTimer = setTimeout(() => { S.name = nameEl.value.trim(); persist(); }, 400); });
+
+/* ================= RESET ================= */
+let resetArmed = false, resetTimer;
+$('#resetAll').addEventListener('click', e => {
+  const b = e.currentTarget;
+  if (!resetArmed){ resetArmed = true; b.textContent = 'Select again to erase everything'; resetTimer = setTimeout(() => { resetArmed = false; b.textContent = 'Reset progress'; }, 4000); return; }
+  clearTimeout(resetTimer); resetArmed = false; b.textContent = 'Reset progress';
+  S = blank(); try { localStorage.removeItem(KEY); } catch(err) {}
+  nameEl.value = ''; renderQuiz(); renderScen();
+  $$('.flip').forEach(f => { f.classList.remove('on'); f.setAttribute('aria-pressed','false'); });
+  $$('[data-bigo]').forEach(s => s.value = ''); $$('[id^="bigoMark"]').forEach(m => { m.textContent = ''; m.className = 'mark'; }); $('#bigoMsg').textContent = '';
+  refreshProgress(); toast('Progress erased.');
+});
+
+/* ================= REPORT ================= */
+function reportBody(){
+  const t = tally(); const rows = moduleRows(); const now = new Date();
+  const name = esc(S.name || 'Name not entered');
+  return `
+  <h1 style="margin:0 0 .2em">Data Structures 101 progress report</h1>
+  <p style="margin:0 0 1em;color:#444">Arrays, stacks and queues</p>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:1em">
+    <tr><th style="text-align:left;padding:6px;border-bottom:1px solid #bbb;width:30%">Student</th><td style="padding:6px;border-bottom:1px solid #bbb">${name}</td></tr>
+    <tr><th style="text-align:left;padding:6px;border-bottom:1px solid #bbb">Report date</th><td style="padding:6px;border-bottom:1px solid #bbb">${esc(now.toLocaleString())}</td></tr>
+    <tr><th style="text-align:left;padding:6px;border-bottom:1px solid #bbb">Started</th><td style="padding:6px;border-bottom:1px solid #bbb">${S.started ? esc(new Date(S.started).toLocaleString()) : 'Not started'}</td></tr>
+    <tr><th style="text-align:left;padding:6px;border-bottom:1px solid #bbb">Overall completion</th><td style="padding:6px;border-bottom:1px solid #bbb"><b>${t.pct}%</b> (${t.done} of ${t.total} checkpoints)</td></tr>
+    <tr><th style="text-align:left;padding:6px;border-bottom:1px solid #bbb">Knowledge check</th><td style="padding:6px;border-bottom:1px solid #bbb">${t.quizRight} of ${QUIZ.length} correct (${t.quizAnswered} answered)</td></tr>
+    <tr><th style="text-align:left;padding:6px;border-bottom:1px solid #bbb">Scenarios</th><td style="padding:6px;border-bottom:1px solid #bbb">${t.scenSolved} of ${SCENARIOS.length} solved, ${t.scenFirst} on the first try</td></tr>
+  </table>
+  <h2 style="font-size:1.1rem">Module detail</h2>
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr><th style="text-align:left;padding:6px;background:#eef2f8">Module</th><th style="text-align:left;padding:6px;background:#eef2f8">Done</th><th style="text-align:left;padding:6px;background:#eef2f8">Detail</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td style="padding:6px;border-bottom:1px solid #ddd">${esc(r.name)}</td><td style="padding:6px;border-bottom:1px solid #ddd">${r.done} of ${r.of}</td><td style="padding:6px;border-bottom:1px solid #ddd;font-size:.9em">${esc(r.detail)}</td></tr>`).join('')}</tbody>
+  </table>
+  <h2 style="font-size:1.1rem;margin-top:1.2em">Knowledge check answers</h2>
+  <ol style="padding-left:1.2em">${QUIZ.map((q, i) => { const a = S.quiz[i]; return `<li style="margin-bottom:.3em">${esc(q.q)}<br><span style="font-size:.9em">${a === undefined ? 'Not answered' : (a === q.a ? '✓ ' : '✗ ') + 'Answered: ' + esc(q.o[a]) + (a === q.a ? '' : ' (correct: ' + esc(q.o[q.a]) + ')')}</span></li>`; }).join('')}</ol>
+  <p style="margin-top:2em">Student signature ____________________________ &nbsp; Instructor ____________________________</p>`;
+}
+function reportDoc(){
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Data Structures 101 progress report</title><style>body{font-family:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#111;line-height:1.5}</style></head><body>${reportBody()}</body></html>`;
+}
+
+let dl = null;
+(async () => { try { if (window.claude && typeof window.claude.use === 'function') dl = await window.claude.use('downloads'); } catch(e) { dl = null; } })();
+
+async function saveReport(){
+  const safe = (S.name || 'student').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'student';
+  const filename = `data-structures-report-${safe}.html`;
+  const content = reportDoc();
+  if (dl){
+    try { await dl.save({filename, data: content}); toast('Report saved.'); return; }
+    catch(e){
+      const code = e && e.code;
+      if (code === 'declined'){ toast('Save cancelled.'); return; }
+      if (code === 'rate_limited'){ toast('A save prompt is already open.'); return; }
     }
+  }
+  try {
+    const blob = new Blob([content], {type:'text/html'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast('Report downloaded.');
+  } catch(e){ toast('Saving isn’t available in this view. Use Print report instead.'); }
+}
 
-    // --- QUEUE LOGIC ---
-    const queueContainer = document.getElementById('queue-viz');
-    let queueCount = 0;
+let openedDetails = [];
+function cleanupPrint(){
+  document.body.classList.remove('print-report','print-lesson');
+  openedDetails.forEach(d => d.open = false); openedDetails = [];
+}
+window.addEventListener('afterprint', cleanupPrint);
+function doPrint(mode){
+  cleanupPrint();
+  if (mode === 'report'){ $('#printReport').innerHTML = reportBody(); document.body.classList.add('print-report'); }
+  else { document.body.classList.add('print-lesson'); $$('details').forEach(d => { if (!d.open){ d.open = true; openedDetails.push(d); } }); $$('pre[hidden]').forEach(p => p.hidden = false); }
+  try { window.print(); } catch(e){ toast('Printing is blocked in this view. Save the report and print it from your browser.'); cleanupPrint(); }
+  if (mode !== 'report') setTimeout(() => $$('[data-tabs]').forEach(list => { const sel = list.querySelector('[aria-selected="true"]'); $$(`pre[data-tab="${list.dataset.tabs}"]`).forEach(p => p.hidden = p.dataset.lang !== sel.dataset.lang); }), 1500);
+}
 
-    function enqueue() {
-        if (queueContainer.children.length >= 5) {
-            alert("Queue is full!");
-            return;
-        }
-        queueCount++;
-        const item = document.createElement('div');
-        item.className = 'queue-item';
-        item.innerText = '#' + queueCount;
-        queueContainer.appendChild(item);
-    }
+$$('[data-act]').forEach(b => b.addEventListener('click', () => {
+  const a = b.dataset.act;
+  if (a === 'save') saveReport();
+  else if (a === 'print-report') doPrint('report');
+  else if (a === 'print-lesson') doPrint('lesson');
+}));
 
-    function dequeue() {
-        if (queueContainer.firstElementChild) {
-            // Add a slide-out animation before removing
-            const item = queueContainer.firstElementChild;
-            item.style.transform = 'translateX(-20px)';
-            item.style.opacity = '0';
-            setTimeout(() => {
-                if(item.parentNode) queueContainer.removeChild(item);
-            }, 200);
-        } else {
-            alert("Queue is empty!");
-        }
-    }
-
-    // --- SCENARIO LOGIC ---
-    const scenarios = [
-        {
-            text: "You are building the 'Undo' button for a text editor. The last action performed should be the first one reversed.",
-            answer: "Stack",
-            explanation: "Correct! Undo operations use LIFO (Last In, First Out)."
-        },
-        {
-            text: "You are creating a playlist manager where songs play in the exact order they were added by the user.",
-            answer: "Queue",
-            explanation: "Correct! Playlists usually operate on FIFO (First In, First Out)."
-        },
-        {
-            text: "You need to store the scores of 10 students and quickly access the score of student #3.",
-            answer: "Array",
-            explanation: "Correct! Arrays allow instant access to data if you know the index (ID)."
-        },
-        {
-            text: "A printer receives print jobs from multiple computers. It must print them in the order they arrived.",
-            answer: "Queue",
-            explanation: "Correct! A print spooler is a classic Queue application."
-        },
-        {
-            text: "A web browser's 'Back' button history. You want to go back to the page you just visited.",
-            answer: "Stack",
-            explanation: "Correct! Browser history stacks pages on top of each other."
-        }
-    ];
-
-    let currentScenarioIndex = 0;
-    const scenarioText = document.getElementById('scenario-text');
-    const feedbackMsg = document.getElementById('feedback-msg');
-
-    function loadScenario() {
-        scenarioText.innerText = scenarios[currentScenarioIndex].text;
-        feedbackMsg.innerText = "";
-        feedbackMsg.className = "feedback";
-    }
-
-    function checkAnswer(userChoice) {
-        const correct = scenarios[currentScenarioIndex].answer;
-        if (userChoice === correct) {
-            feedbackMsg.innerText = scenarios[currentScenarioIndex].explanation;
-            feedbackMsg.className = "feedback correct";
-        } else {
-            feedbackMsg.innerText = "Not quite. Think about the order of operations (LIFO vs FIFO vs Random Access).";
-            feedbackMsg.className = "feedback incorrect";
-        }
-    }
-
-    function nextScenario() {
-        currentScenarioIndex++;
-        if (currentScenarioIndex >= scenarios.length) {
-            currentScenarioIndex = 0; // Loop back
-        }
-        loadScenario();
-    }
-
-    // Initialize
-    loadScenario();
-
+refreshProgress();
+})();
 </script>
-
 </body>
 </html>
